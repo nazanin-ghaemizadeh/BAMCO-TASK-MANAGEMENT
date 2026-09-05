@@ -5,12 +5,12 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="description" content="سامانه مدیریت و پایش و پیگیری امور خودروسازان بم">
   <title>BAMCO TASK MANAGEMENT</title>
-  <link rel="stylesheet" href="webapp.css?v=20260905-5">
+  <link rel="stylesheet" href="webapp.css?v=20260905-7">
 </head>
 <body>
   <header class="topbar">
     <div class="top-brand">
-      <img id="brandLogo" src="BAMCO_TASK_LOGO_WHITE_HEADER.png?v=20260905-5" alt="BAMCO TASK MANAGEMENT">
+      <img id="brandLogo" src="BAMCO_TASK_LOGO_WHITE_HEADER.png?v=20260905-7" alt="BAMCO TASK MANAGEMENT">
       <div class="top-title">سامانه مدیریت و پایش و پیگیری امور</div>
     </div>
   </header>
@@ -54,10 +54,10 @@
           <div class="filter-actions"><button id="resetDashFilters" class="btn">حذف فیلترها</button></div>
         </fieldset>
         <div id="cards" class="cards"></div>
-        <div class="chart-card"><canvas id="statusChart" height="280" data-logical-height="280"></canvas></div>
-        <div class="chart-card"><canvas id="priorityChart" height="280" data-logical-height="280"></canvas></div>
-        <div class="chart-card"><canvas id="bucketChart" height="280" data-logical-height="280"></canvas></div>
-        <div class="chart-card"><canvas id="workloadChart" height="350" data-logical-height="350"></canvas></div>
+        <div class="chart-card"><canvas id="statusChart" height="280"></canvas></div>
+        <div class="chart-card"><canvas id="priorityChart" height="280"></canvas></div>
+        <div class="chart-card"><canvas id="bucketChart" height="280"></canvas></div>
+        <div class="chart-card"><canvas id="workloadChart" height="350"></canvas></div>
         <fieldset class="fieldset perf-range"><legend>بازه زمانی نمودار عملکرد متولیان</legend>
           <div class="perf-row">
             <label>از تاریخ<input id="perfFrom" class="center-text" placeholder="۱۴۰۵/۰۱/۰۱"></label><button class="btn calendar-btn" data-date-target="perfFrom">تقویم شمسی</button>
@@ -65,7 +65,7 @@
             <span class="spacer"></span><button id="clearPerf" class="btn">حذف</button><button id="applyPerf" class="btn">اعمال</button>
           </div>
         </fieldset>
-        <div class="chart-card"><canvas id="performanceChart" height="350" data-logical-height="350"></canvas></div>
+        <div class="chart-card"><canvas id="performanceChart" height="350"></canvas></div>
       </section>
 
       <section id="view-people" class="view">
@@ -108,6 +108,8 @@
     </main>
   </div>
 
+  <footer class="app-footer">توسعه یافته توسط واحد مهندسی محصول <span class="footer-sep">|</span> خودروسازان بم</footer>
+
   <dialog id="alertDialog" class="dialog alert-dialog"><form method="dialog"><div class="dialog-head"><h3 id="alertTitle"></h3><button value="cancel" class="x">×</button></div><div id="alertBody" class="alert-body"></div><div class="dialog-actions"><button id="alertCancel" value="cancel" class="btn hidden">خیر</button><button id="alertOk" value="ok" class="btn primary">تأیید</button></div></form></dialog>
 
   <dialog id="personDialog" class="dialog"><form id="personForm" method="dialog"><div class="dialog-head"><h3 id="personDialogTitle">افزودن فرد</h3><button type="button" class="x" data-close="personDialog">×</button></div><div class="dialog-body form-stack">
@@ -125,6 +127,6 @@
 
   <script src="desktop-assets.js?v=20260905-5"></script>
   <script src="sticker-default.js?v=20260905-5"></script>
-  <script src="webapp.js?v=20260905-5"></script>
+  <script src="webapp.js?v=20260905-7"></script>
 </body>
 </html>
