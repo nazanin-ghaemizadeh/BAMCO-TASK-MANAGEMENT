@@ -28,8 +28,12 @@ function ensureDashboard(){
   const cards=document.getElementById('cards');
   if(cards){
     const order=['archive_total','warning','overdue','waiting','in_progress','total'];
-    const byKey=new Map([...cards.children].map(x=>[x.dataset.key,x]));
-    for(const key of order){const el=byKey.get(key);if(el)cards.appendChild(el)}
+    const current=[...cards.children].map(x=>x.dataset.key).filter(Boolean);
+    const desired=order.filter(key=>current.includes(key));
+    if(current.join('|')!==desired.join('|')){
+      const byKey=new Map([...cards.children].map(x=>[x.dataset.key,x]));
+      for(const key of desired){const el=byKey.get(key);if(el)cards.appendChild(el)}
+    }
     cards.style.setProperty('direction','ltr','important');
     [...cards.children].forEach(c=>c.style.setProperty('direction','rtl','important'));
   }
