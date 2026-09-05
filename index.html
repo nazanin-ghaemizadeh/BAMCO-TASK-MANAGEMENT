@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>BAMCO Task Management</title>
+  <meta name="description" content="سامانه آنلاین مدیریت، پایش و پیگیری امور خودروسازان بم" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="toast" class="toast" aria-live="polite"></div>
+  <main id="loginView" class="login-shell">
+    <section class="login-card">
+      <div class="brand-lockup">
+        <img src="bamco-logo.png" alt="خودروسازان بم" />
+        <div><h1>سامانه مدیریت وظایف</h1><p>مدیریت، پایش و پیگیری امور</p></div>
+      </div>
+      <form id="loginForm">
+        <label>نام کاربری <span>ایمیل سازمانی</span></label>
+        <input id="email" type="email" autocomplete="username" required placeholder="name@bamco.ir" dir="ltr" />
+        <label>رمز عبور</label>
+        <input id="password" type="password" autocomplete="current-password" required placeholder="••••••" dir="ltr" />
+        <button class="primary wide" type="submit">ورود به سامانه</button>
+        <p id="loginError" class="form-error"></p>
+      </form>
+    </section>
+  </main>
+
+  <div id="appView" class="app hidden">
+    <aside id="sidebar" class="sidebar">
+      <div class="side-brand"><img src="bamco-logo.png" alt="BAMCO"/><strong>مدیریت وظایف</strong></div>
+      <button id="collapseBtn" class="collapse" aria-label="جمع کردن منو">‹</button>
+      <nav id="nav">
+        <button data-view="dashboard" class="active"><b>▦</b><span>داشبورد</span></button>
+        <button data-view="kanban"><b>▤</b><span>کانبان</span></button>
+        <button data-view="archive"><b>▣</b><span>آرشیو</span></button>
+        <button data-view="approvals" id="approvalsNav" class="hidden"><b>✓</b><span>تأیید درخواست‌ها</span><i id="approvalBadge"></i></button>
+      </nav>
+      <div class="account"><div class="avatar" id="avatar">ب</div><div class="account-copy"><strong id="userName"></strong><small id="userRole"></small></div><button id="logoutBtn" title="خروج">↪</button></div>
+    </aside>
+
+    <section class="workspace">
+      <header><div><h2 id="viewTitle">داشبورد</h2><p id="viewSubtitle"></p></div><div class="header-actions"><button id="exportBtn" class="ghost">خروجی اکسل</button><button id="addTaskBtn" class="primary">＋ افزودن تسک</button></div></header>
+
+      <section id="dashboardView" class="view">
+        <div class="stats">
+          <article><span class="dot green"></span><small>کارهای فعال</small><strong id="statActive">۰</strong></article>
+          <article><span class="dot red"></span><small>دیرکرد</small><strong id="statOverdue">۰</strong></article>
+          <article><span class="dot amber"></span><small>دوره هشدار</small><strong id="statWarning">۰</strong></article>
+          <article><span class="dot blue"></span><small>آرشیوشده</small><strong id="statArchive">۰</strong></article>
+        </div>
+        <div class="panel"><div class="panel-head"><h3>نمای وضعیت کارهای فعال</h3></div><div id="statusBars" class="status-bars"></div></div>
+        <div class="panel"><div class="panel-head"><h3>نزدیک‌ترین سررسیدها</h3><button data-go="kanban" class="link-btn">مشاهده کانبان ←</button></div><div id="dueList" class="due-list"></div></div>
+      </section>
+
+      <section id="kanbanView" class="view hidden"><div class="panel table-panel"><div class="panel-head"><h3>وظایف جاری</h3><input id="kanbanSearch" class="search" placeholder="جست‌وجو در تسک‌ها…" /></div><div class="table-wrap"><table><thead><tr><th>شناسه</th><th>عنوان کار</th><th>متولی</th><th>وضعیت</th><th>اولویت</th><th>تاریخ پایان</th><th>شرایط</th><th></th></tr></thead><tbody id="kanbanBody"></tbody></table></div></div></section>
+      <section id="archiveView" class="view hidden"><div class="panel table-panel"><div class="panel-head"><h3>وظایف آرشیوشده</h3><input id="archiveSearch" class="search" placeholder="جست‌وجو در آرشیو…" /></div><div class="table-wrap"><table><thead><tr><th>شناسه</th><th>عنوان کار</th><th>متولی</th><th>اولویت</th><th>تاریخ پایان</th><th>تاریخ انجام</th><th>نتیجه</th></tr></thead><tbody id="archiveBody"></tbody></table></div></div></section>
+      <section id="approvalsView" class="view hidden"><div class="panel table-panel"><div class="panel-head"><h3>درخواست‌های منتظر بررسی</h3></div><div class="table-wrap"><table><thead><tr><th>شماره</th><th>درخواست‌دهنده</th><th>نوع</th><th>عنوان تسک</th><th>زمان</th><th></th></tr></thead><tbody id="approvalBody"></tbody></table></div></div></section>
+    </section>
+  </div>
+
+  <dialog id="taskDialog" class="modal"><form id="taskForm" method="dialog"><div class="modal-head"><div><h3 id="taskDialogTitle">افزودن تسک</h3><p id="taskDialogHint"></p></div><button type="button" data-close="taskDialog">×</button></div><div class="form-grid"><label class="span-2">عنوان کار<input name="title" required /></label><label class="span-2">توضیحات<textarea name="description" rows="3"></textarea></label><label>متولی<select name="owner_id" required></select></label><label>وضعیت<select name="status"><option>ثبت شده</option><option>بررسی مدیر</option><option>منتظر پاسخ</option><option>در حال انجام</option><option>انجام شده</option></select></label><label>اولویت<select name="priority"><option>کم</option><option selected>متوسط</option><option>فوری</option></select></label><label>یادآور (روز قبل)<input name="reminder_days" type="number" min="0" value="0" /></label><label>تاریخ شروع<input name="start_date" type="date" /></label><label>تاریخ پایان<input name="due_date" type="date" /></label><label>تاریخ انجام<input name="done_date" type="date" /></label><label class="span-2 manager-only">توضیحات مدیر<textarea name="manager_notes" rows="2"></textarea></label></div><div class="modal-actions"><button type="button" class="ghost" data-close="taskDialog">انصراف</button><button type="submit" class="primary" id="saveTaskBtn">ثبت تسک</button></div></form></dialog>
+  <dialog id="reviewDialog" class="modal small"><div class="modal-head"><div><h3>بررسی درخواست</h3><p>جزئیات تغییر پیشنهادی را بررسی کنید.</p></div><button type="button" data-close="reviewDialog">×</button></div><div id="reviewDetails" class="review-details"></div><label>یادداشت مدیر<textarea id="managerNote" rows="3"></textarea></label><div class="modal-actions"><button id="rejectBtn" class="danger">رد درخواست</button><button id="approveBtn" class="primary">تأیید و اعمال</button></div></dialog>
+  <script src="app.js"></script>
+</body>
+</html>
