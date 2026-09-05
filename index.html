@@ -6,7 +6,7 @@
   <meta name="description" content="سامانه مدیریت و پایش و پیگیری امور خودروسازان بم">
   <title>BAMCO TASK MANAGEMENT</title>
   <link rel="stylesheet" href="webapp.css?v=20260905-11">
-  <link rel="stylesheet" href="final-fixes.css?v=20260905-14">
+  <link rel="stylesheet" href="final-fixes.css?v=20260905-15">
 </head>
 <body>
   <header class="topbar">
@@ -55,10 +55,10 @@
           <div class="filter-actions"><button id="resetDashFilters" class="btn">حذف فیلترها</button></div>
         </fieldset>
         <div id="cards" class="cards"></div>
-        <div class="chart-card"><canvas id="statusChart" height="280"></canvas></div>
-        <div class="chart-card"><canvas id="priorityChart" height="280"></canvas></div>
-        <div class="chart-card"><canvas id="bucketChart" height="280"></canvas></div>
-        <div class="chart-card"><canvas id="workloadChart" height="350"></canvas></div>
+        <div class="chart-card"><canvas id="statusChart" height="380"></canvas></div>
+        <div class="chart-card"><canvas id="priorityChart" height="380"></canvas></div>
+        <div class="chart-card"><canvas id="bucketChart" height="380"></canvas></div>
+        <div class="chart-card"><canvas id="workloadChart" height="430"></canvas></div>
         <fieldset class="fieldset perf-range"><legend>بازه زمانی نمودار عملکرد متولیان</legend>
           <div class="perf-row">
             <label>از تاریخ<input id="perfFrom" class="center-text" placeholder="۱۴۰۵/۰۱/۰۱"></label><button class="btn calendar-btn" data-date-target="perfFrom">تقویم شمسی</button>
@@ -66,12 +66,12 @@
             <span class="spacer"></span><button id="clearPerf" class="btn">حذف</button><button id="applyPerf" class="btn">اعمال</button>
           </div>
         </fieldset>
-        <div class="chart-card"><canvas id="performanceChart" height="350"></canvas></div>
+        <div class="chart-card"><canvas id="performanceChart" height="430"></canvas></div>
       </section>
 
       <section id="view-people" class="view">
         <div class="toolbar"><button id="addPerson" class="btn">افزودن فرد</button><button id="editPerson" class="btn">ویرایش</button><button id="deletePerson" class="btn">حذف</button></div>
-        <div class="table-wrap"><table id="peopleTable" class="data-table"><thead><tr><th data-col="active">فعال</th><th data-col="cc">رونوشت</th><th data-col="salutation">عنوان ایمیل</th><th data-col="email">ایمیل</th><th data-col="gender">جنسیت</th><th data-col="name">نام در اکسل</th></tr></thead><tbody></tbody></table></div>
+        <div class="table-wrap"><table id="peopleTable" class="data-table"><thead><tr><th data-col="active">فعال</th><th data-col="cc">رونوشت</th><th data-col="salutation">عنوان ایمیل</th><th data-col="email">ایمیل</th><th data-col="gender">جنسیت</th><th data-col="name">نام</th></tr></thead><tbody></tbody></table></div>
       </section>
 
       <section id="view-send" class="view">
@@ -128,6 +128,6 @@
 
   <script src="desktop-assets.js?v=20260905-5"></script>
   <script src="sticker-default.js?v=20260905-5"></script>
-  <script src="webapp.js?v=20260905-14"></script>
+  <script src="webapp.js?v=20260905-15"></script>
 </body>
 </html>

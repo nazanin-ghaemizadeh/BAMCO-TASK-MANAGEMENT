@@ -21,10 +21,10 @@
 .cards{direction:ltr!important}
 .cards .card{direction:rtl!important;text-align:right!important}
 #view-dashboard .chart-card{margin-bottom:10px!important;overflow:hidden!important}
-#statusChart,#priorityChart,#bucketChart{display:block!important;width:100%!important;height:280px!important;max-height:280px!important}
-#workloadChart,#performanceChart{display:block!important;width:100%!important;height:350px!important;max-height:350px!important}
-.chart-card:has(#statusChart),.chart-card:has(#priorityChart),.chart-card:has(#bucketChart){height:280px!important;min-height:280px!important;max-height:280px!important}
-.chart-card:has(#workloadChart),.chart-card:has(#performanceChart){height:350px!important;min-height:350px!important;max-height:350px!important}
+#statusChart,#priorityChart,#bucketChart{display:block!important;width:100%!important;height:380px!important;max-height:380px!important}
+#workloadChart,#performanceChart{display:block!important;width:100%!important;height:430px!important;max-height:430px!important}
+.chart-card:has(#statusChart),.chart-card:has(#priorityChart),.chart-card:has(#bucketChart){height:380px!important;min-height:380px!important;max-height:380px!important}
+.chart-card:has(#workloadChart),.chart-card:has(#performanceChart){height:430px!important;min-height:430px!important;max-height:430px!important}
 
 /* email editor */
 .editor-toolbar{flex-wrap:wrap!important;align-items:center!important}
