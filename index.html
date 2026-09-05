@@ -7,6 +7,7 @@
   <meta name="description" content="سامانه آنلاین مدیریت، پایش و پیگیری امور خودروسازان بم" />
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="manager.css" />
+  <link rel="stylesheet" href="desktop-theme.css" />
 </head>
 <body>
   <div id="toast" class="toast" aria-live="polite"></div>
@@ -31,7 +32,7 @@
   <div id="appView" class="app hidden">
     <aside id="sidebar" class="sidebar">
       <div class="side-brand"><img src="bamco-logo.png" alt="BAMCO"/><strong>مدیریت وظایف</strong></div>
-      <button id="collapseBtn" class="collapse" aria-label="جمع کردن منو">‹</button>
+      <button id="collapseBtn" class="collapse" aria-label="جمع کردن منو">جمع‌کردن منو   ◀</button>
       <nav id="nav">
         <button data-view="dashboard" class="active"><b>▦</b><span>داشبورد</span></button>
         <button data-view="kanban"><b>▤</b><span>کانبان</span></button>
@@ -114,7 +115,8 @@
     <div class="modal-actions"><button id="rejectBtn" class="danger">رد درخواست</button><button id="approveBtn" class="primary">تأیید و اعمال</button></div>
   </dialog>
 
-  <script src="manager.js"></script>
   <script src="app.js"></script>
+  <script src="manager.js"></script>
+  <script src="desktop-shell.js"></script>
 </body>
 </html>
