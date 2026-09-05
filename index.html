@@ -14,7 +14,7 @@
   <main id="loginView" class="login-shell">
     <section class="login-card">
       <div class="brand-lockup">
-        <img src="bamco-logo.png" alt="خودروسازان بم" />
+        <img src="BAMCO_TASK_LOGO_WHITE_HEADER_V2.png" alt="خودروسازان بم" />
         <div><h1>سامانه مدیریت وظایف</h1><p>مدیریت، پایش و پیگیری امور</p></div>
       </div>
       <form id="loginForm">
@@ -30,7 +30,7 @@
 
   <div id="appView" class="app hidden">
     <aside id="sidebar" class="sidebar">
-      <div class="side-brand"><img src="bamco-logo.png" alt="BAMCO"/><strong>مدیریت وظایف</strong></div>
+      <div class="side-brand"><img src="BAMCO_TASK_LOGO_WHITE_HEADER_V2.png" alt="BAMCO"/><strong>مدیریت وظایف</strong></div>
       <button id="collapseBtn" class="collapse" aria-label="جمع کردن منو">‹</button>
       <nav id="nav">
         <button data-view="kanban" class="active"><b>▤</b><span>کانبان</span></button>
@@ -114,7 +114,7 @@
     <div class="modal-actions"><button id="rejectBtn" class="danger">رد درخواست</button><button id="approveBtn" class="primary">تأیید و اعمال</button></div>
   </dialog>
 
-  <dialog id="passwordDialog" class="modal small"><form id="passwordForm"><div class="modal-head"><div><h3>تغییر رمز عبور</h3><p>برای ادامه، رمز اولیه را تغییر دهید.</p></div></div><label>رمز جدید<input id="newPassword" type="password" minlength="8" required></label><label>تکرار رمز جدید<input id="confirmPassword" type="password" minlength="8" required></label><p id="passwordError" class="form-error"></p><div class="modal-actions"><button class="primary" type="submit">ثبت رمز جدید</button></div></form></dialog>
+  <dialog id="passwordDialog" class="modal small first-login-dialog"><form id="passwordForm"><div class="first-login-brand"><img src="BAMCO_TASK_LOGO_WHITE_HEADER_V2.png" alt="BAMCO"><div><h3>تغییر رمز عبور</h3><p>برای امنیت حساب، رمز اولیه را تغییر دهید.</p></div></div><div class="first-login-fields"><label>رمز جدید<input id="newPassword" type="password" minlength="8" autocomplete="new-password" required></label><label>تکرار رمز جدید<input id="confirmPassword" type="password" minlength="8" autocomplete="new-password" required></label></div><p id="passwordError" class="form-error"></p><div class="modal-actions"><button class="primary" type="submit">ثبت رمز جدید و ورود</button></div></form></dialog>
 
   <dialog id="importDialog" class="modal"><div class="modal-head"><div><h3>پیش‌نمایش ورود از اکسل</h3><p id="importSummary"></p></div><button type="button" data-close="importDialog">×</button></div><label>رفتار با شناسه تکراری<select id="duplicateMode"><option value="reject">رد رکورد</option><option value="update">به‌روزرسانی رکورد موجود</option><option value="create">ایجاد رکورد جدید</option></select></label><div class="table-wrap"><table><thead><tr><th>ردیف</th><th>شناسه</th><th>عنوان</th><th>متولی</th><th>وضعیت</th></tr></thead><tbody id="importPreviewBody"></tbody></table></div><div class="modal-actions"><button type="button" class="ghost" data-close="importDialog">انصراف</button><button id="commitImportBtn" class="primary">ورود رکوردهای معتبر</button></div></dialog>
 
