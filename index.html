@@ -5,12 +5,13 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="description" content="سامانه مدیریت و پایش و پیگیری امور خودروسازان بم">
   <title>BAMCO TASK MANAGEMENT</title>
-  <link rel="stylesheet" href="webapp.css?v=20260905-8">
+  <link rel="stylesheet" href="webapp.css?v=20260905-10">
+  <link rel="stylesheet" href="final-fixes.css?v=20260905-10">
 </head>
 <body>
   <header class="topbar">
     <div class="top-brand">
-      <img id="brandLogo" src="BAMCO_TASK_LOGO_WHITE_HEADER_V2.png?v=20260905-8" alt="BAMCO TASK MANAGEMENT">
+      <img id="brandLogo" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" alt="BAMCO TASK MANAGEMENT">
       <div class="top-title">سامانه مدیریت و پایش و پیگیری امور</div>
     </div>
   </header>
@@ -127,6 +128,14 @@
 
   <script src="desktop-assets.js?v=20260905-5"></script>
   <script src="sticker-default.js?v=20260905-5"></script>
-  <script src="webapp.js?v=20260905-8"></script>
+  <script>
+  (function loadExactBamcoLogo(){
+    fetch('BAMCO_TASK_LOGO_WHITE_EXACT_240.b64.txt?v=20260905-10',{cache:'no-store'})
+      .then(function(r){ if(!r.ok) throw new Error('logo'); return r.text(); })
+      .then(function(b64){ var el=document.getElementById('brandLogo'); if(el) el.src='data:image/png;base64,'+b64.trim(); })
+      .catch(function(e){ console.error('BAMCO logo load failed',e); });
+  })();
+</script>
+  <script src="webapp.js?v=20260905-10"></script>
 </body>
 </html>
