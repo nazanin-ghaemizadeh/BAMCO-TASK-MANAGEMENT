@@ -1,0 +1,16 @@
+drop policy if exists profiles_manager_update on public.profiles;
+create index if not exists app_settings_updated_by_idx on public.app_settings(updated_by) where updated_by is not null;
+create index if not exists change_requests_task_idx on public.change_requests(task_id) where task_id is not null;
+create index if not exists change_requests_reviewed_by_idx on public.change_requests(reviewed_by) where reviewed_by is not null;
+create index if not exists email_dispatches_created_by_idx on public.email_dispatches(created_by);
+create index if not exists email_logs_recipient_idx on public.email_logs(recipient_id) where recipient_id is not null;
+create index if not exists email_logs_created_by_idx on public.email_logs(created_by) where created_by is not null;
+create index if not exists email_logs_dispatch_idx on public.email_logs(dispatch_id) where dispatch_id is not null;
+create index if not exists email_logs_followup_idx on public.email_logs(followup_of) where followup_of is not null;
+create index if not exists email_templates_updated_by_idx on public.email_templates(updated_by) where updated_by is not null;
+create index if not exists import_errors_job_idx on public.import_errors(job_id);
+create index if not exists import_jobs_created_by_idx on public.import_jobs(created_by);
+create index if not exists sticker_sets_created_by_idx on public.sticker_sets(created_by) where created_by is not null;
+create index if not exists task_history_actor_idx on public.task_history(actor_id) where actor_id is not null;
+create index if not exists task_history_request_idx on public.task_history(request_id) where request_id is not null;
+create index if not exists tasks_created_by_idx on public.tasks(created_by) where created_by is not null;
