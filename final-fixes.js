@@ -1,12 +1,12 @@
 (()=>{
 'use strict';
-const V='20260905-10';
+const V='20260905-11';
 function loadExactLogo(){
   const logo=document.getElementById('brandLogo');
   if(!logo)return;
   fetch(`BAMCO_TASK_LOGO_WHITE_EXACT_240.b64.txt?v=${V}`,{cache:'no-store'})
     .then(r=>{if(!r.ok)throw new Error('logo');return r.text()})
-    .then(b64=>{logo.src='data:image/png;base64,'+b64.trim();logo.alt='BAMCO TASK MANAGEMENT';})
+    .then(b64=>{logo.src='data:image/png;base64,'+b64.replace(/\s+/g,'');logo.alt='BAMCO TASK MANAGEMENT';})
     .catch(e=>console.error('BAMCO logo load failed',e));
 }
 function fixFollowDates(){const table=document.getElementById('followTable');if(!table)return;const th=table.querySelector('thead th[data-col="last"]');if(th)th.textContent='تاریخ ارسال';const heads=[...table.querySelectorAll('thead th[data-col]')],idx=heads.findIndex(h=>h.dataset.col==='last');if(idx<0)return;for(const row of table.tBodies[0]?.rows||[]){const cell=row.cells[idx];if(!cell)continue;const t=cell.textContent.trim();const m=t.match(/[۰-۹0-9]{4}[\/\-][۰-۹0-9]{1,2}[\/\-][۰-۹0-9]{1,2}/);if(m)cell.textContent=m[0];}}
