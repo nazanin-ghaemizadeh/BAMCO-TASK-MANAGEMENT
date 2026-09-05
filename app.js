@@ -63,16 +63,16 @@ $('#clearDateBtn').addEventListener('click',()=>{setJalaliField(state.dateInput,
 
 $('#loginForm').addEventListener('submit',async e=>{e.preventDefault();$('#loginError').textContent='';
   try{const data=await api('/auth/v1/token?grant_type=password',{method:'POST',auth:false,body:{email:$('#email').value.trim(),password:$('#password').value}});state.token=data.access_token;state.user=data.user;sessionStorage.setItem('bamco_session',JSON.stringify({token:state.token,user:state.user}));await enterApp()}
-  catch(err){$('#loginError').textContent=err.message}
+  catch(err){sessionStorage.removeItem('bamco_session');$('#appView').classList.add('hidden');$('#loginView').classList.remove('hidden');$('#loginError').textContent=err.message}
 });
 async function enterApp(){
   const profiles=await select('profiles',`id=eq.${state.user.id}&select=*`);if(!profiles.length)throw new Error('پروفایل کاربر پیدا نشد.');state.profile=profiles[0];
-  $('#loginView').classList.add('hidden');$('#appView').classList.remove('hidden');
   $('#userName').textContent=state.profile.full_name||state.profile.email;$('#userRole').textContent=isManager()?'مدیر سامانه':'متولی';$('#avatar').textContent=(state.profile.full_name||'ب').trim()[0];
   $('#approvalsNav').classList.toggle('hidden',!isManager());$$('.manager-only').forEach(x=>x.classList.toggle('hidden',!isManager()));
   $('#viewSubtitle').textContent=isManager()?'نمای کلی وظایف و عملکرد همه متولیان':'فقط وظایف و عملکرد مربوط به شما';
   $('#kanbanScope').textContent=isManager()?'نمای همه متولیان':'فقط تسک‌های شما';$('#archiveScope').textContent=isManager()?'نمای همه متولیان':'فقط آرشیو شما';
   await refresh();
+  $('#loginView').classList.add('hidden');$('#appView').classList.remove('hidden');
   if(state.profile.must_change_password)$('#passwordDialog').showModal();else showView('kanban');
 }
 async function refresh(){
@@ -81,7 +81,7 @@ async function refresh(){
     state.tasks=await select('task_status_view','select=*&order=id.desc');
     state.requests=isManager()?await select('change_requests','select=*&request_status=eq.pending&order=created_at.asc'):[];
     renderAll();
-  }catch(err){toast(err.message,true)}
+  }catch(err){toast(err.message,true);throw err}
 }
 function renderAll(){renderDashboard();renderTasks(false);renderTasks(true);if(isManager())renderRequests()}
 function renderDashboard(){const active=state.tasks.filter(t=>!t.archived),archive=state.tasks.filter(t=>t.archived);
@@ -129,4 +129,4 @@ $('#passwordForm').addEventListener('submit',async e=>{e.preventDefault();const 
 function xmlCell(v,style=''){return `<Cell${style?` ss:StyleID="${style}"`:''}><Data ss:Type="String">${safe(v??'')}</Data></Cell>`}
 function sheetXml(name,rows){const archive=name==='Archive',header=['شناسه','عنوان فعالیت','توضیحات','متولی','وضعیت','اولویت','تاریخ شروع','تاریخ انجام','تاریخ پایان','یادآور','آخرین به‌روزرسانی','وضعیت دیرکرد','توضیحات مدیر',...(archive?['تاخیر','تعجیل']:[])];return `<Worksheet ss:Name="${name}"><Table><Row>${header.map(x=>xmlCell(x,'Header')).join('')}</Row>${rows.map(t=>`<Row>${[displayId(t),t.title,t.description,ownerName(t),t.status,t.priority,jalaliText(t.start_date),jalaliText(t.done_date),jalaliText(t.due_date),t.reminder_days,jalaliDateTime(t.last_updated_at),t.due_state,t.manager_notes,...(archive?[t.delay_days||0,t.advance_days||0]:[])].map(x=>xmlCell(x,norm(t.due_state)==='دیرکرد'?'Overdue':norm(t.due_state)==='دوره هشدار'?'Warning':'')).join('')}</Row>`).join('')}</Table><WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel"><DisplayRightToLeft/><FreezePanes/><FrozenNoSplit/><SplitHorizontal>1</SplitHorizontal><TopRowBottomPane>1</TopRowBottomPane></WorksheetOptions></Worksheet>`}
 
-(async()=>{try{const saved=JSON.parse(sessionStorage.getItem('bamco_session')||'null');if(saved?.token&&saved?.user){state.token=saved.token;state.user=saved.user;await enterApp()}}catch{sessionStorage.removeItem('bamco_session')}})();
+(async()=>{try{const saved=JSON.parse(sessionStorage.getItem('bamco_session')||'null');if(saved?.token&&saved?.user){state.token=saved.token;state.user=saved.user;await enterApp()}}catch{sessionStorage.removeItem('bamco_session');$('#appView').classList.add('hidden');$('#loginView').classList.remove('hidden')}})();
