@@ -1,3 +1,4 @@
+body:has(#nav button.active[data-view="fileconfig"]) #fileconfigView{display:block!important}
 /* Exact desktop interaction/layout layer generated from BAMCO_TASK_MANAGEMENT desktop source. */
 .desktop-form-view,.desktop-table-view{padding:12px 0!important;background:#eef3f0!important;min-height:calc(100vh - 190px)}
 .desktop-section-title{font-size:22px;font-weight:700;text-align:right;margin:6px 0 20px;color:#173b30}
