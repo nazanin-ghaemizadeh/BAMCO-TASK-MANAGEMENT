@@ -1,8 +1,8 @@
 /* BAMCO web parity fixes v4 — 2026-09-05 */
-.topbar{direction:rtl!important;padding-inline:24px!important}
-.top-brand{direction:rtl!important;display:flex!important;align-items:center!important;gap:10px!important}
-.top-brand img#brandLogo{display:block!important;visibility:visible!important;opacity:1!important;width:72px!important;height:55px!important;object-fit:contain!important;filter:none!important;flex:0 0 auto!important}
-.top-title{font-size:21px!important;line-height:1.15!important;color:#fff!important;font-weight:700!important}
+.topbar{direction:rtl!important;padding-inline:24px!important;justify-content:flex-start!important}
+.top-brand{direction:rtl!important;display:flex!important;align-items:center!important;gap:12px!important;flex-direction:row!important;justify-content:flex-start!important;margin-right:0!important}
+.top-brand img#brandLogo{display:block!important;visibility:visible!important;opacity:1!important;width:118px!important;height:76px!important;object-fit:contain!important;object-position:center!important;filter:none!important;flex:0 0 118px!important;margin:0!important}
+.top-title{font-size:21px!important;line-height:1.15!important;color:#fff!important;font-weight:700!important;white-space:nowrap!important;margin:0!important}
 
 /* physical columns left-to-right; Persian content remains RTL */
 .data-table{direction:ltr!important}
@@ -48,5 +48,10 @@
 
 @media(max-width:1200px){
   .top-title{font-size:20px!important}
-  .top-brand img#brandLogo{width:64px!important;height:49px!important}
+  .top-brand img#brandLogo{width:102px!important;height:68px!important;flex-basis:102px!important}
 }
+
+/* footer */
+.app-shell{height:calc(100vh - 92px - 32px)!important}
+.app-footer{height:32px;min-height:32px;background:#0b382c;color:rgba(255,255,255,.78);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:400;letter-spacing:0;direction:rtl;border-top:1px solid rgba(255,255,255,.08);white-space:nowrap}
+.app-footer .footer-sep{display:inline-block;margin:0 8px;color:rgba(255,255,255,.45)}
