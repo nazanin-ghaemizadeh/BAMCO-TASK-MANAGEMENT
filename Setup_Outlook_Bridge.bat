@@ -1,5 +1,4 @@
 @echo off
 chcp 65001 >nul
-cd /d "%~dp0"
-py -m pip install --user pywin32
+py -m pip install --upgrade pywin32 Pillow msoffcrypto-tool openpyxl
 pause

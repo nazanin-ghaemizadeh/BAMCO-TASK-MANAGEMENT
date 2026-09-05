@@ -1,0 +1,4 @@
+pywin32
+Pillow
+msoffcrypto-tool
+openpyxl

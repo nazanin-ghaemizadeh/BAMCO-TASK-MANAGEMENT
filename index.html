@@ -1,129 +1,130 @@
 <!doctype html>
 <html lang="fa" dir="rtl">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>BAMCO Task Management</title>
-  <meta name="description" content="سامانه آنلاین مدیریت، پایش و پیگیری امور خودروسازان بم" />
-  <link rel="stylesheet" href="styles.css" />
-  <link rel="stylesheet" href="manager.css" />
-  <link rel="stylesheet" href="desktop-theme.css" />
-  <link rel="stylesheet" href="desktop-parity.css" />
-  <link rel="stylesheet" href="desktop-exact.css" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="سامانه مدیریت و پایش و پیگیری امور خودروسازان بم">
+  <title>BAMCO TASK MANAGEMENT</title>
+  <link rel="stylesheet" href="webapp.css">
 </head>
 <body>
-  <div id="toast" class="toast" aria-live="polite"></div>
+  <header class="topbar">
+    <div class="top-brand">
+      <img id="brandLogo" alt="BAMCO">
+      <div class="top-title">سامانه مدیریت و پایش و پیگیری امور</div>
+    </div>
+  </header>
 
-  <main id="loginView" class="login-shell">
-    <section class="login-card">
-      <div class="brand-lockup">
-        <img src="bamco-logo.png" alt="خودروسازان بم" />
-        <div><h1>سامانه مدیریت وظایف</h1><p>مدیریت، پایش و پیگیری امور</p></div>
-      </div>
-      <form id="loginForm">
-        <label>نام کاربری <span>ایمیل سازمانی</span></label>
-        <input id="email" class="english" type="email" autocomplete="username" required placeholder="name@bamco.ir" dir="ltr" />
-        <label>رمز عبور</label>
-        <input id="password" class="english" type="password" autocomplete="current-password" required placeholder="••••••" dir="ltr" />
-        <button class="primary wide" type="submit">ورود به سامانه</button>
-        <p id="loginError" class="form-error"></p>
-      </form>
-    </section>
-  </main>
-
-  <div id="appView" class="app hidden">
+  <div class="app-shell">
     <aside id="sidebar" class="sidebar">
-      <div class="side-brand"><img src="bamco-logo.png" alt="BAMCO"/><strong>مدیریت وظایف</strong></div>
-      <button id="collapseBtn" class="collapse" aria-label="جمع کردن منو">جمع‌کردن منو   ◀</button>
-      <nav id="nav">
-        <button data-view="dashboard" class="active"><b>▦</b><span>داشبورد</span></button>
-        <button data-view="kanban"><b>▤</b><span>کانبان</span></button>
-        <button data-view="archive"><b>▣</b><span>آرشیو</span></button>
-        <button data-view="approvals" id="approvalsNav" class="hidden"><b>✓</b><span>تأیید درخواست‌ها</span><i id="approvalBadge"></i></button>
+      <div class="menu-title"><span class="menu-label">منوی اصلی</span><button id="menuToggle" class="menu-toggle" title="باز/بسته کردن منو"><span class="when-open">◀◀</span><span class="when-closed">▶▶</span></button></div>
+      <nav id="mainNav">
+        <button class="nav-btn active" data-view="file"><b>⚙</b><span>تنظیمات فایل</span></button>
+        <button class="nav-btn" data-view="dashboard"><b>▦</b><span>داشبورد</span></button>
+        <button class="nav-btn" data-view="people"><b>♙</b><span>افراد و رونوشت‌ها</span></button>
+        <button class="nav-btn" data-view="send"><b>✉</b><span>انتخاب و ارسال</span></button>
+        <button class="nav-btn" data-view="templates"><b>≡</b><span>متن ایمیل‌ها</span></button>
+        <button class="nav-btn" data-view="stickers"><b>◇</b><span>مدیریت استیکرها</span></button>
+        <button class="nav-btn" data-view="followup"><b>↻</b><span>پیگیری پاسخ‌ها</span></button>
       </nav>
-      <div class="account">
-        <div class="avatar" id="avatar">ب</div>
-        <div class="account-copy"><strong id="userName"></strong><small id="userRole"></small></div>
-        <button id="logoutBtn" title="خروج">↪</button>
-      </div>
     </aside>
 
-    <section class="workspace">
-      <header>
-        <div><h2 id="viewTitle">داشبورد</h2><p id="viewSubtitle"></p></div>
-        <div class="header-actions"><button id="exportBtn" class="ghost">خروجی اکسل</button><button id="addTaskBtn" class="primary">＋ افزودن تسک</button></div>
-      </header>
-
-      <section id="dashboardView" class="view">
-        <div class="stats">
-          <article><span class="dot green"></span><small>کارهای فعال</small><strong id="statActive">۰</strong></article>
-          <article><span class="dot red"></span><small>دیرکرد</small><strong id="statOverdue">۰</strong></article>
-          <article><span class="dot amber"></span><small>دوره هشدار</small><strong id="statWarning">۰</strong></article>
-          <article><span class="dot blue"></span><small>آرشیوشده</small><strong id="statArchive">۰</strong></article>
-        </div>
-        <div class="panel"><div class="panel-head"><h3>نمای وضعیت کارهای فعال</h3></div><div id="statusBars" class="status-bars"></div></div>
-        <div class="panel"><div class="panel-head"><h3>نزدیک‌ترین سررسیدها</h3><button data-go="kanban" class="link-btn">مشاهده کانبان ←</button></div><div id="dueList" class="due-list"></div></div>
-      </section>
-
-      <section id="kanbanView" class="view hidden">
-        <div class="panel table-panel">
-          <div class="panel-head"><div><h3>وظایف جاری</h3><small id="kanbanScope"></small></div><input id="kanbanSearch" class="search" placeholder="جست‌وجو در تسک‌ها…" /></div>
-          <div class="table-wrap"><table><thead><tr><th>شناسه</th><th>عنوان کار</th><th>متولی</th><th>وضعیت</th><th>اولویت</th><th>تاریخ پایان</th><th>شرایط</th><th></th></tr></thead><tbody id="kanbanBody"></tbody></table></div>
+    <main class="workspace">
+      <section id="view-file" class="view active-view">
+        <div class="file-panel">
+          <h1>فایل مدیریت وظایف</h1>
+          <div class="form-row file-row">
+            <button id="chooseWorkbook" class="btn small">انتخاب فایل</button>
+            <input id="workbookPath" class="ltr grow" readonly>
+          </div>
+          <div class="form-row compact-row"><label>رمز فایل</label><input id="workbookPassword" class="ltr narrow" type="password" autocomplete="off"></div>
+          <div class="form-row compact-row"><label>نام شیت</label><input id="sheetName" class="ltr narrow" value="KANBAN"></div>
+          <div class="center"><button id="analyzeWorkbook" class="btn primary big">خواندن و بررسی فایل</button></div>
         </div>
       </section>
 
-      <section id="archiveView" class="view hidden">
-        <div class="panel table-panel">
-          <div class="panel-head"><div><h3>وظایف آرشیوشده</h3><small id="archiveScope"></small></div><input id="archiveSearch" class="search" placeholder="جست‌وجو در آرشیو…" /></div>
-          <div class="table-wrap"><table><thead><tr><th>شناسه</th><th>عنوان کار</th><th>متولی</th><th>اولویت</th><th>تاریخ پایان</th><th>تاریخ انجام</th><th>نتیجه</th></tr></thead><tbody id="archiveBody"></tbody></table></div>
-        </div>
+      <section id="view-dashboard" class="view dashboard-scroll">
+        <fieldset class="fieldset filters"><legend>اسلایسرها و فیلترها</legend>
+          <div class="filter-grid">
+            <label>متولی<select id="dashOwner"></select></label>
+            <label>اولویت<select id="dashPriority"></select></label>
+            <label>وضعیت جاری<select id="dashStatus"></select></label>
+            <label>شرایط دیرکرد<select id="dashBucket"></select></label>
+          </div>
+          <div class="filter-actions"><button id="resetDashFilters" class="btn">حذف فیلترها</button></div>
+        </fieldset>
+        <div id="cards" class="cards"></div>
+        <div class="chart-card"><canvas id="statusChart" height="290"></canvas></div>
+        <div class="chart-card"><canvas id="priorityChart" height="290"></canvas></div>
+        <div class="chart-card"><canvas id="bucketChart" height="290"></canvas></div>
+        <div class="chart-card"><canvas id="workloadChart" height="360"></canvas></div>
+        <fieldset class="fieldset perf-range"><legend>بازه زمانی نمودار عملکرد متولیان</legend>
+          <div class="perf-row">
+            <label>از تاریخ<input id="perfFrom" class="center-text" placeholder="۱۴۰۵/۰۱/۰۱"></label><button class="btn calendar-btn" data-date-target="perfFrom">تقویم شمسی</button>
+            <label>تا تاریخ<input id="perfTo" class="center-text" placeholder="۱۴۰۵/۰۱/۰۱"></label><button class="btn calendar-btn" data-date-target="perfTo">تقویم شمسی</button>
+            <span class="spacer"></span><button id="clearPerf" class="btn">حذف</button><button id="applyPerf" class="btn">اعمال</button>
+          </div>
+        </fieldset>
+        <div class="chart-card"><canvas id="performanceChart" height="360"></canvas></div>
       </section>
 
-      <section id="approvalsView" class="view hidden">
-        <div class="panel table-panel"><div class="panel-head"><h3>درخواست‌های منتظر بررسی</h3></div><div class="table-wrap"><table><thead><tr><th>شماره</th><th>درخواست‌دهنده</th><th>نوع</th><th>عنوان تسک</th><th>زمان</th><th></th></tr></thead><tbody id="approvalBody"></tbody></table></div></div>
+      <section id="view-people" class="view">
+        <div class="toolbar"><button id="addPerson" class="btn">افزودن فرد</button><button id="editPerson" class="btn">ویرایش</button><button id="deletePerson" class="btn">حذف</button></div>
+        <div class="table-wrap"><table id="peopleTable" class="data-table"><thead><tr><th data-col="active">فعال</th><th data-col="cc">رونوشت</th><th data-col="salutation">عنوان ایمیل</th><th data-col="email">ایمیل</th><th data-col="gender">جنسیت</th><th data-col="name">نام در اکسل</th></tr></thead><tbody></tbody></table></div>
       </section>
-    </section>
+
+      <section id="view-send" class="view">
+        <fieldset class="fieldset send-options"><legend>نحوه ارسال</legend>
+          <label><input type="radio" name="sendMode" value="preview" checked> پیش‌نمایش در اوت‌لوک</label>
+          <label><input type="radio" name="sendMode" value="send"> ارسال مستقیم</label>
+          <button id="runReports" class="btn primary push-left">اجرای عملیات برای افراد انتخاب‌شده</button>
+        </fieldset>
+        <div class="toolbar"><button class="btn" data-select-send="all">انتخاب همه</button><button class="btn" data-select-send="none">لغو همه</button><button class="btn" data-select-send="overdue">فقط دیرکرد</button><button class="btn" data-select-send="warning">فقط هشدار</button></div>
+        <div class="table-wrap"><table id="sendTable" class="data-table"><thead><tr><th data-col="pick">انتخاب</th><th data-col="sticker">استیکر</th><th data-col="overdue">دیرکرد</th><th data-col="warning">هشدار</th><th data-col="status">وضعیت</th><th data-col="email">ایمیل</th><th data-col="name">نام</th></tr></thead><tbody></tbody></table></div>
+      </section>
+
+      <section id="view-templates" class="view">
+        <fieldset class="fieldset template-selector"><legend>ویرایش متن ایمیل</legend>
+          <label>الگو<select id="templateKey"></select></label>
+          <button id="editTemplate" class="btn primary">ویرایش متن</button>
+        </fieldset>
+      </section>
+
+      <section id="view-stickers" class="view">
+        <fieldset class="fieldset"><legend>پیش‌نمایش و انتخاب نسخه</legend>
+          <div class="sticker-top"><label>وضعیت<select id="stickerState"></select></label><span>نسخه</span><label class="radio-inline"><input type="radio" name="stickerGender" value="خانم" checked> خانم</label><label class="radio-inline"><input type="radio" name="stickerGender" value="آقا"> آقا</label></div>
+        </fieldset>
+        <fieldset class="fieldset"><legend>مدیریت نسخه‌ها</legend>
+          <div class="pack-row"><select id="stickerPack"></select><button id="activatePack" class="btn primary">فعال‌سازی نسخه</button><button id="newPack" class="btn primary">افزودن نسخه جدید</button><button id="restorePack" class="btn primary">بازگردانی نسخه اصلی</button></div>
+        </fieldset>
+        <div class="sticker-preview"><img id="stickerPreview" alt="پیش‌نمایش استیکر"></div>
+      </section>
+
+      <section id="view-followup" class="view">
+        <div class="follow-toolbar"><div class="right-actions"><button id="inspectFollowups" class="btn primary">بررسی ایمیل‌ها و پاسخ‌ها</button><button id="selectUnanswered" class="btn">انتخاب افراد بدون پاسخ</button><button id="clearFollowSelection" class="btn">لغو انتخاب</button></div><div class="left-actions"><button id="previewFollowups" class="btn">پیش‌نمایش یادآوری</button><button id="sendFollowups" class="btn">ارسال یادآوری</button></div></div>
+        <fieldset class="fieldset"><legend>بازه زمانی ارسال ایمیل</legend><div class="date-range-row"><label>از تاریخ<input id="followFrom" class="center-text"></label><button class="btn calendar-btn" data-date-target="followFrom">تقویم شمسی</button><label>تا تاریخ<input id="followTo" class="center-text"></label><button class="btn calendar-btn" data-date-target="followTo">تقویم شمسی</button><span class="spacer"></span><button id="clearFollowDates" class="btn">پاک‌کردن بازه</button></div></fieldset>
+        <div class="table-wrap"><table id="followTable" class="data-table"><thead><tr><th data-col="pick">انتخاب</th><th data-col="response">پاسخ</th><th data-col="last">زمان ارسال</th><th data-col="subject">موضوع ایمیل</th><th data-col="email">ایمیل</th><th data-col="name">نام</th></tr></thead><tbody></tbody></table></div>
+      </section>
+    </main>
   </div>
 
-  <dialog id="taskDialog" class="modal">
-    <form id="taskForm" method="dialog">
-      <div class="modal-head"><div><h3 id="taskDialogTitle">افزودن تسک</h3><p id="taskDialogHint"></p></div><button type="button" data-close="taskDialog">×</button></div>
-      <div class="form-grid">
-        <label class="span-2">عنوان کار<input name="title" required /></label>
-        <label class="span-2">توضیحات<textarea name="description" rows="3"></textarea></label>
-        <label>متولی<select name="owner_id" required></select></label>
-        <label>وضعیت<select name="status"><option>ثبت شده</option><option>بررسی مدیر</option><option>منتظر پاسخ</option><option>در حال انجام</option><option>انجام شده</option></select></label>
-        <label>اولویت<select name="priority"><option>کم</option><option selected>متوسط</option><option>فوری</option></select></label>
-        <label>یادآور (روز قبل)<input name="reminder_days" type="number" min="0" value="0" /></label>
-        <label>تاریخ شروع<div class="date-field"><input name="start_date_j" class="jalali-input" readonly placeholder="۱۴۰۵/۰۱/۰۱" data-iso-target="start_date"/><button type="button" class="calendar-btn" data-date-input="start_date_j">▦</button><input name="start_date" type="hidden"/></div></label>
-        <label>تاریخ پایان<div class="date-field"><input name="due_date_j" class="jalali-input" readonly placeholder="۱۴۰۵/۰۱/۰۱" data-iso-target="due_date"/><button type="button" class="calendar-btn" data-date-input="due_date_j">▦</button><input name="due_date" type="hidden"/></div></label>
-        <label>تاریخ انجام<div class="date-field"><input name="done_date_j" class="jalali-input" readonly placeholder="۱۴۰۵/۰۱/۰۱" data-iso-target="done_date"/><button type="button" class="calendar-btn" data-date-input="done_date_j">▦</button><input name="done_date" type="hidden"/></div></label>
-        <label class="span-2 manager-only">توضیحات مدیر<textarea name="manager_notes" rows="2"></textarea></label>
-      </div>
-      <div class="modal-actions"><button type="button" class="ghost" data-close="taskDialog">انصراف</button><button type="submit" class="primary" id="saveTaskBtn">ثبت تسک</button></div>
-    </form>
-  </dialog>
+  <dialog id="alertDialog" class="dialog alert-dialog"><form method="dialog"><div class="dialog-head"><h3 id="alertTitle"></h3><button value="cancel" class="x">×</button></div><div id="alertBody" class="alert-body"></div><div class="dialog-actions"><button id="alertCancel" value="cancel" class="btn hidden">خیر</button><button id="alertOk" value="ok" class="btn primary">تأیید</button></div></form></dialog>
 
-  <dialog id="calendarDialog" class="modal calendar-modal">
-    <div class="modal-head"><div><h3>انتخاب تاریخ شمسی</h3><p id="calendarLabel"></p></div><button type="button" data-close="calendarDialog">×</button></div>
-    <div class="calendar-selects"><label>سال<select id="calYear"></select></label><label>ماه<select id="calMonth"></select></label><label>روز<select id="calDay"></select></label></div>
-    <div class="modal-actions"><button type="button" class="ghost" id="clearDateBtn">پاک کردن</button><button type="button" class="primary" id="setDateBtn">ثبت تاریخ</button></div>
-  </dialog>
+  <dialog id="personDialog" class="dialog"><form id="personForm" method="dialog"><div class="dialog-head"><h3 id="personDialogTitle">افزودن فرد</h3><button type="button" class="x" data-close="personDialog">×</button></div><div class="dialog-body form-stack">
+    <label>نام در اکسل<input name="name" required></label><label>عنوان ایمیل<input name="salutation" required></label><label>جنسیت<select name="gender"><option>خانم</option><option>آقا</option></select></label><label>ایمیل<input name="email" class="ltr" type="email" required></label><label>رونوشت (هر ایمیل در یک خط یا با ; جدا شود)<textarea name="cc" class="ltr" rows="4"></textarea></label><label class="check"><input name="active" type="checkbox" checked> فعال</label>
+  </div><div class="dialog-actions"><button type="button" class="btn" data-close="personDialog">انصراف</button><button type="submit" class="btn primary">ذخیره</button></div></form></dialog>
 
-  <dialog id="reviewDialog" class="modal small">
-    <div class="modal-head"><div><h3>بررسی درخواست</h3><p>جزئیات تغییر پیشنهادی را بررسی کنید.</p></div><button type="button" data-close="reviewDialog">×</button></div>
-    <div id="reviewDetails" class="review-details"></div>
-    <label>یادداشت مدیر<textarea id="managerNote" rows="3"></textarea></label>
-    <div class="modal-actions"><button id="rejectBtn" class="danger">رد درخواست</button><button id="approveBtn" class="primary">تأیید و اعمال</button></div>
-  </dialog>
+  <dialog id="templateDialog" class="dialog template-dialog"><form id="templateForm" method="dialog"><div class="dialog-head"><h3 id="templateDialogTitle"></h3><button type="button" class="x" data-close="templateDialog">×</button></div><div class="editor-toolbar"><span>فونت: B Nazanin</span><span>اندازه: ۱۴</span><button type="button"><b>B</b></button><button type="button"><i>I</i></button><button type="button"><u>U</u></button><button type="button">راست‌چین</button><button type="button">وسط‌چین</button><button type="button">جاستیفای</button></div><div class="dialog-body editor-body"><label>موضوع<input id="templateSubject" required></label><label>متن ایمیل<textarea id="templateBody" rows="22" required></textarea></label></div><div class="dialog-actions"><button id="resetTemplate" type="button" class="btn">بازگردانی متن پیش‌فرض</button><span class="spacer"></span><button id="previewTemplate" type="button" class="btn">پیش‌نمایش</button><button type="button" class="btn" data-close="templateDialog">انصراف</button><button type="submit" class="btn primary">ذخیره</button></div></form></dialog>
 
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <dialog id="calendarDialog" class="dialog calendar-dialog"><div class="dialog-head"><h3>تقویم شمسی</h3><button type="button" class="x" data-close="calendarDialog">×</button></div><div class="calendar-head"><button id="calPrev" class="btn">‹</button><select id="calMonth"></select><select id="calYear"></select><button id="calNext" class="btn">›</button></div><div class="weekdays"><span>ش</span><span>ی</span><span>د</span><span>س</span><span>چ</span><span>پ</span><span>ج</span></div><div id="calendarGrid" class="calendar-grid"></div><div class="dialog-actions"><button id="calendarClear" class="btn">پاک کردن</button><span class="spacer"></span><button type="button" class="btn" data-close="calendarDialog">انصراف</button></div></dialog>
+
+  <dialog id="packDialog" class="dialog pack-dialog"><form id="packForm" method="dialog"><div class="dialog-head"><h3>افزودن نسخه جدید استیکر</h3><button type="button" class="x" data-close="packDialog">×</button></div><div class="dialog-body"><label class="pack-name">نام نسخه<input id="packName" required></label><div id="packMatrix" class="pack-matrix"></div></div><div class="dialog-actions"><button type="button" class="btn" data-close="packDialog">انصراف</button><button type="submit" class="btn primary">ذخیره و فعال‌سازی</button></div></form></dialog>
+
+  <div id="filterPopup" class="filter-popup hidden"></div>
+  <div id="busy" class="busy hidden"><div class="spinner"></div><span id="busyText">در حال پردازش…</span></div>
+
   <script src="desktop-assets.js"></script>
   <script src="sticker-default.js"></script>
-  <script src="app.js"></script>
-  <script src="manager.js"></script>
-  <script src="desktop-parity.js"></script>
-  <script src="desktop-shell.js"></script>
-  <script src="desktop-exact.js"></script>
+  <script src="webapp.js"></script>
 </body>
 </html>

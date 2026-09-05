@@ -1,0 +1,33 @@
+core.send_followup_replies(payload.get("rows") or [], payload.get("template") or core.DEFAULT_TEMPLATES["followup"], bool(payload.get("automatic")))
+                finally:
+                    pycom.CoUninitialize()
+                return self._json(200, {"ok": True, "sent": sent, "failures": failures})
+            if path == "/stickers/preview":
+                bootstrap_stickers()
+                key = str(payload.get("key") or "state1")
+                gender = str(payload.get("gender") or "خانم")
+                file = core.sticker_path_for(key, gender)
+                if not file.is_file():
+                    raise RuntimeError("تصویر استیکر پیدا نشد.")
+                return self._json(200, {"ok": True, "data_url": "data:image/png;base64," + base64.b64encode(file.read_bytes()).decode("ascii")})
+            if path == "/stickers/restore":
+                restore_all_stickers()
+                return self._json(200, {"ok": True})
+            if path == "/stickers/activate":
+                activate_pack(core.normalize(payload.get("title")) or "نسخه اصلی")
+                return self._json(200, {"ok": True})
+            if path == "/stickers/upload-pack":
+                save_sticker_pack(str(payload.get("title") or ""), payload.get("images") or {})
+                return self._json(200, {"ok": True})
+            return self._json(404, {"ok": False, "error": "not found"})
+        except Exception as exc:
+            traceback.print_exc()
+            return self._json(500, {"ok": False, "error": str(exc)})
+
+
+if __name__ == "__main__":
+    bootstrap_stickers()
+    print("BAMCO TASK MANAGEMENT - Exact Local Bridge")
+    print(f"Listening on http://{HOST}:{PORT}")
+    print("Keep Microsoft Outlook desktop open while using email functions.")
+    ThreadingHTTPServer((HOST, PORT), Handler).serve_forever()

@@ -1,0 +1,346 @@
+# BAMCO TASK MANAGEMENT - exact local bridge for the GitHub Pages version.
+from __future__ import annotations
+
+import base64
+import copy
+import io
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+import traceback
+from datetime import date, datetime
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
+from urllib.parse import urlparse
+
+BASE = Path(__file__).resolve().parent
+HOST = "127.0.0.1"
+PORT = 8765
+ALLOWED_ORIGINS = {
+    "https://nazanin-ghaemizadeh.github.io",
+    "http://127.0.0.1",
+    "http://localhost",
+    "null",
+}
+
+CORE_FILE = BASE / "bamco_task_management.py"
+if not CORE_FILE.is_file():
+    parts = sorted((BASE / "core_parts").glob("core_*.part"))
+    if parts:
+        CORE_FILE.write_text("".join(p.read_text(encoding="utf-8") for p in parts), encoding="utf-8")
+try:
+    import bamco_task_management as core
+except Exception as exc:
+    print("Failed to import BAMCO core:", exc)
+    raise
+
+
+def jsonable(value):
+    if isinstance(value, (datetime, date)):
+        return value.isoformat()
+    if isinstance(value, Path):
+        return str(value)
+    if isinstance(value, set):
+        return [jsonable(x) for x in sorted(value, key=str)]
+    if isinstance(value, tuple):
+        return [jsonable(x) for x in value]
+    if isinstance(value, list):
+        return [jsonable(x) for x in value]
+    if isinstance(value, dict):
+        return {str(k): jsonable(v) for k, v in value.items()}
+    return value
+
+
+def com_start():
+    try:
+        import pythoncom
+    except Exception as exc:
+        raise RuntimeError("pywin32 نصب نیست. فایل Setup_Outlook_Bridge.bat را اجرا کنید.") from exc
+    pythoncom.CoInitialize()
+    return pythoncom
+
+
+def choose_workbook_native() -> str:
+    if os.name != "nt":
+        raise RuntimeError("انتخاب فایل بومی فقط در ویندوز در دسترس است.")
+    ps = r'''
+Add-Type -AssemblyName System.Windows.Forms
+$dlg = New-Object System.Windows.Forms.OpenFileDialog
+$dlg.Title = 'انتخاب فایل مدیریت وظایف'
+$dlg.Filter = 'Excel Macro Workbook (*.xlsm)|*.xlsm|Excel Workbook (*.xlsx)|*.xlsx|All files (*.*)|*.*'
+$dlg.Multiselect = $false
+if ($dlg.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { [Console]::OutputEncoding=[Text.Encoding]::UTF8; Write-Output $dlg.FileName }
+'''
+    flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+    proc = subprocess.run(
+        ["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-STA", "-Command", ps],
+        capture_output=True, text=True, encoding="utf-8", errors="replace", creationflags=flags
+    )
+    if proc.returncode != 0:
+        raise RuntimeError(proc.stderr.strip() or "پنجره انتخاب فایل باز نشد.")
+    return proc.stdout.strip().splitlines()[-1].strip() if proc.stdout.strip() else ""
+
+
+def bootstrap_stickers():
+    core.ASSETS_DIR.mkdir(parents=True, exist_ok=True)
+    core.DEFAULT_STICKERS_DIR.mkdir(parents=True, exist_ok=True)
+    core.STICKER_PACKS_DIR.mkdir(parents=True, exist_ok=True)
+    js = BASE / "sticker-default.js"
+    if not js.is_file():
+        return
+    text = js.read_text(encoding="utf-8", errors="ignore")
+    matches = re.findall(r"BAMCO_DESKTOP_ASSETS\['([^']+)'\]='data:image/[^;]+;base64,([^']+)'", text)
+    if not matches:
+        matches = re.findall(r"\['([^']+)'\]\s*=\s*'data:image/[^;]+;base64,([^']+)'", text)
+    if not matches:
+        return
+    try:
+        from PIL import Image
+    except Exception:
+        return
+    for key, b64 in matches:
+        if not re.match(r"^(?:01_happy|02_reminder|03_concerned|04_serious|05_urgent)_(?:female|male)$", key):
+            continue
+        default_path = core.DEFAULT_STICKERS_DIR / f"{key}.png"
+        active_path = core.ASSETS_DIR / f"{key}.png"
+        try:
+            if not default_path.is_file():
+                image = Image.open(io.BytesIO(base64.b64decode(b64))).convert("RGBA")
+                image.thumbnail((1600, 1600), Image.Resampling.LANCZOS)
+                image.save(default_path, "PNG", optimize=True)
+            if not active_path.is_file():
+                shutil.copy2(default_path, active_path)
+        except Exception:
+            continue
+
+
+def sticker_pack_map():
+    core.STICKER_PACKS_DIR.mkdir(parents=True, exist_ok=True)
+    result = {"نسخه اصلی": None}
+    for folder in sorted((p for p in core.STICKER_PACKS_DIR.iterdir() if p.is_dir()), key=lambda p: p.name.casefold()):
+        title = folder.name.replace("_", " ")
+        manifest = folder / "pack.json"
+        if manifest.is_file():
+            try:
+                title = core.normalize(json.loads(manifest.read_text(encoding="utf-8")).get("title")) or title
+            except Exception:
+                pass
+        base, n = title, 2
+        while title in result:
+            title = f"{base} ({core.to_persian_digits(n)})"
+            n += 1
+        result[title] = folder
+    return result
+
+
+def restore_all_stickers():
+    bootstrap_stickers()
+    restored = 0
+    for key in ("state1", "state2", "state3", "state4", "state5"):
+        for gender in ("خانم", "آقا"):
+            target = core.sticker_path_for(key, gender)
+            original = core.DEFAULT_STICKERS_DIR / target.name
+            if original.is_file():
+                shutil.copy2(original, target)
+                restored += 1
+    if restored != 10:
+        raise RuntimeError("نسخه اصلی همه استیکرها پیدا نشد.")
+
+
+def activate_pack(title: str):
+    packs = sticker_pack_map()
+    folder = packs.get(title)
+    if title == "نسخه اصلی" or folder is None:
+        restore_all_stickers()
+        return
+    missing = []
+    for key in ("state1", "state2", "state3", "state4", "state5"):
+        for gender in ("خانم", "آقا"):
+            name = core.sticker_path_for(key, gender).name
+            if not (folder / name).is_file():
+                missing.append(name)
+    if missing:
+        raise RuntimeError("این نسخه کامل نیست و امکان فعال‌سازی آن وجود ندارد.")
+    for key in ("state1", "state2", "state3", "state4", "state5"):
+        for gender in ("خانم", "آقا"):
+            target = core.sticker_path_for(key, gender)
+            shutil.copy2(folder / target.name, target)
+
+
+def save_sticker_pack(title: str, images: dict):
+    try:
+        from PIL import Image
+    except Exception as exc:
+        raise RuntimeError("Pillow نصب نیست. فایل Setup_Outlook_Bridge.bat را اجرا کنید.") from exc
+    title = core.normalize(title)
+    if not title:
+        raise RuntimeError("برای نسخه جدید یک نام وارد کنید.")
+    required = [(k, g) for g in ("خانم", "آقا") for k in ("state1", "state2", "state3", "state4", "state5")]
+    if any(f"{k}|{g}" not in images for k, g in required):
+        raise RuntimeError("هر ده تصویر نسخه خانم و آقا باید بارگذاری شوند.")
+    safe = re.sub(r'[\\/:*?"<>|]+', " ", title).strip()
+    safe = re.sub(r"\s+", "_", safe)[:70] or datetime.now().strftime("pack_%Y%m%d_%H%M%S")
+    folder = core.STICKER_PACKS_DIR / safe
+    n = 2
+    while folder.exists():
+        folder = core.STICKER_PACKS_DIR / f"{safe}_{n}"
+        n += 1
+    folder.mkdir(parents=True, exist_ok=False)
+    try:
+        for key, gender in required:
+            raw = str(images[f"{key}|{gender}"])
+            if "," in raw:
+                raw = raw.split(",", 1)[1]
+            image = Image.open(io.BytesIO(base64.b64decode(raw))).convert("RGBA")
+            image.thumbnail((1600, 1600), Image.Resampling.LANCZOS)
+            image.save(folder / core.sticker_path_for(key, gender).name, "PNG", optimize=True)
+        (folder / "pack.json").write_text(json.dumps({"title": title}, ensure_ascii=False, indent=2), encoding="utf-8")
+    except Exception:
+        shutil.rmtree(folder, ignore_errors=True)
+        raise
+    activate_pack(title)
+
+
+def template_preview(key: str, template: dict):
+    pycom = com_start()
+    try:
+        outlook, _ = core.outlook_app_and_session()
+        person = {"name": "همکار گرامی", "salutation": "همکار گرامی", "gender": "آقا", "email": "", "cc": [], "active": True}
+        sample = core.empty_group()
+        counts = {"state1": (0, 0), "state2": (1, 0), "state3": (1, 2), "state4": (1, 3), "state5": (1, 5), "followup": (0, 0)}[key]
+        sample[core.WARNING_STATUS] = [{"title": "نمونه فعالیت در دوره هشدار", "priority": "متوسط", "end": "۱۵ شهریور ۱۴۰۵"} for _ in range(counts[0])]
+        sample[core.OVERDUE_STATUS] = [{"title": f"نمونه فعالیت دیرکردی {core.to_persian_digits(i+1)}", "priority": "متوسط", "end": "۵ شهریور ۱۴۰۵"} for i in range(counts[1])]
+        extra = {"[تاریخ آخرین ارسال]": "۱۰ شهریور ۱۴۰۵", "[موضوع آخرین ایمیل]": "گزارش روزانه وضعیت امور"}
+        mail = outlook.CreateItem(0)
+        cid = f"bamco_preview_{key}@local"
+        mail.Subject = core.render_subject(template.get("subject", ""), person, sample, core.jalali_full(), extra)
+        mail.HTMLBody = core.render_template_body(template.get("body", ""), person, sample, core.jalali_full(), cid if key != "followup" else "", extra)
+        if key != "followup":
+            core.attach_inline(mail, core.sticker_path_for(key, person["gender"]), cid)
+        mail.Display()
+        core.force_outlook_fonts(mail)
+    finally:
+        try:
+            pycom.CoUninitialize()
+        except Exception:
+            pass
+
+
+class Handler(BaseHTTPRequestHandler):
+    server_version = "BAMCOExactBridge/2.0"
+
+    def log_message(self, fmt, *args):
+        sys.stdout.write("[BAMCO Bridge] " + fmt % args + "\n")
+
+    def _origin(self):
+        return self.headers.get("Origin", "") or "null"
+
+    def _cors(self):
+        origin = self._origin()
+        if origin in ALLOWED_ORIGINS or origin.startswith("https://nazanin-ghaemizadeh.github.io"):
+            self.send_header("Access-Control-Allow-Origin", origin)
+        self.send_header("Vary", "Origin")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.send_header("Access-Control-Allow-Private-Network", "true")
+        self.send_header("Access-Control-Max-Age", "600")
+
+    def _json(self, code, obj):
+        data = json.dumps(jsonable(obj), ensure_ascii=False).encode("utf-8")
+        self.send_response(code)
+        self._cors()
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        self.wfile.write(data)
+
+    def _payload(self):
+        n = int(self.headers.get("Content-Length", "0") or "0")
+        return json.loads(self.rfile.read(n).decode("utf-8") or "{}")
+
+    def do_OPTIONS(self):
+        self.send_response(204)
+        self._cors()
+        self.end_headers()
+
+    def do_GET(self):
+        path = urlparse(self.path).path
+        try:
+            if path == "/health":
+                pycom = com_start()
+                try:
+                    core.outlook_app_and_session()
+                finally:
+                    pycom.CoUninitialize()
+                return self._json(200, {"ok": True, "outlook_open": True})
+            if path == "/config":
+                return self._json(200, {"ok": True, "config": core.load_config()})
+            if path == "/stickers/packs":
+                bootstrap_stickers()
+                return self._json(200, {"ok": True, "packs": list(sticker_pack_map())})
+            return self._json(404, {"ok": False, "error": "not found"})
+        except Exception as exc:
+            return self._json(503, {"ok": False, "error": str(exc)})
+
+    def do_POST(self):
+        path = urlparse(self.path).path
+        try:
+            payload = self._payload()
+            if path == "/workbook/choose":
+                return self._json(200, {"ok": True, "path": choose_workbook_native()})
+            if path == "/workbook/analyze":
+                workbook = Path(str(payload.get("path") or "")).expanduser()
+                password = str(payload.get("password") or "")
+                sheet = core.normalize(payload.get("sheet_name")) or core.SHEET_NAME_DEFAULT
+                if not workbook.is_file():
+                    raise RuntimeError("فایل انتخاب‌شده پیدا نشد.")
+                tasks, owners, date_issues = core.read_tasks(workbook, password, sheet)
+                dashboard, dash_issues = core.read_dashboard_data(workbook, password, sheet, core.load_config().get("dashboard_archive_sheet", "Archive"))
+                return self._json(200, {"ok": True, "tasks": tasks, "owners": owners, "date_issues": date_issues, "dashboard": dashboard, "dashboard_date_issues": dash_issues})
+            if path == "/config/save":
+                incoming = payload.get("config") or {}
+                cfg = core.load_config()
+                if isinstance(incoming.get("recipients"), list):
+                    cfg["recipients"] = incoming["recipients"]
+                if isinstance(incoming.get("templates"), dict):
+                    cfg["templates"] = incoming["templates"]
+                if "send_delay_seconds" in incoming:
+                    cfg["send_delay_seconds"] = incoming["send_delay_seconds"]
+                core.save_config(cfg)
+                return self._json(200, {"ok": True, "config": cfg})
+            if path == "/reports/run":
+                pycom = com_start()
+                try:
+                    sent, skipped, failures = core.send_reports(
+                        payload.get("tasks") or {}, payload.get("people") or [], payload.get("templates") or {},
+                        bool(payload.get("automatic")), True, int(payload.get("delay_seconds") or core.DEFAULT_SEND_DELAY_SECONDS)
+                    )
+                finally:
+                    pycom.CoUninitialize()
+                return self._json(200, {"ok": True, "sent": sent, "skipped": skipped, "failures": failures})
+            if path == "/template/preview":
+                key = str(payload.get("key") or "state1")
+                if key not in core.STATE_META:
+                    raise RuntimeError("الگوی ایمیل نامعتبر است.")
+                template_preview(key, payload.get("template") or core.DEFAULT_TEMPLATES[key])
+                return self._json(200, {"ok": True})
+            if path == "/followups/inspect":
+                date_from = core.parse_jalali_input(str(payload.get("date_from") or ""))
+                date_to = core.parse_jalali_input(str(payload.get("date_to") or ""))
+                if not date_from or not date_to:
+                    raise RuntimeError("ابتدا بازه زمانی را انتخاب کنید.")
+                if date_from > date_to:
+                    raise RuntimeError("تاریخ شروع بازه نباید بعد از تاریخ پایان باشد.")
+                pycom = com_start()
+                try:
+                    rows = core.inspect_followups(payload.get("people") or [], date_from, date_to)
+                finally:
+                    pycom.CoUninitialize()
+                return self._json(200, {"ok": True, "rows": rows})
+            if path == "/followups/run":
+                pycom = com_start()
+                try:
+                    sent, failures = 
