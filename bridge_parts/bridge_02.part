@@ -1,4 +1,4 @@
-core.send_followup_replies(payload.get("rows") or [], payload.get("template") or core.DEFAULT_TEMPLATES["followup"], bool(payload.get("automatic")))
+run_with_template_styles({"followup": follow_template}, lambda: core.send_followup_replies(payload.get("rows") or [], follow_template, bool(payload.get("automatic"))))
                 finally:
                     pycom.CoUninitialize()
                 return self._json(200, {"ok": True, "sent": sent, "failures": failures})

@@ -1,0 +1,29 @@
+/* 2026-09-05 user-requested refinements */
+.topbar{direction:rtl;padding-right:28px;padding-left:28px}
+.top-brand{direction:rtl;gap:12px}
+.top-brand img{width:80px;height:56px;filter:brightness(0) invert(1)!important}
+.top-title{font-size:24px;line-height:1.2}
+.data-table{direction:ltr}
+.data-table th,.data-table td{direction:rtl}
+.data-table .ltr{direction:ltr;text-align:left;font-family:"Times New Roman",serif!important}
+.ltr,input[type="email"],input[type="file"],input[type="file"]::file-selector-button{font-family:"Times New Roman",serif!important}
+.bridge-row{display:flex;align-items:center;gap:10px;margin-top:14px;flex-wrap:wrap}
+.bridge-status{display:inline-flex;align-items:center;min-height:38px;padding:7px 12px;border-radius:4px;border:1px solid #aebdb6;background:#fff}
+.bridge-status.ok{color:#0c6b46;border-color:#7eb29b;background:#edf8f3}
+.bridge-status.bad{color:#9f2f2f;border-color:#d6a0a0;background:#fff3f3}
+.bridge-status.checking{color:#687a72}
+.bridge-download{text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
+.editor-toolbar{flex-wrap:wrap}
+.editor-toolbar label{display:flex;align-items:center;gap:6px;font-weight:600}
+.editor-toolbar select{min-height:34px;padding:3px 8px;background:#fff;border:1px solid #aaa;border-radius:3px}
+.editor-toolbar .template-font-select{min-width:150px;font-family:"Times New Roman",serif}
+.editor-toolbar .template-size-select{width:76px;text-align:center}
+.english-font-note{font-family:"Times New Roman",serif;font-size:14px;direction:ltr;margin-inline-start:4px}
+.pack-dialog{width:min(92vw,820px);max-height:88vh}
+.pack-dialog .dialog-body{overflow-y:auto;max-height:calc(88vh - 130px)}
+.pack-matrix{grid-template-columns:180px minmax(230px,1fr) minmax(230px,1fr)!important;max-height:430px;overflow-y:auto!important;overflow-x:hidden!important;align-items:stretch}
+.pack-matrix .pack-head{position:sticky;top:0;z-index:2}
+.pack-matrix .state-name{position:static;display:flex;align-items:center;justify-content:center}
+.pack-cell{display:flex;align-items:center;justify-content:center;min-height:64px}
+.pack-cell input{width:100%;font-family:"Times New Roman",serif!important}
+@media(max-width:1200px){.top-title{font-size:22px}.top-brand img{width:72px;height:50px}}

@@ -11,6 +11,7 @@ import shutil
 import subprocess
 import sys
 import traceback
+import tempfile
 from datetime import date, datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -31,6 +32,12 @@ if not CORE_FILE.is_file():
     parts = sorted((BASE / "core_parts").glob("core_*.part"))
     if parts:
         CORE_FILE.write_text("".join(p.read_text(encoding="utf-8") for p in parts), encoding="utf-8")
+    else:
+        import gzip
+        b64_parts = sorted((BASE / "core_b64").glob("core_*.b64"))
+        if b64_parts:
+            encoded = "".join(p.read_text(encoding="ascii") for p in b64_parts)
+            CORE_FILE.write_bytes(gzip.decompress(base64.b64decode(encoded)))
 try:
     import bamco_task_management as core
 except Exception as exc:
@@ -217,16 +224,109 @@ def template_preview(key: str, template: dict):
         mail = outlook.CreateItem(0)
         cid = f"bamco_preview_{key}@local"
         mail.Subject = core.render_subject(template.get("subject", ""), person, sample, core.jalali_full(), extra)
-        mail.HTMLBody = core.render_template_body(template.get("body", ""), person, sample, core.jalali_full(), cid if key != "followup" else "", extra)
+        mail.HTMLBody = apply_template_html_style(core.render_template_body(template.get("body", ""), person, sample, core.jalali_full(), cid if key != "followup" else "", extra), template)
         if key != "followup":
             core.attach_inline(mail, core.sticker_path_for(key, person["gender"]), cid)
         mail.Display()
-        core.force_outlook_fonts(mail)
+        force_template_fonts(mail, template)
     finally:
         try:
             pycom.CoUninitialize()
         except Exception:
             pass
+
+
+def _template_font_size(template: dict):
+    font = str((template or {}).get("font_family") or "B Nazanin").strip() or "B Nazanin"
+    font = re.sub(r"[\r\n\"'<>]", "", font)[:80] or "B Nazanin"
+    try:
+        size = int(float((template or {}).get("font_size") or 14))
+    except Exception:
+        size = 14
+    size = min(28, max(8, size))
+    return font, size
+
+
+def apply_template_html_style(html_text: str, template: dict) -> str:
+    font, size = _template_font_size(template)
+    out = str(html_text or "")
+    out = out.replace("'B Nazanin'", f"'{font}'").replace('"B Nazanin"', f'"{font}"')
+    out = out.replace('face="B Nazanin"', f'face="{font}"').replace("face='B Nazanin'", f"face='{font}'")
+    out = re.sub(r"font-size\s*:\s*14pt", f"font-size:{size}pt", out, flags=re.I)
+    return out
+
+
+def force_template_fonts(item, template: dict) -> None:
+    font_name, size = _template_font_size(template)
+    try:
+        inspector = item.GetInspector
+        document = inspector.WordEditor
+        font = document.Content.Font
+        try:
+            font.NameBi = font_name
+        except Exception:
+            pass
+        for attr in ("NameAscii", "NameOther", "NameFarEast"):
+            try:
+                setattr(font, attr, "Times New Roman")
+            except Exception:
+                pass
+        try:
+            font.Size = size
+        except Exception:
+            pass
+    except Exception:
+        pass
+
+
+def run_with_template_styles(template_map: dict, fn):
+    template_map = template_map or {}
+    original_render = core.render_template_body
+    original_force = core.force_outlook_fonts
+    current = {"template": {}}
+
+    def find_template(template_text):
+        for template in template_map.values():
+            if isinstance(template, dict) and str(template.get("body") or "") == str(template_text or ""):
+                return template
+        return {}
+
+    def styled_render(template_text, *args, **kwargs):
+        template = find_template(template_text)
+        current["template"] = template
+        return apply_template_html_style(original_render(template_text, *args, **kwargs), template)
+
+    def styled_force(item):
+        force_template_fonts(item, current.get("template") or {})
+
+    core.render_template_body = styled_render
+    core.force_outlook_fonts = styled_force
+    try:
+        return fn()
+    finally:
+        core.render_template_body = original_render
+        core.force_outlook_fonts = original_force
+
+
+def save_uploaded_workbook(filename: str, data_url: str) -> str:
+    safe = Path(str(filename or "TM.xlsx")).name
+    safe = re.sub(r'[^A-Za-z0-9_.\-\u0600-\u06ff ]+', '_', safe)[:160] or 'TM.xlsx'
+    raw = str(data_url or '')
+    if ',' in raw:
+        raw = raw.split(',', 1)[1]
+    try:
+        data = base64.b64decode(raw, validate=False)
+    except Exception as exc:
+        raise RuntimeError("فایل انتخاب‌شده قابل خواندن نیست.") from exc
+    if not data:
+        raise RuntimeError("فایل انتخاب‌شده خالی است.")
+    if len(data) > 120 * 1024 * 1024:
+        raise RuntimeError("حجم فایل انتخاب‌شده بیش از حد مجاز است.")
+    folder = Path(tempfile.gettempdir()) / "BAMCO_TASK_MANAGEMENT_WEB"
+    folder.mkdir(parents=True, exist_ok=True)
+    target = folder / safe
+    target.write_bytes(data)
+    return str(target)
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -289,6 +389,8 @@ class Handler(BaseHTTPRequestHandler):
         path = urlparse(self.path).path
         try:
             payload = self._payload()
+            if path == "/workbook/upload":
+                return self._json(200, {"ok": True, "path": save_uploaded_workbook(payload.get("filename") or "TM.xlsx", payload.get("data_url") or "")})
             if path == "/workbook/choose":
                 return self._json(200, {"ok": True, "path": choose_workbook_native()})
             if path == "/workbook/analyze":
@@ -314,10 +416,19 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/reports/run":
                 pycom = com_start()
                 try:
-                    sent, skipped, failures = core.send_reports(
-                        payload.get("tasks") or {}, payload.get("people") or [], payload.get("templates") or {},
+                    templates = copy.deepcopy(payload.get("templates") or {})
+                    saved_templates = (core.load_config().get("templates") or {})
+                    for style_key, style_tpl in templates.items():
+                        saved_tpl = saved_templates.get(style_key) or {}
+                        if isinstance(style_tpl, dict) and isinstance(saved_tpl, dict):
+                            if saved_tpl.get("font_family"):
+                                style_tpl["font_family"] = saved_tpl.get("font_family")
+                            if saved_tpl.get("font_size"):
+                                style_tpl["font_size"] = saved_tpl.get("font_size")
+                    sent, skipped, failures = run_with_template_styles(templates, lambda: core.send_reports(
+                        payload.get("tasks") or {}, payload.get("people") or [], templates,
                         bool(payload.get("automatic")), True, int(payload.get("delay_seconds") or core.DEFAULT_SEND_DELAY_SECONDS)
-                    )
+                    ))
                 finally:
                     pycom.CoUninitialize()
                 return self._json(200, {"ok": True, "sent": sent, "skipped": skipped, "failures": failures})
@@ -343,4 +454,11 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/followups/run":
                 pycom = com_start()
                 try:
+                    follow_template = copy.deepcopy(payload.get("template") or core.DEFAULT_TEMPLATES["followup"])
+                    saved_follow = (core.load_config().get("templates") or {}).get("followup") or {}
+                    if isinstance(saved_follow, dict):
+                        if saved_follow.get("font_family"):
+                            follow_template["font_family"] = saved_follow.get("font_family")
+                        if saved_follow.get("font_size"):
+                            follow_template["font_size"] = saved_follow.get("font_size")
                     sent, failures = 
