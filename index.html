@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="description" content="سامانه مدیریت و پایش و پیگیری امور خودروسازان بم">
   <title>BAMCO TASK MANAGEMENT</title>
-  <link rel="stylesheet" href="webapp.css?v=20260905-10">
-  <link rel="stylesheet" href="final-fixes.css?v=20260905-10">
+  <link rel="stylesheet" href="webapp.css?v=20260905-11">
+  <link rel="stylesheet" href="final-fixes.css?v=20260905-11">
 </head>
 <body>
   <header class="topbar">
@@ -130,12 +130,12 @@
   <script src="sticker-default.js?v=20260905-5"></script>
   <script>
   (function loadExactBamcoLogo(){
-    fetch('BAMCO_TASK_LOGO_WHITE_EXACT_240.b64.txt?v=20260905-10',{cache:'no-store'})
+    fetch('BAMCO_TASK_LOGO_WHITE_EXACT_240.b64.txt?v=20260905-11',{cache:'no-store'})
       .then(function(r){ if(!r.ok) throw new Error('logo'); return r.text(); })
-      .then(function(b64){ var el=document.getElementById('brandLogo'); if(el) el.src='data:image/png;base64,'+b64.trim(); })
+      .then(function(b64){ var el=document.getElementById('brandLogo'); if(el) el.src='data:image/png;base64,'+b64.replace(/\s+/g,''); })
       .catch(function(e){ console.error('BAMCO logo load failed',e); });
   })();
 </script>
-  <script src="webapp.js?v=20260905-10"></script>
+  <script src="webapp.js?v=20260905-11"></script>
 </body>
 </html>
