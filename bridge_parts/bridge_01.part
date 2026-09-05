@@ -493,7 +493,7 @@ class Handler(BaseHTTPRequestHandler):
                     raise RuntimeError("تاریخ شروع بازه نباید بعد از تاریخ پایان باشد.")
                 pycom = com_start()
                 try:
-                    rows = inspect_followups_fast(payload.get("people") or [], date_from, date_to)
+                    rows = core.inspect_followups(payload.get("people") or [], date_from, date_to)
                 finally:
                     pycom.CoUninitialize()
                 return self._json(200, {"ok": True, "rows": rows})
