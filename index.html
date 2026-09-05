@@ -11,7 +11,7 @@
 <body>
   <header class="topbar">
     <div class="top-brand">
-      <img id="brandLogo" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" alt="BAMCO TASK MANAGEMENT">
+      <img id="brandLogo" src="bamco-task-logo-white.png?v=20260905-12" alt="BAMCO TASK MANAGEMENT">
       <div class="top-title">سامانه مدیریت و پایش و پیگیری امور</div>
     </div>
   </header>
@@ -128,14 +128,6 @@
 
   <script src="desktop-assets.js?v=20260905-5"></script>
   <script src="sticker-default.js?v=20260905-5"></script>
-  <script>
-  (function loadExactBamcoLogo(){
-    fetch('BAMCO_TASK_LOGO_WHITE_EXACT_240.b64.txt?v=20260905-11',{cache:'no-store'})
-      .then(function(r){ if(!r.ok) throw new Error('logo'); return r.text(); })
-      .then(function(b64){ var el=document.getElementById('brandLogo'); if(el) el.src='data:image/png;base64,'+b64.replace(/\s+/g,''); })
-      .catch(function(e){ console.error('BAMCO logo load failed',e); });
-  })();
-</script>
   <script src="webapp.js?v=20260905-11"></script>
 </body>
 </html>
