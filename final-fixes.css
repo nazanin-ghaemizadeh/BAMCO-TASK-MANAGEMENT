@@ -1,0 +1,52 @@
+/* Final user-requested refinements — 2026-09-05 */
+
+/* Header: white logo + slightly smaller title */
+.topbar{direction:rtl!important;padding-inline:24px!important}
+.top-brand{direction:rtl!important;display:flex!important;align-items:center!important;gap:10px!important}
+.top-brand img{display:block!important;width:72px!important;height:50px!important;object-fit:contain!important;filter:brightness(0) invert(1)!important}
+.top-title{font-size:22px!important;line-height:1.15!important;color:#fff!important;font-weight:700!important}
+
+/* Tables: physical column order from left to right while Persian cell text remains RTL */
+.data-table{direction:ltr!important}
+.data-table th,.data-table td{direction:rtl;text-align:right}
+.data-table th.center-cell,.data-table td.center-cell{text-align:center}
+
+/* All known English-heavy UI text */
+.ltr,.english-cell,.english-ui,input[type="email"],input[type="file"],input[type="file"]::file-selector-button,
+#workbookPath,#sheetName,.template-font-select,.english-font-note{
+  font-family:"Times New Roman",Times,serif!important;
+}
+.english-cell{direction:ltr!important;text-align:left!important;unicode-bidi:plaintext}
+
+/* Dashboard cards: first logical card starts on the left */
+.cards{direction:ltr!important}
+.cards .card{direction:rtl!important;text-align:right!important}
+
+/* Email editor controls */
+.editor-toolbar{flex-wrap:wrap!important;align-items:center!important}
+.editor-toolbar label{display:flex!important;align-items:center!important;gap:6px!important;font-weight:600}
+.editor-toolbar select{min-height:34px!important;padding:3px 8px!important;background:#fff!important;border:1px solid #aaa!important;border-radius:3px!important}
+.editor-toolbar .template-font-select{min-width:155px!important}
+.editor-toolbar .template-size-select{width:78px!important;text-align:center!important}
+#resetTemplate,#previewTemplate{display:none!important}
+
+/* Sticker upload: rows=status, columns=female/male, vertical scrolling only */
+.pack-dialog{width:min(90vw,820px)!important;max-height:88vh!important}
+.pack-dialog .dialog-body{overflow-y:auto!important;overflow-x:hidden!important;max-height:calc(88vh - 128px)!important}
+.pack-matrix{grid-template-columns:170px minmax(230px,1fr) minmax(230px,1fr)!important;gap:5px!important;max-height:420px!important;overflow-y:auto!important;overflow-x:hidden!important;align-items:stretch!important}
+.pack-matrix .pack-head{position:sticky;top:0;z-index:2}
+.pack-matrix .state-name{position:static!important;display:flex!important;align-items:center!important;justify-content:center!important}
+.pack-cell{min-height:60px!important;display:flex!important;align-items:center!important;justify-content:center!important}
+.pack-cell input{width:100%!important;font-family:"Times New Roman",Times,serif!important}
+
+/* Bridge status */
+.bridge-row{display:flex!important;align-items:center!important;gap:9px!important;flex-wrap:wrap!important;margin-top:14px!important}
+.bridge-status{display:inline-flex!important;align-items:center!important;min-height:38px!important;padding:7px 12px!important;border-radius:4px!important;border:1px solid #aebdb6!important;background:#fff!important}
+.bridge-status.ok{color:#0c6b46!important;border-color:#7eb29b!important;background:#edf8f3!important}
+.bridge-status.bad{color:#9f2f2f!important;border-color:#d6a0a0!important;background:#fff3f3!important}
+.bridge-download{text-decoration:none!important;display:inline-flex!important;align-items:center!important;justify-content:center!important}
+
+@media(max-width:1200px){
+  .top-title{font-size:20px!important}
+  .top-brand img{width:64px!important;height:46px!important}
+}
