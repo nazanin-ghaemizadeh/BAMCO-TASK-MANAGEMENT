@@ -375,6 +375,42 @@ def inspect_followups_fast(people, date_from, date_to):
     return rows
 
 
+def send_rendered_mail(payload: dict, preview: bool = False):
+    """Send already-rendered web content through the signed-in Outlook profile."""
+    to = str(payload.get("to") or "").strip()
+    if not to:
+        raise RuntimeError("ایمیل گیرنده وارد نشده است.")
+    cc = payload.get("cc") or []
+    if isinstance(cc, str):
+        cc = [x.strip() for x in re.split(r"[;,]", cc) if x.strip()]
+    subject = str(payload.get("subject") or "").strip()
+    html = str(payload.get("html") or "")
+    state_key = str(payload.get("state_key") or "state1")
+    gender = str(payload.get("gender") or "خانم")
+    if state_key not in {"state1", "state2", "state3", "state4", "state5"}:
+        state_key = "state1"
+    if gender not in {"خانم", "آقا"}:
+        gender = "آقا" if gender.lower() in {"male", "m"} else "خانم"
+
+    outlook, _ = core.outlook_app_and_session()
+    mail = outlook.CreateItem(0)
+    mail.To = to
+    mail.CC = "; ".join(str(x).strip() for x in cc if str(x).strip())
+    mail.Subject = subject
+    cid = f"bamco_{state_key}_{datetime.now().strftime('%Y%m%d%H%M%S')}@local"
+    sticker = core.sticker_path_for(state_key, gender)
+    if sticker.is_file():
+        html += f'<div dir="rtl" style="margin-top:18px"><img src="cid:{cid}" style="max-width:320px;height:auto" alt="استیکر"></div>'
+    mail.HTMLBody = html
+    if sticker.is_file():
+        core.attach_inline(mail, sticker, cid)
+    if preview:
+        mail.Display()
+    else:
+        mail.Send()
+    return {"to": to, "subject": subject, "preview": preview}
+
+
 class Handler(BaseHTTPRequestHandler):
     server_version = "BAMCOExactBridge/2.0"
 
@@ -478,6 +514,13 @@ class Handler(BaseHTTPRequestHandler):
                 finally:
                     pycom.CoUninitialize()
                 return self._json(200, {"ok": True, "sent": sent, "skipped": skipped, "failures": failures})
+            if path in {"/mail/send", "/mail/preview"}:
+                pycom = com_start()
+                try:
+                    result = send_rendered_mail(payload, preview=path.endswith("/preview"))
+                finally:
+                    pycom.CoUninitialize()
+                return self._json(200, {"ok": True, **result})
             if path == "/template/preview":
                 key = str(payload.get("key") or "state1")
                 if key not in core.STATE_META:
