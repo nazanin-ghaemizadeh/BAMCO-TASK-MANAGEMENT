@@ -5,8 +5,13 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>BAMCO Task Management</title>
   <meta name="description" content="سامانه آنلاین مدیریت، پایش و پیگیری امور خودروسازان بم" />
-  <link rel="stylesheet" href="styles.css" />
-  <link rel="stylesheet" href="manager.css" />
+  <link rel="stylesheet" href="styles.css?v=20260905-4" />
+  <link rel="stylesheet" href="manager.css?v=20260905-4" />
+  <style>
+    #appView.hidden{display:none!important;visibility:hidden!important}
+    #loginView.hidden{display:none!important;visibility:hidden!important}
+    #loginView:not(.hidden)~#appView{display:none!important;visibility:hidden!important}
+  </style>
 </head>
 <body>
   <div id="toast" class="toast" aria-live="polite"></div>
@@ -118,8 +123,8 @@
 
   <dialog id="importDialog" class="modal"><div class="modal-head"><div><h3>پیش‌نمایش ورود از اکسل</h3><p id="importSummary"></p></div><button type="button" data-close="importDialog">×</button></div><label>رفتار با شناسه تکراری<select id="duplicateMode"><option value="reject">رد رکورد</option><option value="update">به‌روزرسانی رکورد موجود</option><option value="create">ایجاد رکورد جدید</option></select></label><div class="table-wrap"><table><thead><tr><th>ردیف</th><th>شناسه</th><th>عنوان</th><th>متولی</th><th>وضعیت</th></tr></thead><tbody id="importPreviewBody"></tbody></table></div><div class="modal-actions"><button type="button" class="ghost" data-close="importDialog">انصراف</button><button id="commitImportBtn" class="primary">ورود رکوردهای معتبر</button></div></dialog>
 
-  <script src="manager.js"></script>
-  <script src="app.js"></script>
+  <script src="manager.js?v=20260905-4"></script>
+  <script src="app.js?v=20260905-4"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="data-io.js"></script>
 </body>
