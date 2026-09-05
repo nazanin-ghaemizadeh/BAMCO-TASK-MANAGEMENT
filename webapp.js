@@ -9,7 +9,7 @@ Promise.all(Array.from({length:n},(_,i)=>fetch(`webapp_parts/webapp_${String(i+1
  source=source.replace(BAD_SIZE,GOOD_SIZE).replace(BAD_RESIZE,GOOD_RESIZE);
  if(!source.includes(GOOD_SIZE))throw new Error('Dashboard stability patch did not apply');
  Function(source)();
- const loadFinal=()=>{const f=document.createElement('script');f.src='final-fixes.js?v=20260905-11';document.head.appendChild(f)};
+ const loadFinal=()=>{const f=document.createElement('script');f.src='final-fixes.js?v=20260905-12';document.head.appendChild(f)};
  const s=document.createElement('script');s.src='user-fixes.js?v=20260905-11';s.onload=loadFinal;s.onerror=loadFinal;document.head.appendChild(s);
 }).catch(e=>{console.error(e);document.body.innerHTML=`<pre dir="rtl" style="padding:30px;font-family:Tahoma">خطا در بارگذاری برنامه: ${e.message}</pre>`});
 })();
