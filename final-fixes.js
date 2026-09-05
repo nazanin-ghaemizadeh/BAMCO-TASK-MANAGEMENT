@@ -1,17 +1,10 @@
 (()=>{
 'use strict';
-const V='20260905-5';
-if(!document.querySelector('link[data-final-fixes]')){
-  const l=document.createElement('link');
-  l.rel='stylesheet';l.href=`final-fixes.css?v=${V}`;l.dataset.finalFixes='1';document.head.appendChild(l);
-}
-function apply(){
-  const logo=document.getElementById('brandLogo');
-  if(logo){logo.src=`BAMCO_TASK_LOGO_WHITE_HEADER.png?v=${V}`;logo.alt='BAMCO TASK MANAGEMENT';logo.style.setProperty('display','block','important');logo.style.setProperty('visibility','visible','important');logo.style.setProperty('opacity','1','important');logo.style.setProperty('filter','none','important');}
-  const brand=document.querySelector('.top-brand');if(brand){brand.style.setProperty('direction','rtl','important');brand.style.setProperty('display','flex','important');brand.style.setProperty('flex-direction','row','important');}
-  const cards=document.getElementById('cards');if(cards)cards.style.setProperty('direction','ltr','important');
-  const heights={statusChart:280,priorityChart:280,bucketChart:280,workloadChart:350,performanceChart:350};
-  for(const [id,h] of Object.entries(heights)){const c=document.getElementById(id);if(c){c.dataset.logicalHeight=String(h);c.style.setProperty('height',`${h}px`,'important');}}
-}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{apply();setTimeout(apply,400)});else{apply();setTimeout(apply,400)}
+const V='20260905-8';
+if(!document.querySelector('link[data-final-fixes]')){const l=document.createElement('link');l.rel='stylesheet';l.href=`final-fixes.css?v=${V}`;l.dataset.finalFixes='1';document.head.appendChild(l);}
+function fixFollowDates(){const table=document.getElementById('followTable');if(!table)return;const th=table.querySelector('thead th[data-col="last"]');if(th)th.textContent='تاریخ ارسال';const heads=[...table.querySelectorAll('thead th[data-col]')],idx=heads.findIndex(h=>h.dataset.col==='last');if(idx<0)return;for(const row of table.tBodies[0]?.rows||[]){const cell=row.cells[idx];if(!cell)continue;const t=cell.textContent.trim();const m=t.match(/[۰-۹0-9]{4}[\/\-][۰-۹0-9]{1,2}[\/\-][۰-۹0-9]{1,2}/);if(m)cell.textContent=m[0];}}
+function installFollowWatcher(){const body=document.querySelector('#followTable tbody');if(!body||body.dataset.dateOnlyWatch)return;body.dataset.dateOnlyWatch='1';new MutationObserver(fixFollowDates).observe(body,{childList:true,subtree:true,characterData:true});fixFollowDates();}
+function installFilterFontWatcher(){if(document.documentElement.dataset.filterFontWatch)return;document.documentElement.dataset.filterFontWatch='1';document.addEventListener('click',e=>{const th=e.target.closest('th[data-col]');if(!th)return;const col=th.dataset.col;setTimeout(()=>{const p=document.getElementById('filterPopup');if(!p)return;p.classList.toggle('english-filter',col==='email'||col==='cc');},0);},true);}
+function apply(){const logo=document.getElementById('brandLogo');if(logo){logo.src=`BAMCO_TASK_LOGO_WHITE_HEADER_V2.png?v=${V}`;logo.alt='BAMCO TASK MANAGEMENT';logo.style.setProperty('display','block','important');logo.style.setProperty('visibility','visible','important');logo.style.setProperty('opacity','1','important');logo.style.setProperty('filter','none','important');}const cards=document.getElementById('cards');if(cards)cards.style.setProperty('direction','ltr','important');const heights={statusChart:280,priorityChart:280,bucketChart:280,workloadChart:350,performanceChart:350};for(const [id,h] of Object.entries(heights)){const c=document.getElementById(id);if(c){c.dataset.logicalHeight=String(h);c.style.setProperty('height',`${h}px`,'important');}}fixFollowDates();installFollowWatcher();installFilterFontWatcher();}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{apply();setTimeout(apply,350)});else{apply();setTimeout(apply,350)}
 })();
