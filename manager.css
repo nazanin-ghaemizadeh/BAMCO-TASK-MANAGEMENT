@@ -147,3 +147,9 @@ tbody tr.row-warning td{background:#fff9e8!important}
 .first-login-dialog .modal-actions{justify-content:flex-start!important;margin-top:12px!important}
 .first-login-dialog .primary{min-width:190px!important;height:46px!important}
 @media(max-width:520px){.login-card{padding-inline:20px!important}.brand-lockup{margin-inline:-20px!important;padding-inline:20px!important}.brand-lockup img{width:88px!important}.brand-lockup h1{font-size:20px!important}.first-login-brand{align-items:flex-start!important}.first-login-brand img{width:72px!important;height:52px!important}}
+
+/* Authentication visibility must override the desktop skin. */
+#appView.hidden,.app.hidden{display:none!important;visibility:hidden!important}
+#loginView.hidden,.login-shell.hidden{display:none!important;visibility:hidden!important}
+#loginView:not(.hidden){display:grid!important;position:fixed!important;inset:0!important;z-index:10000!important;overflow:auto!important}
+#loginView:not(.hidden)~#appView{display:none!important;visibility:hidden!important}
