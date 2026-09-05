@@ -5,12 +5,14 @@ const GOOD_SIZE="function sizeCanvas(c){const dpr=Math.max(1,window.devicePixelR
 const BAD_RESIZE="window.addEventListener('resize',()=>{if(document.getElementById('view-dashboard').classList.contains('active-view'))renderDashboard()})";
 const GOOD_RESIZE="let dashboardResizeFrame=0;window.addEventListener('resize',()=>{if(!document.getElementById('view-dashboard').classList.contains('active-view'))return;if(dashboardResizeFrame)cancelAnimationFrame(dashboardResizeFrame);dashboardResizeFrame=requestAnimationFrame(()=>{dashboardResizeFrame=0;renderDashboard()})})";
 const BAD_LOGO="document.getElementById('brandLogo').src=A().header_logo||'bamco-logo.png';";
-Promise.all(Array.from({length:n},(_,i)=>fetch(`webapp_parts/webapp_${String(i+1).padStart(2,'0')}.part?v=20260905-13`,{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error(`webapp part ${i+1}`);return r.text()}))).then(parts=>{
+const FOLLOWUP_CALL="await bridge('/followups/inspect',{people:activePeople(),date_from:from,date_to:to})";
+const TIMED_FOLLOWUP_CALL="await Promise.race([bridge('/followups/inspect',{people:activePeople(),date_from:from,date_to:to}),new Promise((_,reject)=>setTimeout(()=>reject(new Error('بررسی پاسخ‌ها بیش از حد معمول طول کشید. رابط ویندوز را به‌روزرسانی و دوباره اجرا کنید.')),120000))])";
+Promise.all(Array.from({length:n},(_,i)=>fetch(`webapp_parts/webapp_${String(i+1).padStart(2,'0')}.part?v=20260905-14`,{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error(`webapp part ${i+1}`);return r.text()}))).then(parts=>{
  let source=parts.join('');
- source=source.replace(BAD_SIZE,GOOD_SIZE).replace(BAD_RESIZE,GOOD_RESIZE).replace(BAD_LOGO,'');
+ source=source.replace(BAD_SIZE,GOOD_SIZE).replace(BAD_RESIZE,GOOD_RESIZE).replace(BAD_LOGO,'').replace(FOLLOWUP_CALL,TIMED_FOLLOWUP_CALL);
  if(!source.includes(GOOD_SIZE))throw new Error('Dashboard stability patch did not apply');
  Function(source)();
- const loadFinal=()=>{const f=document.createElement('script');f.src='final-fixes.js?v=20260905-13';document.head.appendChild(f)};
- const s=document.createElement('script');s.src='user-fixes.js?v=20260905-13';s.onload=loadFinal;s.onerror=loadFinal;document.head.appendChild(s);
+ const loadFinal=()=>{const f=document.createElement('script');f.src='final-fixes.js?v=20260905-14';document.head.appendChild(f)};
+ const s=document.createElement('script');s.src='user-fixes.js?v=20260905-14';s.onload=loadFinal;s.onerror=loadFinal;document.head.appendChild(s);
 }).catch(e=>{console.error(e);document.body.innerHTML=`<pre dir="rtl" style="padding:30px;font-family:Tahoma">خطا در بارگذاری برنامه: ${e.message}</pre>`});
 })();

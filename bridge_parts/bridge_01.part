@@ -329,6 +329,30 @@ def save_uploaded_workbook(filename: str, data_url: str) -> str:
     return str(target)
 
 
+def inspect_followups_fast(people, date_from, date_to):
+    """Inspect the latest matching report per person without rescanning every message."""
+    _, session = core.outlook_app_and_session()
+    rows = []
+    for person in people:
+        original = core.find_last_sent(
+            session, person.get("email", ""), max_items=1200,
+            date_from=date_from, date_to=date_to,
+        )
+        if original is None:
+            rows.append({"person": person, "found": False, "responded": False})
+            continue
+        reply = core.find_reply(session, original, person, max_items_per_folder=600)
+        sent_on = core.naive_datetime(original.SentOn)
+        sent_display = "\u202a" + f"{core.jalali_numeric(sent_on)}   {core.to_persian_digits(sent_on.strftime('%H:%M'))}" + "\u202c"
+        rows.append({
+            "person": person, "found": True, "responded": reply is not None,
+            "entry_id": str(original.EntryID), "store_id": str(original.Parent.StoreID),
+            "sent_on": sent_on.isoformat(timespec="seconds"),
+            "sent_display": sent_display, "subject": str(original.Subject or ""),
+        })
+    return rows
+
+
 class Handler(BaseHTTPRequestHandler):
     server_version = "BAMCOExactBridge/2.0"
 
@@ -447,7 +471,7 @@ class Handler(BaseHTTPRequestHandler):
                     raise RuntimeError("تاریخ شروع بازه نباید بعد از تاریخ پایان باشد.")
                 pycom = com_start()
                 try:
-                    rows = core.inspect_followups(payload.get("people") or [], date_from, date_to)
+                    rows = inspect_followups_fast(payload.get("people") or [], date_from, date_to)
                 finally:
                     pycom.CoUninitialize()
                 return self._json(200, {"ok": True, "rows": rows})
@@ -461,4 +485,4 @@ class Handler(BaseHTTPRequestHandler):
                             follow_template["font_family"] = saved_follow.get("font_family")
                         if saved_follow.get("font_size"):
                             follow_template["font_size"] = saved_follow.get("font_size")
-                    sent, failures = 
+                    sent, failures = run_with_template_styles({"followup": follow_template}, lambda: core.send_followup_replies(payload.get("rows") or [], follow_template, bool(payload.get("automatic"))))

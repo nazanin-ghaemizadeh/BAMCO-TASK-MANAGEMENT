@@ -15,6 +15,7 @@
 .ltr,.english-cell,.english-ui,input[type="email"],input[type="file"],input[type="file"]::file-selector-button,#workbookPath,#sheetName,.template-font-select,.english-font-note{font-family:"Times New Roman",Times,serif!important}
 .english-cell{direction:ltr!important;text-align:left!important;unicode-bidi:plaintext}
 .filter-popup.english-filter,.filter-popup.english-filter .filter-option,.filter-popup.english-filter input,.filter-popup.english-filter label{font-family:"Times New Roman",Times,serif!important;direction:ltr!important;text-align:left!important;unicode-bidi:plaintext}
+.filter-popup.english-filter .filter-option.filter-all-option{font-family:"B Nazanin",Tahoma,Arial,sans-serif!important;direction:rtl!important;text-align:right!important;unicode-bidi:normal!important}
 
 /* dashboard */
 .cards{direction:ltr!important}

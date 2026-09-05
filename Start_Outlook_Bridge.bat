@@ -77,7 +77,7 @@ exit /b %RC%
 
 :refresh
 echo Downloading %~1 ...
-powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "$ProgressPreference='SilentlyContinue'; try { Invoke-WebRequest -UseBasicParsing '%BASEURL%/%~1?v=20260905-4' -OutFile '%~2'; exit 0 } catch { Write-Host $_.Exception.Message; exit 1 }"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "$ProgressPreference='SilentlyContinue'; try { Invoke-WebRequest -UseBasicParsing '%BASEURL%/%~1?v=20260905-5' -OutFile '%~2'; exit 0 } catch { Write-Host $_.Exception.Message; exit 1 }"
 if errorlevel 1 exit /b 1
 exit /b 0
 
