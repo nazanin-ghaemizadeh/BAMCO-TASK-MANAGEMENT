@@ -1,7 +1,7 @@
 (()=>{
 'use strict';
 
-const STYLE_VERSION='20260905-2';
+const STYLE_VERSION='20260905-4';
 if(!document.querySelector('link[data-final-fixes]')){
   const l=document.createElement('link');
   l.rel='stylesheet';
@@ -14,7 +14,42 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 
 function ensureHeader(){
   const logo=document.getElementById('brandLogo');
-  if(logo && !logo.getAttribute('src')) logo.src='bamco-logo.png';
+  if(!logo)return;
+  const embedded=(window.BAMCO_DESKTOP_ASSETS||{}).header_logo;
+  if(embedded) logo.src=embedded;
+  else logo.src='bamco-logo.png';
+  logo.style.setProperty('display','block','important');
+  logo.style.setProperty('visibility','visible','important');
+  logo.style.setProperty('opacity','1','important');
+  logo.style.setProperty('filter','none','important');
+}
+
+function ensureDashboard(){
+  const cards=document.getElementById('cards');
+  if(cards){
+    const order=['archive_total','warning','overdue','waiting','in_progress','total'];
+    const byKey=new Map([...cards.children].map(x=>[x.dataset.key,x]));
+    for(const key of order){const el=byKey.get(key);if(el)cards.appendChild(el)}
+    cards.style.setProperty('direction','ltr','important');
+    [...cards.children].forEach(c=>c.style.setProperty('direction','rtl','important'));
+  }
+  const sizes={statusChart:280,priorityChart:280,bucketChart:280,workloadChart:350,performanceChart:350};
+  let changed=false;
+  for(const [id,h] of Object.entries(sizes)){
+    const c=document.getElementById(id);if(!c)continue;
+    if(c.getAttribute('height')!==String(h)){c.setAttribute('height',String(h));changed=true}
+    c.style.setProperty('width','100%','important');
+    c.style.setProperty('height',`${h}px`,'important');
+    c.style.setProperty('max-height',`${h}px`,'important');
+    const p=c.parentElement;
+    if(p){
+      p.style.setProperty('height',`${h}px`,'important');
+      p.style.setProperty('min-height',`${h}px`,'important');
+      p.style.setProperty('max-height',`${h}px`,'important');
+      p.style.setProperty('overflow','hidden','important');
+    }
+  }
+  return changed;
 }
 
 function englishColumnIndexes(table,cols){
@@ -22,8 +57,8 @@ function englishColumnIndexes(table,cols){
   return hs.map((h,i)=>cols.includes(h.dataset.col)?i:-1).filter(i=>i>=0);
 }
 function markEnglishTable(tableId,cols){
-  const table=document.getElementById(tableId); if(!table)return;
-  const idxs=englishColumnIndexes(table,cols); if(!idxs.length)return;
+  const table=document.getElementById(tableId);if(!table)return;
+  const idxs=englishColumnIndexes(table,cols);if(!idxs.length)return;
   const apply=()=>[...table.tBodies[0].rows].forEach(r=>idxs.forEach(i=>r.cells[i]?.classList.add('english-cell')));
   apply();
   if(!table.dataset.englishWatch){
@@ -39,30 +74,15 @@ function applyEnglishFonts(){
 }
 
 function ensureTemplateEditor(){
-  const toolbar=document.querySelector('.editor-toolbar'); if(!toolbar)return;
+  const toolbar=document.querySelector('.editor-toolbar');if(!toolbar)return;
   document.getElementById('resetTemplate')?.remove();
   document.getElementById('previewTemplate')?.remove();
-  if(document.getElementById('templateFontSelect') && document.getElementById('templateSizeSelect'))return;
-  [...toolbar.querySelectorAll('span')].filter(s=>/^فونت:|^اندازه:/.test(s.textContent.trim())).forEach(s=>s.remove());
-  const first=toolbar.querySelector('button');
-  const fonts=['B Nazanin','B Mitra','B Lotus','Tahoma','Arial','Times New Roman'];
-  const sizes=[10,11,12,13,14,15,16,18,20,22];
-  const fl=document.createElement('label');fl.textContent='فونت';
-  const fs=document.createElement('select');fs.id='templateFontSelect';fs.className='template-font-select';fs.innerHTML=fonts.map(x=>`<option>${x}</option>`).join('');fl.appendChild(fs);
-  const sl=document.createElement('label');sl.textContent='اندازه';
-  const ss=document.createElement('select');ss.id='templateSizeSelect';ss.className='template-size-select';ss.innerHTML=sizes.map(x=>`<option>${x}</option>`).join('');ss.value='14';sl.appendChild(ss);
-  toolbar.insertBefore(fl,first);toolbar.insertBefore(sl,first);
-  const apply=()=>{
-    const font=fs.value||'B Nazanin',size=ss.value||'14';
-    [document.getElementById('templateSubject'),document.getElementById('templateBody')].forEach(el=>{if(el){el.style.fontFamily=`${font}, Tahoma, Arial, sans-serif`;el.style.fontSize=`${size}pt`;}});
-  };
-  fs.onchange=apply;ss.onchange=apply;apply();
 }
 
 function ensureStickerMatrix(){
-  const m=document.getElementById('packMatrix'); if(!m)return;
+  const m=document.getElementById('packMatrix');if(!m)return;
+  if(m.querySelector('.state-name')&&m.querySelector('#pack_state1_female'))return;
   const inputs=[...m.querySelectorAll('input[type="file"]')];
-  if(m.querySelector('.state-name') && m.querySelector('#pack_state1_female'))return;
   const byId=new Map(inputs.map(x=>[x.id,x]));
   const states=[['state1','وضعیت مطلوب'],['state2','یادآوری'],['state3','نیازمند توجه'],['state4','پیگیری جدی'],['state5','اقدام فوری']];
   m.innerHTML='<div class="pack-head">وضعیت</div><div class="pack-head">نسخه خانم</div><div class="pack-head">نسخه آقا</div>';
@@ -77,17 +97,34 @@ function ensureStickerMatrix(){
   }
 }
 
-async function waitForPrimaryFixes(){
-  for(let i=0;i<20;i++){
-    if(document.getElementById('peopleTable') && document.getElementById('packMatrix'))break;
-    await sleep(100);
-  }
+function ensureBridgeDownload(){
+  const a=document.querySelector('.bridge-download');
+  if(!a)return;
+  a.href='Start_Outlook_Bridge.bat?v=20260905-4';
+  a.setAttribute('download','Start_Outlook_Bridge.bat');
+  a.textContent='دانلود / به‌روزرسانی رابط ویندوز';
+}
+
+async function applyAll(){
   ensureHeader();
+  const changed=ensureDashboard();
   applyEnglishFonts();
   ensureTemplateEditor();
   ensureStickerMatrix();
-  setTimeout(()=>{ensureHeader();applyEnglishFonts();ensureTemplateEditor();ensureStickerMatrix();},900);
+  ensureBridgeDownload();
+  if(changed)setTimeout(()=>window.dispatchEvent(new Event('resize')),50);
 }
 
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',waitForPrimaryFixes);else waitForPrimaryFixes();
+async function init(){
+  for(let i=0;i<30;i++){
+    await applyAll();
+    await sleep(200);
+  }
+  const cards=document.getElementById('cards');
+  if(cards&&!cards.dataset.parityWatch){
+    cards.dataset.parityWatch='1';
+    new MutationObserver(()=>ensureDashboard()).observe(cards,{childList:true});
+  }
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
