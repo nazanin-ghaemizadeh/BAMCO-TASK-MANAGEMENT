@@ -118,3 +118,50 @@ img,canvas{max-width:100%}
 .column-resize-handle{position:absolute;left:-4px;top:0;bottom:0;width:8px;cursor:col-resize;z-index:8;touch-action:none}.column-resize-handle::after{content:"";position:absolute;left:3px;top:18%;bottom:18%;border-left:2px solid transparent}.column-resize-handle:hover::after,.column-resize-handle.dragging::after{border-left-color:#4e917a}#kanbanView table.resizable-task-table{table-layout:fixed!important}#kanbanView table.resizable-task-table th,#kanbanView table.resizable-task-table td{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}body.column-resizing{cursor:col-resize!important;user-select:none!important}
 @media(max-width:900px){.dashboard-filter-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.dashboard-cards{grid-template-columns:repeat(3,minmax(0,1fr))}.dashboard-performance-range>div{grid-template-columns:auto minmax(115px,1fr) 125px;align-items:end}.dashboard-performance-range>div>span{display:none}}
 @media(max-width:560px){.desktop-dashboard-exact{padding-bottom:8px}.dashboard-filter-grid{grid-template-columns:1fr}.dashboard-cards{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.dashboard-cards article{height:92px;padding:12px}.dashboard-cards small{font-size:12px}.dashboard-cards strong{font-size:25px}.dashboard-performance-range>div{grid-template-columns:1fr 1fr}.dashboard-performance-range label{grid-column:span 2}.dashboard-performance-range .dashboard-calendar-btn{grid-column:span 2}.dashboard-chart-card{min-height:290px}}
+
+/* 2026-09-07: exact sidebar, welcome and footer polish requested from the approved screenshot. */
+/* Remove only the three group expand/collapse markers at the left edge. The group icons at the right stay intact. */
+#sidebar .nav-chevron,
+#sidebar .nav-chevron::before,
+#sidebar .nav-chevron::after{display:none!important;content:none!important;width:0!important;min-width:0!important;margin:0!important;padding:0!important}
+#sidebar .nav-group-toggle{grid-template-columns:28px minmax(0,1fr)!important}
+
+/* Sidebar open/close control: double chevrons with opposite directions. Open -> close to the right; collapsed -> open to the left. */
+#sidebar .collapse::after{content:"»"!important;display:block!important;font-family:Arial,Tahoma,sans-serif!important;font-size:29px!important;font-weight:700!important;line-height:1!important;color:#eef8f4!important;transform:none!important}
+#sidebar.collapsed .collapse::after{content:"«"!important}
+
+/* A clean door/arrow logout icon replaces the old curved arrow. */
+#sidebar #logoutBtn{font-size:0!important;color:transparent!important;display:flex!important;align-items:center!important;justify-content:center!important}
+#sidebar #logoutBtn::before{content:""!important;display:block!important;width:21px!important;height:21px!important;background-repeat:no-repeat!important;background-position:center!important;background-size:21px 21px!important;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4'/%3E%3Cpath d='m16 17 5-5-5-5'/%3E%3Cpath d='M21 12H9'/%3E%3C/svg%3E")!important}
+
+/* Larger welcome panel with substantially larger stickers. */
+#welcomeView{padding:28px!important}
+#welcomeView .welcome-card{width:min(1120px,92%)!important;min-height:370px!important;padding:46px 54px!important;display:flex!important;align-items:center!important;justify-content:center!important}
+#welcomeView .welcome-content{width:100%!important;grid-template-columns:minmax(230px,290px) minmax(360px,1fr) minmax(230px,290px)!important;gap:38px!important;align-items:center!important}
+#welcomeView .welcome-sticker{width:100%!important;max-width:285px!important;max-height:310px!important;object-fit:contain!important}
+#welcomeView .welcome-copy h2{font-size:31px!important;line-height:1.75!important;margin-bottom:16px!important}
+#welcomeView .welcome-copy p{font-size:19px!important;line-height:2!important}
+
+/* Remove the horizontal rule above the footer completely. */
+.app-footer-credit,
+.app:has(.sidebar.collapsed) .app-footer-credit,
+.app:has(.sidebar:not(.collapsed)) .app-footer-credit{border-top:0!important;border-bottom:0!important;outline:0!important;box-shadow:none!important}
+.app-footer-credit::before,.app-footer-credit::after{display:none!important;content:none!important;border:0!important}
+
+@media(max-width:1100px){
+  #welcomeView .welcome-card{width:min(940px,94%)!important;min-height:330px!important;padding:34px 34px!important}
+  #welcomeView .welcome-content{grid-template-columns:minmax(180px,230px) minmax(280px,1fr) minmax(180px,230px)!important;gap:24px!important}
+  #welcomeView .welcome-sticker{max-width:225px!important;max-height:250px!important}
+  #welcomeView .welcome-copy h2{font-size:27px!important}
+}
+@media(max-width:760px){
+  #sidebar .nav-group-toggle{grid-template-columns:28px minmax(0,1fr)!important}
+  #sidebar .collapse::after{font-size:25px!important}
+  #welcomeView{padding:14px!important;overflow:auto!important}
+  #welcomeView .welcome-card{width:100%!important;min-height:auto!important;padding:24px 18px!important}
+  #welcomeView .welcome-content{grid-template-columns:1fr 1fr!important;gap:18px!important}
+  #welcomeView .welcome-copy{grid-column:1/-1!important;grid-row:1!important}
+  #welcomeView .welcome-sticker{max-width:180px!important;max-height:200px!important;justify-self:center!important}
+  #welcomeView .welcome-copy h2{font-size:23px!important}
+  #welcomeView .welcome-copy p{font-size:16px!important}
+}
