@@ -6,7 +6,7 @@
   <title>BAMCO Task Management</title>
   <meta name="description" content="سامانه آنلاین مدیریت، پایش و پیگیری امور خودروسازان بم" />
   <link rel="stylesheet" href="styles.css?v=20260905-4" />
-  <link rel="stylesheet" href="manager.css?v=20260905-4" />
+  <link rel="stylesheet" href="manager.css?v=20260906-4" />
   <style>
     #appView.hidden{display:none!important;visibility:hidden!important}
     #loginView.hidden{display:none!important;visibility:hidden!important}
@@ -70,14 +70,14 @@
       <section id="kanbanView" class="view hidden">
         <div class="panel table-panel">
           <div class="panel-head"><div><h3>وظایف جاری</h3><small id="kanbanScope"></small></div><div class="header-actions manager-only"><input id="importFile" type="file" accept=".xlsx,.xls,.csv" hidden><button id="importBtn" class="ghost">ورود از اکسل</button><button id="kanbanExportBtn" class="ghost">خروجی اکسل</button></div><input id="kanbanSearch" class="search" placeholder="جست‌وجو در تسک‌ها…" /></div>
-          <div class="table-wrap"><table><thead><tr><th>شناسه</th><th>عنوان فعالیت</th><th>توضیحات</th><th>متولی</th><th>وضعیت</th><th>اولویت</th><th>تاریخ شروع</th><th>تاریخ انجام</th><th>تاریخ پایان</th><th>یادآور</th><th>آخرین به‌روزرسانی</th><th>وضعیت دیرکرد</th><th>توضیحات مدیر</th><th></th></tr></thead><tbody id="kanbanBody"></tbody></table></div>
+          <div class="table-wrap"><table><thead><tr><th>شناسه</th><th>عنوان فعالیت</th><th>توضیحات</th><th>متولی</th><th>وضعیت</th><th>اولویت</th><th>تاریخ شروع</th><th>تاریخ انجام</th><th>تاریخ پایان</th><th>یادآور</th><th>آخرین به‌روزرسانی</th><th>وضعیت دیرکرد</th><th>توضیحات مدیر</th><th>عملیات</th></tr><tr class="column-filters"></tr></thead><tbody id="kanbanBody"></tbody></table></div>
         </div>
       </section>
 
       <section id="archiveView" class="view hidden">
         <div class="panel table-panel">
           <div class="panel-head"><div><h3>وظایف آرشیوشده</h3><small id="archiveScope"></small></div><button id="archiveExportBtn" class="ghost">خروجی اکسل</button><input id="archiveSearch" class="search" placeholder="جست‌وجو در آرشیو…" /></div>
-          <div class="table-wrap"><table><thead><tr><th>شناسه</th><th>عنوان فعالیت</th><th>توضیحات</th><th>متولی</th><th>وضعیت</th><th>اولویت</th><th>تاریخ شروع</th><th>تاریخ انجام</th><th>تاریخ پایان</th><th>یادآور</th><th>آخرین به‌روزرسانی</th><th>وضعیت دیرکرد</th><th>توضیحات مدیر</th><th>تاخیر</th><th>تعجیل</th></tr></thead><tbody id="archiveBody"></tbody></table></div>
+          <div class="table-wrap"><table><thead><tr><th>شناسه</th><th>عنوان فعالیت</th><th>توضیحات</th><th>متولی</th><th>وضعیت</th><th>اولویت</th><th>تاریخ شروع</th><th>تاریخ انجام</th><th>تاریخ پایان</th><th>یادآور</th><th>آخرین به‌روزرسانی</th><th>وضعیت دیرکرد</th><th>توضیحات مدیر</th><th>تأخیر</th><th>تعجیل</th><th>عملیات</th></tr><tr class="column-filters"></tr></thead><tbody id="archiveBody"></tbody></table></div>
         </div>
       </section>
 
@@ -123,9 +123,9 @@
 
   <dialog id="importDialog" class="modal"><div class="modal-head"><div><h3>پیش‌نمایش ورود از اکسل</h3><p id="importSummary"></p></div><button type="button" data-close="importDialog">×</button></div><label>رفتار با شناسه تکراری<select id="duplicateMode"><option value="reject">رد رکورد</option><option value="update">به‌روزرسانی رکورد موجود</option><option value="create">ایجاد رکورد جدید</option></select></label><div class="table-wrap"><table><thead><tr><th>ردیف</th><th>شناسه</th><th>عنوان</th><th>متولی</th><th>وضعیت</th></tr></thead><tbody id="importPreviewBody"></tbody></table></div><div class="modal-actions"><button type="button" class="ghost" data-close="importDialog">انصراف</button><button id="commitImportBtn" class="primary">ورود رکوردهای معتبر</button></div></dialog>
 
-  <script src="manager.js?v=20260905-4"></script>
-  <script src="app.js?v=20260906-2"></script>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script src="data-io.js"></script>
+  <script src="manager.js?v=20260906-3"></script>
+  <script src="app.js?v=20260906-3"></script>
+  <script src="vendor/xlsx.full.min.js?v=0.18.5"></script>
+  <script src="data-io.js?v=20260906-3"></script>
 </body>
 </html>
