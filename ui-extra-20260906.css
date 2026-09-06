@@ -1,12 +1,21 @@
-/* Global English typography: slightly smaller, Times New Roman, LTR. */
-.english-ui,.english,.en-text,[dir="ltr"],input[type="email"]{
+/* Strong UI hotfix - 2026-09-06 */
+
+/* Any explicitly English / LTR content uses Times New Roman and is slightly smaller. */
+.english-ui,.english,.en-text,[dir="ltr"],input[type="email"],input[type="url"],input[type="password"],.latin-run{
   font-family:"Times New Roman",Times,serif!important;
-  font-size:0.91em!important;
+}
+.english-ui,.english,.en-text,[dir="ltr"],input[type="email"],input[type="url"],input[type="password"]{
+  font-size:0.90em!important;
   direction:ltr!important;
   text-align:left!important;
 }
+.latin-run{
+  font-size:0.90em!important;
+  direction:ltr!important;
+  unicode-bidi:isolate!important;
+}
 
-/* Keep Persian column filters consistently B Nazanin / RTL. */
+/* Persian filters remain B Nazanin / RTL. */
 .column-filters select,.column-filters select option{
   font-family:"B Nazanin",BNazanin,Tahoma,sans-serif!important;
   direction:rtl!important;
@@ -14,10 +23,19 @@
   font-size:14px!important;
 }
 
-/* Normalize spacing between right sidebar tabs. */
-.sidebar nav{gap:2px!important}
+/* Remove the artificial gap between approvals and people/CC in the right menu. */
+.sidebar nav{gap:0!important}
 .sidebar nav button{margin:0!important}
-.sidebar nav .nav-divider{margin:5px 4px!important}
+.sidebar nav .nav-divider,.nav-divider.manager-only{
+  display:none!important;
+  height:0!important;
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
+}
+
+/* Keep every sidebar tab vertically consistent after removing the divider. */
+.sidebar nav button+button{margin-top:0!important}
 
 /* Selection cell stays visually clear as the rightmost column. */
 #kanbanView thead>tr:first-child>th:first-child,
