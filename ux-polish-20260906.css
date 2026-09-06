@@ -9,26 +9,18 @@
   --ux-text:#174d3e;
   --ux-btn-w:150px;
 }
-
-/* Sidebar: keep the full logo visible and give the navigation breathing room. */
 .side-brand{height:132px!important;min-height:132px!important;padding:8px 0 4px!important;display:flex!important;align-items:center!important;justify-content:center!important;overflow:visible!important;background:transparent!important}
 .side-brand strong{display:none!important;visibility:hidden!important}
 .side-brand img{display:block!important;visibility:visible!important;opacity:1!important;width:158px!important;height:116px!important;max-width:100%!important;object-fit:contain!important;margin:0 auto!important}
 .sidebar.collapsed .side-brand{height:132px!important;min-height:132px!important}
 .sidebar.collapsed .side-brand img{display:block!important;visibility:visible!important;width:146px!important;height:112px!important;max-width:100%!important}
 .sidebar nav{padding-top:12px!important}
-
-/* Sidebar collapse arrow: rightward collapses the right sidebar; leftward opens it. */
 .collapse::after{content:"▶"!important;font-size:18px!important;color:#e2f0eb!important}
 .sidebar.collapsed .collapse::after{content:"◀"!important}
-
-/* Group arrows are explicit in both states. */
 .nav-chevron{font-size:0!important;transform:none!important}
 .nav-chevron::after{content:"▼";font:700 13px Tahoma,sans-serif!important;color:#dbece6!important}
 .nav-group.collapsed-group .nav-chevron::after{content:"◀"}
 .nav-group.collapsed-group .nav-chevron{transform:none!important}
-
-/* Welcome view: centered, light and friendly. */
 #welcomeView{display:flex!important;align-items:center!important;justify-content:center!important;padding:24px!important;box-sizing:border-box!important}
 #welcomeView.hidden{display:none!important}
 .welcome-card{width:min(940px,92%)!important;min-height:260px!important;padding:34px 38px!important;border:1px solid var(--ux-line)!important;background:var(--ux-panel)!important;box-shadow:none!important;box-sizing:border-box!important}
@@ -39,102 +31,45 @@
 .welcome-sticker{width:100%!important;max-width:185px!important;max-height:210px!important;object-fit:contain!important;justify-self:center!important;display:block!important}
 .welcome-sticker.is-missing{visibility:hidden!important}
 body.welcome-active .workspace>header{display:none!important}
-
-/* Match ordinary panels to the sticker-page visual language. */
-.panel,.manager-card,.send-summary article,.stats article,.vehicle-view .panel,.manager-note,.manager-warning{
-  border:1px solid var(--ux-line)!important;
-  border-radius:0!important;
-  box-shadow:none!important;
-  background:var(--ux-panel)!important;
-  color:var(--ux-text)!important;
-}
+.panel,.manager-card,.send-summary article,.stats article,.vehicle-view .panel,.manager-note,.manager-warning{border:1px solid var(--ux-line)!important;border-radius:0!important;box-shadow:none!important;background:var(--ux-panel)!important;color:var(--ux-text)!important}
 .panel-head h3,.manager-card h3{color:#147154!important}
 input,select,textarea,button{border-radius:0!important;box-shadow:none!important}
-
-/* Kanban/archive: remove the redundant heading box and use the space for the table. */
 #kanbanView>.table-panel,#archiveView>.table-panel{border:0!important;background:transparent!important;padding:0!important;margin:0!important;box-shadow:none!important}
 #kanbanView .table-panel>.panel-head,#archiveView .table-panel>.panel-head{display:none!important}
-#kanbanView .task-toolbar,#archiveView .task-toolbar{
-  margin:0!important;
-  padding:8px 10px!important;
-  min-height:54px!important;
-  background:var(--ux-soft)!important;
-  border:1px solid var(--ux-line)!important;
-  border-bottom:0!important;
-  gap:8px!important;
-  flex-wrap:nowrap!important;
-  overflow-x:auto!important;
-  scrollbar-width:none!important;
-}
+#kanbanView .task-toolbar,#archiveView .task-toolbar{margin:0!important;padding:8px 10px!important;min-height:54px!important;background:var(--ux-soft)!important;border:1px solid var(--ux-line)!important;border-bottom:0!important;gap:8px!important;flex-wrap:nowrap!important;overflow-x:auto!important;scrollbar-width:none!important}
 #kanbanView .task-toolbar::-webkit-scrollbar,#archiveView .task-toolbar::-webkit-scrollbar{display:none!important}
-#kanbanView .task-toolbar button,#archiveView .task-toolbar button{
-  width:var(--ux-btn-w)!important;
-  min-width:var(--ux-btn-w)!important;
-  max-width:var(--ux-btn-w)!important;
-  height:40px!important;
-  min-height:40px!important;
-  padding:6px 10px!important;
-  display:inline-flex!important;
-  align-items:center!important;
-  justify-content:center!important;
-  white-space:nowrap!important;
-  font-size:15px!important;
-}
+#kanbanView .task-toolbar button,#archiveView .task-toolbar button{width:var(--ux-btn-w)!important;min-width:var(--ux-btn-w)!important;max-width:var(--ux-btn-w)!important;height:40px!important;min-height:40px!important;padding:6px 10px!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;white-space:nowrap!important;font-size:15px!important}
 .task-search-toggle{font-family:"B Nazanin",BNazanin,Tahoma,sans-serif!important;font-size:15px!important}
 .toolbar-search{height:40px!important}
 .toolbar-search.search-open{width:300px!important;max-width:300px!important;min-width:300px!important;padding:6px 10px!important;border:1px solid var(--ux-line)!important;background:#fff!important;opacity:1!important;pointer-events:auto!important}
-
-/* Table proportions: compact ID and due-state columns, roomier content cells. */
 #kanbanView table,#archiveView table{min-width:2050px!important;width:max-content!important;table-layout:auto!important}
 #kanbanView th,#archiveView th{padding:10px 14px!important;white-space:nowrap!important}
 #kanbanView td,#archiveView td{padding:11px 14px!important;line-height:1.85!important;vertical-align:top!important;text-align:justify!important;text-justify:inter-word!important;white-space:normal!important}
-#kanbanView th:first-child,#archiveView th:first-child,#kanbanView td:first-child,#archiveView td:first-child{
-  width:68px!important;min-width:68px!important;max-width:68px!important;
-  padding-left:6px!important;padding-right:6px!important;text-align:center!important;font-size:14px!important;white-space:nowrap!important
-}
+#kanbanView th:first-child,#archiveView th:first-child,#kanbanView td:first-child,#archiveView td:first-child{width:68px!important;min-width:68px!important;max-width:68px!important;padding-left:6px!important;padding-right:6px!important;text-align:center!important;font-size:14px!important;white-space:nowrap!important}
 #kanbanView th:nth-child(2),#archiveView th:nth-child(2),#kanbanView td:nth-child(2),#archiveView td:nth-child(2){min-width:260px!important;max-width:340px!important}
 #kanbanView th:nth-child(3),#archiveView th:nth-child(3),#kanbanView td:nth-child(3),#archiveView td:nth-child(3){min-width:380px!important;max-width:520px!important}
 #kanbanView th:nth-child(4),#archiveView th:nth-child(4),#kanbanView td:nth-child(4),#archiveView td:nth-child(4){min-width:170px!important;max-width:210px!important}
 #kanbanView th:nth-child(12),#archiveView th:nth-child(12),#kanbanView td:nth-child(12),#archiveView td:nth-child(12){width:105px!important;min-width:105px!important;max-width:105px!important;text-align:center!important;padding-left:7px!important;padding-right:7px!important}
 #kanbanView th:nth-child(13),#archiveView th:nth-child(13),#kanbanView td:nth-child(13),#archiveView td:nth-child(13){min-width:280px!important;max-width:390px!important}
 .task-select-column{display:none!important}
-
-/* Due state is plain text, never a badge/box. */
-#kanbanView td:nth-child(12) .pill,#archiveView td:nth-child(12) .pill,
-#kanbanView td:nth-child(12) i,#archiveView td:nth-child(12) i{
-  display:inline!important;background:transparent!important;border:0!important;outline:0!important;border-radius:0!important;box-shadow:none!important;padding:0!important;margin:0!important;color:inherit!important;font-weight:400!important
-}
-
-/* Row colors: normal/without delay white; registered light gray. */
+#kanbanView td:nth-child(12) .pill,#archiveView td:nth-child(12) .pill,#kanbanView td:nth-child(12) i,#archiveView td:nth-child(12) i{display:inline!important;background:transparent!important;border:0!important;outline:0!important;border-radius:0!important;box-shadow:none!important;padding:0!important;margin:0!important;color:inherit!important;font-weight:400!important}
 #kanbanBody tr.row-normal>td{background:#fff!important}
 #kanbanBody tr.row-registered>td{background:#f0f1f1!important}
 #kanbanBody tr.row-waiting>td{background:#eef4ff!important}
 #kanbanBody tr.row-warning>td{background:#fff7d9!important}
 #kanbanBody tr.row-overdue>td{background:#fdeaea!important}
 #kanbanBody tr:hover>td{filter:brightness(.988)!important}
-
-/* Sticker preview is deliberately larger. */
 .desktop-sticker-preview-stage{height:clamp(430px,64vh,650px)!important;min-height:430px!important;max-height:650px!important}
 #desktopStickerPreview{max-width:min(780px,92%)!important;max-height:99%!important;width:auto!important;height:auto!important;object-fit:contain!important}
-
-/* Footer remains fixed; workspace already reserves the footer height. */
 .app-footer-credit{z-index:95!important}
 .workspace{padding-bottom:calc(var(--footer-h) + 10px)!important}
 .table-wrap{max-height:calc(100vh - 132px - var(--footer-h))!important}
-
-@media(max-width:1050px){
-  :root{--ux-btn-w:138px}
-  .welcome-content{grid-template-columns:130px 1fr 130px!important;gap:16px!important}
-  .welcome-sticker{max-width:130px!important}
-  #kanbanView .task-toolbar button,#archiveView .task-toolbar button{font-size:14px!important}
-}
-
-/* Login branding — official system title and company identity */
+@media(max-width:1050px){:root{--ux-btn-w:138px}.welcome-content{grid-template-columns:130px 1fr 130px!important;gap:16px!important}.welcome-sticker{max-width:130px!important}#kanbanView .task-toolbar button,#archiveView .task-toolbar button{font-size:14px!important}}
 #loginView.login-shell{background:radial-gradient(circle at 78% 18%,rgba(32,137,100,.14),transparent 28%),radial-gradient(circle at 18% 82%,rgba(10,61,48,.10),transparent 30%),linear-gradient(145deg,#edf5f1 0%,#fbfdfc 50%,#e4efe9 100%)!important}
 #loginView .login-card{width:min(500px,calc(100% - 32px))!important;padding:46px 48px 36px!important;border:1px solid #cbded6!important;border-radius:28px!important;background:rgba(255,255,255,.96)!important;box-shadow:0 30px 80px rgba(17,65,52,.18)!important;position:relative!important;overflow:hidden!important}
 #loginView .login-card::after{content:"شرکت خودروسازان بم";display:block;margin:18px auto 0;padding-top:15px;border-top:1px solid #dfeae5;color:#70857c;font-size:14px;font-weight:700;text-align:center;letter-spacing:.1px}
 #loginView .brand-lockup{margin-bottom:26px!important;gap:13px!important}
-#loginView .brand-lockup img{width:96px!important;height:96px!important;object-fit:contain!important;border-radius:22px!important;box-shadow:0 14px 34px rgba(10,61,48,.22)!important}
+#loginView .brand-lockup img{width:112px!important;height:112px!important;object-fit:contain!important;border-radius:24px!important;box-shadow:0 14px 34px rgba(10,61,48,.22)!important}
 #loginView .brand-lockup h1{font-size:0!important;line-height:1.7!important;margin:2px 0 4px!important;color:#123f33!important;text-align:center!important}
 #loginView .brand-lockup h1::after{content:"سامانه مدیریت، پایش و پیگیری امور";font-size:25px!important;font-weight:800!important;display:block!important;white-space:nowrap!important}
 #loginView .brand-lockup p{font-size:0!important;margin:0!important;color:#789087!important;text-align:center!important}
@@ -142,10 +77,11 @@ input,select,textarea,button{border-radius:0!important;box-shadow:none!important
 #loginView #loginForm{position:relative!important;padding-top:7px!important}
 #loginView #loginForm::before{content:"ورود به سامانه";display:block;text-align:center;color:#235d4c;font-size:16px;font-weight:700;margin:0 0 12px!important}
 #loginView .login-card label{color:#315d50!important;font-weight:700!important;margin-top:10px!important}
+#loginView .login-card label span{display:none!important}
 #loginView .login-card input{height:53px!important;background:#fbfdfc!important;border:1px solid #c9dcd4!important;border-radius:12px!important;padding:0 16px!important;transition:.2s ease!important}
 #loginView .login-card input:hover{background:#fff!important;border-color:#a8c6b9!important}
 #loginView .login-card input:focus{background:#fff!important;border-color:#19815e!important;box-shadow:0 0 0 4px rgba(25,129,94,.12)!important}
 #loginView .primary.wide{height:54px!important;margin-top:20px!important;border-radius:12px!important;background:linear-gradient(135deg,#0a4334,#177555)!important;box-shadow:0 11px 24px rgba(10,67,52,.22)!important;font-weight:800!important}
 #loginView .primary.wide:hover{background:linear-gradient(135deg,#083a2e,#126348)!important;transform:translateY(-1px)!important}
 #loginView .form-error{margin-bottom:0!important}
-@media(max-width:580px){#loginView .login-card{padding:34px 23px 28px!important}#loginView .brand-lockup h1::after{font-size:21px!important;white-space:normal!important}#loginView .brand-lockup img{width:82px!important;height:82px!important}#loginView .login-card::after{font-size:13px!important}}
+@media(max-width:580px){#loginView .login-card{padding:34px 23px 28px!important}#loginView .brand-lockup h1::after{font-size:21px!important;white-space:normal!important}#loginView .brand-lockup img{width:94px!important;height:94px!important}#loginView .login-card::after{font-size:13px!important}}
