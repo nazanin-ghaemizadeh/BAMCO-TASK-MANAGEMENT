@@ -1,4 +1,4 @@
-const cors={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"authorization,apikey,content-type"};
+const cors={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"authorization,apikey,content-type","Access-Control-Allow-Methods":"POST,DELETE,OPTIONS"};
 const json=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{...cors,"Content-Type":"application/json"}});
 Deno.serve(async(req)=>{
   if(req.method==="OPTIONS")return new Response("ok",{headers:cors});
@@ -8,7 +8,16 @@ Deno.serve(async(req)=>{
     const user=await userRes.json();
     const profileRes=await fetch(`${url}/rest/v1/profiles?id=eq.${user.id}&select=role,active`,{headers:{apikey:service,Authorization:`Bearer ${service}`}}),profiles=await profileRes.json();
     if(profiles?.[0]?.role!=="manager"||!profiles[0].active)return json({error:"دسترسی مدیر لازم است."},403);
-    const b=await req.json();if(!b.email||!b.initial_password||String(b.initial_password).length<8)return json({error:"ایمیل و رمز اولیه حداقل ۸ کاراکتری الزامی است."},400);
+    const b=await req.json();
+    if(req.method==="DELETE"){
+      if(!b.user_id)return json({error:"شناسه فرد ارسال نشده است."},400);
+      if(b.user_id===user.id)return json({error:"مدیر نمی‌تواند حساب در حال استفاده خود را حذف کند."},400);
+      const deleted=await fetch(`${url}/auth/v1/admin/users/${encodeURIComponent(b.user_id)}`,{method:"DELETE",headers:{apikey:service,Authorization:`Bearer ${service}`}}),result=await deleted.json().catch(()=>({}));
+      if(!deleted.ok){const linked=String(result.msg||result.message||"").toLowerCase().includes("database");return json({error:linked?"این فرد تسک یا سابقه مرتبط دارد؛ ابتدا متولی رکوردهای مرتبط را تغییر دهید یا حساب را غیرفعال کنید.":result.msg||result.message||"حذف حساب انجام نشد."},deleted.status)}
+      return json({ok:true});
+    }
+    if(req.method!=="POST")return json({error:"روش درخواست مجاز نیست."},405);
+    if(!b.email||!b.initial_password||String(b.initial_password).length<8)return json({error:"ایمیل و رمز اولیه حداقل ۸ کاراکتری الزامی است."},400);
     const created=await fetch(`${url}/auth/v1/admin/users`,{method:"POST",headers:{apikey:service,Authorization:`Bearer ${service}`,"Content-Type":"application/json"},body:JSON.stringify({email:String(b.email).trim(),password:b.initial_password,email_confirm:true,user_metadata:{full_name:b.full_name||""}})});
     const account=await created.json();if(!created.ok)return json({error:account.msg||account.message||"ساخت حساب انجام نشد."},created.status);
     await fetch(`${url}/rest/v1/profiles?id=eq.${account.id}`,{method:"PATCH",headers:{apikey:service,Authorization:`Bearer ${service}`,"Content-Type":"application/json"},body:JSON.stringify({full_name:b.full_name||"",display_name:b.full_name||"",gender:b.gender||null,salutation:b.salutation||null,cc_emails:Array.isArray(b.cc_emails)?b.cc_emails:[],active:b.active!==false,must_change_password:true})});

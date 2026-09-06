@@ -4,6 +4,9 @@ button,input,select,textarea{max-width:100%}
 img,canvas{max-width:100%}
 .workspace,.panel,.panel-head,.table-panel,.manager-form,.form-grid{min-width:0}
 .table-wrap{overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y}
+/* Right-sidebar control: right closes, left opens. */
+.collapse::after{content:"▶"!important}
+.sidebar.collapsed .collapse::after{content:"◀"!important}
 
 @media(max-width:1100px){
   .workspace>header{gap:12px!important;flex-wrap:wrap!important}
@@ -16,7 +19,7 @@ img,canvas{max-width:100%}
 }
 
 @media(max-width:760px){
-  :root{--sidebar-wide:min(82vw,300px)!important;--sidebar-narrow:64px!important;--footer-h:38px!important}
+  :root{--sidebar-wide:min(74vw,278px)!important;--sidebar-narrow:64px!important;--footer-h:38px!important}
   body{font-size:16px!important}
   .app{display:block!important;min-height:100dvh!important}
   .sidebar{top:0!important;right:0!important;bottom:0!important;height:100dvh!important;width:var(--sidebar-wide)!important;z-index:220!important;box-shadow:-10px 0 28px rgba(0,0,0,.18)!important}
@@ -26,10 +29,16 @@ img,canvas{max-width:100%}
   .sidebar.collapsed .nav-group-toggle,.sidebar.collapsed nav>button.nav-settings-root{min-height:46px!important;padding:6px 2px!important}
   .sidebar.collapsed .nav-group-icon,.sidebar.collapsed nav>button.nav-settings-root b{font-size:20px!important;width:32px!important;min-width:32px!important}
   .sidebar .account{padding:6px 2px!important;gap:4px!important}
-  .sidebar.collapsed .account{display:grid!important;grid-template-columns:1fr!important;justify-items:center!important}
-  .sidebar.collapsed .account .avatar{grid-column:1!important;width:38px!important;height:38px!important}
-  .sidebar.collapsed #logoutBtn{display:flex!important;grid-column:1!important;width:38px!important;height:34px!important;justify-content:center!important}
-  .sidebar.collapsed .collapse{display:flex!important;grid-column:1!important;width:38px!important;height:34px!important;justify-content:center!important}
+  .sidebar .account{grid-template-columns:minmax(0,1fr) 34px 34px!important}
+  .sidebar .account .avatar{display:none!important}
+  .sidebar .account-copy{grid-column:1!important}
+  .sidebar #logoutBtn{grid-column:2!important;width:34px!important;min-width:34px!important}
+  .sidebar .collapse{grid-column:3!important;width:34px!important;min-width:34px!important}
+  .sidebar.collapsed .account{display:grid!important;grid-template-columns:30px 30px!important;justify-content:center!important;gap:2px!important}
+  .sidebar.collapsed #logoutBtn{display:flex!important;grid-column:1!important;width:30px!important;min-width:30px!important;height:34px!important;justify-content:center!important}
+  .sidebar.collapsed .collapse{display:flex!important;grid-column:2!important;width:30px!important;min-width:30px!important;height:34px!important;justify-content:center!important}
+  .collapse::after{content:"▶"!important}
+  .sidebar.collapsed .collapse::after{content:"◀"!important}
   .workspace,.app:has(.sidebar.collapsed) .workspace,.app:has(.sidebar:not(.collapsed)) .workspace{margin-right:var(--sidebar-narrow)!important;width:calc(100vw - var(--sidebar-narrow))!important;height:auto!important;min-height:100dvh!important;overflow:visible!important;padding:8px 8px calc(var(--footer-h) + 10px)!important}
   .app:has(.sidebar:not(.collapsed))::before{content:"";position:fixed;inset:0;background:rgba(0,0,0,.34);z-index:210}
   .workspace>header{min-height:auto!important;padding:10px 4px!important;margin:0 0 8px!important;align-items:center!important}
@@ -45,6 +54,8 @@ img,canvas{max-width:100%}
   .task-toolbar::-webkit-scrollbar{display:block!important;height:6px!important}
   .task-toolbar::-webkit-scrollbar-thumb{background:#8ca79d!important}
   .task-toolbar button{min-width:116px!important;min-height:40px!important;padding:7px 10px!important}
+  .people-actions{overflow-x:auto!important;flex-wrap:nowrap!important;-webkit-overflow-scrolling:touch!important}
+  .people-actions button{flex:0 0 auto!important;min-width:100px!important}
   .table-wrap{max-height:calc(100dvh - 220px)!important;overflow:auto!important;scrollbar-width:thin!important;border:1px solid #b6c3be!important}
   .table-wrap::-webkit-scrollbar{display:block!important;width:7px!important;height:7px!important}
   .table-wrap::-webkit-scrollbar-thumb{background:#7f9c91!important;border-radius:6px!important}
@@ -66,7 +77,7 @@ img,canvas{max-width:100%}
   .modal-actions button{flex:1 1 135px!important;min-height:42px!important}
   .crop-stage{width:min(360px,calc(100vw - 54px))!important;height:min(360px,calc(100vw - 54px))!important}
   .login-shell{min-height:100dvh!important;padding:12px!important;align-items:center!important}
-  .login-card{width:min(100%,440px)!important;padding:18px!important;margin:auto!important}
+  .login-card{width:min(calc(100vw - 24px),440px)!important;max-height:calc(100dvh - 24px)!important;padding:18px!important;margin:auto!important;overflow:auto!important;box-sizing:border-box!important}
   .brand-lockup{margin-inline:-18px!important;padding:16px 18px!important;gap:12px!important}
   .brand-lockup img{width:76px!important;height:66px!important;flex:0 0 auto!important}
   .brand-lockup h1{font-size:1.18rem!important;line-height:1.5!important}
