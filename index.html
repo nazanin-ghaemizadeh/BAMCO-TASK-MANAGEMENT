@@ -6,7 +6,7 @@
   <title>BAMCO Task Management</title>
   <meta name="description" content="سامانه آنلاین مدیریت، پایش و پیگیری امور خودروسازان بم" />
   <link rel="stylesheet" href="styles.css?v=20260905-4" />
-  <link rel="stylesheet" href="manager.css?v=20260906-4" />
+  <link rel="stylesheet" href="manager.css?v=20260906-5" />
   <style>
     #appView.hidden{display:none!important;visibility:hidden!important}
     #loginView.hidden{display:none!important;visibility:hidden!important}
@@ -35,7 +35,7 @@
 
   <div id="appView" class="app hidden">
     <aside id="sidebar" class="sidebar">
-      <div class="side-brand"><img src="bamco-task-logo-white.png" alt="BAMCO"/><strong>مدیریت وظایف</strong></div>
+      <div class="side-brand"><img src="bamco-task-logo-white.png" alt="BAMCO"/><strong>سامانه مدیریت، پایش و پیگیری امور</strong></div>
       <button id="collapseBtn" class="collapse" aria-label="جمع کردن منو">‹</button>
       <nav id="nav">
         <button data-view="kanban" class="active"><b>▤</b><span>کانبان</span></button>
@@ -69,15 +69,18 @@
 
       <section id="kanbanView" class="view hidden">
         <div class="panel table-panel">
-          <div class="panel-head"><div><h3>وظایف جاری</h3><small id="kanbanScope"></small></div><div class="header-actions manager-only"><input id="importFile" type="file" accept=".xlsx,.xls,.csv" hidden><button id="importBtn" class="ghost">ورود از اکسل</button><button id="kanbanExportBtn" class="ghost">خروجی اکسل</button></div><input id="kanbanSearch" class="search" placeholder="جست‌وجو در تسک‌ها…" /></div>
-          <div class="table-wrap"><table><thead><tr><th>شناسه</th><th>عنوان فعالیت</th><th>توضیحات</th><th>متولی</th><th>وضعیت</th><th>اولویت</th><th>تاریخ شروع</th><th>تاریخ انجام</th><th>تاریخ پایان</th><th>یادآور</th><th>آخرین به‌روزرسانی</th><th>وضعیت دیرکرد</th><th>توضیحات مدیر</th><th>عملیات</th></tr><tr class="column-filters"></tr></thead><tbody id="kanbanBody"></tbody></table></div>
+          <div class="panel-head"><div><h3>وظایف جاری</h3><small id="kanbanScope"></small></div><input id="kanbanSearch" class="search" placeholder="جست‌وجو در تسک‌ها…" /></div>
+          <input id="importFile" type="file" accept=".xlsx,.xls,.csv" hidden>
+          <div class="task-toolbar"><button id="importBtn" class="ghost manager-only">ورود از اکسل</button><button id="kanbanExportBtn" class="ghost">خروجی اکسل</button><button id="kanbanEditBtn" class="ghost" disabled>ویرایش</button><button id="kanbanArchiveBtn" class="ghost" disabled>آرشیو فعالیت</button><button id="kanbanDeleteBtn" class="danger manager-only" disabled>حذف</button></div>
+          <div class="table-wrap"><table><thead><tr><th>شناسه</th><th>عنوان فعالیت</th><th>توضیحات</th><th>متولی</th><th>وضعیت</th><th>اولویت</th><th>تاریخ شروع</th><th>تاریخ انجام</th><th>تاریخ پایان</th><th>یادآور</th><th>آخرین به‌روزرسانی</th><th>وضعیت دیرکرد</th><th>توضیحات مدیر</th><th>انتخاب</th></tr><tr class="column-filters"></tr></thead><tbody id="kanbanBody"></tbody></table></div>
         </div>
       </section>
 
       <section id="archiveView" class="view hidden">
         <div class="panel table-panel">
-          <div class="panel-head"><div><h3>وظایف آرشیوشده</h3><small id="archiveScope"></small></div><button id="archiveExportBtn" class="ghost">خروجی اکسل</button><input id="archiveSearch" class="search" placeholder="جست‌وجو در آرشیو…" /></div>
-          <div class="table-wrap"><table><thead><tr><th>شناسه</th><th>عنوان فعالیت</th><th>توضیحات</th><th>متولی</th><th>وضعیت</th><th>اولویت</th><th>تاریخ شروع</th><th>تاریخ انجام</th><th>تاریخ پایان</th><th>یادآور</th><th>آخرین به‌روزرسانی</th><th>وضعیت دیرکرد</th><th>توضیحات مدیر</th><th>تأخیر</th><th>تعجیل</th><th>عملیات</th></tr><tr class="column-filters"></tr></thead><tbody id="archiveBody"></tbody></table></div>
+          <div class="panel-head"><div><h3>وظایف آرشیوشده</h3><small id="archiveScope"></small></div><input id="archiveSearch" class="search" placeholder="جست‌وجو در آرشیو…" /></div>
+          <div class="task-toolbar"><button id="archiveImportBtn" class="ghost manager-only">ورود از اکسل</button><button id="archiveExportBtn" class="ghost">خروجی اکسل</button><button id="archiveEditBtn" class="ghost" disabled>ویرایش</button><button id="archiveRestoreBtn" class="ghost manager-only" disabled>بازگردانی به کانبان</button><button id="archiveDeleteBtn" class="danger manager-only" disabled>حذف</button></div>
+          <div class="table-wrap"><table><thead><tr><th>شناسه</th><th>عنوان فعالیت</th><th>توضیحات</th><th>متولی</th><th>وضعیت</th><th>اولویت</th><th>تاریخ شروع</th><th>تاریخ انجام</th><th>تاریخ پایان</th><th>یادآور</th><th>آخرین به‌روزرسانی</th><th>وضعیت دیرکرد</th><th>توضیحات مدیر</th><th>تأخیر</th><th>تعجیل</th><th>انتخاب</th></tr><tr class="column-filters"></tr></thead><tbody id="archiveBody"></tbody></table></div>
         </div>
       </section>
 
@@ -119,13 +122,13 @@
     <div class="modal-actions"><button id="rejectBtn" class="danger">رد درخواست</button><button id="approveBtn" class="primary">تأیید و اعمال</button></div>
   </dialog>
 
-  <dialog id="passwordDialog" class="modal small first-login-dialog"><form id="passwordForm"><div class="first-login-brand"><img src="bamco-task-logo-white.png" alt="BAMCO"><div><h3>تغییر رمز عبور</h3><p>برای امنیت حساب، رمز اولیه را تغییر دهید.</p></div></div><div class="first-login-fields"><label>رمز جدید<input id="newPassword" type="password" minlength="8" autocomplete="new-password" required></label><label>تکرار رمز جدید<input id="confirmPassword" type="password" minlength="8" autocomplete="new-password" required></label></div><p id="passwordError" class="form-error"></p><div class="modal-actions"><button class="primary" type="submit">ثبت رمز جدید و ورود</button></div></form></dialog>
+  <dialog id="passwordDialog" class="modal small first-login-dialog"><form id="passwordForm"><div class="first-login-brand"><img src="bamco-task-logo-white.png" alt="BAMCO"><div><h3>تغییر رمز عبور</h3><p>رمز جدید حساب کاربری را وارد کنید.</p></div></div><div class="first-login-fields"><label>رمز جدید<input id="newPassword" type="password" minlength="8" autocomplete="new-password" required></label><label>تکرار رمز جدید<input id="confirmPassword" type="password" minlength="8" autocomplete="new-password" required></label></div><p id="passwordError" class="form-error"></p><div class="modal-actions"><button id="cancelPasswordBtn" class="ghost" type="button" data-close="passwordDialog">انصراف</button><button class="primary" type="submit">ثبت رمز جدید</button></div></form></dialog>
 
   <dialog id="importDialog" class="modal"><div class="modal-head"><div><h3>پیش‌نمایش ورود از اکسل</h3><p id="importSummary"></p></div><button type="button" data-close="importDialog">×</button></div><label>رفتار با شناسه تکراری<select id="duplicateMode"><option value="reject">رد رکورد</option><option value="update">به‌روزرسانی رکورد موجود</option><option value="create">ایجاد رکورد جدید</option></select></label><div class="table-wrap"><table><thead><tr><th>ردیف</th><th>شناسه</th><th>عنوان</th><th>متولی</th><th>وضعیت</th></tr></thead><tbody id="importPreviewBody"></tbody></table></div><div class="modal-actions"><button type="button" class="ghost" data-close="importDialog">انصراف</button><button id="commitImportBtn" class="primary">ورود رکوردهای معتبر</button></div></dialog>
 
-  <script src="manager.js?v=20260906-3"></script>
-  <script src="app.js?v=20260906-3"></script>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script src="data-io.js?v=20260906-3"></script>
+  <script src="manager.js?v=20260906-4"></script>
+  <script src="app.js?v=20260906-4"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.min.js"></script>
+  <script src="data-io.js?v=20260906-4"></script>
 </body>
 </html>
