@@ -1,0 +1,41 @@
+/* Desktop-faithful sticker manager, based on the original BAMCO desktop application. */
+#stickersView{padding:0!important}
+#stickersView .desktop-sticker-page{direction:rtl;font-family:"B Nazanin",BNazanin,Tahoma,sans-serif!important;color:#174d3e;padding:0 0 12px}
+.desktop-sticker-box{margin:0 0 12px;padding:8px 14px 12px;border:1px solid #aeb9b4;background:#eef3f0;min-inline-size:0}
+.desktop-sticker-box legend{padding:0 8px;color:#147154;font-size:18px;font-weight:700}
+.desktop-sticker-control-row{min-height:54px;display:flex;align-items:center;justify-content:flex-start;gap:10px;flex-wrap:wrap;background:#edf2ef}
+.desktop-sticker-inline-label{display:flex;align-items:center;gap:8px;font-weight:700;margin:0!important}
+.desktop-sticker-inline-label select,#desktopStickerSet,#desktopStickerPackName{height:40px;border:1px solid #aaa;background:#e5e4df;padding:3px 10px;font-family:"B Nazanin",BNazanin,Tahoma,sans-serif!important;font-size:17px;direction:rtl;text-align:right;outline:none}
+.desktop-sticker-inline-label select{min-width:230px}
+.desktop-sticker-version-label{font-weight:700;margin-right:8px}
+.desktop-sticker-radio{display:inline-flex!important;grid-template-columns:none!important;align-items:center!important;gap:5px!important;margin:0!important;font-weight:400!important;white-space:nowrap}
+.desktop-sticker-radio input{accent-color:#176b4d;width:16px;height:16px}
+.desktop-sticker-secondary,.desktop-sticker-green,.desktop-sticker-cancel,.matrix-upload{border-radius:0!important;box-shadow:none!important;min-height:42px;border:1px solid #b9c2bd;font-family:"B Nazanin",BNazanin,Tahoma,sans-serif!important;font-size:17px;font-weight:700;cursor:pointer;padding:7px 18px}
+.desktop-sticker-secondary{margin-right:auto;background:#e5ebe8;color:#23584a}
+.desktop-sticker-green{background:#177450;color:#fff;border-color:#146544}
+.desktop-sticker-green:hover{background:#125f42}
+.desktop-sticker-cancel{background:#e9edeb;color:#17352d}
+.desktop-sticker-set-row{display:grid;grid-template-columns:minmax(260px,1fr) repeat(3,minmax(220px,1fr));gap:8px;align-items:center}
+#desktopStickerSet{width:100%;background:#e5e4df}
+.desktop-sticker-active-note{height:27px;padding:0 5px;color:#5a7168;font-size:15px;text-align:right}
+.desktop-sticker-preview-stage{position:relative;min-height:480px;height:calc(100vh - 430px);max-height:590px;display:flex;align-items:center;justify-content:center;background:#f5f8f6;overflow:hidden;border-top:1px solid #eef2ef}
+#desktopStickerPreview{display:block;max-width:46%;max-height:96%;width:auto;height:auto;object-fit:contain;filter:none}
+.desktop-sticker-loading{position:absolute;inset:auto 50% 20px auto;transform:translateX(50%);background:#fff;border:1px solid #b8c2bd;padding:6px 12px;z-index:2}
+.desktop-sticker-dialog{width:min(980px,calc(100vw - 40px));border:1px solid #8d9691!important;border-radius:10px!important;padding:0!important;background:#f6f8f7;color:#17352d;box-shadow:0 24px 70px #0005!important;font-family:"B Nazanin",BNazanin,Tahoma,sans-serif!important}
+.desktop-sticker-dialog::backdrop{background:#0005;backdrop-filter:none}
+.desktop-sticker-dialog-title{height:45px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;background:#eef2f5;border-bottom:1px solid #ccd2cf;font-size:16px}
+.desktop-sticker-dialog-title button{border:0;background:transparent;font-size:22px;cursor:pointer}
+.desktop-sticker-dialog-body{padding:18px}
+.desktop-sticker-name-row{display:grid!important;grid-template-columns:80px 1fr;align-items:center;gap:10px;margin:0 0 12px!important;font-weight:700}
+#desktopStickerPackName{width:100%;background:#fff}
+.desktop-sticker-upload-matrix{display:grid;grid-template-columns:130px repeat(5,minmax(120px,1fr));direction:rtl;border:1px solid #d4dad7}
+.matrix-head{background:#177450;color:#fff;text-align:center;padding:12px 6px;border-left:2px solid #fff;font-weight:700;font-size:16px}
+.matrix-version{grid-column:1}
+.matrix-row-label{background:#fff;text-align:center;padding:14px 6px;border-top:1px solid #e0e4e2;font-weight:700;font-size:17px}
+.matrix-upload{background:#e1e7e4;color:#234f42;border:1px solid #fff;min-height:58px}
+.matrix-upload:hover{background:#d6dfda}.matrix-upload.selected{background:#dcece4;color:#0e6444}
+.desktop-sticker-dialog-actions{display:flex;justify-content:flex-start;gap:8px;margin-top:14px}
+.desktop-sticker-dialog-actions .desktop-sticker-green{min-width:170px}
+.desktop-sticker-dialog-actions .desktop-sticker-cancel{min-width:120px}
+@media(max-width:1100px){.desktop-sticker-set-row{grid-template-columns:1fr 1fr}.desktop-sticker-preview-stage{height:440px}.desktop-sticker-upload-matrix{grid-template-columns:110px repeat(5,minmax(100px,1fr))}}
+@media(max-width:760px){.desktop-sticker-set-row{grid-template-columns:1fr}.desktop-sticker-secondary{margin-right:0}.desktop-sticker-preview-stage{min-height:360px;height:360px}#desktopStickerPreview{max-width:80%}.desktop-sticker-dialog{width:calc(100vw - 16px)}.desktop-sticker-dialog-body{overflow:auto}.desktop-sticker-upload-matrix{min-width:820px}}
