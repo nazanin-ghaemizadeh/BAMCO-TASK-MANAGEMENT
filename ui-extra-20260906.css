@@ -1,6 +1,5 @@
 /* Strong UI hotfix - 2026-09-06 */
 
-/* Any explicitly English / LTR content uses Times New Roman and is slightly smaller. */
 .english-ui,.english,.en-text,[dir="ltr"],input[type="email"],input[type="url"],input[type="password"],.latin-run{
   font-family:"Times New Roman",Times,serif!important;
 }
@@ -15,7 +14,6 @@
   unicode-bidi:isolate!important;
 }
 
-/* Persian filters remain B Nazanin / RTL. */
 .column-filters select,.column-filters select option{
   font-family:"B Nazanin",BNazanin,Tahoma,sans-serif!important;
   direction:rtl!important;
@@ -23,71 +21,57 @@
   font-size:14px!important;
 }
 
-/* No artificial separator or extra vertical gap between approvals and people/CC. */
-#nav,.sidebar nav{
-  gap:0!important;
-  row-gap:0!important;
-}
-#nav>button,.sidebar nav button{
-  margin-top:0!important;
-  margin-bottom:0!important;
-}
+#nav,.sidebar nav{gap:0!important;row-gap:0!important}
+#nav>button,.sidebar nav button{margin-top:0!important;margin-bottom:0!important}
 #nav>.nav-divider,.sidebar nav .nav-divider,.nav-divider.manager-only{
-  display:none!important;
-  visibility:hidden!important;
-  height:0!important;
-  min-height:0!important;
-  max-height:0!important;
-  margin:0!important;
-  padding:0!important;
-  border:0!important;
+  display:none!important;visibility:hidden!important;height:0!important;min-height:0!important;max-height:0!important;margin:0!important;padding:0!important;border:0!important
 }
-#approvalsNav+button[data-view="people"],
-#nav button[data-view="people"]{
-  margin-top:0!important;
-}
+#approvalsNav+button[data-view="people"],#nav button[data-view="people"]{margin-top:0!important}
 
-/* Selection cell stays visually clear as the rightmost column. */
 #kanbanView thead>tr:first-child>th:first-child,
 #archiveView thead>tr:first-child>th:first-child,
 #kanbanView tbody td:first-child,
 #archiveView tbody td:first-child{
-  text-align:center!important;
-  width:58px!important;
-  min-width:58px!important;
+  text-align:center!important;width:58px!important;min-width:58px!important
 }
 
-/* The old sticker upload grid must never appear under the desktop-faithful manager. */
 #stickersView .desktop-sticker-page #stickerGrid,
-#stickersView .desktop-sticker-page .sticker-grid{
-  display:none!important;
+#stickersView .desktop-sticker-page .sticker-grid{display:none!important}
+
+/* Compact sticker page: keep controls and preview visible without a large empty canvas. */
+#stickersView .desktop-sticker-page{padding-bottom:4px!important}
+#stickersView .desktop-sticker-box{margin-bottom:8px!important}
+#stickersView .desktop-sticker-active-note{height:20px!important;line-height:20px!important;font-size:13px!important}
+#stickersView .desktop-sticker-preview-stage{
+  min-height:300px!important;
+  height:clamp(300px,42vh,390px)!important;
+  max-height:390px!important;
+  margin-top:2px!important;
+  border:1px solid #dfe7e3!important;
+  background:#f8faf9!important;
+}
+#stickersView #desktopStickerPreview{
+  max-width:min(42%,360px)!important;
+  max-height:92%!important;
 }
 
-/* Bottom product-development credit bar. */
-#appView{padding-bottom:42px!important}
+/* Smaller footer, visually closer to a credit strip than a second header. */
+#appView{padding-bottom:29px!important}
 .app-footer-credit{
-  position:fixed;
-  left:0;
-  right:0;
-  bottom:0;
-  height:42px;
-  z-index:999;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  padding:0 18px;
-  box-sizing:border-box;
-  background:#0d4f3f;
-  color:#fff;
-  border-top:1px solid rgba(255,255,255,.16);
+  position:fixed;left:0;right:0;bottom:0;height:29px;z-index:999;
+  display:flex;align-items:center;justify-content:center;
+  padding:0 14px;box-sizing:border-box;
+  background:#0d4f3f;color:#fff;border-top:1px solid rgba(255,255,255,.14);
   font-family:"B Nazanin",BNazanin,Tahoma,sans-serif!important;
-  font-size:15px;
-  font-weight:700;
-  text-align:center;
-  direction:rtl;
-  white-space:nowrap;
+  font-size:11px;font-weight:600;line-height:1.2;text-align:center;direction:rtl;white-space:nowrap
+}
+@media(max-width:1100px){
+  #stickersView .desktop-sticker-preview-stage{min-height:280px!important;height:340px!important}
+  #stickersView #desktopStickerPreview{max-width:min(52%,340px)!important}
 }
 @media(max-width:760px){
-  .app-footer-credit{font-size:12px;white-space:normal;line-height:1.5;height:auto;min-height:42px;padding:5px 10px}
-  #appView{padding-bottom:52px!important}
+  .app-footer-credit{font-size:10px;white-space:normal;height:auto;min-height:30px;padding:4px 8px}
+  #appView{padding-bottom:38px!important}
+  #stickersView .desktop-sticker-preview-stage{min-height:260px!important;height:300px!important}
+  #stickersView #desktopStickerPreview{max-width:76%!important}
 }
