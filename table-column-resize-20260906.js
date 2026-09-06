@@ -3,13 +3,33 @@
 
   /* Load the final unified visual layer after the older responsive/final overrides. */
   setTimeout(()=>{
-    if(document.getElementById('bamcoUnifiedUi'))return;
-    const link=document.createElement('link');
-    link.id='bamcoUnifiedUi';
-    link.rel='stylesheet';
-    link.href='unified-ui-20260907.css?v=20260907-2';
-    document.head.appendChild(link);
+    if(!document.getElementById('bamcoUnifiedUi')){
+      const link=document.createElement('link');
+      link.id='bamcoUnifiedUi';
+      link.rel='stylesheet';
+      link.href='unified-ui-20260907.css?v=20260907-2';
+      document.head.appendChild(link);
+    }
+    if(!document.getElementById('bamcoUnifiedUiPatch')){
+      const style=document.createElement('style');
+      style.id='bamcoUnifiedUiPatch';
+      style.textContent=`
+        #appView .column-filters select{min-width:0!important;width:100%!important;height:32px!important;min-height:32px!important;padding:2px 20px 2px 4px!important;background-position:3px center!important;background-size:12px!important;font-size:14px!important}
+        #appView #kanbanView .column-filters th:first-child select,#appView #archiveView .column-filters th:first-child select{min-width:0!important;width:100%!important;max-width:100%!important;padding-right:2px!important;padding-left:15px!important}
+        #templatesView .desktop-template-shell{padding:0 4px!important;background:transparent!important}
+        #templatesView .desktop-template-fieldset{border:1px solid #b8c8c1!important;border-radius:10px!important;padding:24px!important;margin:18px 0 14px!important;background:#f8faf9!important;box-shadow:none!important}
+        #templatesView .desktop-template-fieldset legend{padding:0 10px!important;background:#eef3f0!important;color:#145741!important;font-weight:700!important}
+      `;
+      document.head.appendChild(style);
+    }
   },0);
+
+  /* Keep the email editor's intentional font chooser functional even though the surrounding UI defaults to B Nazanin. */
+  document.addEventListener('change',event=>{
+    if(event.target?.id!=='dteFont')return;
+    const body=document.querySelector('#dteBody');
+    if(body)body.style.setProperty('font-family',`"${event.target.value}",sans-serif`,'important');
+  });
 
   const table=document.querySelector('#kanbanView table'),heads=[...document.querySelectorAll('#kanbanView thead>tr:first-child>th')];
   if(!table||!heads.length)return;
