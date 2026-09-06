@@ -101,7 +101,8 @@
   function selectedState(){return q('#desktopStickerState')?.value||'state1'}
   function selectedSetId(){return Number(q('#desktopStickerSet')?.value||0)}
   function selectedSet(){const id=selectedSetId();return sets.find(s=>Number(s.id)===id)||null}
-  function defaultImage(stateKey,gender){return `desktop-stickers/${stateKey}_${gender}.webp`}
+  const DEFAULT_ASSET_KEY={state1:'01_happy',state2:'02_reminder',state3:'03_concerned',state4:'04_serious',state5:'05_urgent'};
+  function defaultImage(stateKey,gender){return window.BAMCO_DESKTOP_ASSETS?.[`${DEFAULT_ASSET_KEY[stateKey]}_${gender}`]||''}
 
   async function loadDesktopStickerManager(){
     installView();
