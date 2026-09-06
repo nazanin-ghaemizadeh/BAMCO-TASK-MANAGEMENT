@@ -125,13 +125,19 @@
         box-sizing:border-box!important;
         vertical-align:top!important;
       }
-      #appView #kanbanView table.bamco-resizable-table th:first-child,
-      #appView #kanbanView table.bamco-resizable-table td:first-child,
-      #appView #archiveView table.bamco-resizable-table th:first-child,
-      #appView #archiveView table.bamco-resizable-table td:first-child{
-        width:auto!important;
-        min-width:0!important;
-        max-width:none!important;
+
+      /* The first DOM column is always شناسه. Never hide it: keep it narrow, RTL and B Nazanin. */
+      #appView #kanbanView table.bamco-resizable-table thead>tr:first-child>th:first-child,
+      #appView #kanbanView table.bamco-resizable-table .column-filters>th:first-child,
+      #appView #kanbanView table.bamco-resizable-table tbody>tr>td:first-child,
+      #appView #archiveView table.bamco-resizable-table thead>tr:first-child>th:first-child,
+      #appView #archiveView table.bamco-resizable-table .column-filters>th:first-child,
+      #appView #archiveView table.bamco-resizable-table tbody>tr>td:first-child{
+        display:table-cell!important;
+        visibility:visible!important;
+        width:40px!important;
+        min-width:40px!important;
+        max-width:40px!important;
         padding-left:4px!important;
         padding-right:4px!important;
         text-align:right!important;
@@ -223,6 +229,23 @@
     }).observe(dialog,{childList:true,subtree:true,characterData:true});
   }
 
+  function repairSelectionClasses(view,table,heads,selectionIndex){
+    heads.forEach((head,index)=>head.classList.toggle('task-select-column',index===selectionIndex));
+    const filterCells=[...(view.querySelector('.column-filters')?.children||[])];
+    filterCells.forEach((cell,index)=>cell.classList.toggle('task-select-column',index===selectionIndex));
+    view.querySelectorAll('tbody tr').forEach(row=>{
+      [...row.children].forEach((cell,index)=>{
+        const isSelection=index===selectionIndex&&!!cell.querySelector('.task-pick');
+        cell.classList.toggle('task-select-column',isSelection);
+      });
+    });
+    heads[0]?.classList.remove('task-select-column');
+    filterCells[0]?.classList.remove('task-select-column');
+    view.querySelectorAll('tbody tr>td:first-child').forEach(cell=>cell.classList.remove('task-select-column'));
+    const cols=[...(table.querySelector(':scope > colgroup')?.children||[])];
+    if(cols[0]){cols[0].style.visibility='visible';cols[0].style.width='40px';cols[0].style.minWidth='40px';cols[0].style.maxWidth='40px'}
+  }
+
   function installResizableTable(scope,defaults,key){
     const view=q(`#${scope}View`),table=view?.querySelector('table'),heads=table?[...table.querySelectorAll('thead>tr:first-child>th')]:[];
     if(!table||!heads.length)return;
@@ -238,6 +261,7 @@
       const min=index===0?34:56;
       return Math.max(min,Number.isFinite(candidate)&&candidate>0?candidate:fallback);
     });
+    widths[0]=Math.max(34,Math.min(60,widths[0]||40));
 
     const colgroup=document.createElement('colgroup');
     const cols=heads.map((_,index)=>{
@@ -257,6 +281,8 @@
           col.style.width=`${widths[index]}px`;col.style.minWidth='0';col.style.maxWidth='none';col.style.visibility='visible';
         }
       });
+      if(cols[0]){cols[0].style.visibility='visible';cols[0].style.width=`${widths[0]}px`}
+      repairSelectionClasses(view,table,heads,selectionIndex);
     };
 
     apply();
@@ -269,12 +295,14 @@
       head.appendChild(handle);
       handle.addEventListener('dblclick',event=>{
         event.preventDefault();event.stopPropagation();
-        widths[index]=defaults[index];apply();localStorage.setItem(key,JSON.stringify(widths));
+        widths[index]=defaults[index];
+        if(index===0)widths[index]=40;
+        apply();localStorage.setItem(key,JSON.stringify(widths));
       });
       handle.addEventListener('pointerdown',event=>{
         if(event.button!==0&&event.pointerType!=='touch')return;
         event.preventDefault();event.stopPropagation();
-        const startX=event.clientX,startWidth=widths[index],min=index===0?34:56,max=760;
+        const startX=event.clientX,startWidth=widths[index],min=index===0?34:56,max=index===0?80:760;
         handle.classList.add('dragging');document.body.classList.add('column-resizing');
         let raf=0,pending=startWidth;
         const flush=()=>{raf=0;widths[index]=pending;apply()};
@@ -291,11 +319,21 @@
         window.addEventListener('pointermove',move,true);window.addEventListener('pointerup',up,true);window.addEventListener('pointercancel',up,true);
       });
     });
+
+    const body=view.querySelector('tbody');
+    if(body&&!body.dataset.idColumnGuard){
+      body.dataset.idColumnGuard='1';
+      let queued=false;
+      new MutationObserver(()=>{
+        if(queued)return;queued=true;
+        requestAnimationFrame(()=>{queued=false;repairSelectionClasses(view,table,heads,selectionIndex)});
+      }).observe(body,{childList:true,subtree:true});
+    }
   }
 
   function installResizableTables(){
-    installResizableTable('kanban',[40,190,280,145,115,90,110,110,110,82,150,110,210,0],'bamco-kanban-column-widths-v3');
-    installResizableTable('archive',[40,190,280,145,115,90,110,110,110,82,150,110,210,80,80,0],'bamco-archive-column-widths-v3');
+    installResizableTable('kanban',[40,190,280,145,115,90,110,110,110,82,150,110,210,0],'bamco-kanban-column-widths-v4');
+    installResizableTable('archive',[40,190,280,145,115,90,110,110,110,82,150,110,210,80,80,0],'bamco-archive-column-widths-v4');
   }
 
   function applyAll(){
@@ -311,6 +349,13 @@
     [120,450,1000,1800].forEach(ms=>setTimeout(()=>{
       injectStyle();installLoginIcons();fixTaskWording();
       if(!q('#kanbanView table.bamco-resizable-table')||!q('#archiveView table.bamco-resizable-table'))installResizableTables();
+      else{
+        ['kanban','archive'].forEach(scope=>{
+          const view=q(`#${scope}View`),table=view?.querySelector('table'),heads=table?[...table.querySelectorAll('thead>tr:first-child>th')]:[];
+          const selectionIndex=heads.findIndex(h=>(h.textContent||'').trim()==='انتخاب');
+          if(view&&table&&heads.length)repairSelectionClasses(view,table,heads,selectionIndex);
+        });
+      }
     },ms));
   }
 
