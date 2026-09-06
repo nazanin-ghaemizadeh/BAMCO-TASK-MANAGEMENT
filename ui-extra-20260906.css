@@ -56,3 +56,38 @@
   width:58px!important;
   min-width:58px!important;
 }
+
+/* The old sticker upload grid must never appear under the desktop-faithful manager. */
+#stickersView .desktop-sticker-page #stickerGrid,
+#stickersView .desktop-sticker-page .sticker-grid{
+  display:none!important;
+}
+
+/* Bottom product-development credit bar. */
+#appView{padding-bottom:42px!important}
+.app-footer-credit{
+  position:fixed;
+  left:0;
+  right:0;
+  bottom:0;
+  height:42px;
+  z-index:999;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:0 18px;
+  box-sizing:border-box;
+  background:#0d4f3f;
+  color:#fff;
+  border-top:1px solid rgba(255,255,255,.16);
+  font-family:"B Nazanin",BNazanin,Tahoma,sans-serif!important;
+  font-size:15px;
+  font-weight:700;
+  text-align:center;
+  direction:rtl;
+  white-space:nowrap;
+}
+@media(max-width:760px){
+  .app-footer-credit{font-size:12px;white-space:normal;line-height:1.5;height:auto;min-height:42px;padding:5px 10px}
+  #appView{padding-bottom:52px!important}
+}
