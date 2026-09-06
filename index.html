@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="ui-extra-20260906.css?v=20260906-6" />
   <link rel="stylesheet" href="stable-layout-20260906.css?v=20260906-1" />
   <link rel="stylesheet" href="ux-polish-20260906.css?v=20260906-1" />
-  <link id="responsiveStyles" rel="stylesheet" href="responsive-20260906.css?v=20260906-3" />
+  <link id="responsiveStyles" rel="stylesheet" href="responsive-20260906.css?v=20260906-4" />
   <style>
     #appView.hidden{display:none!important;visibility:hidden!important}
     #loginView.hidden{display:none!important;visibility:hidden!important}
@@ -69,14 +69,16 @@
       </header>
 
       <section id="dashboardView" class="view">
-        <div class="stats">
-          <article><span class="dot green"></span><small>کارهای فعال</small><strong id="statActive">۰</strong></article>
-          <article><span class="dot red"></span><small>دیرکرد</small><strong id="statOverdue">۰</strong></article>
-          <article><span class="dot amber"></span><small>دوره هشدار</small><strong id="statWarning">۰</strong></article>
-          <article><span class="dot blue"></span><small>آرشیوشده</small><strong id="statArchive">۰</strong></article>
+        <div class="desktop-dashboard-exact">
+          <fieldset class="dashboard-filters"><legend>اسلایسرها و فیلترها</legend><div class="dashboard-filter-grid"><label>متولی<select id="dashOwner"></select></label><label>اولویت<select id="dashPriority"></select></label><label>وضعیت جاری<select id="dashStatus"></select></label><label>شرایط دیرکرد<select id="dashBucket"></select></label></div><div class="dashboard-filter-actions"><button id="resetDashFilters" type="button" class="ghost">حذف فیلترها</button></div></fieldset>
+          <div id="dashboardCards" class="dashboard-cards"></div>
+          <div class="dashboard-chart-card"><canvas id="statusChart" height="290"></canvas></div>
+          <div class="dashboard-chart-card"><canvas id="priorityChart" height="290"></canvas></div>
+          <div class="dashboard-chart-card"><canvas id="bucketChart" height="290"></canvas></div>
+          <div class="dashboard-chart-card"><canvas id="workloadChart" height="360"></canvas></div>
+          <fieldset class="dashboard-performance-range"><legend>بازه زمانی نمودار عملکرد متولیان</legend><div><label>از تاریخ<input id="perfFrom" class="jalali-input" readonly placeholder="۱۴۰۵/۰۱/۰۱"></label><button type="button" class="ghost dashboard-calendar-btn" data-dashboard-date="perfFrom">تقویم شمسی</button><label>تا تاریخ<input id="perfTo" class="jalali-input" readonly placeholder="۱۴۰۵/۰۱/۰۱"></label><button type="button" class="ghost dashboard-calendar-btn" data-dashboard-date="perfTo">تقویم شمسی</button><span></span><button id="clearPerf" type="button" class="ghost">حذف</button><button id="applyPerf" type="button" class="ghost">اعمال</button></div></fieldset>
+          <div class="dashboard-chart-card"><canvas id="performanceChart" height="360"></canvas></div>
         </div>
-        <div class="panel"><div class="panel-head"><h3>نمای وضعیت کارهای فعال</h3></div><div id="statusBars" class="status-bars"></div></div>
-        <div class="panel"><div class="panel-head"><h3>نزدیک‌ترین سررسیدها</h3><button data-go="kanban" class="link-btn">مشاهده کانبان ←</button></div><div id="dueList" class="due-list"></div></div>
       </section>
 
       <section id="kanbanView" class="view hidden">
@@ -148,12 +150,14 @@
   <script src="sticker-pack-small-02.js?v=20260906-static1"></script>
   <script src="sticker-pack-small-loader.js?v=20260906-static1"></script>
   <script src="sticker-desktop.js?v=20260906-static1"></script>
-  <script src="app.js?v=20260906-7"></script>
+  <script src="app.js?v=20260906-8"></script>
+  <script src="dashboard-exact-20260906.js?v=20260906-1"></script>
+  <script src="table-column-resize-20260906.js?v=20260906-1"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.min.js"></script>
   <script src="data-io.js?v=20260906-5"></script>
   <script src="ui-fixes-20260906.js?v=20260906-2"></script>
   <script>window.__bamcoStableStickerInstalled=true;</script>
-  <script src="ui-extra-20260906.js?v=20260906-6"></script>
+  <script src="ui-extra-20260906.js?v=20260906-7"></script>
   <script src="ux-polish-20260906.js?v=20260906-1"></script>
   <script>document.head.appendChild(document.querySelector('#responsiveStyles'));</script>
 </body>

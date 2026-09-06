@@ -155,16 +155,15 @@
   function markTaskRows(){
     const tasks=typeof state!=='undefined'&&Array.isArray(state.tasks)?state.tasks:[];
     const byId=new Map(tasks.map(t=>[String(t.id),t]));
-    q('#kanbanBody')?.querySelectorAll('tr[data-task-id]').forEach(row=>{
+    [q('#kanbanBody'),q('#archiveBody')].filter(Boolean).forEach(body=>body.querySelectorAll('tr[data-task-id]').forEach(row=>{
       row.classList.remove('row-overdue','row-warning','row-waiting','row-registered','row-normal');
       const t=byId.get(String(row.dataset.taskId));if(!t)return;
       const due=String(t.due_state||'').trim(),status=String(t.status||'').trim();
-      if(due==='دیرکرد')row.classList.add('row-overdue');
+      if(status==='منتظر پاسخ')row.classList.add('row-waiting');
+      else if(due==='دیرکرد')row.classList.add('row-overdue');
       else if(due.includes('هشدار'))row.classList.add('row-warning');
-      else if(status==='منتظر پاسخ')row.classList.add('row-waiting');
-      else if(status==='ثبت شده')row.classList.add('row-registered');
       else row.classList.add('row-normal');
-    });
+    }));
   }
 
   function installTaskOrder(){
