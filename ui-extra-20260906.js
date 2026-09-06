@@ -2,7 +2,7 @@
   const hasFa=s=>/[\u0600-\u06ff]/.test(String(s||''));
   const hasEn=s=>/[A-Za-z]/.test(String(s||''));
 
-  document.documentElement.dataset.uiHotfix='20260906-1243';
+  document.documentElement.dataset.uiHotfix='20260906-1300';
 
   /* Apply Times New Roman to every Latin run, including Latin words inside Persian sentences. */
   function wrapLatinText(root=document.body){
@@ -68,16 +68,17 @@
     if(typeof updateTaskToolbar==='function')updateTaskToolbar(scope);
   }
 
-  /* Clicking outside the actual task table cancels the selection.
-     Toolbar handlers execute before this document-level bubble handler, so actions still work. */
-  document.addEventListener('click',e=>{
+  /* Robust deselection: any pointer press outside the task table cancels the row selection.
+     The task toolbar is exempt so Edit / Archive / Restore / Delete can still use the selected row. */
+  document.addEventListener('pointerdown',e=>{
     if(typeof state==='undefined')return;
     const scope=state.view==='archive'?'archive':state.view==='kanban'?'kanban':null;
     if(!scope||state.selected?.[scope]==null)return;
-    const table=document.querySelector(`#${scope}View .table-wrap table`);
-    if(table?.contains(e.target))return;
+    const view=document.querySelector(`#${scope}View`);
+    if(view?.querySelector('.table-wrap table')?.contains(e.target))return;
+    if(view?.querySelector('.task-toolbar')?.contains(e.target))return;
     clearSelection(scope);
-  });
+  },true);
 
   /* Force the same database resequence path for deletion from KANBAN and Archive,
      then reload both views so the new display IDs are visible immediately. */
