@@ -89,6 +89,10 @@ td{padding:9px 11px!important;border:1px solid #d0d3d0!important;vertical-align:
 .task-toolbar{display:flex!important;gap:8px!important;align-items:center!important;flex-wrap:wrap!important;padding:9px 12px!important;background:#eef3f0!important;border-top:1px solid #c5ceca!important;border-bottom:1px solid #a9aaa4!important}
 .task-toolbar button{min-width:128px!important}
 .task-toolbar button:disabled{opacity:.45!important;cursor:not-allowed!important}
+.people-actions{display:flex!important;gap:8px!important;align-items:center!important;flex-wrap:wrap!important;padding:9px 12px!important;background:#eef3f0!important;border-top:1px solid #c5ceca!important;border-bottom:1px solid #a9aaa4!important}
+.people-actions button{min-width:112px!important}
+.people-table tbody tr[data-person-id]{cursor:pointer!important}
+.people-table tbody tr.person-selected td{background:#d7ebe2!important;box-shadow:inset 0 1px #82ad9b,inset 0 -1px #82ad9b!important}
 tbody tr.task-selected td{background:#d7ebe2!important;box-shadow:inset 0 1px #82ad9b,inset 0 -1px #82ad9b!important}
 .task-pick{width:18px!important;height:18px!important;accent-color:#176b4d!important;cursor:pointer!important}
 .avatar.has-image{background-size:cover!important;background-position:center!important;color:transparent!important}
