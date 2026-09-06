@@ -1,0 +1,362 @@
+/* Unified application styling — 2026-09-07 */
+:root{
+  --ui-page:#eef3f0;
+  --ui-panel:#f8faf9;
+  --ui-line:#b8c8c1;
+  --ui-line-strong:#91a79d;
+  --ui-text:#174d3e;
+  --ui-green:#176b4d;
+  --ui-soft:#e8efeb;
+  --ui-white:#fff;
+  --ui-radius:10px;
+}
+
+/* One Persian visual language everywhere inside the application. */
+#appView,
+#appView input,
+#appView select,
+#appView textarea,
+#appView button,
+#appView table,
+#appView th,
+#appView td,
+#appView label,
+#appView small,
+#appView strong,
+#appView .english,
+#appView .english-ui,
+#appView .en-text,
+#appView [dir="ltr"],
+dialog,
+dialog input,
+dialog select,
+dialog textarea,
+dialog button,
+dialog label,
+dialog .english,
+dialog [dir="ltr"]{
+  font-family:"B Nazanin",BNazanin,"B Nazanin Regular",Tahoma,sans-serif!important;
+  direction:rtl!important;
+  text-align:right!important;
+}
+#appView button,dialog button{text-align:center!important}
+#appView{color:var(--ui-text)!important;background:var(--ui-page)!important}
+
+/* Page title stays above the boxed section, like the approved email-text tab. */
+#appView .workspace>header{
+  height:auto!important;
+  min-height:46px!important;
+  margin:0 4px 14px!important;
+  padding:8px 2px 0!important;
+  align-items:center!important;
+  background:transparent!important;
+}
+#appView #viewTitle{
+  margin:0!important;
+  color:#145741!important;
+  font-size:21px!important;
+  line-height:1.6!important;
+  font-weight:700!important;
+  text-align:right!important;
+}
+#appView #viewSubtitle{display:none!important}
+#appView .view:not(#welcomeView){padding:3px 4px 26px!important}
+
+/* Main boxes: rounded outline + title sitting on the top border. */
+#appView .view>.panel,
+#appView .vehicle-view>.panel{
+  position:relative!important;
+  overflow:visible!important;
+  margin:18px 0 14px!important;
+  padding:28px 16px 16px!important;
+  border:1px solid var(--ui-line)!important;
+  border-radius:var(--ui-radius)!important;
+  background:var(--ui-panel)!important;
+  box-shadow:none!important;
+}
+#appView #kanbanView>.table-panel,
+#appView #archiveView>.table-panel{
+  position:relative!important;
+  overflow:visible!important;
+  margin:18px 0 14px!important;
+  padding:28px 16px 16px!important;
+  border:1px solid var(--ui-line)!important;
+  border-radius:var(--ui-radius)!important;
+  background:var(--ui-panel)!important;
+}
+#appView #kanbanView .table-panel>.panel-head,
+#appView #archiveView .table-panel>.panel-head{display:flex!important}
+
+/* Legend-style section names. */
+#appView .panel-head{
+  position:static!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:flex-start!important;
+  gap:10px!important;
+  min-height:36px!important;
+  margin:0 0 10px!important;
+  padding:0!important;
+  border:0!important;
+  background:transparent!important;
+}
+#appView .panel-head>div:first-child{
+  position:absolute!important;
+  top:-15px!important;
+  right:18px!important;
+  z-index:3!important;
+  display:block!important;
+  width:auto!important;
+  max-width:calc(100% - 36px)!important;
+  padding:0 10px!important;
+  margin:0!important;
+  background:var(--ui-page)!important;
+}
+#appView .panel-head>h3{
+  position:absolute!important;
+  top:-15px!important;
+  right:18px!important;
+  z-index:3!important;
+  width:auto!important;
+  max-width:calc(100% - 36px)!important;
+  padding:0 10px!important;
+  margin:0!important;
+  background:var(--ui-page)!important;
+}
+#appView .panel-head h3,
+#appView .panel-head>h3{
+  margin:0!important;
+  color:#145741!important;
+  font-size:18px!important;
+  line-height:1.7!important;
+  font-weight:700!important;
+  white-space:nowrap!important;
+}
+#appView .panel-head small{display:none!important}
+
+/* Toolbars now live cleanly inside the rounded box. */
+#appView .manager-toolbar,
+#appView .task-toolbar,
+#appView .people-actions{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:flex-start!important;
+  gap:9px!important;
+  flex-wrap:wrap!important;
+  margin:0 0 12px!important;
+  padding:0!important;
+  border:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+#appView #kanbanView .task-toolbar,
+#appView #archiveView .task-toolbar{
+  min-height:42px!important;
+  overflow-x:auto!important;
+  scrollbar-width:none!important;
+}
+#appView #kanbanView .task-toolbar::-webkit-scrollbar,
+#appView #archiveView .task-toolbar::-webkit-scrollbar{display:none!important}
+
+/* Buttons: soft rounded shape, same size and spacing across tabs. */
+#appView .primary,
+#appView .ghost,
+#appView .danger,
+#appView .icon-btn,
+#appView .link-btn,
+#appView .task-toolbar button,
+#appView .people-actions button,
+dialog .primary,
+dialog .ghost,
+dialog .danger{
+  min-height:40px!important;
+  padding:7px 16px!important;
+  border-radius:8px!important;
+  box-shadow:none!important;
+  transform:none!important;
+  font-weight:700!important;
+}
+#appView .ghost{background:#e5ece8!important;border:1px solid #c4d0ca!important;color:#27594b!important}
+#appView .primary{background:#176b4d!important;border:1px solid #145f45!important;color:#fff!important}
+#appView .danger{background:#b84a4a!important;border:1px solid #9e3c3c!important;color:#fff!important}
+#appView button:focus-visible,dialog button:focus-visible{outline:2px solid #6fa892!important;outline-offset:2px!important}
+
+/* Inputs, textareas and dropdowns. */
+#appView input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+#appView textarea,
+#appView select,
+dialog input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+dialog textarea,
+dialog select{
+  min-height:40px!important;
+  border:1px solid #aebfb8!important;
+  border-radius:8px!important;
+  background-color:#fff!important;
+  color:#203f35!important;
+  padding:7px 12px!important;
+  box-shadow:none!important;
+  outline:none!important;
+}
+#appView textarea,dialog textarea{line-height:1.9!important;resize:vertical!important}
+#appView input:focus,
+#appView textarea:focus,
+#appView select:focus,
+dialog input:focus,
+dialog textarea:focus,
+dialog select:focus{
+  border-color:#4f8d77!important;
+  box-shadow:0 0 0 3px rgba(79,141,119,.10)!important;
+}
+#appView select,dialog select{
+  appearance:none!important;
+  -webkit-appearance:none!important;
+  padding-left:38px!important;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24'%3E%3Cpath d='m7 10 5 5 5-5' fill='none' stroke='%234b6f62' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")!important;
+  background-repeat:no-repeat!important;
+  background-position:12px center!important;
+  background-size:16px!important;
+}
+#appView option,dialog option{font-family:"B Nazanin",BNazanin,Tahoma,sans-serif!important;direction:rtl!important;text-align:right!important}
+
+/* Tables: rounded outer container, clean header, right-aligned Persian text. */
+#appView .table-wrap{
+  overflow:auto!important;
+  border:1px solid var(--ui-line)!important;
+  border-radius:10px!important;
+  background:#fff!important;
+  box-shadow:none!important;
+}
+#appView table,
+#appView .manager-table{
+  border-collapse:separate!important;
+  border-spacing:0!important;
+  background:#fff!important;
+  direction:rtl!important;
+}
+#appView th,
+#appView td{
+  direction:rtl!important;
+  text-align:right!important;
+  border-color:#d5ddd9!important;
+}
+#appView th{
+  background:#e4ede9!important;
+  color:#205846!important;
+  font-weight:700!important;
+}
+#appView .column-filters th{background:#eef4f1!important}
+#appView tbody tr:hover>td{filter:brightness(.99)!important}
+
+/* Kanban/archive: smallest practical ID column and stable table geometry. */
+#appView #kanbanView th:first-child,
+#appView #kanbanView td:first-child,
+#appView #archiveView th:first-child,
+#appView #archiveView td:first-child{
+  width:44px!important;
+  min-width:44px!important;
+  max-width:44px!important;
+  padding-left:5px!important;
+  padding-right:5px!important;
+  text-align:center!important;
+  white-space:nowrap!important;
+}
+#appView #kanbanView table.resizable-task-table{table-layout:fixed!important}
+#appView #kanbanView table.resizable-task-table th,
+#appView #kanbanView table.resizable-task-table td{overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}
+#appView #kanbanView .task-select-column,
+#appView #archiveView .task-select-column{display:none!important;width:0!important;min-width:0!important;max-width:0!important;padding:0!important;border:0!important}
+
+/* Dashboard receives the same framed language. */
+#appView #dashboardView{padding:3px 4px 32px!important}
+#appView .desktop-dashboard-exact{
+  position:relative!important;
+  margin:18px 0 14px!important;
+  padding:30px 14px 16px!important;
+  border:1px solid var(--ui-line)!important;
+  border-radius:10px!important;
+  background:var(--ui-panel)!important;
+}
+#appView .desktop-dashboard-exact::before{
+  content:"داشبورد و نمودارها";
+  position:absolute;
+  top:-15px;
+  right:18px;
+  padding:0 10px;
+  background:var(--ui-page);
+  color:#145741;
+  font-size:18px;
+  font-weight:700;
+  line-height:1.7;
+}
+#appView .dashboard-filters,
+#appView .dashboard-performance-range,
+#appView .dashboard-chart-card,
+#appView .dashboard-cards article{
+  border-radius:9px!important;
+  border-color:#c7d3ce!important;
+  box-shadow:none!important;
+}
+#appView .dashboard-filters,
+#appView .dashboard-performance-range{background:#f4f8f6!important}
+#appView .dashboard-filters legend,
+#appView .dashboard-performance-range legend{
+  padding:0 8px!important;
+  color:#205846!important;
+  font-weight:700!important;
+}
+
+/* Sticker page: keep the desktop manager but match the same rounded family. */
+#appView .desktop-sticker-page,
+#appView .desktop-sticker-box,
+#appView .desktop-sticker-preview-stage{
+  border-radius:10px!important;
+  box-shadow:none!important;
+}
+#appView .desktop-sticker-box{border-color:var(--ui-line)!important}
+
+/* Cards and notes follow the same softness. */
+#appView .manager-note,
+#appView .manager-warning,
+#appView .send-summary article,
+#appView .stats article,
+#appView .account-security-box,
+#appView .profile-photo-field{
+  border-radius:9px!important;
+  box-shadow:none!important;
+}
+
+/* Modals remain visually related to the pages. */
+dialog.modal,dialog.manager-modal{
+  border:1px solid var(--ui-line-strong)!important;
+  border-radius:12px!important;
+  background:#f7faf8!important;
+  box-shadow:0 18px 50px rgba(20,55,44,.20)!important;
+}
+dialog .modal-head{border-bottom:1px solid #d5dfda!important}
+
+/* Responsive preservation. */
+@media(max-width:1100px){
+  #appView .view>.panel,
+  #appView #kanbanView>.table-panel,
+  #appView #archiveView>.table-panel,
+  #appView .desktop-dashboard-exact{padding-left:12px!important;padding-right:12px!important}
+  #appView .manager-toolbar,
+  #appView .task-toolbar,
+  #appView .people-actions{gap:7px!important}
+}
+@media(max-width:760px){
+  #appView .workspace>header{margin-bottom:10px!important;padding-top:4px!important}
+  #appView #viewTitle{font-size:19px!important}
+  #appView .view:not(#welcomeView){padding:2px 2px 20px!important}
+  #appView .view>.panel,
+  #appView #kanbanView>.table-panel,
+  #appView #archiveView>.table-panel,
+  #appView .desktop-dashboard-exact{margin-top:16px!important;padding:27px 9px 10px!important;border-radius:9px!important}
+  #appView .panel-head>div:first-child,
+  #appView .panel-head>h3,
+  #appView .desktop-dashboard-exact::before{right:12px!important;font-size:16px!important}
+  #appView .manager-toolbar,
+  #appView .task-toolbar,
+  #appView .people-actions{flex-wrap:nowrap!important;overflow-x:auto!important}
+  #appView .table-wrap{border-radius:8px!important}
+}
