@@ -1,12 +1,15 @@
 (()=>{
 let preview=[];
+let ownerIndexRef=null,ownerIndex=new Map();
 const key=(o,...ks)=>{for(const k of ks)if(o[k]!==undefined&&String(o[k]).trim()!=='')return o[k];return null};
 const iso=v=>{if(!v)return null;if(v instanceof Date&&!isNaN(v))return v.toISOString().slice(0,10);if(typeof v==='number'&&XLSX?.SSF){const d=XLSX.SSF.parse_date_code(v);return d?`${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`:null}const s=String(v).trim();return /^\d{4}-\d{1,2}-\d{1,2}$/.test(s)?s.split('-').map((x,i)=>i?x.padStart(2,'0'):x).join('-'):null};
-function owner(value){const s=norm(value).toLowerCase();return state.profiles.find(p=>norm(p.full_name).toLowerCase()===s||norm(p.excel_name).toLowerCase()===s||String(p.email).toLowerCase()===s)}
+function rebuildOwnerIndex(){ownerIndexRef=state.profiles;ownerIndex=new Map();for(const p of state.profiles||[]){for(const value of [p.full_name,p.excel_name,p.email]){const k=norm(value).toLowerCase();if(k)ownerIndex.set(k,p)}}}
+function owner(value){if(ownerIndexRef!==state.profiles)rebuildOwnerIndex();return ownerIndex.get(norm(value).toLowerCase())}
 async function parse(file){
   if(typeof XLSX==='undefined')throw new Error('کتابخانه Excel بارگذاری نشده است؛ صفحه را تازه‌سازی کنید.');
   const wb=XLSX.read(await file.arrayBuffer(),{type:'array',cellDates:true});
   const ws=wb.Sheets[wb.SheetNames[0]],rows=XLSX.utils.sheet_to_json(ws,{defval:''});
+  if(ownerIndexRef!==state.profiles)rebuildOwnerIndex();
   preview=rows.map((r,i)=>{
     const who=owner(key(r,'متولی','نام در اکسل','ایمیل','owner'));
     const title=key(r,'عنوان فعالیت','عنوان کار','عنوان','title');
@@ -18,7 +21,16 @@ async function parse(file){
   renderPreview(rows.length);
 }
 function renderPreview(total){const bad=preview.filter(x=>x.errors.length).length;document.querySelector('#importSummary').textContent=`${fa(total)} رکورد بررسی شد؛ ${fa(total-bad)} معتبر و ${fa(bad)} دارای خطاست.`;document.querySelector('#importPreviewBody').innerHTML=preview.slice(0,100).map(x=>`<tr class="${x.errors.length?'row-overdue':''}"><td>${fa(x.row)}</td><td>${fa(x.data.legacy_id||'—')}</td><td>${safe(x.data.title)}</td><td>${safe(ownerName(x.data))}</td><td>${safe(x.errors.join('، ')||'آماده ورود')}</td></tr>`).join('');document.querySelector('#importDialog').showModal()}
-async function commit(){const mode=document.querySelector('#duplicateMode').value,valid=preview.filter(x=>!x.errors.length);let ok=0,failed=0,firstError='';for(const r of valid){try{const exists=r.data.legacy_id?state.tasks.find(t=>Number(t.legacy_id||t.id)===r.data.legacy_id):null;if(exists&&mode==='reject')continue;if(exists&&mode==='update')await update('tasks',`id=eq.${exists.id}`,{...r.data,legacy_id:exists.legacy_id});else await insert('tasks',{...r.data,legacy_id:exists&&mode==='create'?null:r.data.legacy_id,created_by:state.profile.id});ok++}catch(e){failed++;if(!firstError)firstError=e.message}}document.querySelector('#importDialog').close();toast(`${fa(ok)} رکورد وارد شد؛ ${fa(failed)} خطا.${firstError?' '+firstError:''}`,failed>0);await refresh()}
+async function commit(){
+  const mode=document.querySelector('#duplicateMode').value,valid=preview.filter(x=>!x.errors.length);let ok=0,failed=0,firstError='';
+  const existingByLegacy=new Map();for(const t of state.tasks){const id=Number(t.legacy_id||t.id);if(id)existingByLegacy.set(id,t)}
+  const work=[];
+  for(const r of valid){const exists=r.data.legacy_id?existingByLegacy.get(r.data.legacy_id):null;if(exists&&mode==='reject')continue;work.push({r,exists})}
+  const concurrency=Math.min(6,Math.max(1,work.length));let cursor=0;
+  async function worker(){while(true){const i=cursor++;if(i>=work.length)return;const {r,exists}=work[i];try{if(exists&&mode==='update')await update('tasks',`id=eq.${exists.id}`,{...r.data,legacy_id:exists.legacy_id});else await insert('tasks',{...r.data,legacy_id:exists&&mode==='create'?null:r.data.legacy_id,created_by:state.profile.id});ok++}catch(e){failed++;if(!firstError)firstError=e.message}}}
+  await Promise.all(Array.from({length:concurrency},worker));
+  document.querySelector('#importDialog').close();toast(`${fa(ok)} رکورد وارد شد؛ ${fa(failed)} خطا.${firstError?' '+firstError:''}`,failed>0);await refresh()
+}
 function exportRows(archived){
   if(typeof XLSX==='undefined')return toast('کتابخانه Excel بارگذاری نشده است؛ صفحه را تازه‌سازی کنید.',true);
   const rows=state.tasks.filter(t=>!!t.archived===archived),headers=['شناسه','عنوان فعالیت','توضیحات','متولی','وضعیت','اولویت','تاریخ شروع','تاریخ انجام','تاریخ پایان','یادآور','آخرین به‌روزرسانی','وضعیت دیرکرد','توضیحات مدیر',...(archived?['تأخیر','تعجیل']:[])];
@@ -40,4 +52,5 @@ document.querySelector('#importBtn')?.addEventListener('click',()=>document.quer
 (()=>{
   const css=document.createElement('link');css.rel='stylesheet';css.href='ui-fixes-20260906.css?v=20260906-2';document.head.appendChild(css);
   const js=document.createElement('script');js.src='ui-fixes-20260906.js?v=20260906-2';document.body.appendChild(js);
+  const perf=document.createElement('script');perf.src='performance-20260906.js?v=20260906-1';document.body.appendChild(perf);
 })();
