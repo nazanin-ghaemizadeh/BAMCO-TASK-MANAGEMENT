@@ -40,13 +40,14 @@
     const app=q('#appView');if(!app||app.dataset.uxEntryCollapse==='1')return;
     app.dataset.uxEntryCollapse='1';
     let wasHidden=app.classList.contains('hidden');
+    const collapseSoon=()=>[80,250,600].forEach(ms=>setTimeout(collapseGroupsForEntry,ms));
     const applyIfEntered=()=>{
       const hidden=app.classList.contains('hidden');
-      if(wasHidden&&!hidden)setTimeout(collapseGroupsForEntry,80);
+      if(wasHidden&&!hidden)collapseSoon();
       wasHidden=hidden;
     };
     new MutationObserver(applyIfEntered).observe(app,{attributes:true,attributeFilter:['class']});
-    if(!wasHidden)setTimeout(collapseGroupsForEntry,120);
+    if(!wasHidden)collapseSoon();
   }
 
   function polishSearchButtons(){
