@@ -41,93 +41,28 @@
 @media(max-width:760px){.desktop-sticker-set-row{grid-template-columns:1fr}.desktop-sticker-secondary{margin-right:0}.desktop-sticker-preview-stage{min-height:360px;height:360px}#desktopStickerPreview{max-width:80%}.desktop-sticker-dialog{width:calc(100vw - 16px)}.desktop-sticker-dialog-body{overflow:auto}.desktop-sticker-upload-matrix{min-width:820px}}
 
 /* 2026-09-07 requested UI polish */
-/* Sidebar: section headers stay flush-right; children start about four spaces inward. */
-html body #appView #sidebar:not(.collapsed) #nav .nav-group-toggle{
-  padding-right:4px!important;
-  padding-left:8px!important;
-  text-align:right!important;
-}
-html body #appView #sidebar:not(.collapsed) #nav .nav-group-items{
-  padding:0 32px 4px 0!important;
-}
-html body #appView #sidebar:not(.collapsed) #nav .nav-group-items>button{
-  padding-right:6px!important;
-  padding-left:8px!important;
-  text-align:right!important;
-}
+html body #appView #sidebar:not(.collapsed) #nav .nav-group-toggle{padding-right:4px!important;padding-left:8px!important;text-align:right!important}
+html body #appView #sidebar:not(.collapsed) #nav .nav-group-items{padding:0 32px 4px 0!important}
+html body #appView #sidebar:not(.collapsed) #nav .nav-group-items>button{padding-right:6px!important;padding-left:8px!important;text-align:right!important}
+html body #appView #peopleView input[type="email"],html body #appView #sendView input[type="email"],html body #appView #followupView input[type="email"],html body #appView #peopleView .en-text,html body #appView #sendView .en-text,html body #appView #followupView .en-text,html body #appView #peopleView .english-ui,html body #appView #sendView .english-ui,html body #appView #followupView .english-ui,html body #appView #peopleView a[href^="mailto:"],html body #appView #sendView a[href^="mailto:"],html body #appView #followupView a[href^="mailto:"]{font-family:"Times New Roman",Times,serif!important;direction:ltr!important;text-align:left!important;unicode-bidi:plaintext!important}
+html body #appView #desktopTemplateEditor #dteSave,html body #appView #desktopTemplateEditor #dteCancel{border-radius:8px!important;min-height:42px!important;height:42px!important;padding:6px 18px!important;box-shadow:none!important}
+html body #appView #stickersView .desktop-sticker-secondary,html body #appView #stickersView .desktop-sticker-green,html body #appView #stickersView .desktop-sticker-cancel{border-radius:8px!important;min-height:42px!important;height:42px!important;min-width:110px!important;padding:6px 16px!important;box-shadow:none!important}
+html body #appView #stickersView .matrix-upload{border-radius:8px!important;min-height:48px!important;padding:6px 12px!important;box-shadow:none!important}
 
-/* Email-management addresses: Times New Roman, LTR and left aligned. */
-html body #appView #peopleView input[type="email"],
-html body #appView #sendView input[type="email"],
-html body #appView #followupView input[type="email"],
-html body #appView #peopleView .en-text,
-html body #appView #sendView .en-text,
-html body #appView #followupView .en-text,
-html body #appView #peopleView .english-ui,
-html body #appView #sendView .english-ui,
-html body #appView #followupView .english-ui,
-html body #appView #peopleView a[href^="mailto:"],
-html body #appView #sendView a[href^="mailto:"],
-html body #appView #followupView a[href^="mailto:"]{
-  font-family:"Times New Roman",Times,serif!important;
-  direction:ltr!important;
-  text-align:left!important;
-  unicode-bidi:plaintext!important;
-}
+/* Final sticker-manager correction: complete framed boxes + preview 20% smaller than previous build. */
+html body #appView #stickersView .desktop-sticker-box{box-sizing:border-box!important;border:1px solid #aebfb8!important;border-radius:10px!important;overflow:visible!important;background:#eef3f0!important}
+html body #appView #stickersView .desktop-sticker-box:last-of-type{border:1px solid #8aa79d!important;padding-bottom:12px!important}
+html body #appView #stickersView .desktop-sticker-preview-stage{min-height:500px!important;height:clamp(500px,70vh,760px)!important;max-height:760px!important;border:1px solid #b8c8c1!important;border-radius:8px!important;box-sizing:border-box!important;background:#f7faf8!important;margin:0!important}
+html body #appView #stickersView #desktopStickerPreview{display:block!important;height:74%!important;width:auto!important;max-height:74%!important;max-width:76%!important;object-fit:contain!important}
 
-/* Email template editor: rounded Save / Cancel buttons. */
-html body #appView #desktopTemplateEditor #dteSave,
-html body #appView #desktopTemplateEditor #dteCancel{
-  border-radius:8px!important;
-  min-height:42px!important;
-  height:42px!important;
-  padding:6px 18px!important;
-  box-shadow:none!important;
-}
+/* Settings root is flush-right like other main sections. */
+html body #appView #sidebar:not(.collapsed) #nav .nav-settings-root{width:100%!important;margin:0!important;padding-right:4px!important;padding-left:8px!important;text-align:right!important;justify-content:flex-start!important}
+html body #appView #settingsView .login-settings-panel{direction:rtl!important;text-align:right!important}
+html body #appView #settingsView .login-settings-copy{padding:4px 10px 10px!important;text-align:right!important;line-height:1.9!important}
+html body #appView #settingsView .login-settings-copy p{margin:2px 0!important}
+html body #appView #settingsView .login-settings-second{white-space:nowrap!important}
 
-/* Sticker manager: standard rounded action buttons. */
-html body #appView #stickersView .desktop-sticker-secondary,
-html body #appView #stickersView .desktop-sticker-green,
-html body #appView #stickersView .desktop-sticker-cancel{
-  border-radius:8px!important;
-  min-height:42px!important;
-  height:42px!important;
-  min-width:110px!important;
-  padding:6px 16px!important;
-  box-shadow:none!important;
-}
-html body #appView #stickersView .matrix-upload{
-  border-radius:8px!important;
-  min-height:48px!important;
-  padding:6px 12px!important;
-  box-shadow:none!important;
-}
-
-/* Larger sticker preview and a guaranteed bottom horizontal border on the lower box. */
-html body #appView #stickersView .desktop-sticker-preview-stage{
-  min-height:540px!important;
-  height:clamp(540px,76vh,880px)!important;
-  max-height:880px!important;
-  border-top:1px solid #8aa79d!important;
-  border-bottom:1px solid #8aa79d!important;
-  box-sizing:border-box!important;
-}
-html body #appView #stickersView #desktopStickerPreview{
-  display:block!important;
-  height:92%!important;
-  width:auto!important;
-  max-height:92%!important;
-  max-width:94%!important;
-  object-fit:contain!important;
-}
-html body #appView #stickersView .desktop-sticker-box:last-of-type{
-  border-bottom:1px solid #8aa79d!important;
-}
-@media(max-width:760px){
-  html body #appView #stickersView .desktop-sticker-preview-stage{
-    min-height:420px!important;
-    height:62vh!important;
-    max-height:650px!important;
-  }
-  html body #appView #stickersView #desktopStickerPreview{height:90%!important;max-height:90%!important;max-width:96%!important}
-}
+/* Task filter cells must follow the same colgroup as their headers. */
+html body #appView #kanbanView .column-filters th,html body #appView #archiveView .column-filters th{box-sizing:border-box!important;padding:7px 6px!important;vertical-align:middle!important}
+html body #appView #kanbanView .column-filters select,html body #appView #archiveView .column-filters select{display:block!important;width:100%!important;min-width:0!important;max-width:100%!important;margin:0!important;box-sizing:border-box!important;direction:rtl!important;text-align:right!important}
+@media(max-width:760px){html body #appView #stickersView .desktop-sticker-preview-stage{min-height:400px!important;height:58vh!important;max-height:600px!important}html body #appView #stickersView #desktopStickerPreview{height:72%!important;max-height:72%!important;max-width:82%!important}html body #appView #settingsView .login-settings-second{white-space:normal!important}}
