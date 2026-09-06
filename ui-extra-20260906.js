@@ -2,7 +2,7 @@
   const hasFa=s=>/[\u0600-\u06ff]/.test(String(s||''));
   const hasEn=s=>/[A-Za-z]/.test(String(s||''));
 
-  document.documentElement.dataset.uiHotfix='20260906-1355';
+  document.documentElement.dataset.uiHotfix='20260906-1400';
 
   /* Apply Times New Roman to every Latin run, including Latin words inside Persian sentences. */
   function wrapLatinText(root=document.body){
@@ -96,21 +96,22 @@
     };
   }
 
-  /* Load the desktop-faithful sticker manager after the core app globals exist. */
-  function loadStickerDesktop(){
+  /* Load the desktop-faithful sticker manager. During initial parsing, document.write keeps
+     both scripts parser-ordered so the sticker module sees DOMContentLoaded reliably. */
+  function loadStickerDesktopLate(){
     if(!document.querySelector('link[data-sticker-desktop]')){
       const link=document.createElement('link');
       link.rel='stylesheet';link.href='sticker-desktop.css?v=20260906-1';link.dataset.stickerDesktop='1';
       document.head.appendChild(link);
     }
-    const loadScript=(src,marker)=>new Promise((resolve,reject)=>{
-      if(document.querySelector(`script[data-${marker}]`))return resolve();
-      const s=document.createElement('script');s.src=src;s.dataset[marker]='1';s.onload=resolve;s.onerror=reject;document.body.appendChild(s);
-    });
-    loadScript('sticker-default.js?v=20260906-1','stickerDefaults')
-      .then(()=>loadScript('sticker-desktop.js?v=20260906-2','stickerDesktop'))
-      .catch(()=>console.error('Sticker manager assets could not be loaded.'));
+    const first=document.createElement('script');
+    first.src='sticker-default.js?v=20260906-1';
+    first.onload=()=>{const second=document.createElement('script');second.src='sticker-desktop.js?v=20260906-3';document.body.appendChild(second)};
+    document.body.appendChild(first);
   }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',loadStickerDesktop,{once:true});
-  else loadStickerDesktop();
+  if(document.readyState==='loading'){
+    document.write('<link rel="stylesheet" href="sticker-desktop.css?v=20260906-1" data-sticker-desktop="1">');
+    document.write('<script src="sticker-default.js?v=20260906-1"><\/script>');
+    document.write('<script src="sticker-desktop.js?v=20260906-3"><\/script>');
+  }else loadStickerDesktopLate();
 })();
