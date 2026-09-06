@@ -39,3 +39,95 @@
 .desktop-sticker-dialog-actions .desktop-sticker-cancel{min-width:120px}
 @media(max-width:1100px){.desktop-sticker-set-row{grid-template-columns:1fr 1fr}.desktop-sticker-preview-stage{height:440px}.desktop-sticker-upload-matrix{grid-template-columns:110px repeat(5,minmax(100px,1fr))}}
 @media(max-width:760px){.desktop-sticker-set-row{grid-template-columns:1fr}.desktop-sticker-secondary{margin-right:0}.desktop-sticker-preview-stage{min-height:360px;height:360px}#desktopStickerPreview{max-width:80%}.desktop-sticker-dialog{width:calc(100vw - 16px)}.desktop-sticker-dialog-body{overflow:auto}.desktop-sticker-upload-matrix{min-width:820px}}
+
+/* 2026-09-07 requested UI polish */
+/* Sidebar: section headers stay flush-right; children start about four spaces inward. */
+html body #appView #sidebar:not(.collapsed) #nav .nav-group-toggle{
+  padding-right:4px!important;
+  padding-left:8px!important;
+  text-align:right!important;
+}
+html body #appView #sidebar:not(.collapsed) #nav .nav-group-items{
+  padding:0 32px 4px 0!important;
+}
+html body #appView #sidebar:not(.collapsed) #nav .nav-group-items>button{
+  padding-right:6px!important;
+  padding-left:8px!important;
+  text-align:right!important;
+}
+
+/* Email-management addresses: Times New Roman, LTR and left aligned. */
+html body #appView #peopleView input[type="email"],
+html body #appView #sendView input[type="email"],
+html body #appView #followupView input[type="email"],
+html body #appView #peopleView .en-text,
+html body #appView #sendView .en-text,
+html body #appView #followupView .en-text,
+html body #appView #peopleView .english-ui,
+html body #appView #sendView .english-ui,
+html body #appView #followupView .english-ui,
+html body #appView #peopleView a[href^="mailto:"],
+html body #appView #sendView a[href^="mailto:"],
+html body #appView #followupView a[href^="mailto:"]{
+  font-family:"Times New Roman",Times,serif!important;
+  direction:ltr!important;
+  text-align:left!important;
+  unicode-bidi:plaintext!important;
+}
+
+/* Email template editor: rounded Save / Cancel buttons. */
+html body #appView #desktopTemplateEditor #dteSave,
+html body #appView #desktopTemplateEditor #dteCancel{
+  border-radius:8px!important;
+  min-height:42px!important;
+  height:42px!important;
+  padding:6px 18px!important;
+  box-shadow:none!important;
+}
+
+/* Sticker manager: standard rounded action buttons. */
+html body #appView #stickersView .desktop-sticker-secondary,
+html body #appView #stickersView .desktop-sticker-green,
+html body #appView #stickersView .desktop-sticker-cancel{
+  border-radius:8px!important;
+  min-height:42px!important;
+  height:42px!important;
+  min-width:110px!important;
+  padding:6px 16px!important;
+  box-shadow:none!important;
+}
+html body #appView #stickersView .matrix-upload{
+  border-radius:8px!important;
+  min-height:48px!important;
+  padding:6px 12px!important;
+  box-shadow:none!important;
+}
+
+/* Larger sticker preview and a guaranteed bottom horizontal border on the lower box. */
+html body #appView #stickersView .desktop-sticker-preview-stage{
+  min-height:540px!important;
+  height:clamp(540px,76vh,880px)!important;
+  max-height:880px!important;
+  border-top:1px solid #8aa79d!important;
+  border-bottom:1px solid #8aa79d!important;
+  box-sizing:border-box!important;
+}
+html body #appView #stickersView #desktopStickerPreview{
+  display:block!important;
+  height:92%!important;
+  width:auto!important;
+  max-height:92%!important;
+  max-width:94%!important;
+  object-fit:contain!important;
+}
+html body #appView #stickersView .desktop-sticker-box:last-of-type{
+  border-bottom:1px solid #8aa79d!important;
+}
+@media(max-width:760px){
+  html body #appView #stickersView .desktop-sticker-preview-stage{
+    min-height:420px!important;
+    height:62vh!important;
+    max-height:650px!important;
+  }
+  html body #appView #stickersView #desktopStickerPreview{height:90%!important;max-height:90%!important;max-width:96%!important}
+}
