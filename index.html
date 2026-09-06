@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="ui-extra-20260906.css?v=20260906-6" />
   <link rel="stylesheet" href="stable-layout-20260906.css?v=20260906-1" />
   <link rel="stylesheet" href="ux-polish-20260906.css?v=20260906-1" />
+  <link id="responsiveStyles" rel="stylesheet" href="responsive-20260906.css?v=20260906-2" />
   <style>
     #appView.hidden{display:none!important;visibility:hidden!important}
     #loginView.hidden{display:none!important;visibility:hidden!important}
@@ -154,6 +155,6 @@
   <script>window.__bamcoStableStickerInstalled=true;</script>
   <script src="ui-extra-20260906.js?v=20260906-6"></script>
   <script src="ux-polish-20260906.js?v=20260906-1"></script>
-  <script>const responsiveCss=document.createElement('link');responsiveCss.rel='stylesheet';responsiveCss.href='responsive-20260906.css?v=20260906-1';document.head.appendChild(responsiveCss);</script>
+  <script>document.head.appendChild(document.querySelector('#responsiveStyles'));</script>
 </body>
 </html>
