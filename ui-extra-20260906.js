@@ -2,7 +2,7 @@
   const hasFa=s=>/[\u0600-\u06ff]/.test(String(s||''));
   const hasEn=s=>/[A-Za-z]/.test(String(s||''));
 
-  document.documentElement.dataset.uiHotfix='20260906-1300';
+  document.documentElement.dataset.uiHotfix='20260906-1355';
 
   /* Apply Times New Roman to every Latin run, including Latin words inside Persian sentences. */
   function wrapLatinText(root=document.body){
@@ -95,4 +95,22 @@
       }catch(err){toast(err.message,true)}
     };
   }
+
+  /* Load the desktop-faithful sticker manager after the core app globals exist. */
+  function loadStickerDesktop(){
+    if(!document.querySelector('link[data-sticker-desktop]')){
+      const link=document.createElement('link');
+      link.rel='stylesheet';link.href='sticker-desktop.css?v=20260906-1';link.dataset.stickerDesktop='1';
+      document.head.appendChild(link);
+    }
+    const loadScript=(src,marker)=>new Promise((resolve,reject)=>{
+      if(document.querySelector(`script[data-${marker}]`))return resolve();
+      const s=document.createElement('script');s.src=src;s.dataset[marker]='1';s.onload=resolve;s.onerror=reject;document.body.appendChild(s);
+    });
+    loadScript('sticker-default.js?v=20260906-1','stickerDefaults')
+      .then(()=>loadScript('sticker-desktop.js?v=20260906-2','stickerDesktop'))
+      .catch(()=>console.error('Sticker manager assets could not be loaded.'));
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',loadStickerDesktop,{once:true});
+  else loadStickerDesktop();
 })();
