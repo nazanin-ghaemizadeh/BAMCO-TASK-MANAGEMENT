@@ -8,8 +8,10 @@ const state={token:'',user:null,profile:null,profiles:[],tasks:[],requests:[],vi
 
 function apiErrorMessage(data,status){
   const code=data?.code||data?.error_code;
+  const raw=[code,data?.msg,data?.message,data?.error_description,data?.error].filter(Boolean).join(' ').toLowerCase();
+  if(code==='invalid_credentials'||raw.includes('invalid login credentials')||raw.includes('invalid credentials'))return 'نام کاربری یا رمز اشتباه است.';
   const messages={
-    invalid_credentials:'ایمیل یا رمز عبور صحیح نیست.',
+    invalid_credentials:'نام کاربری یا رمز اشتباه است.',
     email_not_confirmed:'ایمیل این حساب هنوز تأیید نشده است.',
     user_banned:'دسترسی این حساب مسدود شده است؛ با مدیر سامانه تماس بگیرید.',
     over_request_rate_limit:'تعداد تلاش‌ها بیش از حد مجاز است؛ چند دقیقه دیگر دوباره امتحان کنید.',
@@ -97,6 +99,7 @@ async function enterApp(){
   $('#viewSubtitle').textContent=isManager()?'نمای کلی وظایف و عملکرد همه متولیان':'فقط وظایف و عملکرد مربوط به شما';
   $('#kanbanScope').textContent=isManager()?'نمای همه متولیان':'فقط تسک‌های شما';$('#archiveScope').textContent=isManager()?'نمای همه متولیان':'فقط آرشیو شما';
   await refresh();
+  if(window.matchMedia('(max-width:760px)').matches)$('#sidebar').classList.add('collapsed');
   $('#loginView').classList.add('hidden');$('#appView').classList.remove('hidden');
   if(state.profile.must_change_password){$('#cancelPasswordBtn').classList.add('hidden');$('#passwordDialog').showModal()}else showView('kanban');
 }
