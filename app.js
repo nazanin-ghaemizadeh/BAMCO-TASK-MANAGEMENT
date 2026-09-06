@@ -6,13 +6,27 @@ const en=n=>String(n??'').replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d
 const norm=s=>String(s??'').replace(/ي/g,'ی').replace(/ك/g,'ک').replace(/\u200c/g,' ').replace(/\s+/g,' ').trim();
 const state={token:'',user:null,profile:null,profiles:[],tasks:[],requests:[],view:'dashboard',editing:null,reviewing:null,dateInput:null};
 
+function apiErrorMessage(data,status){
+  const code=data?.code||data?.error_code;
+  const messages={
+    invalid_credentials:'ایمیل یا رمز عبور صحیح نیست.',
+    email_not_confirmed:'ایمیل این حساب هنوز تأیید نشده است.',
+    user_banned:'دسترسی این حساب مسدود شده است؛ با مدیر سامانه تماس بگیرید.',
+    over_request_rate_limit:'تعداد تلاش‌ها بیش از حد مجاز است؛ چند دقیقه دیگر دوباره امتحان کنید.',
+    over_email_send_rate_limit:'تعداد درخواست‌های ایمیل بیش از حد مجاز است؛ کمی بعد دوباره امتحان کنید.'
+  };
+  if(messages[code])return messages[code];
+  return data?.msg||data?.message||data?.error_description||data?.error||
+    (status>=500?'سرویس پایگاه داده موقتاً در دسترس نیست.':'درخواست به پایگاه داده انجام نشد.');
+}
+
 async function api(path,{method='GET',body,auth=true,prefer}={}){
   const headers={apikey:SB_KEY,'Content-Type':'application/json',Accept:'application/json'};
   if(auth&&state.token) headers.Authorization=`Bearer ${state.token}`;
   if(prefer) headers.Prefer=prefer;
   const res=await fetch(SB_URL+path,{method,headers,body:body===undefined?undefined:JSON.stringify(body)});
   const text=await res.text(); let data=null; try{data=text?JSON.parse(text):null}catch{data=text}
-  if(!res.ok) throw new Error(data?.message||data?.error_description||data?.error||'خطا در ارتباط با پایگاه داده.');
+  if(!res.ok) throw new Error(apiErrorMessage(data,res.status));
   return data;
 }
 const select=(table,q='select=*')=>api(`/rest/v1/${table}?${q}`);
