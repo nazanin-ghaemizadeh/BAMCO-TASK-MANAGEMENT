@@ -23,19 +23,29 @@
   font-size:14px!important;
 }
 
-/* Remove the artificial gap between approvals and people/CC in the right menu. */
-.sidebar nav{gap:0!important}
-.sidebar nav button{margin:0!important}
-.sidebar nav .nav-divider,.nav-divider.manager-only{
+/* No artificial separator or extra vertical gap between approvals and people/CC. */
+#nav,.sidebar nav{
+  gap:0!important;
+  row-gap:0!important;
+}
+#nav>button,.sidebar nav button{
+  margin-top:0!important;
+  margin-bottom:0!important;
+}
+#nav>.nav-divider,.sidebar nav .nav-divider,.nav-divider.manager-only{
   display:none!important;
+  visibility:hidden!important;
   height:0!important;
+  min-height:0!important;
+  max-height:0!important;
   margin:0!important;
   padding:0!important;
   border:0!important;
 }
-
-/* Keep every sidebar tab vertically consistent after removing the divider. */
-.sidebar nav button+button{margin-top:0!important}
+#approvalsNav+button[data-view="people"],
+#nav button[data-view="people"]{
+  margin-top:0!important;
+}
 
 /* Selection cell stays visually clear as the rightmost column. */
 #kanbanView thead>tr:first-child>th:first-child,
