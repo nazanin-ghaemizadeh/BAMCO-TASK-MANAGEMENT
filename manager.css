@@ -18,6 +18,7 @@ button,input,select,textarea{font-family:"B Nazanin",BNazanin,Tahoma,sans-serif!
 .app{display:block!important;min-height:100vh!important;background:var(--desk-bg)!important}
 .sidebar{position:fixed!important;right:0!important;top:126px!important;bottom:0!important;width:286px!important;background:var(--desk-side)!important;color:#fff!important;padding:18px 14px 14px!important;z-index:50!important;display:flex!important;flex-direction:column!important;transition:width .18s ease!important;border:0!important}
 .sidebar.collapsed{width:76px!important}
+.sidebar.collapsed .side-brand strong{display:block!important}
 .sidebar::before{content:"منوی اصلی";display:block;color:#92b6aa;text-align:right;font-weight:700;font-size:17px;padding:8px 14px 15px}
 .collapse{position:static!important;width:100%!important;height:52px!important;border:0!important;background:#113f34!important;color:#b8d2ca!important;border-radius:0!important;font-size:0!important;display:flex!important;align-items:center!important;justify-content:center!important;margin:0 0 22px!important;cursor:pointer!important}
 .collapse::after{content:"◀  جمع‌کردن منو";font-size:17px!important;font-weight:700!important}
@@ -77,7 +78,14 @@ button,input,select,textarea{font-family:"B Nazanin",BNazanin,Tahoma,sans-serif!
 .table-wrap{overflow:auto!important;max-height:calc(100vh - 235px)!important;background:#fff!important;border:1px solid #a9aaa4!important}
 table,.manager-table{width:100%!important;border-collapse:collapse!important;min-width:900px!important;background:#fff!important}
 th{position:sticky!important;top:0!important;z-index:2!important;background:#dfeae5!important;color:#1b5543!important;text-align:right!important;font-weight:700!important;border:1px solid #9fa49f!important;padding:10px 12px!important}
+thead>tr:first-child th{white-space:nowrap!important}
+.column-filters th{top:48px!important;padding:4px!important;background:#edf3f0!important}
+.column-filters select{width:100%;min-width:82px;height:32px;border:1px solid #abb7b1;background:#fff;font-size:14px;padding:2px 5px}
+.column-filters select:disabled{opacity:.45}
 td{padding:9px 11px!important;border:1px solid #d0d3d0!important;vertical-align:middle!important;background:#fff!important}
+.fa-text{font-family:"B Nazanin",BNazanin,Tahoma,sans-serif!important;text-align:right!important;direction:rtl!important}
+.en-text{font-family:"Times New Roman",Times,serif!important;text-align:left!important;direction:ltr!important}
+.compact-danger{min-height:34px!important;padding:5px 10px!important}
 tbody tr:hover td{background:#f2f6f4!important}
 tbody tr.row-overdue td{background:#fff1f1!important}
 tbody tr.row-warning td{background:#fff9e8!important}
