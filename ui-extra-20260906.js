@@ -2,36 +2,96 @@
   const hasFa=s=>/[\u0600-\u06ff]/.test(String(s||''));
   const hasEn=s=>/[A-Za-z]/.test(String(s||''));
 
-  function classifyEnglish(root=document){
-    const nodes=root.querySelectorAll?.('td,th,button,label,input,select,option,textarea,small,span,strong,p,h1,h2,h3,h4')||[];
-    nodes.forEach(el=>{
-      const text=(el instanceof HTMLInputElement||el instanceof HTMLTextAreaElement)
-        ? `${el.value||''} ${el.placeholder||''}`
-        : (el.textContent||'');
-      el.classList.toggle('english-ui',hasEn(text)&&!hasFa(text));
+  document.documentElement.dataset.uiHotfix='20260906-1243';
+
+  /* Apply Times New Roman to every Latin run, including Latin words inside Persian sentences. */
+  function wrapLatinText(root=document.body){
+    if(!root)return;
+    const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,{
+      acceptNode(node){
+        const p=node.parentElement;
+        if(!p||!hasEn(node.nodeValue))return NodeFilter.FILTER_REJECT;
+        if(p.closest('script,style,textarea,input,select,option,pre,code,.latin-run,[contenteditable="true"]'))return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes=[];while(walker.nextNode())nodes.push(walker.currentNode);
+    nodes.forEach(node=>{
+      const text=node.nodeValue||'';
+      const re=/([A-Za-z][A-Za-z0-9@._%+\-/:;#&()'\"]*)/g;
+      if(!re.test(text))return;
+      re.lastIndex=0;
+      const frag=document.createDocumentFragment();let last=0,m;
+      while((m=re.exec(text))){
+        if(m.index>last)frag.append(document.createTextNode(text.slice(last,m.index)));
+        const span=document.createElement('span');span.className='latin-run';span.textContent=m[0];frag.append(span);last=re.lastIndex;
+      }
+      if(last<text.length)frag.append(document.createTextNode(text.slice(last)));
+      node.replaceWith(frag);
     });
   }
-  classifyEnglish();
-  new MutationObserver(muts=>muts.forEach(m=>m.addedNodes.forEach(n=>{if(n.nodeType===1)classifyEnglish(n)})))
-    .observe(document.body,{childList:true,subtree:true});
-  document.addEventListener('input',e=>{if(e.target.matches?.('input,textarea,select'))classifyEnglish(e.target.parentElement||document)},true);
-  document.addEventListener('change',e=>{if(e.target.matches?.('input,textarea,select'))classifyEnglish(e.target.parentElement||document)},true);
 
-  function clearSelection(scope){
-    if(typeof state==='undefined'||!state.selected)return;
-    if(scope){state.selected[scope]=null;renderTasks(scope==='archive');return}
-    const current=state.view==='archive'?'archive':state.view==='kanban'?'kanban':null;
-    if(current&&state.selected[current]!=null){state.selected[current]=null;renderTasks(current==='archive')}
+  function classifyControls(root=document){
+    const nodes=[];
+    if(root.nodeType===1&&root.matches?.('input,textarea,select,option'))nodes.push(root);
+    root.querySelectorAll?.('input,textarea,select,option,.english,.en-text,[dir="ltr"]')?.forEach(el=>nodes.push(el));
+    nodes.forEach(el=>{
+      const text=(el instanceof HTMLInputElement||el instanceof HTMLTextAreaElement)?`${el.value||''} ${el.placeholder||''}`:(el.textContent||'');
+      if((hasEn(text)&&!hasFa(text))||el.matches('.english,.en-text,[dir="ltr"]'))el.classList.add('english-ui');
+      else el.classList.remove('english-ui');
+    });
   }
 
-  // Clicking anywhere outside the table cancels the current row selection.
-  // Button handlers run first, so toolbar actions still apply to the chosen row.
-  document.addEventListener('click',e=>{
-    const scope=typeof state!=='undefined'&&state.view==='archive'?'archive':typeof state!=='undefined'&&state.view==='kanban'?'kanban':null;
-    if(!scope||state.selected[scope]==null)return;
+  function applyTypography(root=document.body){classifyControls(root);wrapLatinText(root)}
+  applyTypography();
+
+  let typographyQueued=false;
+  const scheduleTypography=root=>{
+    if(typographyQueued)return;typographyQueued=true;
+    requestAnimationFrame(()=>{typographyQueued=false;applyTypography(root?.nodeType===1?root:document.body)});
+  };
+  new MutationObserver(muts=>{
+    for(const m of muts){
+      if(m.type==='childList'&&m.addedNodes.length){scheduleTypography(m.target);break}
+      if(m.type==='characterData'){scheduleTypography(m.target.parentElement);break}
+    }
+  }).observe(document.body,{childList:true,subtree:true,characterData:true});
+  document.addEventListener('input',e=>{if(e.target.matches?.('input,textarea,select'))classifyControls(e.target.parentElement||document)},true);
+  document.addEventListener('change',e=>{if(e.target.matches?.('input,textarea,select'))classifyControls(e.target.parentElement||document)},true);
+
+  function clearSelection(scope){
+    if(typeof state==='undefined'||!state.selected||!scope)return;
+    state.selected[scope]=null;
     const view=document.querySelector(`#${scope}View`);
-    const table=view?.querySelector('.table-wrap');
+    view?.querySelectorAll('.task-pick').forEach(x=>x.checked=false);
+    view?.querySelectorAll('tr.task-selected').forEach(x=>x.classList.remove('task-selected'));
+    if(typeof updateTaskToolbar==='function')updateTaskToolbar(scope);
+  }
+
+  /* Clicking outside the actual task table cancels the selection.
+     Toolbar handlers execute before this document-level bubble handler, so actions still work. */
+  document.addEventListener('click',e=>{
+    if(typeof state==='undefined')return;
+    const scope=state.view==='archive'?'archive':state.view==='kanban'?'kanban':null;
+    if(!scope||state.selected?.[scope]==null)return;
+    const table=document.querySelector(`#${scope}View .table-wrap table`);
     if(table?.contains(e.target))return;
-    setTimeout(()=>clearSelection(scope),0);
+    clearSelection(scope);
   });
+
+  /* Force the same database resequence path for deletion from KANBAN and Archive,
+     then reload both views so the new display IDs are visible immediately. */
+  if(typeof window.deleteTask==='function'){
+    window.deleteTask=async id=>{
+      if(typeof isManager==='function'&&!isManager())return;
+      const task=state.tasks.find(t=>String(t.id)===String(id));
+      if(!task||!confirm(`تسک «${task.title}» برای همیشه حذف شود؟`))return;
+      try{
+        await rpc('delete_task_and_resequence',{p_task_id:Number(id)});
+        state.selected.kanban=null;state.selected.archive=null;
+        await refresh();
+        toast('تسک حذف شد و شماره‌ها در کانبان و آرشیو بازشماری شدند.');
+      }catch(err){toast(err.message,true)}
+    };
+  }
 })();
