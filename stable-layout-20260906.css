@@ -1,4 +1,4 @@
-/* Final viewport/layout pass - desktop web app */
+/* Stable 100% viewport + grouped navigation */
 :root{
   --bamco-shell:#0f5748;
   --bamco-active:#218764;
@@ -6,198 +6,78 @@
   --bamco-page:#eef3f0;
   --bamco-text:#174d3e;
 }
+html,body{width:100%;height:100%;margin:0!important;overflow:hidden!important;background:var(--bamco-page)!important}
+#appView:not(.hidden){width:100%!important;height:100vh!important;min-height:100vh!important;zoom:1!important;overflow:hidden!important}
 
-/* Emulate the comfortable 80% browser zoom while still filling the viewport. */
-@supports (zoom: .8){
-  #appView:not(.hidden){
-    zoom:.8;
-    width:125%;
-    height:125vh;
-    min-height:125vh!important;
-    overflow:hidden!important;
-  }
-}
-body:has(#appView:not(.hidden)){
-  overflow:hidden!important;
-  background:var(--bamco-page)!important;
-}
-
-/* Remove the top banner completely. The brand now lives only in the sidebar. */
-.side-brand{
-  position:static!important;
-  inset:auto!important;
-  width:100%!important;
-  height:auto!important;
-  min-height:0!important;
-  background:transparent!important;
-  padding:2px 0 8px!important;
-  margin:0!important;
-  display:flex!important;
-  justify-content:center!important;
-  align-items:center!important;
-  border:0!important;
-}
+/* Brand is only in the sidebar. */
+.side-brand{position:static!important;inset:auto!important;width:100%!important;height:112px!important;min-height:112px!important;background:transparent!important;padding:3px 0 5px!important;margin:0!important;display:flex!important;justify-content:center!important;align-items:center!important;border:0!important}
 .side-brand strong{display:none!important}
-.side-brand img{
-  width:132px!important;
-  height:104px!important;
-  max-width:none!important;
-  object-fit:contain!important;
-  margin:0 auto!important;
-  padding:0!important;
-  background:transparent!important;
-}
+.side-brand img{width:148px!important;height:106px!important;max-width:none!important;object-fit:contain!important;margin:0 auto!important;padding:0!important;background:transparent!important}
 
-/* Sidebar occupies the whole right edge with no visible scrollbar. */
-.sidebar{
-  top:0!important;
-  bottom:0!important;
-  right:0!important;
-  width:286px!important;
-  padding:8px 14px 10px!important;
-  background:var(--bamco-shell)!important;
-  border:0!important;
-  overflow:hidden!important;
-}
+.sidebar{position:fixed!important;top:0!important;right:0!important;bottom:0!important;width:286px!important;height:100vh!important;padding:6px 12px 8px!important;box-sizing:border-box!important;background:var(--bamco-shell)!important;color:#fff!important;border:0!important;overflow:hidden!important;display:flex!important;flex-direction:column!important}
 .sidebar.collapsed{width:76px!important}
-.sidebar::before{
-  padding:2px 14px 8px!important;
-  font-size:16px!important;
-  color:#b9d0c8!important;
-}
-.collapse{
-  margin:0 0 6px!important;
-  min-height:42px!important;
-  height:42px!important;
-  background:rgba(0,0,0,.08)!important;
-  border:1px solid rgba(255,255,255,.10)!important;
-}
-.sidebar nav{
-  flex:1 1 auto!important;
-  min-height:0!important;
-  overflow-y:auto!important;
-  overflow-x:hidden!important;
-  scrollbar-width:none!important;
-  -ms-overflow-style:none!important;
-  overscroll-behavior:contain!important;
-  scroll-behavior:smooth!important;
-}
-.sidebar nav::-webkit-scrollbar{width:0!important;height:0!important;display:none!important}
-.sidebar nav button{min-height:55px!important;border-color:transparent!important}
-.sidebar nav button.active{background:var(--bamco-active)!important}
-.account{padding-top:10px!important;margin-top:6px!important;border-top:1px solid rgba(255,255,255,.16)!important}
+.sidebar::before{display:none!important;content:none!important}
+.collapse{position:static!important;width:100%!important;height:36px!important;min-height:36px!important;margin:0 0 5px!important;padding:0!important;background:rgba(0,0,0,.08)!important;border:1px solid rgba(255,255,255,.12)!important;font-size:0!important;display:flex!important;align-items:center!important;justify-content:center!important}
+.collapse::after{content:"◀"!important;font-size:17px!important;color:#d9ebe5!important}
+.sidebar.collapsed .collapse::after{content:"▶"!important}
 
-/* Main content starts almost at the top; no dead header area. */
-.workspace{
-  margin-right:286px!important;
-  padding:8px 18px 32px!important;
-  height:125vh!important;
-  min-height:125vh!important;
-  overflow:hidden!important;
-  background:var(--bamco-page)!important;
-}
-.app:has(.sidebar.collapsed) .workspace{margin-right:76px!important}
-.workspace>header{
-  min-height:42px!important;
-  height:42px!important;
-  margin:0 0 7px!important;
-  padding:0!important;
-}
-.workspace>header h2{font-size:20px!important;line-height:1.2!important}
-.workspace>header p{font-size:13px!important;margin:0!important}
-.view{max-height:calc(125vh - 56px)!important;overflow:hidden!important}
+.sidebar nav{flex:1 1 auto!important;min-height:0!important;overflow-y:auto!important;overflow-x:hidden!important;scrollbar-width:none!important;-ms-overflow-style:none!important;scroll-behavior:smooth!important;padding:0!important;display:block!important}
+.sidebar nav::-webkit-scrollbar{display:none!important;width:0!important;height:0!important}
+.nav-divider{display:none!important}
+.nav-group{border-bottom:1px solid rgba(255,255,255,.09)!important}
+.nav-group-toggle{width:100%!important;min-height:43px!important;margin:0!important;padding:7px 12px!important;background:transparent!important;border:0!important;color:#fff!important;display:flex!important;align-items:center!important;justify-content:space-between!important;font-size:17px!important;font-weight:700!important;text-align:right!important}
+.nav-group-toggle:hover{background:rgba(0,0,0,.08)!important}
+.nav-chevron{font-family:Tahoma,sans-serif!important;font-size:17px!important;transition:transform .16s ease!important}
+.nav-group.collapsed-group .nav-group-items{display:none!important}
+.nav-group.collapsed-group .nav-chevron{transform:rotate(90deg)!important}
+.nav-group-items{padding:0 6px 4px!important}
+.sidebar nav .nav-group-items>button,.sidebar nav>button.nav-settings-root{width:100%!important;min-height:42px!important;margin:0!important;padding:6px 18px 6px 10px!important;border:0!important;background:transparent!important;color:#dcebe6!important;display:flex!important;align-items:center!important;gap:10px!important;text-align:right!important;font-size:15.5px!important;font-weight:700!important}
+.sidebar nav .nav-group-items>button:hover,.sidebar nav>button.nav-settings-root:hover{background:rgba(0,0,0,.08)!important}
+.sidebar nav .nav-group-items>button.active,.sidebar nav>button.nav-settings-root.active{background:var(--bamco-active)!important;color:#fff!important}
+.sidebar nav .nav-group-items>button b,.sidebar nav>button.nav-settings-root b{width:22px!important;min-width:22px!important;text-align:center!important;font-size:16px!important}
+.sidebar nav .nav-group-items>button span,.sidebar nav>button.nav-settings-root span{flex:1!important;white-space:nowrap!important}
+.sidebar nav>button.nav-settings-root{margin-top:4px!important;border-top:1px solid rgba(255,255,255,.09)!important}
+.sidebar.collapsed .nav-group-toggle{justify-content:center!important;padding:7px 4px!important}
+.sidebar.collapsed .nav-group-toggle span{display:none!important}
+.sidebar.collapsed .nav-chevron{font-size:15px!important}
+.sidebar.collapsed .nav-group-items{padding-inline:0!important}
+.sidebar.collapsed .nav-group-items>button,.sidebar.collapsed nav>button.nav-settings-root{justify-content:center!important;padding:7px 4px!important}
+.sidebar.collapsed .nav-group-items>button span,.sidebar.collapsed nav>button.nav-settings-root span{display:none!important}
+.account{margin-top:5px!important;padding:8px 3px 0!important;border-top:1px solid rgba(255,255,255,.14)!important}
 
-/* One border tone everywhere. */
-.panel,.stats article,.manager-card,.send-summary article,
-.table-wrap,table,th,td,.manager-table,.manager-note,.manager-warning,
-.desktop-sticker-box,.desktop-sticker-dialog,.desktop-sticker-preview-stage,
-.sticker-cell,input,select,textarea{
-  border-color:var(--bamco-line)!important;
-}
+/* True 100% workspace; no fake browser zoom and no clipping. */
+.workspace{position:relative!important;margin-right:286px!important;width:calc(100vw - 286px)!important;height:100vh!important;min-height:100vh!important;padding:0 16px 36px!important;box-sizing:border-box!important;overflow:hidden!important;background:var(--bamco-page)!important}
+.app:has(.sidebar.collapsed) .workspace{margin-right:76px!important;width:calc(100vw - 76px)!important}
+.workspace>header{height:48px!important;min-height:48px!important;margin:0 0 6px!important;padding:4px 0 0!important;box-sizing:border-box!important;display:flex!important;align-items:center!important}
+.workspace>header h2{font-size:20px!important;line-height:1.15!important;margin:0!important}
+.workspace>header p{font-size:13px!important;margin:2px 0 0!important}
+.view{height:auto!important;max-height:calc(100vh - 54px)!important;overflow:hidden!important}
+.panel{box-sizing:border-box!important}
 
-/* Kanban/archive: no right-hand scrollbar; mouse wheel still scrolls. Keep horizontal scrollbar usable. */
-#kanbanView .table-wrap,#archiveView .table-wrap,#approvalsView .table-wrap,
-#peopleView .table-wrap,#sendView .table-wrap,#followupView .table-wrap{
-  max-height:calc(125vh - 170px)!important;
-  overflow:auto!important;
-  scrollbar-width:none!important;
-  -ms-overflow-style:none!important;
-}
-#kanbanView .table-wrap::-webkit-scrollbar,
-#archiveView .table-wrap::-webkit-scrollbar,
-#approvalsView .table-wrap::-webkit-scrollbar,
-#peopleView .table-wrap::-webkit-scrollbar,
-#sendView .table-wrap::-webkit-scrollbar,
-#followupView .table-wrap::-webkit-scrollbar{
-  width:0!important;
-  height:8px!important;
-}
-#kanbanView .table-wrap::-webkit-scrollbar-thumb,
-#archiveView .table-wrap::-webkit-scrollbar-thumb,
-#approvalsView .table-wrap::-webkit-scrollbar-thumb,
-#peopleView .table-wrap::-webkit-scrollbar-thumb,
-#sendView .table-wrap::-webkit-scrollbar-thumb,
-#followupView .table-wrap::-webkit-scrollbar-thumb{
-  background:#9fb5ad!important;
-}
+/* Tables fit the viewport; vertical scrollbar is hidden but wheel/touch remain active. */
+.table-wrap{max-height:calc(100vh - 174px)!important;overflow:auto!important;scrollbar-width:none!important;-ms-overflow-style:none!important;overscroll-behavior:contain!important}
+.table-wrap::-webkit-scrollbar{width:0!important;height:0!important;display:none!important}
+.task-select-column{display:none!important}
+#kanbanView table,#archiveView table{min-width:100%!important}
+#kanbanView td,#archiveView td,.manager-table td,.review-details p,.manager-note,.manager-warning,.panel p,.panel small{ text-align:justify!important;text-justify:inter-word!important}
+#kanbanView td.en-text,#archiveView td.en-text{direction:ltr!important;text-align:justify!important}
 
-/* Sticker page: desktop-style controls + useful preview, never the old upload grid. */
+/* Keep all borders on one visual tone. */
+.panel,.stats article,.manager-card,.send-summary article,.table-wrap,table,th,td,.manager-table,.manager-note,.manager-warning,.desktop-sticker-box,.desktop-sticker-dialog,.desktop-sticker-preview-stage,.sticker-cell,input,select,textarea{border-color:var(--bamco-line)!important}
+
+/* Sticker manager: only the desktop-style manager is visible. */
 #stickersView{padding:0!important;overflow:hidden!important}
 #stickersView>.panel{display:none!important}
 #stickersView .desktop-sticker-page{display:block!important;padding:0!important}
 #stickersView #stickerGrid,#stickersView .sticker-grid{display:none!important}
 .desktop-sticker-box{margin:0 0 7px!important;padding:6px 10px 8px!important}
-.desktop-sticker-preview-stage{
-  height:clamp(300px,58vh,510px)!important;
-  min-height:300px!important;
-  max-height:510px!important;
-  display:flex!important;
-  align-items:center!important;
-  justify-content:center!important;
-  background:#f8faf9!important;
-  overflow:hidden!important;
-}
-#desktopStickerPreview{
-  display:block!important;
-  max-width:min(470px,72%)!important;
-  max-height:96%!important;
-  width:auto!important;
-  height:auto!important;
-  object-fit:contain!important;
-}
+.desktop-sticker-preview-stage{height:clamp(300px,56vh,500px)!important;min-height:300px!important;max-height:500px!important;display:flex!important;align-items:center!important;justify-content:center!important;background:#f8faf9!important;overflow:hidden!important}
+#desktopStickerPreview{display:block!important;max-width:min(440px,68%)!important;max-height:95%!important;width:auto!important;height:auto!important;object-fit:contain!important}
 
-/* Footer: fixed text on the page itself, no green bar/background. */
-#appView{padding-bottom:0!important}
-.app-footer-credit{
-  position:fixed!important;
-  left:0!important;
-  right:286px!important;
-  bottom:4px!important;
-  width:auto!important;
-  height:18px!important;
-  min-height:18px!important;
-  margin:0!important;
-  padding:0 10px!important;
-  z-index:40!important;
-  display:flex!important;
-  align-items:center!important;
-  justify-content:center!important;
-  background:transparent!important;
-  color:#42675b!important;
-  border:0!important;
-  box-shadow:none!important;
-  font-family:"B Nazanin",BNazanin,Tahoma,sans-serif!important;
-  font-size:10px!important;
-  font-weight:400!important;
-  line-height:1!important;
-  white-space:nowrap!important;
-  pointer-events:none!important;
-}
+/* Footer stays fixed as text only and is readable. */
+.app-footer-credit{position:fixed!important;left:0!important;right:286px!important;bottom:5px!important;width:auto!important;height:24px!important;min-height:24px!important;margin:0!important;padding:0 12px!important;z-index:40!important;display:flex!important;align-items:center!important;justify-content:center!important;background:transparent!important;color:#365f52!important;border:0!important;box-shadow:none!important;font-family:"B Nazanin",BNazanin,Tahoma,sans-serif!important;font-size:13px!important;font-weight:400!important;line-height:1.2!important;white-space:nowrap!important;pointer-events:none!important}
 .app:has(.sidebar.collapsed) .app-footer-credit{right:76px!important}
+.vehicle-empty{padding:34px!important;text-align:center!important;font-size:17px!important}
 
-@media(max-width:900px){
-  .sidebar{width:230px!important}
-  .workspace{margin-right:230px!important}
-  .app-footer-credit{right:230px!important}
-  .side-brand img{width:116px!important;height:92px!important}
-}
+@media(max-width:900px){.sidebar{width:230px!important}.workspace{margin-right:230px!important;width:calc(100vw - 230px)!important}.app-footer-credit{right:230px!important}.side-brand img{width:128px!important;height:96px!important}}
+@media(max-width:650px){.sidebar{width:72px!important}.workspace{margin-right:72px!important;width:calc(100vw - 72px)!important;padding-inline:8px!important}.app-footer-credit{right:72px!important;font-size:11px!important;white-space:normal!important}.side-brand img{width:66px!important;height:64px!important}.nav-group-toggle span,.nav-group-items>button span,.nav-settings-root span{display:none!important}.nav-group-toggle,.nav-group-items>button,.nav-settings-root{justify-content:center!important}}
