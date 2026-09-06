@@ -1,0 +1,30 @@
+/* Global English typography: slightly smaller, Times New Roman, LTR. */
+.english-ui,.english,.en-text,[dir="ltr"],input[type="email"]{
+  font-family:"Times New Roman",Times,serif!important;
+  font-size:0.91em!important;
+  direction:ltr!important;
+  text-align:left!important;
+}
+
+/* Keep Persian column filters consistently B Nazanin / RTL. */
+.column-filters select,.column-filters select option{
+  font-family:"B Nazanin",BNazanin,Tahoma,sans-serif!important;
+  direction:rtl!important;
+  text-align:right!important;
+  font-size:14px!important;
+}
+
+/* Normalize spacing between right sidebar tabs. */
+.sidebar nav{gap:2px!important}
+.sidebar nav button{margin:0!important}
+.sidebar nav .nav-divider{margin:5px 4px!important}
+
+/* Selection cell stays visually clear as the rightmost column. */
+#kanbanView thead>tr:first-child>th:first-child,
+#archiveView thead>tr:first-child>th:first-child,
+#kanbanView tbody td:first-child,
+#archiveView tbody td:first-child{
+  text-align:center!important;
+  width:58px!important;
+  min-width:58px!important;
+}
