@@ -78,9 +78,17 @@ $('#calYear').addEventListener('change',fillCalendarDays);$('#calMonth').addEven
 $('#setDateBtn').addEventListener('click',()=>{const iso=jalaliToISO($('#calYear').value,$('#calMonth').value,$('#calDay').value);if(!iso)return toast('تاریخ انتخاب‌شده معتبر نیست.',true);setJalaliField(state.dateInput,iso);$('#calendarDialog').close()});
 $('#clearDateBtn').addEventListener('click',()=>{setJalaliField(state.dateInput,'');$('#calendarDialog').close()});
 
-$('#loginForm').addEventListener('submit',async e=>{e.preventDefault();$('#loginError').textContent='';
-  try{const data=await api('/auth/v1/token?grant_type=password',{method:'POST',auth:false,body:{email:$('#email').value.trim(),password:$('#password').value}});state.token=data.access_token;state.user=data.user;sessionStorage.setItem('bamco_session',JSON.stringify({token:state.token,user:state.user}));await enterApp()}
-  catch(err){sessionStorage.removeItem('bamco_session');$('#appView').classList.add('hidden');$('#loginView').classList.remove('hidden');$('#loginError').textContent=err.message}
+function showLogin(){
+  sessionStorage.removeItem('bamco_session');
+  Object.assign(state,{token:'',user:null,profile:null,profiles:[],tasks:[],requests:[],view:'dashboard',editing:null,reviewing:null,dateInput:null,selected:{kanban:null,archive:null}});
+  $('#appView').classList.add('hidden');
+  $('#loginView').classList.remove('hidden');
+}
+
+$('#loginForm').addEventListener('submit',async e=>{e.preventDefault();$('#loginError').textContent='';const submit=e.currentTarget.querySelector('button[type="submit"]');submit.disabled=true;
+  try{const data=await api('/auth/v1/token?grant_type=password',{method:'POST',auth:false,body:{email:$('#email').value.trim(),password:$('#password').value}});state.token=data.access_token;state.user=data.user;await enterApp()}
+  catch(err){showLogin();$('#loginError').textContent=err.message}
+  finally{submit.disabled=false}
 });
 async function enterApp(){
   const profiles=await select('profiles',`id=eq.${state.user.id}&select=*`);if(!profiles.length)throw new Error('پروفایل کاربر پیدا نشد.');state.profile=profiles[0];
@@ -135,7 +143,7 @@ const titles={dashboard:'داشبورد',kanban:'کانبان وظایف',archiv
 function showView(view){if(view==='approvals'&&!isManager())return;state.view=view;$$('.view').forEach(x=>x.classList.add('hidden'));$(`#${view}View`).classList.remove('hidden');$$('#nav button').forEach(x=>x.classList.toggle('active',x.dataset.view===view));$('#viewTitle').textContent=titles[view]||'';$('#addTaskBtn').classList.toggle('hidden',view!=='kanban')}
 $$('#nav button').forEach(b=>b.addEventListener('click',()=>showView(b.dataset.view)));$$('[data-go]').forEach(b=>b.addEventListener('click',()=>showView(b.dataset.go)));
 $('#kanbanSearch').addEventListener('input',()=>renderTasks(false));$('#archiveSearch').addEventListener('input',()=>renderTasks(true));$('#collapseBtn').addEventListener('click',()=>$('#sidebar').classList.toggle('collapsed'));
-$('#logoutBtn').addEventListener('click',()=>{sessionStorage.removeItem('bamco_session');location.reload()});$$('[data-close]').forEach(b=>b.addEventListener('click',()=>document.getElementById(b.dataset.close).close()));
+$('#logoutBtn').addEventListener('click',()=>{showLogin();$('#loginForm').reset();$('#email').focus()});$$('[data-close]').forEach(b=>b.addEventListener('click',()=>document.getElementById(b.dataset.close).close()));
 
 function fillOwners(selected){const sel=$('#taskForm [name=owner_id]');const source=isManager()?state.profiles:[state.profile];sel.innerHTML=source.map(p=>`<option value="${p.id}" ${p.id===selected?'selected':''}>${safe(p.full_name||p.email)}</option>`).join('');sel.disabled=!isManager()}
 function openTask(task=null){state.editing=task;const f=$('#taskForm');f.reset();fillOwners(task?.owner_id||state.profile.id);$('#taskDialogTitle').textContent=task?(isManager()?'ویرایش تسک':'درخواست تغییر تسک'):(isManager()?'افزودن تسک':'درخواست تسک جدید');$('#taskDialogHint').textContent=isManager()?'تغییرات مدیر بلافاصله اعمال می‌شود.':'هیچ تغییری مستقیم اعمال نمی‌شود؛ درخواست شما باید توسط یکی از مدیران تأیید شود.';$('#saveTaskBtn').textContent=isManager()?(task?'ثبت تغییرات':'ثبت تسک'):'ارسال برای تأیید مدیر';
@@ -158,4 +166,5 @@ $('#approveBtn').addEventListener('click',()=>review('approved'));$('#rejectBtn'
 
 $('#passwordForm').addEventListener('submit',async e=>{e.preventDefault();const p=$('#newPassword').value,c=$('#confirmPassword').value,wasRequired=!!state.profile.must_change_password;$('#passwordError').textContent='';if(p!==c){$('#passwordError').textContent='تکرار رمز عبور یکسان نیست.';return}const profileUpdate={must_change_password:false,updated_at:new Date().toISOString()};try{await update('profiles',`id=eq.${state.profile.id}`,profileUpdate);await api('/auth/v1/user',{method:'PUT',body:{password:p}});state.profile.must_change_password=false;e.currentTarget.reset();$('#passwordDialog').close();toast('رمز عبور با موفقیت تغییر کرد.');if(wasRequired)showView('kanban')}catch(err){if(wasRequired)try{await update('profiles',`id=eq.${state.profile.id}`,{must_change_password:true,updated_at:new Date().toISOString()})}catch{}const message=err.message==='New password should be different from the old password.'?'رمز جدید باید با رمز قبلی متفاوت باشد.':err.message;$('#passwordError').textContent=message}});
 
-(async()=>{try{const saved=JSON.parse(sessionStorage.getItem('bamco_session')||'null');if(saved?.token&&saved?.user){state.token=saved.token;state.user=saved.user;await enterApp()}}catch{sessionStorage.removeItem('bamco_session');$('#appView').classList.add('hidden');$('#loginView').classList.remove('hidden')}})();
+// ورود همیشه باید با تأیید رمز انجام شود؛ نشست قبلی عمداً بازیابی نمی‌شود.
+showLogin();
