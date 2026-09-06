@@ -1,0 +1,26 @@
+/* Requested UI corrections - 2026-09-06 */
+.column-filters select,.column-filters select option{
+  font-family:"B Nazanin",BNazanin,Tahoma,sans-serif!important;
+  direction:rtl!important;
+  text-align:right!important;
+}
+.column-filters select{padding:2px 7px!important}
+
+.avatar{overflow:hidden!important;display:flex!important;align-items:center!important;justify-content:center!important}
+.avatar.has-image{background:none!important;color:transparent!important}
+.avatar.has-image img{width:100%!important;height:100%!important;object-fit:cover!important;display:block!important}
+.profile-avatar-preview{display:flex;align-items:center;gap:14px;margin:8px 0 10px;padding:10px;border:1px solid #b9c4bf;background:#f5f8f6}
+.profile-avatar-preview img{width:96px;height:96px;object-fit:cover;border:1px solid #9eaaa4;background:#fff}
+.profile-avatar-preview small{font-family:"B Nazanin",BNazanin,Tahoma,sans-serif;color:#547065;font-size:15px}
+
+.avatar-crop-dialog{width:min(560px,calc(100vw - 28px))!important;max-width:560px!important}
+.avatar-crop-stage{position:relative;width:min(360px,78vw);height:min(360px,78vw);margin:16px auto;overflow:hidden;background:#dfe5e2;touch-action:none;cursor:grab;user-select:none}
+.avatar-crop-stage.dragging{cursor:grabbing}
+.avatar-crop-stage>img{position:absolute;max-width:none!important;max-height:none!important;pointer-events:none;user-select:none}
+.avatar-crop-frame{position:absolute;inset:0;z-index:2;pointer-events:none;border:3px solid #176b4d;box-shadow:inset 0 0 0 1px #fff8}
+.avatar-crop-frame::before,.avatar-crop-frame::after{content:"";position:absolute;inset:33.333% 0 auto;height:1px;background:#fff9;box-shadow:0 calc(min(360px,78vw)/3) 0 #fff9}
+.avatar-crop-frame::after{inset:0 auto 0 33.333%;width:1px;height:auto;box-shadow:calc(min(360px,78vw)/3) 0 0 #fff9}
+.avatar-zoom-label{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:12px;font-family:"B Nazanin",BNazanin,Tahoma,sans-serif;margin:8px 4px 14px}
+.avatar-zoom-label input{width:100%;direction:ltr}
+
+@media(max-width:600px){.profile-avatar-preview{align-items:flex-start}.profile-avatar-preview img{width:80px;height:80px}.avatar-crop-stage{width:min(300px,78vw);height:min(300px,78vw)}}
