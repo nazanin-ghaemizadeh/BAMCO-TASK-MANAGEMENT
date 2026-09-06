@@ -1,8 +1,7 @@
 (()=>{
   const hasFa=s=>/[\u0600-\u06ff]/.test(String(s||''));
   const hasEn=s=>/[A-Za-z]/.test(String(s||''));
-
-  document.documentElement.dataset.uiHotfix='20260906-1640';
+  document.documentElement.dataset.uiHotfix='20260906-stable';
 
   function wrapLatinText(root=document.body){
     if(!root)return;
@@ -42,20 +41,17 @@
   }
 
   function applyTypography(root=document.body){classifyControls(root);wrapLatinText(root)}
-  applyTypography();
-  let typographyQueued=false;
-  const scheduleTypography=root=>{
-    if(typographyQueued)return;typographyQueued=true;
-    requestAnimationFrame(()=>{typographyQueued=false;applyTypography(root?.nodeType===1?root:document.body)});
-  };
-  new MutationObserver(muts=>{
-    for(const m of muts){
-      if(m.type==='childList'&&m.addedNodes.length){scheduleTypography(m.target);break}
-      if(m.type==='characterData'){scheduleTypography(m.target.parentElement);break}
-    }
-  }).observe(document.body,{childList:true,subtree:true,characterData:true});
-  document.addEventListener('input',e=>{if(e.target.matches?.('input,textarea,select'))classifyControls(e.target.parentElement||document)},true);
-  document.addEventListener('change',e=>{if(e.target.matches?.('input,textarea,select'))classifyControls(e.target.parentElement||document)},true);
+  function installTypography(){
+    applyTypography();
+    let queued=false;
+    new MutationObserver(muts=>{
+      if(queued)return;
+      if(!muts.some(m=>(m.type==='childList'&&m.addedNodes.length)||m.type==='characterData'))return;
+      queued=true;requestAnimationFrame(()=>{queued=false;applyTypography()});
+    }).observe(document.body,{childList:true,subtree:true,characterData:true});
+    document.addEventListener('input',e=>{if(e.target.matches?.('input,textarea,select'))classifyControls(e.target.parentElement||document)},true);
+    document.addEventListener('change',e=>{if(e.target.matches?.('input,textarea,select'))classifyControls(e.target.parentElement||document)},true);
+  }
 
   function clearSelection(scope){
     if(typeof state==='undefined'||!state.selected||!scope)return;
@@ -66,17 +62,20 @@
     if(typeof updateTaskToolbar==='function')updateTaskToolbar(scope);
   }
 
-  document.addEventListener('pointerdown',e=>{
-    if(typeof state==='undefined')return;
-    const scope=state.view==='archive'?'archive':state.view==='kanban'?'kanban':null;
-    if(!scope||state.selected?.[scope]==null)return;
-    const view=document.querySelector(`#${scope}View`);
-    if(view?.querySelector('.table-wrap table')?.contains(e.target))return;
-    if(view?.querySelector('.task-toolbar')?.contains(e.target))return;
-    clearSelection(scope);
-  },true);
+  function installOutsideSelectionClear(){
+    document.addEventListener('pointerdown',e=>{
+      if(typeof state==='undefined')return;
+      const scope=state.view==='archive'?'archive':state.view==='kanban'?'kanban':null;
+      if(!scope||state.selected?.[scope]==null)return;
+      const view=document.querySelector(`#${scope}View`);
+      if(view?.querySelector('.table-wrap table')?.contains(e.target))return;
+      if(view?.querySelector('.task-toolbar')?.contains(e.target))return;
+      clearSelection(scope);
+    },true);
+  }
 
-  if(typeof window.deleteTask==='function'){
+  function installDeleteResequence(){
+    if(typeof window.deleteTask!=='function')return;
     window.deleteTask=async id=>{
       if(typeof isManager==='function'&&!isManager())return;
       const task=state.tasks.find(t=>String(t.id)===String(id));
@@ -92,57 +91,48 @@
 
   function installFooter(){
     const app=document.querySelector('#appView');
-    if(!app||document.querySelector('#appFooterCredit'))return;
-    const footer=document.createElement('footer');
-    footer.id='appFooterCredit';
-    footer.className='app-footer-credit';
-    footer.textContent='توسعه یافته توسط واحد مهندسی محصول شرکت خودروسازان بم | شهاب‌الدین تنهائیان و نازنین قائمی';
+    if(!app)return;
+    let footer=document.querySelector('#appFooterCredit');
+    if(!footer){
+      footer=document.createElement('footer');
+      footer.id='appFooterCredit';
+      footer.className='app-footer-credit';
+      footer.textContent='توسعه یافته توسط واحد مهندسی محصول شرکت خودروسازان بم | شهاب‌الدین تنهائیان و نازنین قائمی';
+    }
     app.appendChild(footer);
   }
 
-  const loadScript=(src,id)=>new Promise((resolve,reject)=>{
-    const old=document.querySelector(`script[data-loader-id="${id}"]`);
-    if(old)return resolve();
-    const s=document.createElement('script');
-    s.src=src;s.dataset.loaderId=id;s.onload=()=>resolve();s.onerror=reject;
-    document.body.appendChild(s);
-  });
-
-  async function bootStickerManager(){
-    if(window.__bamcoStickerBooted)return;
-    window.__bamcoStickerBooted=true;
-    if(!document.querySelector('link[data-sticker-desktop]')){
-      const link=document.createElement('link');
-      link.rel='stylesheet';link.href='sticker-desktop.css?v=20260906-3';link.dataset.stickerDesktop='1';document.head.appendChild(link);
-    }
-    try{
-      /* The previous pack only contained part of the desktop set. These two compact files contain all ten stickers. */
-      await loadScript('sticker-pack-small-01.js?v=20260906-2','sticker-pack-small-01');
-      await loadScript('sticker-pack-small-02.js?v=20260906-2','sticker-pack-small-02');
-      await loadScript('sticker-pack-small-loader.js?v=20260906-1','sticker-pack-small-loader');
-
-      if((window.BAMCO_STICKER_ASSET_COUNT||0)<10)throw new Error(`Only ${window.BAMCO_STICKER_ASSET_COUNT||0} sticker assets loaded.`);
-
-      const nativeAdd=document.addEventListener.bind(document);
-      const currentAdd=document.addEventListener;
-      if(document.readyState!=='loading'){
-        document.addEventListener=function(type,listener,options){
-          if(type==='DOMContentLoaded'){
-            setTimeout(()=>listener.call(document,new Event('DOMContentLoaded')),0);
-            return;
-          }
-          return nativeAdd(type,listener,options);
-        };
-      }
-      try{await loadScript('sticker-desktop.js?v=20260906-6','sticker-desktop-final-v6')}finally{document.addEventListener=currentAdd}
-      await loadScript('sticker-seed-final.js?v=20260906-2','sticker-seed-final-v2');
-      setTimeout(()=>window.seedEngineeringStickerSet?.(),200);
-    }catch(err){
-      window.__bamcoStickerBooted=false;
-      console.error('Final sticker manager boot failed',err);
-    }
+  function installSidebarHoverScroll(){
+    const nav=document.querySelector('#sidebar nav');
+    if(!nav||nav.dataset.hoverScroll==='1')return;
+    nav.dataset.hoverScroll='1';
+    let speed=0,raf=0;
+    const tick=()=>{
+      if(!speed){raf=0;return}
+      nav.scrollTop+=speed;
+      raf=requestAnimationFrame(tick);
+    };
+    const setSpeed=e=>{
+      const r=nav.getBoundingClientRect();
+      if(!r.height){speed=0;return}
+      const y=(e.clientY-r.top)/r.height;
+      const edge=.22,max=5;
+      if(y<edge)speed=-Math.max(1,Math.round((edge-y)/edge*max));
+      else if(y>1-edge)speed=Math.max(1,Math.round((y-(1-edge))/edge*max));
+      else speed=0;
+      if(speed&&!raf)raf=requestAnimationFrame(tick);
+    };
+    nav.addEventListener('mousemove',setSpeed,{passive:true});
+    nav.addEventListener('mouseleave',()=>{speed=0},{passive:true});
+    nav.addEventListener('mouseenter',setSpeed,{passive:true});
   }
 
-  const boot=()=>{installFooter();bootStickerManager()};
+  const boot=()=>{
+    installTypography();
+    installOutsideSelectionClear();
+    installDeleteResequence();
+    installFooter();
+    installSidebarHoverScroll();
+  };
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
