@@ -22,13 +22,18 @@ async function parse(file){
 }
 function renderPreview(total){const bad=preview.filter(x=>x.errors.length).length;document.querySelector('#importSummary').textContent=`${fa(total)} رکورد بررسی شد؛ ${fa(total-bad)} معتبر و ${fa(bad)} دارای خطاست.`;document.querySelector('#importPreviewBody').innerHTML=preview.slice(0,100).map(x=>`<tr class="${x.errors.length?'row-overdue':''}"><td>${fa(x.row)}</td><td>${fa(x.data.legacy_id||'—')}</td><td>${safe(x.data.title)}</td><td>${safe(ownerName(x.data))}</td><td>${safe(x.errors.join('، ')||'آماده ورود')}</td></tr>`).join('');document.querySelector('#importDialog').showModal()}
 async function commit(){
-  const mode=document.querySelector('#duplicateMode').value,valid=preview.filter(x=>!x.errors.length);let ok=0,failed=0,firstError='';
-  const existingByLegacy=new Map();for(const t of state.tasks){const id=Number(t.legacy_id||t.id);if(id)existingByLegacy.set(id,t)}
-  const work=[];
-  for(const r of valid){const exists=r.data.legacy_id?existingByLegacy.get(r.data.legacy_id):null;if(exists&&mode==='reject')continue;work.push({r,exists})}
-  const concurrency=Math.min(6,Math.max(1,work.length));let cursor=0;
-  async function worker(){while(true){const i=cursor++;if(i>=work.length)return;const {r,exists}=work[i];try{if(exists&&mode==='update')await update('tasks',`id=eq.${exists.id}`,{...r.data,legacy_id:exists.legacy_id});else await insert('tasks',{...r.data,legacy_id:exists&&mode==='create'?null:r.data.legacy_id,created_by:state.profile.id});ok++}catch(e){failed++;if(!firstError)firstError=e.message}}}
-  await Promise.all(Array.from({length:concurrency},worker));
+  const mode=document.querySelector('#duplicateMode').value,valid=preview.filter(x=>!x.errors.length);let ok=0,failed=0;
+  const errors=[];const existingByLegacy=new Map();for(const t of state.tasks){const id=Number(t.legacy_id||t.id);if(id)existingByLegacy.set(id,t)}
+  const work=[];for(const r of valid){const exists=r.data.legacy_id?existingByLegacy.get(r.data.legacy_id):null;if(exists&&mode==='reject')continue;work.push({r,exists,index:work.length})}
+  const chains=new Map();const jobs=[];
+  for(const item of work){
+    const serialKey=item.exists?`existing:${item.exists.id}`:(item.r.data.legacy_id?`legacy:${item.r.data.legacy_id}`:`row:${item.r.row}`);
+    const previous=chains.get(serialKey)||Promise.resolve();
+    const job=previous.then(async()=>{try{if(item.exists&&mode==='update')await update('tasks',`id=eq.${item.exists.id}`,{...item.r.data,legacy_id:item.exists.legacy_id});else await insert('tasks',{...item.r.data,legacy_id:item.exists&&mode==='create'?null:item.r.data.legacy_id,created_by:state.profile.id});ok++}catch(e){failed++;errors.push({index:item.index,message:e.message})}});
+    chains.set(serialKey,job);jobs.push(job);
+  }
+  await Promise.all(jobs);
+  errors.sort((a,b)=>a.index-b.index);const firstError=errors[0]?.message||'';
   document.querySelector('#importDialog').close();toast(`${fa(ok)} رکورد وارد شد؛ ${fa(failed)} خطا.${firstError?' '+firstError:''}`,failed>0);await refresh()
 }
 function exportRows(archived){
