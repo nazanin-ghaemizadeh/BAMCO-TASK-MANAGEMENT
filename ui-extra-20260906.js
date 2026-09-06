@@ -1,7 +1,7 @@
 (()=>{
   const hasFa=s=>/[\u0600-\u06ff]/.test(String(s||''));
   const hasEn=s=>/[A-Za-z]/.test(String(s||''));
-  document.documentElement.dataset.uiHotfix='20260906-stable';
+  document.documentElement.dataset.uiHotfix='20260906-stable2';
 
   function wrapLatinText(root=document.body){
     if(!root)return;
@@ -127,12 +127,55 @@
     nav.addEventListener('mouseenter',setSpeed,{passive:true});
   }
 
+  const loadScript=(src,id)=>new Promise((resolve,reject)=>{
+    const old=document.querySelector(`script[data-stable-loader="${id}"]`);
+    if(old){if(old.dataset.loaded==='1')resolve();else old.addEventListener('load',resolve,{once:true});return}
+    const s=document.createElement('script');
+    s.src=src;s.dataset.stableLoader=id;
+    s.onload=()=>{s.dataset.loaded='1';resolve()};s.onerror=()=>reject(new Error(`لود ${src} انجام نشد.`));
+    document.body.appendChild(s);
+  });
+
+  async function installStableStickerManager(){
+    if(window.__bamcoStableStickerInstalled)return;
+    window.__bamcoStableStickerInstalled=true;
+    try{
+      if(!document.querySelector('link[data-stable-sticker-css]')){
+        const l=document.createElement('link');l.rel='stylesheet';l.href='sticker-desktop.css?v=20260906-stable2';l.dataset.stableStickerCss='1';document.head.appendChild(l);
+      }
+      window.BAMCO_STICKER_PACK_SMALL='';
+      await loadScript('sticker-pack-small-01.js?v=20260906-stable2','pack-small-01');
+      await loadScript('sticker-pack-small-02.js?v=20260906-stable2','pack-small-02');
+      await loadScript('sticker-pack-small-loader.js?v=20260906-stable2','pack-small-loader');
+      if((window.BAMCO_STICKER_ASSET_COUNT||0)<10)throw new Error(`پکیج استیکر ناقص است: ${window.BAMCO_STICKER_ASSET_COUNT||0} از ۱۰ تصویر.`);
+
+      const originalAdd=document.addEventListener;
+      const captured=[];
+      document.addEventListener=function(type,listener,options){
+        if(type==='DOMContentLoaded'){captured.push(listener);return}
+        return originalAdd.call(document,type,listener,options);
+      };
+      try{await loadScript('sticker-desktop.js?v=20260906-stable2','desktop-sticker-manager')}finally{document.addEventListener=originalAdd}
+      captured.forEach(fn=>{try{fn.call(document,new Event('DOMContentLoaded'))}catch(e){console.error(e)}});
+
+      const view=document.querySelector('#stickersView');
+      if(!view?.querySelector('.desktop-sticker-page'))throw new Error('رابط مدیریت استیکر ساخته نشد.');
+      const nav=document.querySelector('#nav button[data-view="stickers"]');
+      if(nav?.classList.contains('active'))nav.dispatchEvent(new MouseEvent('click',{bubbles:true}));
+    }catch(err){
+      window.__bamcoStableStickerInstalled=false;
+      console.error('Stable sticker manager failed',err);
+      if(typeof toast==='function')toast(err.message||'مدیریت استیکر بارگذاری نشد.',true);
+    }
+  }
+
   const boot=()=>{
     installTypography();
     installOutsideSelectionClear();
     installDeleteResequence();
     installFooter();
     installSidebarHoverScroll();
+    installStableStickerManager();
   };
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
