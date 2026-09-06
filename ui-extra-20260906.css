@@ -1,33 +1,119 @@
-/* Strong UI hotfix - 2026-09-06 */
+/* Stable UI corrections - 2026-09-06 */
+:root{
+  --bamco-shell-green:#0f4f3f;
+  --bamco-active-green:#218764;
+  --bamco-border:#9fb2aa;
+}
 
+/* English typography */
 .english-ui,.english,.en-text,[dir="ltr"],input[type="email"],input[type="url"],input[type="password"],.latin-run{
   font-family:"Times New Roman",Times,serif!important;
 }
 .english-ui,.english,.en-text,[dir="ltr"],input[type="email"],input[type="url"],input[type="password"]{
-  font-size:0.90em!important;
+  font-size:.90em!important;
   direction:ltr!important;
   text-align:left!important;
 }
-.latin-run{
-  font-size:0.90em!important;
-  direction:ltr!important;
-  unicode-bidi:isolate!important;
+.latin-run{font-size:.90em!important;direction:ltr!important;unicode-bidi:isolate!important}
+
+/* One shell green for the top banner, right rail and footer. */
+.side-brand,.sidebar,.app-footer-credit{background:var(--bamco-shell-green)!important}
+.collapse{background:var(--bamco-shell-green)!important;border:1px solid rgba(255,255,255,.10)!important}
+.sidebar nav button.active{background:var(--bamco-active-green)!important}
+
+/* Consistent green-grey borders across the working surface. */
+.panel,.stats article,.manager-card,.send-summary article,
+.desktop-sticker-box,.desktop-sticker-dialog,.table-wrap,
+.manager-note,.manager-warning,.sticker-cell{
+  border-color:var(--bamco-border)!important;
 }
 
-.column-filters select,.column-filters select option{
-  font-family:"B Nazanin",BNazanin,Tahoma,sans-serif!important;
-  direction:rtl!important;
-  text-align:right!important;
-  font-size:14px!important;
+/* Sidebar: no visible scrollbar. Wheel/touch still work; mouse-position scrolling is added in JS. */
+.sidebar nav{
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  scrollbar-width:none!important;
+  -ms-overflow-style:none!important;
+  scroll-behavior:smooth!important;
+  overscroll-behavior:contain!important;
 }
+.sidebar nav::-webkit-scrollbar{width:0!important;height:0!important;display:none!important}
 
+/* Remove artificial gaps in the nav. */
 #nav,.sidebar nav{gap:0!important;row-gap:0!important}
 #nav>button,.sidebar nav button{margin-top:0!important;margin-bottom:0!important}
 #nav>.nav-divider,.sidebar nav .nav-divider,.nav-divider.manager-only{
-  display:none!important;visibility:hidden!important;height:0!important;min-height:0!important;max-height:0!important;margin:0!important;padding:0!important;border:0!important
+  display:none!important;height:0!important;margin:0!important;padding:0!important;border:0!important
 }
-#approvalsNav+button[data-view="people"],#nav button[data-view="people"]{margin-top:0!important}
 
+/* Free useful vertical space below the 126px desktop header. */
+.workspace{
+  padding-top:136px!important;
+  padding-bottom:14px!important;
+  min-height:calc(100vh - 26px)!important;
+}
+.workspace>header{
+  min-height:42px!important;
+  margin-bottom:8px!important;
+}
+.workspace>header h2{font-size:21px!important}
+.workspace>header p{margin-top:0!important;font-size:14px!important}
+
+/* Footer belongs to document flow: never cover content or the account block. */
+#appView{padding-bottom:0!important}
+.app-footer-credit{
+  position:relative!important;
+  inset:auto!important;
+  z-index:1!important;
+  height:26px!important;
+  min-height:26px!important;
+  margin-right:286px!important;
+  width:auto!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  padding:0 12px!important;
+  box-sizing:border-box!important;
+  color:#fff!important;
+  border-top:1px solid rgba(255,255,255,.14)!important;
+  font-family:"B Nazanin",BNazanin,Tahoma,sans-serif!important;
+  font-size:10.5px!important;
+  font-weight:400!important;
+  line-height:1!important;
+  text-align:center!important;
+  direction:rtl!important;
+  white-space:nowrap!important;
+}
+.app:has(.sidebar.collapsed) .app-footer-credit{margin-right:76px!important}
+
+/* Sticker manager: compact, centered, no dead vertical space. */
+#stickersView{padding:0!important}
+#stickersView .desktop-sticker-page{padding:0 0 8px!important}
+.desktop-sticker-box{margin:0 0 8px!important;padding:6px 12px 9px!important}
+.desktop-sticker-box legend{font-size:16px!important}
+.desktop-sticker-control-row{min-height:44px!important;gap:8px!important}
+.desktop-sticker-inline-label select,#desktopStickerSet{height:35px!important;font-size:15px!important}
+.desktop-sticker-secondary,.desktop-sticker-green,.desktop-sticker-cancel{
+  min-height:36px!important;padding:5px 14px!important;font-size:15px!important
+}
+.desktop-sticker-active-note{height:22px!important;font-size:13px!important;padding:0 4px!important}
+.desktop-sticker-preview-stage{
+  min-height:280px!important;
+  height:clamp(300px,46vh,390px)!important;
+  max-height:390px!important;
+  background:#f7faf8!important;
+  border:1px solid var(--bamco-border)!important;
+}
+#desktopStickerPreview{
+  max-width:min(390px,58%)!important;
+  max-height:94%!important;
+  width:auto!important;
+  height:auto!important;
+  object-fit:contain!important;
+}
+#stickersView .sticker-grid{display:none!important}
+
+/* Selection cell */
 #kanbanView thead>tr:first-child>th:first-child,
 #archiveView thead>tr:first-child>th:first-child,
 #kanbanView tbody td:first-child,
@@ -35,43 +121,16 @@
   text-align:center!important;width:58px!important;min-width:58px!important
 }
 
-#stickersView .desktop-sticker-page #stickerGrid,
-#stickersView .desktop-sticker-page .sticker-grid{display:none!important}
-
-/* Compact sticker page: keep controls and preview visible without a large empty canvas. */
-#stickersView .desktop-sticker-page{padding-bottom:4px!important}
-#stickersView .desktop-sticker-box{margin-bottom:8px!important}
-#stickersView .desktop-sticker-active-note{height:20px!important;line-height:20px!important;font-size:13px!important}
-#stickersView .desktop-sticker-preview-stage{
-  min-height:300px!important;
-  height:clamp(300px,42vh,390px)!important;
-  max-height:390px!important;
-  margin-top:2px!important;
-  border:1px solid #dfe7e3!important;
-  background:#f8faf9!important;
+@media(max-width:900px){
+  .app-footer-credit{margin-right:230px!important}
+  .app:has(.sidebar.collapsed) .app-footer-credit{margin-right:76px!important}
+  .workspace{padding-top:136px!important}
 }
-#stickersView #desktopStickerPreview{
-  max-width:min(42%,360px)!important;
-  max-height:92%!important;
-}
-
-/* Smaller footer, visually closer to a credit strip than a second header. */
-#appView{padding-bottom:29px!important}
-.app-footer-credit{
-  position:fixed;left:0;right:0;bottom:0;height:29px;z-index:999;
-  display:flex;align-items:center;justify-content:center;
-  padding:0 14px;box-sizing:border-box;
-  background:#0d4f3f;color:#fff;border-top:1px solid rgba(255,255,255,.14);
-  font-family:"B Nazanin",BNazanin,Tahoma,sans-serif!important;
-  font-size:11px;font-weight:600;line-height:1.2;text-align:center;direction:rtl;white-space:nowrap
-}
-@media(max-width:1100px){
-  #stickersView .desktop-sticker-preview-stage{min-height:280px!important;height:340px!important}
-  #stickersView #desktopStickerPreview{max-width:min(52%,340px)!important}
-}
-@media(max-width:760px){
-  .app-footer-credit{font-size:10px;white-space:normal;height:auto;min-height:30px;padding:4px 8px}
-  #appView{padding-bottom:38px!important}
-  #stickersView .desktop-sticker-preview-stage{min-height:260px!important;height:300px!important}
-  #stickersView #desktopStickerPreview{max-width:76%!important}
+@media(max-width:650px){
+  .workspace{padding-top:102px!important}
+  .app-footer-credit,.app:has(.sidebar.collapsed) .app-footer-credit{
+    margin-right:72px!important;font-size:9.5px!important;white-space:normal!important;height:auto!important;min-height:26px!important;padding:3px 8px!important
+  }
+  .desktop-sticker-preview-stage{height:300px!important;min-height:300px!important}
+  #desktopStickerPreview{max-width:82%!important}
 }
