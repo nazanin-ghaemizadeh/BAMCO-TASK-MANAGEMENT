@@ -1,7 +1,7 @@
 (()=>{
   const hasFa=s=>/[\u0600-\u06ff]/.test(String(s||''));
   const hasEn=s=>/[A-Za-z]/.test(String(s||''));
-  document.documentElement.dataset.uiHotfix='20260906-stable2';
+  document.documentElement.dataset.uiHotfix='20260906-stable3';
 
   function wrapLatinText(root=document.body){
     if(!root)return;
@@ -107,16 +107,10 @@
     if(!nav||nav.dataset.hoverScroll==='1')return;
     nav.dataset.hoverScroll='1';
     let speed=0,raf=0;
-    const tick=()=>{
-      if(!speed){raf=0;return}
-      nav.scrollTop+=speed;
-      raf=requestAnimationFrame(tick);
-    };
+    const tick=()=>{if(!speed){raf=0;return}nav.scrollTop+=speed;raf=requestAnimationFrame(tick)};
     const setSpeed=e=>{
-      const r=nav.getBoundingClientRect();
-      if(!r.height){speed=0;return}
-      const y=(e.clientY-r.top)/r.height;
-      const edge=.22,max=5;
+      const r=nav.getBoundingClientRect();if(!r.height){speed=0;return}
+      const y=(e.clientY-r.top)/r.height,edge=.22,max=5;
       if(y<edge)speed=-Math.max(1,Math.round((edge-y)/edge*max));
       else if(y>1-edge)speed=Math.max(1,Math.round((y-(1-edge))/edge*max));
       else speed=0;
@@ -130,10 +124,8 @@
   const loadScript=(src,id)=>new Promise((resolve,reject)=>{
     const old=document.querySelector(`script[data-stable-loader="${id}"]`);
     if(old){if(old.dataset.loaded==='1')resolve();else old.addEventListener('load',resolve,{once:true});return}
-    const s=document.createElement('script');
-    s.src=src;s.dataset.stableLoader=id;
-    s.onload=()=>{s.dataset.loaded='1';resolve()};s.onerror=()=>reject(new Error(`لود ${src} انجام نشد.`));
-    document.body.appendChild(s);
+    const s=document.createElement('script');s.src=src;s.dataset.stableLoader=id;
+    s.onload=()=>{s.dataset.loaded='1';resolve()};s.onerror=()=>reject(new Error(`لود ${src} انجام نشد.`));document.body.appendChild(s);
   });
 
   async function installStableStickerManager(){
@@ -141,32 +133,25 @@
     window.__bamcoStableStickerInstalled=true;
     try{
       if(!document.querySelector('link[data-stable-sticker-css]')){
-        const l=document.createElement('link');l.rel='stylesheet';l.href='sticker-desktop.css?v=20260906-stable2';l.dataset.stableStickerCss='1';document.head.appendChild(l);
+        const l=document.createElement('link');l.rel='stylesheet';l.href='sticker-desktop.css?v=20260906-stable3';l.dataset.stableStickerCss='1';document.head.appendChild(l);
       }
       window.BAMCO_STICKER_PACK_SMALL='';
-      await loadScript('sticker-pack-small-01.js?v=20260906-stable2','pack-small-01');
-      await loadScript('sticker-pack-small-02.js?v=20260906-stable2','pack-small-02');
-      await loadScript('sticker-pack-small-loader.js?v=20260906-stable2','pack-small-loader');
-      if((window.BAMCO_STICKER_ASSET_COUNT||0)<10)throw new Error(`پکیج استیکر ناقص است: ${window.BAMCO_STICKER_ASSET_COUNT||0} از ۱۰ تصویر.`);
-
-      const originalAdd=document.addEventListener;
-      const captured=[];
-      document.addEventListener=function(type,listener,options){
-        if(type==='DOMContentLoaded'){captured.push(listener);return}
-        return originalAdd.call(document,type,listener,options);
-      };
-      try{await loadScript('sticker-desktop.js?v=20260906-stable2','desktop-sticker-manager')}finally{document.addEventListener=originalAdd}
+      await loadScript('sticker-pack-small-01.js?v=20260906-stable3','pack-small-01');
+      await loadScript('sticker-pack-small-02.js?v=20260906-stable3','pack-small-02');
+      await loadScript('sticker-pack-small-loader.js?v=20260906-stable3','pack-small-loader');
+      const originalAdd=document.addEventListener,captured=[];
+      document.addEventListener=function(type,listener,options){if(type==='DOMContentLoaded'){captured.push(listener);return}return originalAdd.call(document,type,listener,options)};
+      try{await loadScript('sticker-desktop.js?v=20260906-stable3','desktop-sticker-manager')}finally{document.addEventListener=originalAdd}
       captured.forEach(fn=>{try{fn.call(document,new Event('DOMContentLoaded'))}catch(e){console.error(e)}});
+    }catch(err){window.__bamcoStableStickerInstalled=false;console.error(err);if(typeof toast==='function')toast(err.message||'مدیریت استیکر بارگذاری نشد.',true)}
+  }
 
-      const view=document.querySelector('#stickersView');
-      if(!view?.querySelector('.desktop-sticker-page'))throw new Error('رابط مدیریت استیکر ساخته نشد.');
-      const nav=document.querySelector('#nav button[data-view="stickers"]');
-      if(nav?.classList.contains('active'))nav.dispatchEvent(new MouseEvent('click',{bubbles:true}));
-    }catch(err){
-      window.__bamcoStableStickerInstalled=false;
-      console.error('Stable sticker manager failed',err);
-      if(typeof toast==='function')toast(err.message||'مدیریت استیکر بارگذاری نشد.',true);
-    }
+  function installGroupedSidebar(){
+    if(document.querySelector('script[data-sidebar-groups]'))return;
+    const s=document.createElement('script');
+    s.src='sidebar-groups-20260906.js?v=20260906-3';
+    s.dataset.sidebarGroups='1';
+    document.body.appendChild(s);
   }
 
   const boot=()=>{
@@ -176,6 +161,7 @@
     installFooter();
     installSidebarHoverScroll();
     installStableStickerManager();
+    installGroupedSidebar();
   };
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
