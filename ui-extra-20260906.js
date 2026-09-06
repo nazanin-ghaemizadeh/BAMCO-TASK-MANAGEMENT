@@ -1,7 +1,7 @@
 (()=>{
   const hasFa=s=>/[\u0600-\u06ff]/.test(String(s||''));
   const hasEn=s=>/[A-Za-z]/.test(String(s||''));
-  document.documentElement.dataset.uiHotfix='20260907-user1';
+  document.documentElement.dataset.uiHotfix='20260907-user2';
 
   function wrapLatinText(root=document.body){
     if(!root)return;
@@ -129,7 +129,7 @@
 
   function installUserRequestedFixes(){
     if(document.querySelector('script[data-user-request-fixes]'))return;
-    const s=document.createElement('script');s.src='user-request-fixes-20260907.js?v=20260907-1';s.dataset.userRequestFixes='1';document.body.appendChild(s);
+    const s=document.createElement('script');s.src='user-request-fixes-20260907.js?v=20260907-2';s.dataset.userRequestFixes='1';document.body.appendChild(s);
   }
 
   const boot=()=>{
