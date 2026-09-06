@@ -128,3 +128,24 @@ input,select,textarea,button{border-radius:0!important;box-shadow:none!important
   .welcome-sticker{max-width:130px!important}
   #kanbanView .task-toolbar button,#archiveView .task-toolbar button{font-size:14px!important}
 }
+
+/* Login branding — official system title and company identity */
+#loginView.login-shell{background:radial-gradient(circle at 78% 18%,rgba(32,137,100,.14),transparent 28%),radial-gradient(circle at 18% 82%,rgba(10,61,48,.10),transparent 30%),linear-gradient(145deg,#edf5f1 0%,#fbfdfc 50%,#e4efe9 100%)!important}
+#loginView .login-card{width:min(500px,calc(100% - 32px))!important;padding:46px 48px 36px!important;border:1px solid #cbded6!important;border-radius:28px!important;background:rgba(255,255,255,.96)!important;box-shadow:0 30px 80px rgba(17,65,52,.18)!important;position:relative!important;overflow:hidden!important}
+#loginView .login-card::after{content:"شرکت خودروسازان بم";display:block;margin:18px auto 0;padding-top:15px;border-top:1px solid #dfeae5;color:#70857c;font-size:14px;font-weight:700;text-align:center;letter-spacing:.1px}
+#loginView .brand-lockup{margin-bottom:26px!important;gap:13px!important}
+#loginView .brand-lockup img{width:96px!important;height:96px!important;object-fit:contain!important;border-radius:22px!important;box-shadow:0 14px 34px rgba(10,61,48,.22)!important}
+#loginView .brand-lockup h1{font-size:0!important;line-height:1.7!important;margin:2px 0 4px!important;color:#123f33!important;text-align:center!important}
+#loginView .brand-lockup h1::after{content:"سامانه مدیریت، پایش و پیگیری امور";font-size:25px!important;font-weight:800!important;display:block!important;white-space:nowrap!important}
+#loginView .brand-lockup p{font-size:0!important;margin:0!important;color:#789087!important;text-align:center!important}
+#loginView .brand-lockup p::after{content:"درگاه یکپارچه مدیریت وظایف سازمانی";font-size:14px!important;font-weight:400!important}
+#loginView #loginForm{position:relative!important;padding-top:7px!important}
+#loginView #loginForm::before{content:"ورود به سامانه";display:block;text-align:center;color:#235d4c;font-size:16px;font-weight:700;margin:0 0 12px!important}
+#loginView .login-card label{color:#315d50!important;font-weight:700!important;margin-top:10px!important}
+#loginView .login-card input{height:53px!important;background:#fbfdfc!important;border:1px solid #c9dcd4!important;border-radius:12px!important;padding:0 16px!important;transition:.2s ease!important}
+#loginView .login-card input:hover{background:#fff!important;border-color:#a8c6b9!important}
+#loginView .login-card input:focus{background:#fff!important;border-color:#19815e!important;box-shadow:0 0 0 4px rgba(25,129,94,.12)!important}
+#loginView .primary.wide{height:54px!important;margin-top:20px!important;border-radius:12px!important;background:linear-gradient(135deg,#0a4334,#177555)!important;box-shadow:0 11px 24px rgba(10,67,52,.22)!important;font-weight:800!important}
+#loginView .primary.wide:hover{background:linear-gradient(135deg,#083a2e,#126348)!important;transform:translateY(-1px)!important}
+#loginView .form-error{margin-bottom:0!important}
+@media(max-width:580px){#loginView .login-card{padding:34px 23px 28px!important}#loginView .brand-lockup h1::after{font-size:21px!important;white-space:normal!important}#loginView .brand-lockup img{width:82px!important;height:82px!important}#loginView .login-card::after{font-size:13px!important}}
