@@ -2,9 +2,8 @@
   const hasFa=s=>/[\u0600-\u06ff]/.test(String(s||''));
   const hasEn=s=>/[A-Za-z]/.test(String(s||''));
 
-  document.documentElement.dataset.uiHotfix='20260906-1518';
+  document.documentElement.dataset.uiHotfix='20260906-1640';
 
-  /* Apply Times New Roman to every Latin run, including Latin words inside Persian sentences. */
   function wrapLatinText(root=document.body){
     if(!root)return;
     const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,{
@@ -44,7 +43,6 @@
 
   function applyTypography(root=document.body){classifyControls(root);wrapLatinText(root)}
   applyTypography();
-
   let typographyQueued=false;
   const scheduleTypography=root=>{
     if(typographyQueued)return;typographyQueued=true;
@@ -115,15 +113,16 @@
     window.__bamcoStickerBooted=true;
     if(!document.querySelector('link[data-sticker-desktop]')){
       const link=document.createElement('link');
-      link.rel='stylesheet';link.href='sticker-desktop.css?v=20260906-2';link.dataset.stickerDesktop='1';document.head.appendChild(link);
+      link.rel='stylesheet';link.href='sticker-desktop.css?v=20260906-3';link.dataset.stickerDesktop='1';document.head.appendChild(link);
     }
     try{
-      await loadScript('sticker-pack-01.js?v=20260906-1','sticker-pack-01');
-      await loadScript('sticker-pack-02.js?v=20260906-1','sticker-pack-02');
-      await loadScript('sticker-pack-loader.js?v=20260906-1','sticker-pack-loader');
+      /* The previous pack only contained part of the desktop set. These two compact files contain all ten stickers. */
+      await loadScript('sticker-pack-small-01.js?v=20260906-2','sticker-pack-small-01');
+      await loadScript('sticker-pack-small-02.js?v=20260906-2','sticker-pack-small-02');
+      await loadScript('sticker-pack-small-loader.js?v=20260906-1','sticker-pack-small-loader');
 
-      /* sticker-desktop.js was originally written to initialize on DOMContentLoaded.
-         When loaded after that event, intercept just that registration and invoke it immediately. */
+      if((window.BAMCO_STICKER_ASSET_COUNT||0)<10)throw new Error(`Only ${window.BAMCO_STICKER_ASSET_COUNT||0} sticker assets loaded.`);
+
       const nativeAdd=document.addEventListener.bind(document);
       const currentAdd=document.addEventListener;
       if(document.readyState!=='loading'){
@@ -135,9 +134,9 @@
           return nativeAdd(type,listener,options);
         };
       }
-      try{await loadScript('sticker-desktop.js?v=20260906-5','sticker-desktop-final')}finally{document.addEventListener=currentAdd}
-      await loadScript('sticker-seed-final.js?v=20260906-1','sticker-seed-final');
-      setTimeout(()=>window.seedEngineeringStickerSet?.(),300);
+      try{await loadScript('sticker-desktop.js?v=20260906-6','sticker-desktop-final-v6')}finally{document.addEventListener=currentAdd}
+      await loadScript('sticker-seed-final.js?v=20260906-2','sticker-seed-final-v2');
+      setTimeout(()=>window.seedEngineeringStickerSet?.(),200);
     }catch(err){
       window.__bamcoStickerBooted=false;
       console.error('Final sticker manager boot failed',err);
