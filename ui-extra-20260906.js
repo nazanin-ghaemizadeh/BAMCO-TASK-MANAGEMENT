@@ -2,7 +2,7 @@
   const hasFa=s=>/[\u0600-\u06ff]/.test(String(s||''));
   const hasEn=s=>/[A-Za-z]/.test(String(s||''));
 
-  document.documentElement.dataset.uiHotfix='20260906-1400';
+  document.documentElement.dataset.uiHotfix='20260906-1518';
 
   /* Apply Times New Roman to every Latin run, including Latin words inside Persian sentences. */
   function wrapLatinText(root=document.body){
@@ -68,8 +68,6 @@
     if(typeof updateTaskToolbar==='function')updateTaskToolbar(scope);
   }
 
-  /* Robust deselection: any pointer press outside the task table cancels the row selection.
-     The task toolbar is exempt so Edit / Archive / Restore / Delete can still use the selected row. */
   document.addEventListener('pointerdown',e=>{
     if(typeof state==='undefined')return;
     const scope=state.view==='archive'?'archive':state.view==='kanban'?'kanban':null;
@@ -80,8 +78,6 @@
     clearSelection(scope);
   },true);
 
-  /* Force the same database resequence path for deletion from KANBAN and Archive,
-     then reload both views so the new display IDs are visible immediately. */
   if(typeof window.deleteTask==='function'){
     window.deleteTask=async id=>{
       if(typeof isManager==='function'&&!isManager())return;
@@ -96,22 +92,58 @@
     };
   }
 
-  /* Load the desktop-faithful sticker manager. During initial parsing, document.write keeps
-     both scripts parser-ordered so the sticker module sees DOMContentLoaded reliably. */
-  function loadStickerDesktopLate(){
+  function installFooter(){
+    const app=document.querySelector('#appView');
+    if(!app||document.querySelector('#appFooterCredit'))return;
+    const footer=document.createElement('footer');
+    footer.id='appFooterCredit';
+    footer.className='app-footer-credit';
+    footer.textContent='توسعه یافته توسط واحد مهندسی محصول شرکت خودروسازان بم | شهاب‌الدین تنهائیان و نازنین قائمی';
+    app.appendChild(footer);
+  }
+
+  const loadScript=(src,id)=>new Promise((resolve,reject)=>{
+    const old=document.querySelector(`script[data-loader-id="${id}"]`);
+    if(old)return resolve();
+    const s=document.createElement('script');
+    s.src=src;s.dataset.loaderId=id;s.onload=()=>resolve();s.onerror=reject;
+    document.body.appendChild(s);
+  });
+
+  async function bootStickerManager(){
+    if(window.__bamcoStickerBooted)return;
+    window.__bamcoStickerBooted=true;
     if(!document.querySelector('link[data-sticker-desktop]')){
       const link=document.createElement('link');
-      link.rel='stylesheet';link.href='sticker-desktop.css?v=20260906-1';link.dataset.stickerDesktop='1';
-      document.head.appendChild(link);
+      link.rel='stylesheet';link.href='sticker-desktop.css?v=20260906-2';link.dataset.stickerDesktop='1';document.head.appendChild(link);
     }
-    const first=document.createElement('script');
-    first.src='sticker-default.js?v=20260906-1';
-    first.onload=()=>{const second=document.createElement('script');second.src='sticker-desktop.js?v=20260906-3';document.body.appendChild(second)};
-    document.body.appendChild(first);
+    try{
+      await loadScript('sticker-pack-01.js?v=20260906-1','sticker-pack-01');
+      await loadScript('sticker-pack-02.js?v=20260906-1','sticker-pack-02');
+      await loadScript('sticker-pack-loader.js?v=20260906-1','sticker-pack-loader');
+
+      /* sticker-desktop.js was originally written to initialize on DOMContentLoaded.
+         When loaded after that event, intercept just that registration and invoke it immediately. */
+      const nativeAdd=document.addEventListener.bind(document);
+      const currentAdd=document.addEventListener;
+      if(document.readyState!=='loading'){
+        document.addEventListener=function(type,listener,options){
+          if(type==='DOMContentLoaded'){
+            setTimeout(()=>listener.call(document,new Event('DOMContentLoaded')),0);
+            return;
+          }
+          return nativeAdd(type,listener,options);
+        };
+      }
+      try{await loadScript('sticker-desktop.js?v=20260906-5','sticker-desktop-final')}finally{document.addEventListener=currentAdd}
+      await loadScript('sticker-seed-final.js?v=20260906-1','sticker-seed-final');
+      setTimeout(()=>window.seedEngineeringStickerSet?.(),300);
+    }catch(err){
+      window.__bamcoStickerBooted=false;
+      console.error('Final sticker manager boot failed',err);
+    }
   }
-  if(document.readyState==='loading'){
-    document.write('<link rel="stylesheet" href="sticker-desktop.css?v=20260906-1" data-sticker-desktop="1">');
-    document.write('<script src="sticker-default.js?v=20260906-1"><\/script>');
-    document.write('<script src="sticker-desktop.js?v=20260906-3"><\/script>');
-  }else loadStickerDesktopLate();
+
+  const boot=()=>{installFooter();bootStickerManager()};
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
