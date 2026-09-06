@@ -1,83 +1,156 @@
-/* Stable 100% viewport + grouped navigation */
+/* Final stable workspace and sidebar layout */
 :root{
   --bamco-shell:#0f5748;
   --bamco-active:#218764;
-  --bamco-line:#7f9f94;
+  --bamco-line:#8aa79d;
   --bamco-page:#eef3f0;
+  --bamco-panel:#f7faf8;
+  --bamco-soft:#e9f0ed;
   --bamco-text:#174d3e;
+  --sidebar-wide:286px;
+  --sidebar-narrow:170px;
+  --footer-h:34px;
 }
 html,body{width:100%;height:100%;margin:0!important;overflow:hidden!important;background:var(--bamco-page)!important}
-#appView:not(.hidden){width:100%!important;height:100vh!important;min-height:100vh!important;zoom:1!important;overflow:hidden!important}
+#appView:not(.hidden){width:100%!important;height:100vh!important;min-height:100vh!important;zoom:1!important;overflow:hidden!important;background:var(--bamco-page)!important}
 
-/* Brand is only in the sidebar. */
-.side-brand{position:static!important;inset:auto!important;width:100%!important;height:112px!important;min-height:112px!important;background:transparent!important;padding:3px 0 5px!important;margin:0!important;display:flex!important;justify-content:center!important;align-items:center!important;border:0!important}
-.side-brand strong{display:none!important}
-.side-brand img{width:148px!important;height:106px!important;max-width:none!important;object-fit:contain!important;margin:0 auto!important;padding:0!important;background:transparent!important}
-
-.sidebar{position:fixed!important;top:0!important;right:0!important;bottom:0!important;width:286px!important;height:100vh!important;padding:6px 12px 8px!important;box-sizing:border-box!important;background:var(--bamco-shell)!important;color:#fff!important;border:0!important;overflow:hidden!important;display:flex!important;flex-direction:column!important}
-.sidebar.collapsed{width:76px!important}
+/* Sidebar + complete logo in both states */
+.sidebar{position:fixed!important;top:0!important;right:0!important;bottom:0!important;width:var(--sidebar-wide)!important;height:100vh!important;padding:5px 12px 7px!important;box-sizing:border-box!important;background:var(--bamco-shell)!important;color:#fff!important;border:0!important;overflow:hidden!important;display:flex!important;flex-direction:column!important;transition:width .18s ease!important;z-index:80!important}
+.sidebar.collapsed{width:var(--sidebar-narrow)!important}
 .sidebar::before{display:none!important;content:none!important}
-.collapse{position:static!important;width:100%!important;height:36px!important;min-height:36px!important;margin:0 0 5px!important;padding:0!important;background:rgba(0,0,0,.08)!important;border:1px solid rgba(255,255,255,.12)!important;font-size:0!important;display:flex!important;align-items:center!important;justify-content:center!important}
-.collapse::after{content:"◀"!important;font-size:17px!important;color:#d9ebe5!important}
-.sidebar.collapsed .collapse::after{content:"▶"!important}
+.side-brand{position:static!important;inset:auto!important;width:100%!important;height:112px!important;min-height:112px!important;background:transparent!important;padding:2px 0 4px!important;margin:0!important;display:flex!important;justify-content:center!important;align-items:center!important;border:0!important;overflow:hidden!important}
+.side-brand strong{display:none!important}
+.side-brand img{width:154px!important;height:106px!important;max-width:100%!important;object-fit:contain!important;margin:0 auto!important;padding:0!important;background:transparent!important;transition:width .18s ease!important}
+.sidebar.collapsed .side-brand img{width:138px!important;height:102px!important}
 
+/* Grouped navigation */
 .sidebar nav{flex:1 1 auto!important;min-height:0!important;overflow-y:auto!important;overflow-x:hidden!important;scrollbar-width:none!important;-ms-overflow-style:none!important;scroll-behavior:smooth!important;padding:0!important;display:block!important}
 .sidebar nav::-webkit-scrollbar{display:none!important;width:0!important;height:0!important}
 .nav-divider{display:none!important}
 .nav-group{border-bottom:1px solid rgba(255,255,255,.09)!important}
-.nav-group-toggle{width:100%!important;min-height:43px!important;margin:0!important;padding:7px 12px!important;background:transparent!important;border:0!important;color:#fff!important;display:flex!important;align-items:center!important;justify-content:space-between!important;font-size:17px!important;font-weight:700!important;text-align:right!important}
+.nav-group-toggle{width:100%!important;min-height:45px!important;margin:0!important;padding:7px 10px!important;background:transparent!important;border:0!important;color:#fff!important;display:grid!important;grid-template-columns:28px 1fr 22px!important;align-items:center!important;gap:8px!important;font-size:17px!important;font-weight:700!important;text-align:right!important;cursor:pointer!important}
 .nav-group-toggle:hover{background:rgba(0,0,0,.08)!important}
-.nav-chevron{font-family:Tahoma,sans-serif!important;font-size:17px!important;transition:transform .16s ease!important}
+.nav-group-icon{display:block!important;width:28px!important;min-width:28px!important;text-align:center!important;font-family:Tahoma,sans-serif!important;font-size:19px!important;color:#e5f1ed!important}
+.nav-group-toggle>span{white-space:nowrap!important}
+.nav-chevron{font-family:Tahoma,sans-serif!important;font-size:16px!important;text-align:center!important;transition:transform .16s ease!important}
 .nav-group.collapsed-group .nav-group-items{display:none!important}
 .nav-group.collapsed-group .nav-chevron{transform:rotate(90deg)!important}
 .nav-group-items{padding:0 6px 4px!important}
-.sidebar nav .nav-group-items>button,.sidebar nav>button.nav-settings-root{width:100%!important;min-height:42px!important;margin:0!important;padding:6px 18px 6px 10px!important;border:0!important;background:transparent!important;color:#dcebe6!important;display:flex!important;align-items:center!important;gap:10px!important;text-align:right!important;font-size:15.5px!important;font-weight:700!important}
+.sidebar nav .nav-group-items>button,.sidebar nav>button.nav-settings-root{width:100%!important;min-height:42px!important;margin:0!important;padding:6px 18px 6px 10px!important;border:0!important;background:transparent!important;color:#dcebe6!important;display:flex!important;align-items:center!important;gap:10px!important;text-align:right!important;font-size:15.5px!important;font-weight:700!important;cursor:pointer!important}
 .sidebar nav .nav-group-items>button:hover,.sidebar nav>button.nav-settings-root:hover{background:rgba(0,0,0,.08)!important}
 .sidebar nav .nav-group-items>button.active,.sidebar nav>button.nav-settings-root.active{background:var(--bamco-active)!important;color:#fff!important}
 .sidebar nav .nav-group-items>button b,.sidebar nav>button.nav-settings-root b{width:22px!important;min-width:22px!important;text-align:center!important;font-size:16px!important}
 .sidebar nav .nav-group-items>button span,.sidebar nav>button.nav-settings-root span{flex:1!important;white-space:nowrap!important}
 .sidebar nav>button.nav-settings-root{margin-top:4px!important;border-top:1px solid rgba(255,255,255,.09)!important}
-.sidebar.collapsed .nav-group-toggle{justify-content:center!important;padding:7px 4px!important}
-.sidebar.collapsed .nav-group-toggle span{display:none!important}
-.sidebar.collapsed .nav-chevron{font-size:15px!important}
-.sidebar.collapsed .nav-group-items{padding-inline:0!important}
-.sidebar.collapsed .nav-group-items>button,.sidebar.collapsed nav>button.nav-settings-root{justify-content:center!important;padding:7px 4px!important}
-.sidebar.collapsed .nav-group-items>button span,.sidebar.collapsed nav>button.nav-settings-root span{display:none!important}
-.account{margin-top:5px!important;padding:8px 3px 0!important;border-top:1px solid rgba(255,255,255,.14)!important}
 
-/* True 100% workspace; no fake browser zoom and no clipping. */
-.workspace{position:relative!important;margin-right:286px!important;width:calc(100vw - 286px)!important;height:100vh!important;min-height:100vh!important;padding:0 16px 36px!important;box-sizing:border-box!important;overflow:hidden!important;background:var(--bamco-page)!important}
-.app:has(.sidebar.collapsed) .workspace{margin-right:76px!important;width:calc(100vw - 76px)!important}
-.workspace>header{height:48px!important;min-height:48px!important;margin:0 0 6px!important;padding:4px 0 0!important;box-sizing:border-box!important;display:flex!important;align-items:center!important}
-.workspace>header h2{font-size:20px!important;line-height:1.15!important;margin:0!important}
-.workspace>header p{font-size:13px!important;margin:2px 0 0!important}
-.view{height:auto!important;max-height:calc(100vh - 54px)!important;overflow:hidden!important}
-.panel{box-sizing:border-box!important}
+/* Collapsed sidebar shows the section icons, not clipped labels. */
+.sidebar.collapsed .nav-group-toggle{display:flex!important;justify-content:center!important;padding:8px 4px!important;min-height:48px!important}
+.sidebar.collapsed .nav-group-toggle>span,.sidebar.collapsed .nav-chevron{display:none!important}
+.sidebar.collapsed .nav-group-icon{font-size:22px!important;width:34px!important}
+.sidebar.collapsed .nav-group-items{display:none!important}
+.sidebar.collapsed nav>button.nav-settings-root{justify-content:center!important;padding:8px 4px!important;min-height:48px!important}
+.sidebar.collapsed nav>button.nav-settings-root span{display:none!important}
+.sidebar.collapsed nav>button.nav-settings-root b{font-size:21px!important;width:34px!important}
 
-/* Tables fit the viewport; vertical scrollbar is hidden but wheel/touch remain active. */
-.table-wrap{max-height:calc(100vh - 174px)!important;overflow:auto!important;scrollbar-width:none!important;-ms-overflow-style:none!important;overscroll-behavior:contain!important}
+/* Account row + collapse arrow beside logout */
+.account{margin-top:5px!important;padding:8px 3px 0!important;border-top:1px solid rgba(255,255,255,.14)!important;display:grid!important;grid-template-columns:42px minmax(0,1fr) 36px 36px!important;gap:6px!important;align-items:center!important;min-height:50px!important}
+.account .avatar{grid-column:1!important}
+.account-copy{grid-column:2!important;min-width:0!important}
+#logoutBtn{grid-column:3!important;width:36px!important;height:36px!important;min-width:36px!important;margin:0!important;padding:0!important;display:flex!important;align-items:center!important;justify-content:center!important}
+.collapse{grid-column:4!important;position:static!important;width:36px!important;height:36px!important;min-width:36px!important;min-height:36px!important;margin:0!important;padding:0!important;background:rgba(0,0,0,.08)!important;border:1px solid rgba(255,255,255,.14)!important;font-size:0!important;display:flex!important;align-items:center!important;justify-content:center!important;cursor:pointer!important}
+.collapse::after{content:"◀"!important;font-size:17px!important;color:#d9ebe5!important}
+.sidebar.collapsed .collapse::after{content:"▶"!important}
+.sidebar.collapsed .account{grid-template-columns:42px 1fr 36px 36px!important}
+.sidebar.collapsed .account-copy{display:none!important}
+.sidebar.collapsed .avatar{grid-column:1!important}
+.sidebar.collapsed #logoutBtn{grid-column:3!important;display:flex!important}
+.sidebar.collapsed .collapse{grid-column:4!important;display:flex!important}
+
+/* Main workspace with explicit footer reservation */
+.workspace{position:relative!important;margin-right:var(--sidebar-wide)!important;width:calc(100vw - var(--sidebar-wide))!important;height:100vh!important;min-height:100vh!important;padding:0 16px calc(var(--footer-h) + 8px)!important;box-sizing:border-box!important;overflow:hidden!important;background:var(--bamco-page)!important;transition:margin-right .18s ease,width .18s ease!important}
+.app:has(.sidebar.collapsed) .workspace{margin-right:var(--sidebar-narrow)!important;width:calc(100vw - var(--sidebar-narrow))!important}
+.workspace>header{height:50px!important;min-height:50px!important;margin:0 0 7px!important;padding:5px 0 0!important;box-sizing:border-box!important;display:flex!important;align-items:center!important;justify-content:space-between!important;background:transparent!important}
+.workspace>header h2{font-size:20px!important;line-height:1.2!important;margin:0!important;color:var(--bamco-text)!important}
+#viewSubtitle{display:none!important}
+.header-actions:empty{display:none!important}
+.view{height:auto!important;max-height:calc(100vh - 58px - var(--footer-h))!important;overflow:hidden!important}
+
+/* Welcome screen shown immediately after login */
+body.welcome-active .workspace>header{visibility:hidden!important}
+#welcomeView{height:calc(100vh - var(--footer-h) - 10px)!important;max-height:none!important;display:flex!important;align-items:center!important;justify-content:center!important;padding:20px!important;box-sizing:border-box!important}
+#welcomeView.hidden{display:none!important}
+.welcome-card{width:min(760px,88%)!important;padding:34px 42px!important;border:1px solid var(--bamco-line)!important;background:var(--bamco-panel)!important;text-align:center!important;box-shadow:none!important}
+.welcome-card h2{margin:0 0 12px!important;color:#176b4d!important;font-size:26px!important}
+.welcome-card p{margin:0!important;color:#526f65!important;font-size:18px!important;line-height:2!important;text-align:center!important}
+
+/* Unified page style based on the sticker manager */
+.panel,.manager-card,.send-summary article,.stats article,.vehicle-view .panel{box-sizing:border-box!important;border:1px solid var(--bamco-line)!important;border-radius:0!important;box-shadow:none!important;background:var(--bamco-panel)!important;color:var(--bamco-text)!important}
+.panel{padding:11px 13px!important;margin-bottom:10px!important}
+.panel-head{min-height:38px!important;margin:0 0 8px!important;padding:0 0 7px!important;display:flex!important;align-items:center!important;justify-content:space-between!important;gap:10px!important;border-bottom:0!important}
+.panel-head h3,.manager-card h3{margin:0!important;color:#147154!important;font-size:18px!important;font-weight:700!important}
+.panel-head small,.panel small,.manager-note{color:#617b72!important}
+.stats{gap:8px!important;margin-bottom:10px!important}
+.stats article{padding:12px 15px!important;background:#f2f6f4!important}
+.stats small{font-size:15px!important}.stats strong{font-size:27px!important;color:#174b3c!important}
+.primary,.ghost,.danger,.icon-btn,.link-btn,.task-toolbar button{border-radius:0!important;box-shadow:none!important;transform:none!important;font-weight:700!important}
+input,select,textarea{border-radius:0!important;box-shadow:none!important}
+.manager-view,.vehicle-view{padding:0!important}
+.manager-grid{gap:10px!important}
+.manager-card{padding:12px!important}
+.manager-toolbar{gap:8px!important}
+
+/* Kanban/archive toolbar: search and add live with the other actions */
+.table-panel{padding:0!important;overflow:hidden!important;background:#fff!important}
+.table-panel>.panel-head{padding:9px 12px!important;margin:0!important;background:var(--bamco-soft)!important;border-bottom:1px solid var(--bamco-line)!important}
+.task-toolbar{display:flex!important;gap:8px!important;align-items:center!important;flex-wrap:wrap!important;padding:8px 12px!important;background:var(--bamco-soft)!important;border-bottom:1px solid var(--bamco-line)!important}
+.task-toolbar button{min-height:38px!important;padding:6px 14px!important;min-width:112px!important}
+.task-toolbar #addTaskBtn{order:-3!important;background:#177450!important;color:#fff!important;border:1px solid #146544!important}
+.task-search-toggle{order:-2!important;min-width:42px!important;width:42px!important;padding:0!important;font-family:Tahoma,sans-serif!important;font-size:17px!important}
+.toolbar-search{order:-1!important;width:0!important;min-width:0!important;max-width:0!important;height:38px!important;padding:0!important;margin:0!important;border-width:0!important;opacity:0!important;pointer-events:none!important;transition:max-width .18s ease,width .18s ease,opacity .15s ease,padding .18s ease!important}
+.toolbar-search.search-open{width:280px!important;max-width:280px!important;padding:6px 10px!important;border:1px solid var(--bamco-line)!important;opacity:1!important;pointer-events:auto!important;background:#fff!important}
+.table-panel>.panel-head>.search{display:none!important}
+
+/* Roomier horizontal table; vertical scrollbar stays hidden. */
+.table-wrap{max-height:calc(100vh - 172px - var(--footer-h))!important;overflow:auto!important;overscroll-behavior:contain!important;background:#fff!important;border:0!important;scrollbar-width:none!important;-ms-overflow-style:none!important}
 .table-wrap::-webkit-scrollbar{width:0!important;height:0!important;display:none!important}
-.task-select-column{display:none!important}
-#kanbanView table,#archiveView table{min-width:100%!important}
-#kanbanView td,#archiveView td,.manager-table td,.review-details p,.manager-note,.manager-warning,.panel p,.panel small{ text-align:justify!important;text-justify:inter-word!important}
+#kanbanView table,#archiveView table{width:max-content!important;min-width:1920px!important;border-collapse:collapse!important;table-layout:auto!important;background:#fff!important}
+#kanbanView th,#archiveView th{padding:10px 14px!important;white-space:nowrap!important;min-width:112px!important}
+#kanbanView td,#archiveView td{padding:10px 14px!important;min-width:112px!important;max-width:320px!important;line-height:1.75!important;vertical-align:top!important;text-align:justify!important;text-justify:inter-word!important;white-space:normal!important;background:#fff!important}
+#kanbanView th:nth-child(2),#archiveView th:nth-child(2),#kanbanView td:nth-child(2),#archiveView td:nth-child(2){min-width:220px!important;max-width:280px!important}
+#kanbanView th:nth-child(3),#archiveView th:nth-child(3),#kanbanView td:nth-child(3),#archiveView td:nth-child(3){min-width:330px!important;max-width:430px!important}
+#kanbanView th:nth-child(4),#archiveView th:nth-child(4){min-width:160px!important}
+#kanbanView th:nth-child(13),#archiveView th:nth-child(13),#kanbanView td:nth-child(13),#archiveView td:nth-child(13){min-width:260px!important;max-width:360px!important}
 #kanbanView td.en-text,#archiveView td.en-text{direction:ltr!important;text-align:justify!important}
+.task-select-column{display:none!important}
 
-/* Keep all borders on one visual tone. */
-.panel,.stats article,.manager-card,.send-summary article,.table-wrap,table,th,td,.manager-table,.manager-note,.manager-warning,.desktop-sticker-box,.desktop-sticker-dialog,.desktop-sticker-preview-stage,.sticker-cell,input,select,textarea{border-color:var(--bamco-line)!important}
+/* Row states: overdue, warning, waiting response, registered; all others stay white. */
+#kanbanBody tr.row-normal>td{background:#fff!important}
+#kanbanBody tr.row-registered>td{background:#edf8f0!important}
+#kanbanBody tr.row-waiting>td{background:#edf3ff!important}
+#kanbanBody tr.row-warning>td{background:#fff7d9!important}
+#kanbanBody tr.row-overdue>td{background:#fdeaea!important}
+#kanbanBody tr:hover>td{filter:brightness(.985)!important}
+#kanbanBody tr.task-selected>td,#archiveBody tr.task-selected>td{outline:1px solid #4e917a!important;outline-offset:-1px!important}
+/* Due-state text is plain because the row color already carries the state. */
+#kanbanView td:nth-child(12) .pill,#archiveView td:nth-child(12) .pill{background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;padding:0!important;color:inherit!important;font-weight:700!important}
 
-/* Sticker manager: only the desktop-style manager is visible. */
+/* Same visual language for manager tables and content boxes. */
+.manager-table td,.review-details p,.manager-note,.manager-warning,.panel p,.panel small,.template-editor{ text-align:justify!important;text-justify:inter-word!important;line-height:1.8!important}
+.manager-table,.review-details,.manager-note,.manager-warning,.template-editor,.desktop-sticker-box,.desktop-sticker-dialog,.desktop-sticker-preview-stage,.sticker-cell,input,select,textarea,table,th,td{border-color:var(--bamco-line)!important}
+
+/* Sticker manager: larger preview but controlled page height. */
 #stickersView{padding:0!important;overflow:hidden!important}
 #stickersView>.panel{display:none!important}
 #stickersView .desktop-sticker-page{display:block!important;padding:0!important}
 #stickersView #stickerGrid,#stickersView .sticker-grid{display:none!important}
-.desktop-sticker-box{margin:0 0 7px!important;padding:6px 10px 8px!important}
-.desktop-sticker-preview-stage{height:clamp(300px,56vh,500px)!important;min-height:300px!important;max-height:500px!important;display:flex!important;align-items:center!important;justify-content:center!important;background:#f8faf9!important;overflow:hidden!important}
-#desktopStickerPreview{display:block!important;max-width:min(440px,68%)!important;max-height:95%!important;width:auto!important;height:auto!important;object-fit:contain!important}
+.desktop-sticker-box{margin:0 0 8px!important;padding:7px 11px 9px!important;background:var(--bamco-page)!important}
+.desktop-sticker-preview-stage{height:clamp(360px,58vh,560px)!important;min-height:360px!important;max-height:560px!important;display:flex!important;align-items:center!important;justify-content:center!important;background:#f8faf9!important;overflow:hidden!important}
+#desktopStickerPreview{display:block!important;max-width:min(620px,82%)!important;max-height:98%!important;width:auto!important;height:auto!important;object-fit:contain!important}
 
-/* Footer stays fixed as text only and is readable. */
-.app-footer-credit{position:fixed!important;left:0!important;right:286px!important;bottom:5px!important;width:auto!important;height:24px!important;min-height:24px!important;margin:0!important;padding:0 12px!important;z-index:40!important;display:flex!important;align-items:center!important;justify-content:center!important;background:transparent!important;color:#365f52!important;border:0!important;box-shadow:none!important;font-family:"B Nazanin",BNazanin,Tahoma,sans-serif!important;font-size:13px!important;font-weight:400!important;line-height:1.2!important;white-space:nowrap!important;pointer-events:none!important}
-.app:has(.sidebar.collapsed) .app-footer-credit{right:76px!important}
+/* Fixed footer with guaranteed free space above it. */
+.app-footer-credit{position:fixed!important;left:0!important;right:var(--sidebar-wide)!important;bottom:0!important;width:auto!important;height:var(--footer-h)!important;min-height:var(--footer-h)!important;margin:0!important;padding:0 14px!important;z-index:70!important;display:flex!important;align-items:center!important;justify-content:center!important;background:var(--bamco-page)!important;color:#365f52!important;border:0!important;border-top:1px solid rgba(138,167,157,.35)!important;box-sizing:border-box!important;box-shadow:none!important;font-family:"B Nazanin",BNazanin,Tahoma,sans-serif!important;font-size:13.5px!important;font-weight:400!important;line-height:1.2!important;white-space:nowrap!important;pointer-events:none!important}
+.app:has(.sidebar.collapsed) .app-footer-credit{right:var(--sidebar-narrow)!important}
 .vehicle-empty{padding:34px!important;text-align:center!important;font-size:17px!important}
 
-@media(max-width:900px){.sidebar{width:230px!important}.workspace{margin-right:230px!important;width:calc(100vw - 230px)!important}.app-footer-credit{right:230px!important}.side-brand img{width:128px!important;height:96px!important}}
-@media(max-width:650px){.sidebar{width:72px!important}.workspace{margin-right:72px!important;width:calc(100vw - 72px)!important;padding-inline:8px!important}.app-footer-credit{right:72px!important;font-size:11px!important;white-space:normal!important}.side-brand img{width:66px!important;height:64px!important}.nav-group-toggle span,.nav-group-items>button span,.nav-settings-root span{display:none!important}.nav-group-toggle,.nav-group-items>button,.nav-settings-root{justify-content:center!important}}
+@media(max-width:1050px){:root{--sidebar-wide:248px;--sidebar-narrow:158px}.side-brand img{width:140px!important}.toolbar-search.search-open{width:230px!important;max-width:230px!important}}
+@media(max-width:760px){:root{--sidebar-wide:190px;--sidebar-narrow:144px}.workspace{padding-inline:8px!important}.side-brand img{width:130px!important}.sidebar.collapsed .side-brand img{width:124px!important}.account-copy{display:none!important}.welcome-card{width:94%!important;padding:24px!important}.app-footer-credit{font-size:11px!important;white-space:normal!important;text-align:center!important}.desktop-sticker-preview-stage{min-height:330px!important;height:46vh!important}#desktopStickerPreview{max-width:90%!important}}
