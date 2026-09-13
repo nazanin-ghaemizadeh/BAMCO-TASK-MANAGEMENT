@@ -231,6 +231,7 @@ async def guide_checks(page,result,role,width):
         await expect(dialog).to_be_visible()
         size=await dialog.evaluate('e=>e.getBoundingClientRect().width')
         assert size<=min(680,width-16),size
+        assert await dialog.locator('input[name=title]').evaluate("e=>e.getBoundingClientRect().width/e.closest('.form-grid').getBoundingClientRect().width")>0.9
         await dialog.locator('input[type=file]').set_input_files({'name':'BAMCO-User-Guide.pdf','mimeType':'application/pdf','buffer':b'%PDF-1.7 fixture'})
         await expect(dialog.locator('[data-file-name]')).to_have_text('BAMCO-User-Guide.pdf')
         await page.screenshot(path=str(OUT/f'{width}-{role}-guide-upload.png'),full_page=True)

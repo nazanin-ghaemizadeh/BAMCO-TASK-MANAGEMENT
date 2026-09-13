@@ -41,7 +41,7 @@ html body #siteDialog #siteForm .feature-checkline input[type="checkbox"]{flex:0
 #userGuideView .feature-file-main small{display:block;line-height:1.8;color:#527065}
 #userGuideView .feature-file-main bdi{font-family:Arial,sans-serif;font-size:14px}
 #userGuideView .guide-document-card>.feature-row-actions{grid-column:2;justify-content:flex-start;gap:10px;margin-top:4px}
-#documentDialog.guide-upload-dialog{width:min(640px,calc(100vw - 32px));max-width:640px}
+#documentDialog.guide-upload-dialog{--document-dialog-width:640px;--document-form-columns:minmax(0,1fr);width:min(640px,calc(100vw - 32px));max-width:640px}
 #documentDialog.guide-upload-dialog .form-grid{grid-template-columns:minmax(0,1fr)}
 #documentDialog.guide-upload-dialog .span-2{grid-column:1}
 #documentDialog [hidden]{display:none!important}
