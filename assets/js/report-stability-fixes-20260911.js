@@ -6,7 +6,7 @@ const q=(s,r=document)=>r?.querySelector?.(s)||null;
 const qa=(s,r=document)=>[...(r?.querySelectorAll?.(s)||[])];
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const digits=v=>typeof fa==='function'?fa(v):String(v??'').replace(/\d/g,d=>'۰۱۲۳۴۵۶۷۸۹'[d]);
-let responseRows=[],dateTarget=null,syncBusy=false,rawTabRender=null,responseDeleting=false;
+let responseRows=[],dateTarget=null,syncBusy=false,rawTabRender=null,responseDeleting=false,taskDatasetVersion='',sentDatasetVersion='';
 function installCss(){
  q('#bamcoCanonicalReportCss')?.remove();const s=document.createElement('style');s.id='bamcoCanonicalReportCss';s.textContent=`
  #performanceReportView .canonical-report,#responseReportView .canonical-report{min-height:160px}
@@ -90,7 +90,20 @@ function commitDate(clear=false){if(!dateTarget)return;const {kind,input}=dateTa
 function patchTabs(){const tabs=window.bamcoTabs;if(!tabs?.render)return false;if(!rawTabRender)rawTabRender=tabs.render.bind(tabs);if(tabs.__canonicalReportsV6)return true;tabs.render=(id,...args)=>id==='performanceReport'?renderPerformance(false):id==='responseReport'?renderResponse(false):rawTabRender(id,...args);tabs.__canonicalReportsV6=true;return true}
 async function syncCore(){
  if(syncBusy||typeof state==='undefined'||state?.workspaceRefreshPromise||!state?.token||!state?.profile||state.profile.must_change_password||document.hidden)return;syncBusy=true;const userId=state.user?.id,token=state.token,taskRevision=state.taskRevision||0;
- try{const settled=await Promise.allSettled([selectAll('task_status_view','select=*&order=id.desc'),window.bamcoRequestSync?.refresh?.(),window.bamcoInbox?.load?.(),window.bamcoConversations?.refresh?.()]);if(userId!==state.user?.id||token!==state.token)return;const tasks=settled[0];if(tasks.status==='fulfilled'&&taskRevision===(state.taskRevision||0)&&JSON.stringify(tasks.value)!==JSON.stringify(state.tasks)){state.tasks=tasks.value;if(state.view==='kanban')renderTasks(false);else if(state.view==='archive')renderTasks(true);else if(state.view==='dashboard')window.renderDashboard?.()}if(state.view==='performanceReport')await renderPerformance(false);else if(state.view==='responseReport')await renderResponse(false);else if(state.view==='sentMessages')q('#sentMessagesView [data-sent-refresh]')?.click();document.dispatchEvent(new CustomEvent('bamco-live-sync',{detail:{at:Date.now()}}))}catch(err){console.warn('15-second live sync',err?.message||err)}finally{syncBusy=false}
+ try{
+  const [versionRaw,sentVersionRaw]=await Promise.all([rpc('task_dataset_version',{}),isManager()?rpc('sent_message_dataset_version',{}):Promise.resolve('')]);
+  const version=String(versionRaw||''),sentVersion=String(sentVersionRaw||'');if(userId!==state.user?.id||token!==state.token)return;
+  // The first check establishes a server baseline after the initial workspace
+  // refresh. Later checks download the 1+ MB task dataset only when it changed.
+  if(!taskDatasetVersion)taskDatasetVersion=version;
+  else if(version!==taskDatasetVersion){
+   const tasks=await selectAll('task_status_view','select=*&order=id.desc');if(userId!==state.user?.id||token!==state.token)return;
+   if(taskRevision===(state.taskRevision||0)){taskDatasetVersion=version;if(JSON.stringify(tasks)!==JSON.stringify(state.tasks)){state.tasks=tasks;if(state.view==='kanban')renderTasks(false);else if(state.view==='archive')renderTasks(true);else if(state.view==='dashboard')window.renderDashboard?.()}}
+  }
+  if(!sentDatasetVersion)sentDatasetVersion=sentVersion;
+  else if(sentVersion&&sentVersion!==sentDatasetVersion){sentDatasetVersion=sentVersion;if(state.view==='sentMessages')await window.bamcoSentMessages?.refresh?.()}
+  if(state.view==='performanceReport')await renderPerformance(false);else if(state.view==='responseReport')await renderResponse(false);document.dispatchEvent(new CustomEvent('bamco-live-sync',{detail:{at:Date.now()}}))
+ }catch(err){console.warn('Lightweight live sync',err?.message||err)}finally{syncBusy=false}
 }
 function immediateSync(){if(typeof state!=='undefined'&&state?.token&&!document.hidden)void syncCore()}
 function bindReportControls(){
@@ -108,6 +121,6 @@ function bindReportControls(){
  document.addEventListener('bamco-selection-change',e=>{if(e.target.closest?.('#responseReportView'))syncResponseDelete()});
 }
 function watchVisibility(){for(const [id,render] of [['performanceReport',renderPerformance],['responseReport',renderResponse]]){const view=q('#'+id+'View');if(!view)continue;new MutationObserver(()=>{if(state.view===id&&!view.classList.contains('hidden')&&!q('.canonical-report',view))void render(false)}).observe(view,{attributes:true,attributeFilter:['class']})}}
-function boot(){installCss();markReportOwners();patchTabs();bindReportControls();watchVisibility();setInterval(immediateSync,15000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)immediateSync()});window.addEventListener('focus',immediateSync);const app=q('#appView');if(app)new MutationObserver(()=>{if(!app.classList.contains('hidden')){patchTabs();setTimeout(immediateSync,500)}}).observe(app,{attributes:true,attributeFilter:['class']});let tries=0,t=setInterval(()=>{if(patchTabs()&&typeof state!=='undefined'&&state?.token){clearInterval(t);setTimeout(immediateSync,1000)}else if(++tries>200)clearInterval(t)},100);window.bamcoLiveSync={refresh:syncCore,interval:15000};window.bamcoCanonicalReports={renderPerformance,renderResponse,visibleResponse:responseVisible}}
+function boot(){installCss();markReportOwners();patchTabs();bindReportControls();watchVisibility();setInterval(immediateSync,5000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)immediateSync()});window.addEventListener('focus',immediateSync);const app=q('#appView');if(app)new MutationObserver(()=>{if(!app.classList.contains('hidden')){taskDatasetVersion='';sentDatasetVersion='';patchTabs();setTimeout(immediateSync,500)}}).observe(app,{attributes:true,attributeFilter:['class']});let tries=0,t=setInterval(()=>{if(patchTabs()&&typeof state!=='undefined'&&state?.token){clearInterval(t);setTimeout(immediateSync,1000)}else if(++tries>200)clearInterval(t)},100);window.bamcoLiveSync={refresh:syncCore,interval:5000};window.bamcoCanonicalReports={renderPerformance,renderResponse,visibleResponse:responseVisible}}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();

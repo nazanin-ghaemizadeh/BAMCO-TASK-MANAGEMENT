@@ -2,6 +2,7 @@
 (()=>{
 'use strict';
 const paths={
+ help:'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20M9.5 9a2.5 2.5 0 1 1 4.2 1.8c-1.2 1-1.7 1.5-1.7 3.2M12 18h.01',
  guide:'M12 5v16M12 5C8 2 4 3 2 4v16c4-2 7-1 10 1 3-2 6-3 10-1V4c-2-1-6-2-10 1',
  resources:'M3 7h7l2 2h9v12H3zM3 7V3h7l2 4',
  documents:'M6 2h8l4 4v16H6zM14 2v5h4M9 11h6M9 15h6M9 19h4',
@@ -39,7 +40,7 @@ function install(){
  let pending=false;const observer=new MutationObserver(()=>{if(!pending){pending=true;queueMicrotask(refresh)}});
  function refresh(){
   pending=false;observer.disconnect();
-  nav.querySelectorAll('.nav-group').forEach(group=>{const icon=group.querySelector('.nav-group-icon'),key=group.dataset.group||group.dataset.navGroup;if(icon&&paths[key]&&icon.dataset.lineIcon!==key){icon.innerHTML=svg(key);icon.dataset.lineIcon=key}});
+  nav.querySelectorAll('.nav-group').forEach(group=>{const icon=group.querySelector('.nav-group-icon'),key=group.dataset.navIcon||group.dataset.group||group.dataset.navGroup;if(icon&&paths[key]&&icon.dataset.lineIcon!==key){icon.innerHTML=svg(key);icon.dataset.lineIcon=key}});
   nav.querySelectorAll('[data-view]').forEach(button=>{
    const key=views[button.dataset.view]||'configuration';let icon=button.querySelector(':scope>b');if(!icon){icon=document.createElement('b');button.prepend(icon)}
    if(icon.dataset.lineIcon!==key){icon.innerHTML=svg(key);icon.dataset.lineIcon=key}
