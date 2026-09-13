@@ -91,6 +91,13 @@ async def manager_checks(page,result):
 
     assert await page.locator('#nav [data-view="templates"],#nav [data-view="messageTemplates"],#templatesView,#messageTemplatesView').count()==0,'removed message-text UI returned'
     result['message_text_removed']='pass'
+    await open_tab(page,'ownerPreview')
+    await page.locator('#ownerPreviewPerson').select_option('00000000-0000-4000-8000-000000000002')
+    await expect(page.locator('#ownerPreviewBody')).to_contain_text('وظیفه آزمایشی')
+    await page.locator('#ownerPreviewBody [data-archive="true"]').click()
+    await expect(page.locator('#ownerPreviewBody')).to_contain_text('وظیفه انجام‌شده')
+    assert await page.evaluate('state.profile.role')=='manager'
+    await home(page); result['owner_workspace_preview']='pass'
     assert await page.locator('#nav [data-view="requestReport"],#requestReportView').count()==0,'removed request report returned'
     result['removed_request_report_stays_removed']='pass'
     await page.evaluate('__testApi.responseTrackingFixture=__testApi.deliveries.map(x=>({...x}))')

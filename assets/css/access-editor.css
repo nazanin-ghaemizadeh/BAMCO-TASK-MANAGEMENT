@@ -14,3 +14,7 @@ html body dialog:is(#letterAccessDialog,#vehicleAccessDialog).permission-dialog.
 html body dialog:is(#letterAccessDialog,#vehicleAccessDialog).permission-dialog.permission-dialog footer button{flex:1!important}
 html body dialog:is(#letterAccessDialog,#vehicleAccessDialog).permission-dialog.permission-dialog .permission-error{color:#a22!important;max-height:15dvh;overflow:auto}
 .owner-preview-routes{display:flex;flex-wrap:wrap;gap:8px;padding:8px 0}.owner-preview-routes span{padding:5px 10px;background:#edf5ef;border:1px solid #c7d4ce;border-radius:8px}.owner-preview-switch{display:flex;gap:8px;margin:12px 0}.owner-preview-switch button{font-weight:400!important}.owner-preview-switch [aria-pressed=true]{background:#176b4d!important;color:#fff!important}
+html body #appView#appView #ownerPreviewView:not(.hidden){display:flex!important;flex-direction:column!important;height:100dvh!important;min-height:0!important;overflow:hidden!important}
+html body #appView#appView #ownerPreviewView>.panel,html body #appView#appView #ownerPreviewView #ownerPreviewBody{display:flex!important;flex-direction:column!important;flex:1 1 0!important;min-height:0!important;overflow:hidden!important}
+html body #appView#appView #ownerPreviewView .owner-preview-routes{flex:none!important;max-height:24dvh!important;overflow:auto!important}
+html body #appView#appView #ownerPreviewView .owner-preview-switch{flex:none!important}
