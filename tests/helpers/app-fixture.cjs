@@ -54,6 +54,7 @@ async function fixture(options={}){
     else{const existing=profiles.find(p=>p.id===body.user_id);if(existing)Object.assign(existing,body);else profiles.push({id:'test-new',...body});data={ok:true}}
    }
    if(endpoint==='revoke_user_session'){sessions.find(s=>s.id===body.p_session_id).revoked_at=new Date().toISOString();data=true}
+   if(endpoint==='can_access_vehicle')data=actor.active!==false&&(actor.role==='manager'||(tables.vehicle_access||[]).some(g=>g.user_id===actor.id&&g.scope===body.p_scope));
    if(endpoint==='can_access_letters')data=actor.active!==false&&(actor.role==='manager'||(tables.letter_access||[]).some(g=>g.user_id===actor.id));
    if(endpoint==='chat_ensure_public')data='test-room';
    if(endpoint==='chat_directory'||endpoint==='chat_directory_v2')data=profiles;

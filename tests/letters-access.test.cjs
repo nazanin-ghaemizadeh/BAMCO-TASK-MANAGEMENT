@@ -20,7 +20,7 @@ for(const allowed of [false,true])test(`letters home card and independent route 
 test('manager grants letters access without changing profiles or other permissions',async t=>{
  const f=await fixture({tables:{letter_access:[]},fetchResult:({endpoint})=>endpoint==='can_access_letters'?true:undefined});t.after(()=>f.dispose());
  await f.open('letters');await until(()=>!f.d.querySelector('#lettersAccess').classList.contains('hidden'));
- f.d.querySelector('#lettersAccess').click();await until(()=>f.d.querySelector('#letterAccessDialog input'));
+ f.d.querySelector('#lettersAccess').click();await until(()=>f.d.querySelector('#letterAccessDialog input[type=checkbox]'));
  const box=f.d.querySelector('#letterAccessDialog input[value="test-owner"]');assert(box);box.checked=true;
  f.d.querySelector('#letterAccessDialog form').requestSubmit();await until(()=>f.calls.some(c=>c.endpoint==='set_letters_access'));
  const save=f.calls.find(c=>c.endpoint==='set_letters_access');assert.deepEqual(save.body.p_user_ids,['test-owner']);

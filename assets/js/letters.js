@@ -25,16 +25,7 @@ async function access(){
  if(!allowed){++run;rows=[];loading=false;render();q('#letterDialog')?.close();q('#letterAccessDialog')?.close();if(state?.view==='letters'&&typeof showView==='function')showView('home')}
  return allowed})().finally(()=>accessJob=null);return accessJob;
 }
-async function manageAccess(){
- if(!manager())return;
- const button=q('#lettersAccess');button.disabled=true;
- try{const [people,grants]=await Promise.all([selectAll('profiles','select=id,display_name,full_name,email,role&active=eq.true'),selectAll('letter_access','select=user_id')]);
- const selected=new Set(grants.map(g=>g.user_id));let dialog=q('#letterAccessDialog');if(!dialog){dialog=document.createElement('dialog');dialog.id='letterAccessDialog';dialog.className='letters-dialog';document.body.append(dialog)}
- dialog.innerHTML=`<h3>دسترسی به نامه‌ها</h3><p>مدیران دسترسی دارند. افراد انتخاب‌شده فقط به تب نامه‌ها دسترسی می‌گیرند؛ نقش و سایر دسترسی‌ها تغییر نمی‌کند.</p><form>${people.filter(p=>p.role!=='manager').map(p=>`<label class="letter-access-option"><input type="checkbox" name="users" value="${esc(p.id)}" ${selected.has(p.id)?'checked':''}>${esc(p.display_name||p.full_name||p.email)}</label>`).join('')}<p class="letter-error" role="alert"></p><div class="letter-actions"><button type="submit" class="primary">ذخیره دسترسی‌ها</button><button type="button" data-close class="ghost">انصراف</button></div></form>`;
- let busy=false;dialog.querySelector('[data-close]').onclick=()=>{if(!busy)dialog.close()};dialog.oncancel=e=>{if(busy)e.preventDefault()};
- dialog.querySelector('form').onsubmit=async e=>{e.preventDefault();if(busy)return;busy=true;const save=dialog.querySelector('[type=submit]');save.disabled=true;try{await rpc('set_letters_access',{p_user_ids:[...dialog.querySelectorAll('input:checked')].map(x=>x.value)});dialog.close();toast('دسترسی نامه‌ها ذخیره شد.')}catch(error){dialog.querySelector('.letter-error').textContent=error.message}finally{busy=false;save.disabled=false}};dialog.showModal();
- }catch(error){q('#lettersError').textContent=error.message}finally{button.disabled=false}
-}
+async function manageAccess(){return window.bamcoAccessEditor.open({id:'letterAccessDialog',title:'دسترسی به نامه‌ها',table:'letter_access',save:ids=>rpc('set_letters_access',{p_user_ids:ids})})}
 function init(){const view=q('#lettersView');if(!view||q('#lettersPanel'))return;try{titles.letters='نامه‌ها'}catch{}
  const panel=document.createElement('section');panel.className='letters-panel';panel.id='lettersPanel';panel.innerHTML='<div class="letter-toolbar"><input type="search" id="lettersSearch" placeholder="جست‌وجوی نامه…" aria-label="جست‌وجوی نامه"><button class="primary" id="addLetter">افزودن نامه</button><button class="ghost" id="refreshLetters">تازه‌سازی</button><button class="ghost hidden" id="lettersAccess">مدیریت دسترسی</button></div><p class="letter-error" id="lettersError" role="alert"></p><div id="lettersBody"></div>';view.querySelectorAll(':scope > .bamco-management-toolbar').forEach(bar=>{const back=bar.querySelector('.content-back');if(back)panel.querySelector('.letter-toolbar').prepend(back);bar.remove()});view.append(panel);
  q('#lettersAccess').onclick=manageAccess;

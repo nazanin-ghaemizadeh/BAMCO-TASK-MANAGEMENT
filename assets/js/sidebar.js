@@ -35,8 +35,8 @@
     const workspace=q('.workspace');
     if(!workspace||q('#vehiclePermanentView'))return;
     workspace.insertAdjacentHTML('beforeend',`
-      <section id="vehiclePermanentView" class="view hidden manager-only vehicle-view"><div class="panel"><div class="panel-head"><div><h3>تحویل دائم</h3><small>مدیریت اطلاعات خودروهای تحویل دائم</small></div></div><div class="empty vehicle-empty">این بخش برای ثبت و مدیریت اطلاعات تحویل دائم آماده است.</div></div></section>
-      <section id="vehicleTemporaryView" class="view hidden manager-only vehicle-view"><div class="panel"><div class="panel-head"><div><h3>تحویل موقت</h3><small>مدیریت اطلاعات خودروهای تحویل موقت</small></div></div><div class="empty vehicle-empty">این بخش برای ثبت و مدیریت اطلاعات تحویل موقت آماده است.</div></div></section>`);
+      <section id="vehiclePermanentView" class="view hidden vehicle-view"><div class="panel"><div class="panel-head"><div><h3>تحویل دائم</h3><small>مدیریت اطلاعات خودروهای تحویل دائم</small></div></div><div class="empty vehicle-empty">این بخش برای ثبت و مدیریت اطلاعات تحویل دائم آماده است.</div></div></section>
+      <section id="vehicleTemporaryView" class="view hidden vehicle-view"><div class="panel"><div class="panel-head"><div><h3>تحویل موقت</h3><small>مدیریت اطلاعات خودروهای تحویل موقت</small></div></div><div class="empty vehicle-empty">این بخش برای ثبت و مدیریت اطلاعات تحویل موقت آماده است.</div></div></section>`);
   }
 
   function closeAllGroups(except=null){
@@ -77,8 +77,8 @@
     if(sidebar&&systemTitle&&!systemTitle.classList.contains('header-system-title')){systemTitle.classList.add('header-system-title');sidebar.appendChild(systemTitle)}
     const settings=q('#nav button[data-view="settings"]');
     if(settings){settings.classList.add('nav-settings-root');settings.title='تنظیمات';if(!settings.querySelector('b'))settings.insertAdjacentHTML('afterbegin','<b>⚙</b>')}
-    const permanent=document.createElement('button');permanent.dataset.view='vehiclePermanent';permanent.className='manager-only';permanent.innerHTML='<b>▣</b><span>تحویل دائم</span>';
-    const temporary=document.createElement('button');temporary.dataset.view='vehicleTemporary';temporary.className='manager-only';temporary.innerHTML='<b>▤</b><span>تحویل موقت</span>';
+    const permanent=document.createElement('button');permanent.dataset.view='vehiclePermanent';permanent.className='hidden vehicle-access-nav';permanent.innerHTML='<b>▣</b><span>تحویل دائم</span>';
+    const temporary=document.createElement('button');temporary.dataset.view='vehicleTemporary';temporary.className='hidden vehicle-access-nav';temporary.innerHTML='<b>▤</b><span>تحویل موقت</span>';
     nav.append(permanent,temporary);qa('#nav>.nav-divider').forEach(x=>x.remove());
     const task=makeGroup('مدیریت وظایف','tasks',['kanban','archive','taskTimeline','approvals','requestHistory','approvalChains'],'☑');
     const people=makeGroup('مدیریت افراد','people',['people'],'♙');
