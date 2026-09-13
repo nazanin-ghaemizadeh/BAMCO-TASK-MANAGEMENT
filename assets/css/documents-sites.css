@@ -22,3 +22,7 @@ html body.content-only #appView :is(#documentsView,#sitesAccessView)>.feature-to
 /* Document command buttons use the regular face, including the home action. */
 html body.content-only #appView #documentsView .feature-toolbar-actions.bamco-command-bar button,
 html body #documentsView .feature-toolbar-actions button{font-weight:400!important;font-synthesis:none!important}
+
+/* Persian helper text must not inherit the Latin credential font. */
+#credentialDialog input[name="password"]::placeholder{font-family:BamcoPersian,"B Nazanin",BNazanin,Tahoma,sans-serif!important;direction:rtl;text-align:right}
+#sitesAccessView .feature-site-card dd.fa-text{font-family:BamcoPersian,"B Nazanin",BNazanin,Tahoma,sans-serif!important;direction:rtl;text-align:right}
