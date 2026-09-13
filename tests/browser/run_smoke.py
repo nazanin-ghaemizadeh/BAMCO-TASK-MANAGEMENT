@@ -135,7 +135,10 @@ async def manager_checks(page,result):
     await home(page); result['response_tracking_root_controls_and_selection']='pass'
 
     await open_tab(page,'directMessages')
-    system=page.locator('#directMessagesView [data-kind="system"]'); await expect(system).to_have_count(1); await system.click(); await expect(page.locator('#directMessagesView .workflow-message')).to_be_visible(); await expect(page.locator('#directMessagesView .workflow-message')).to_contain_text('گزارش وضعیت آزمایشی')
+    system=page.locator('#directMessagesView [data-kind="system"]'); await expect(system).to_have_count(1); await system.click()
+    message=page.locator('#directMessagesView .system-message-open').first; await expect(message).to_be_visible(); await message.click()
+    detail=page.locator('#bamcoSystemMessageDialog .workflow-message'); await expect(detail).to_be_visible(); await expect(detail).to_contain_text('گزارش وضعیت آزمایشی')
+    await page.locator('#bamcoSystemMessageDialog .bsm-close').first.click()
     await home(page); result['system_private_thread']='pass'
 
     await open_tab(page,'kanban')
