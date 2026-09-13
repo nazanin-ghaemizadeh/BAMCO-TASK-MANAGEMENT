@@ -28,7 +28,13 @@ async function fixture(options={}){
    const url=new URL(typeof input==='string'?input:input.url,w.location.href),endpoint=url.pathname.split('/').pop(),method=init.method||'GET',body=typeof init.body==='string'?JSON.parse(init.body):init.body||null;
    calls.push({endpoint,method,body,url:url.href,cache:init.cache});let data=[],status=200;
    if(failures.has(endpoint))return new Response(JSON.stringify({message:'خطای آزمایشی '+endpoint}),{status:500});
-   const filter=rows=>rows.filter(row=>[...url.searchParams].every(([k,v])=>v==='is.null'?row[k]==null:!v.startsWith('eq.')||String(row[k])===v.slice(3)));
+   const filter=rows=>rows.filter(row=>[...url.searchParams].every(([k,v])=>{
+    if(v==='is.null')return row[k]==null;
+    if(v.startsWith('eq.'))return String(row[k])===v.slice(3);
+    if(v.startsWith('gte.'))return String(row[k]??'')>=v.slice(4);
+    if(v.startsWith('lte.'))return String(row[k]??'')<=v.slice(4);
+    return true;
+   }));
    if(tables[endpoint]){
     if(method==='GET')data=filter(tables[endpoint]);
     else if(method==='POST'){data=(Array.isArray(body)?body:[body]).map((row,i)=>({id:1000+tables[endpoint].length+i,...row}));tables[endpoint].push(...data)}

@@ -194,6 +194,7 @@ function currentMonthRange(){
 function enhancePerformanceReport(){
   const view=q('#performanceReportView'),table=q('table',view);if(!table||q('th[data-month-assigned]',table))return;
   const head=table.tHead?.rows?.[0];if(!head||head.cells.length<8)return;
+  if([...head.cells].some(cell=>/^محول‌شده در (این ماه|بازه)$/.test(cell.textContent.trim())))return;
   const marker=document.createElement('th');marker.dataset.monthAssigned='1';marker.textContent='محول‌شده در این ماه';head.insertBefore(marker,head.cells[6]);
   const range=currentMonthRange();
   qa('tbody tr[data-workspace-index]',table).forEach(row=>{

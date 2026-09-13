@@ -33,13 +33,11 @@ test('dashboard date controls, templates, sticker picker, chain form and Gantt a
   for(const target of ['perfFrom','perfTo']){
    d.querySelector('[data-dashboard-date="'+target+'"]').click();await until(()=>d.querySelector('#calendarDialog').open);d.querySelector('#calDay').value='1';d.querySelector('#setDateBtn').click();assert(d.querySelector('#'+target).value);assert(!d.querySelector('#calendarDialog').open);
   }
-  d.querySelector('#applyPerf').click();d.querySelector('#clearPerf').click();assert.equal(d.querySelector('#perfFrom').value,'');assert.equal(d.querySelector('#perfTo').value,'');
-  assert.equal(d.querySelectorAll('.dashboard-date-field').length,2);assert.equal(d.querySelector('#applyPerf').parentElement,d.querySelector('#clearPerf').parentElement);
+  d.querySelector('#clearPerf').click();assert.equal(d.querySelector('#perfFrom').value,'');assert.equal(d.querySelector('#perfTo').value,'');
+  assert.equal(d.querySelectorAll('.dashboard-date-field').length,2);assert(d.querySelector('#clearPerf').closest('.performance-range-actions'));
  });
- await t.test('template editor saves and re-reads fresh server data when reopened',async()=>{
-  await f.open('templates');d.querySelector('#openDesktopTemplateEditor').click();await until(()=>d.querySelector('#desktopTemplateEditor').open);
-  d.querySelector('#dteBody').value='متن اصلاح‌شده';d.querySelector('#templateEditorForm').requestSubmit();await until(()=>!d.querySelector('#desktopTemplateEditor').open);assert(f.tables.email_templates[0].body_html.includes('متن اصلاح‌شده'));
-  f.tables.email_templates[0].body_html='تغییر بیرون از این صفحه';d.querySelector('#openDesktopTemplateEditor').click();await until(()=>d.querySelector('#desktopTemplateEditor').open);assert.equal(d.querySelector('#dteBody').value,'تغییر بیرون از این صفحه');d.querySelector('#dteCancel').click();assert(!d.querySelector('#desktopTemplateEditor').open);
+ await t.test('message text editor stays removed from the canonical send workflow',async()=>{
+  await f.open('messageCenter');assert.equal(d.querySelector('#nav [data-view="templates"]'),null);assert.equal(d.querySelector('#templatesView'),null);assert.equal(d.querySelector('#desktopTemplateEditor'),null);
  });
  await t.test('sticker controls open the upload form and preserve each selectable image slot',async()=>{
   await f.open('stickers');d.querySelector('#stickerNew').click();assert(d.querySelector('#stickerPackDialog').open);assert.equal(d.querySelectorAll('.sticker-pick').length,10);

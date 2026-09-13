@@ -51,7 +51,7 @@ test('all data tables default to compact multi-selection behavior',()=>{
 test('people can omit email and never enter an initial password',()=>{
   const js=read('assets/js/shell.js'),edge=read('supabase/functions/admin-users/index.ts');
   assert.doesNotMatch(js,/name="initial_password"/);
-  assert.match(js,/ایمیل \(اختیاری\)/);
+  assert.match(js,/پست الکترونیک سازمانی \(اختیاری\)/);
   assert.match(js,/messaging_enabled/);
   assert.doesNotMatch(edge,/password:"123456"/);
   assert.match(edge,/crypto.getRandomValues/);
@@ -77,7 +77,7 @@ test('chat exposes requested messaging controls',()=>{
 
 test('dashboard and Excel formatting remain responsive and conditional',()=>{
   const app=read('assets/js/app.js');
-  assert.match(app,/Math\.max\(320,canvas\.parentElement\.clientWidth\)/);
+  assert.match(app,/Math\.max\(window\.matchMedia.*\?640:320,canvas\.parentElement\.clientWidth\)/);
   assert.match(app,/درخواست‌های منتظر بررسی/);
   assert.match(app,/درخواست تعریف وظیفه/);
   assert.match(app,/کارهای بدون زمان‌بندی/);

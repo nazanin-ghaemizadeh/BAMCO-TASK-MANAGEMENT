@@ -582,3 +582,18 @@ html body #appView#appView :is(#kanbanView,#archiveView).bamco-interior table tb
 button:not(:disabled):not([aria-disabled="true"]),a[href],[role="tab"]:not([aria-disabled="true"]),[data-view]:not(:disabled),[data-bamco-task-id]{cursor:pointer;touch-action:manipulation}
 #nav [data-view]:not(:disabled),#nav [data-view]:not(:disabled) *{cursor:pointer!important;transition-delay:0s!important}
 .system-message-chip.waiting{background:#f1f2f3;border-color:#c9cdd1;color:#39434a}
+
+/* Final action language: labels are regular weight, additions are green and removals are red. */
+html body #appView#appView button,html body dialog button{font-weight:400!important;font-synthesis:none!important}
+html body #appView.app .sidebar #nav button[data-view],html body #appView #collapseBtn{font-weight:400!important;font-synthesis:none!important}
+html body #appView .view .content-back{order:-100!important}
+html body #appView#appView button :is(b,strong),html body dialog button :is(b,strong){font-weight:400!important}
+html body #appView :is(button.primary,.vehicle-add,#stickerNew,[data-option-new],[data-create-group],#addTaskBtn,#addPersonBtn,#addDocumentCategory,#addPersonalSite,#addOrganizationSite),
+html body dialog :is(button.primary){background:#176b4d!important;color:#fff!important;border-color:#176b4d!important}
+html body #appView :is(button.danger,.vehicle-delete,#kanbanDeleteBtn,#archiveDeleteBtn,#deletePersonBtn,[data-cat-delete],[data-doc-delete],[data-site-delete],[data-response-delete],[data-response-bulk-delete],.message-delete,.system-chain-clear),
+html body dialog :is(button.danger){background:#bd3535!important;color:#fff!important;border-color:#a82f2f!important}
+html body #appView .view :is(#resetDashFilters,#clearPerf,[data-response-clear-dates],[data-canonical-perf-clear],[data-performance-clear],.suite-clear-sort){color:#a52f2f!important;border-color:#d9aaa6!important;background:#fff!important}
+
+/* The two detailed dashboard charts need the full grid width and a real mobile scroll surface. */
+html body #appView#appView #dashboardView.bamco-interior .dashboard-chart-card:has(#workloadChart),
+html body #appView#appView #dashboardView.bamco-interior .dashboard-chart-card:has(#performanceChart){grid-column:1/-1!important}

@@ -8,7 +8,7 @@
     const link=document.createElement('link');
     link.id='bamcoVerticalSidebarStyles';
     link.rel='stylesheet';
-    link.href='assets/css/vertical-sidebar.css?v=20260909-1';
+    link.href='assets/css/vertical-sidebar.css?v=mobile-actions-20260913-1';
     document.head.appendChild(link);
   }
 

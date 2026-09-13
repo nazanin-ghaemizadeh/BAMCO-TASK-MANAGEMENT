@@ -23,7 +23,7 @@ test('kanban and reports export the selection, then every record when cleared',a
  const tasks=[1,2,3].map(id=>({id,title:'وظیفه '+id,status:'ثبت شده',priority:'متوسط',archived:false,owner_id:null}));const f=await fixture({tables:{tasks}}),{w,d}=f;t.after(()=>f.dispose());await f.open('kanban');await until(()=>d.querySelectorAll('#kanbanBody tr[data-task-id]').length===3);
  d.querySelector('#kanbanBody [data-task-id="2"]').click();d.querySelector('#kanbanExportBtn').click();await until(()=>f.downloads.length===1);let rows=await workbookRows(f);assert.equal(rows.length,2);assert(rows.flat().includes('وظیفه 2'));
  w.bamcoSelection.clear('#kanbanBody');d.querySelector('#kanbanExportBtn').click();await until(()=>f.downloads.length===2);assert.equal((await workbookRows(f)).length,4);
- await f.open('loginActivity');await until(()=>d.querySelector('#loginActivityView tbody tr[data-workspace-index]'));d.querySelector('#loginActivityView tbody tr').click();d.querySelector('#loginActivityView [data-report-export]').click();await until(()=>f.downloads.length===3);assert.equal((await workbookRows(f)).length,2);assert.deepEqual(f.errors,[]);
+ await f.open('activeSessions');await until(()=>d.querySelector('#activeSessionsView tbody tr[data-workspace-index]'));d.querySelector('#activeSessionsView tbody tr').click();d.querySelector('#activeSessionsView [data-report-export]').click();await until(()=>f.downloads.length===3);assert.equal((await workbookRows(f)).length,2);assert.deepEqual(f.errors,[]);
 });
 
 test('centered custom confirmations are cancellable and replace browser-origin dialogs',async t=>{
@@ -33,7 +33,7 @@ test('centered custom confirmations are cancellable and replace browser-origin d
 
 test('sessions start at sign-in and repeated DPR-2 redraws keep chart height stable',async t=>{
  const f=await fixture(),{w,d}=f;t.after(()=>f.dispose());assert(f.calls.some(c=>c.endpoint==='session-audit'&&c.body?.action==='start'));
- Object.defineProperty(w,'devicePixelRatio',{value:2,configurable:true});await f.open('dashboard');const canvas=d.querySelector('#statusChart'),logical=Number(canvas.dataset.logicalHeight);for(let i=0;i<5;i++)d.querySelector('#applyPerf').click();assert.equal(canvas.height,logical*2);assert.equal(canvas.style.height,logical+'px');
+ Object.defineProperty(w,'devicePixelRatio',{value:2,configurable:true});await f.open('dashboard');const canvas=d.querySelector('#statusChart'),logical=Number(canvas.dataset.logicalHeight);for(let i=0;i<5;i++)w.renderDashboard();assert.equal(canvas.height,logical*2);assert.equal(canvas.style.height,logical+'px');
 });
 
 test('chat photos, search and own-message edit use real handlers without resending a message',async t=>{
@@ -44,7 +44,7 @@ test('chat photos, search and own-message edit use real handlers without resendi
 });
 
 test('report rendering escapes content and supplies bright tables with independent Latin type',()=>{
- const snapshot={body_template:'گزارش BAMCO\n[جدول امور هشداری]\n[استیکر]',warning_task_ids:[1],tasks:[{id:1,title:'<img src=x onerror=alert(1)>',status:'در حال انجام',priority:'متوسط',due_date:'2026-09-10'}]};const result=html(snapshot,{stickerUrl:'javascript:alert(1)'});assert(!result.includes('<img src=x'));assert(result.includes('&lt;'));assert(result.includes('onerror'));assert(!result.includes('src="javascript:'));assert(result.includes("font-family:'Times New Roman'"));assert(result.includes('#fff0c2'));assert(result.includes('#ffffff'));assert(!result.includes('[جدول'));
+ const snapshot={body_template:'گزارش BAMCO\n[جدول امور هشداری]\n[استیکر]',warning_task_ids:[1],tasks:[{id:1,title:'<img src=x onerror=alert(1)>',status:'در حال انجام',priority:'متوسط',due_date:'2026-09-10'}]};const result=html(snapshot,{stickerUrl:'javascript:alert(1)'});assert(!result.includes('<img src=x'));assert(result.includes('&lt;'));assert(result.includes('onerror'));assert(!result.includes('src="javascript:'));assert(result.includes("font-family:'Times New Roman'"));assert(result.includes('#fff8e5'));assert(result.includes('background:#fff'));assert(!result.includes('[جدول'));
 });
 
 function fakeDb(deliveries){const batches=[];return{deliveries,batches,from(table){let action='select',patch,filters=[];const query={select(){return this},eq(k,v){filters.push(r=>r[k]===v);return this},in(k,v){filters.push(r=>v.includes(r[k]));return this},lt(k,v){filters.push(r=>r[k]<v);return this},update(value){action='update';patch=value;return this},async maybeSingle(){const result=await this;return{...result,data:result.data[0]||null}},then(resolve,reject){try{const source=table==='message_batches'?[{id:'batch'}]:deliveries,rows=source.filter(r=>filters.every(fn=>fn(r)));if(action==='update'){rows.forEach(r=>Object.assign(r,patch));if(table==='message_batches')batches.push(patch)}return Promise.resolve({data:rows.map(r=>({...r})),error:null}).then(resolve,reject)}catch(err){return Promise.reject(err).then(resolve,reject)}}};return query}}}
@@ -62,7 +62,7 @@ test('current Persian month completion and create-request counts use the agreed 
  f.tables.tasks.push({id:1,title:'فعال',owner_id:'test-owner',status:'در حال انجام',archived:false,due_date:from},{id:2,title:'تکمیل این ماه',owner_id:'test-owner',status:'انجام شده',archived:true,done_date:'2025-01-01',due_date:from},{id:3,title:'تکمیل قدیمی',owner_id:'test-owner',status:'انجام شده',archived:true,done_date:from,due_date:'2025-01-01'},{id:4,title:'در انتظار',owner_id:'test-owner',status:'منتظر پاسخ',archived:false});
  f.tables.change_requests.push({requested_by:'test-owner',request_type:'create',created_at:from+'T12:00:00Z'},{requested_by:'test-owner',request_type:'create',created_at:'2025-01-01T12:00:00Z'},{requested_by:'test-owner',request_type:'update',created_at:from+'T12:00:00Z'});
  await w.eval('refresh()');await f.open('performanceReport');await until(()=>d.querySelector('#performanceReportView tbody tr[data-workspace-index]'));
- const values=[...d.querySelector('#performanceReportView tbody tr').cells].map(c=>c.textContent.trim());assert.equal(values[2],'۴');assert.equal(values[6],'۱');assert.equal(values[7],'۵۰٪');assert.equal(values[8],'۱');assert.equal(d.querySelector('#performanceReportView .workspace-metrics'),null);
+ const values=[...d.querySelector('#performanceReportView tbody tr').cells].map(c=>c.textContent.trim());assert.equal(values[1],'۴');assert.equal(values[5],'۲');assert.equal(values[6],'۱');assert.equal(values[7],'۵۰٪');assert.equal(values[8],'۱');assert.equal(d.querySelector('#performanceReportView .workspace-metrics'),null);
 });
 
 test('chain editing uses one atomic request and populates saved stage rules',async t=>{

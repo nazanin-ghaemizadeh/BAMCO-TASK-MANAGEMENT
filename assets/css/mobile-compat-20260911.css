@@ -37,12 +37,27 @@
   #appView .panel-head small{display:none!important}
   #appView .panel-head input.search,#appView .panel-head input[type=search]{flex:0 1 42%!important;width:42%!important;min-width:110px!important;max-width:180px!important;height:35px!important}
 
-  /* Wrap actions within the phone width; keep each control reachable. */
+  /* Wrap actions within the phone width and distribute every wrapped row evenly. */
   html body #appView#appView :is(.task-toolbar,.vehicle-toolbar,.prod-toolbar,.people-actions,.manager-toolbar,.workspace-actions,.workspace-report-tools,.suite-toolbar,.message-center-simple-toolbar,.sent-controls,.dashboard-filter-actions,.performance-range-actions){display:flex!important;direction:rtl!important;align-items:center!important;flex-wrap:wrap!important;gap:6px!important;width:100%!important;max-width:100%!important;min-width:0!important;overflow-x:auto!important;overflow-y:hidden!important;padding:6px 8px!important;box-sizing:border-box!important;scrollbar-width:none!important;-webkit-overflow-scrolling:touch!important;background:#f7faf8!important}
   html body #appView#appView :is(.task-toolbar,.vehicle-toolbar,.prod-toolbar,.people-actions,.manager-toolbar,.workspace-actions,.workspace-report-tools,.suite-toolbar,.message-center-simple-toolbar,.sent-controls)::-webkit-scrollbar{display:none!important}
   html body #appView#appView :is(.task-toolbar,.vehicle-toolbar,.prod-toolbar,.people-actions,.manager-toolbar,.workspace-actions,.workspace-report-tools,.suite-toolbar,.message-center-simple-toolbar,.sent-controls)>*{flex:0 1 auto!important;min-width:0!important;max-width:100%!important;margin:0!important}
   html body #appView#appView :is(.task-toolbar,.vehicle-toolbar,.prod-toolbar,.people-actions,.manager-toolbar,.workspace-actions,.workspace-report-tools,.suite-toolbar,.message-center-simple-toolbar,.sent-controls) button{min-height:44px!important;padding:6px 10px!important;white-space:nowrap!important;font-size:13px!important;line-height:1.2!important}
   html body #appView#appView :is(.task-toolbar,.vehicle-toolbar,.prod-toolbar,.people-actions,.manager-toolbar,.workspace-actions,.workspace-report-tools,.suite-toolbar,.message-center-simple-toolbar,.sent-controls) :is(input[type=search],input.search,select){height:44px!important;min-width:130px!important;width:auto!important;max-width:190px!important}
+  html body #appView#appView :is(.task-toolbar,.vehicle-toolbar,.prod-toolbar,.people-actions,.manager-toolbar,.workspace-actions,.workspace-report-tools,.suite-toolbar,.message-center-simple-toolbar,.message-command-row,.response-command-row,.sent-command-row,.feature-toolbar-actions,.sticker-toolbar,.tt-toolbar,.bamco-command-bar){
+    justify-content:stretch!important;overflow-x:hidden!important;
+  }
+  html body #appView#appView :is(.task-toolbar,.vehicle-toolbar,.prod-toolbar,.people-actions,.manager-toolbar,.workspace-actions,.workspace-report-tools,.suite-toolbar,.message-center-simple-toolbar,.message-command-row,.response-command-row,.sent-command-row,.feature-toolbar-actions,.sticker-toolbar,.tt-toolbar,.bamco-command-bar)>:is(button,label,select){
+    flex:1 1 116px!important;width:auto!important;max-width:none!important;min-width:0!important;
+  }
+  html body #appView#appView :is(.task-toolbar,.vehicle-toolbar,.prod-toolbar,.people-actions,.manager-toolbar,.workspace-actions,.workspace-report-tools,.suite-toolbar,.message-center-simple-toolbar,.message-command-row,.response-command-row,.sent-command-row,.feature-toolbar-actions,.sticker-toolbar,.tt-toolbar,.bamco-command-bar)>:is(input[type=search],input.search,.toolbar-search,.vehicle-search){
+    flex:1 1 100%!important;width:100%!important;max-width:none!important;min-width:0!important;
+  }
+  html body #appView#appView :is(.message-command-row,.response-command-row,.sent-command-row,.feature-toolbar-actions,.sticker-toolbar,.tt-toolbar,.bamco-command-bar)>button{
+    min-height:44px!important;white-space:nowrap!important;
+  }
+  html body #appView#appView :is(.bamco-icon-button,.dashboard-calendar-btn,.chat-refresh,.chat-attach,.chat-sticker-toggle,.chat-send,#ttPrev,#ttNext){
+    flex:0 0 40px!important;width:40px!important;min-width:40px!important;
+  }
 
   /* Tables are scroll surfaces, never page-width breakers. */
   #appView :is(.table-wrap,.prod-table-wrap,.focus-scroll){display:block!important;width:100%!important;max-width:100%!important;min-width:0!important;overflow:auto!important;-webkit-overflow-scrolling:touch!important;overscroll-behavior:contain!important;touch-action:pan-x pan-y!important}
@@ -62,11 +77,11 @@
   #dashboardView .dashboard-cards article{min-width:0!important;padding:8px!important;border-radius:11px!important}
   #dashboardView .dashboard-cards small{font-size:13px!important;line-height:1.35!important}
   #dashboardView .dashboard-cards strong{font-size:20px!important;margin-top:2px!important}
-  html body #appView#appView #dashboardView.bamco-interior .dashboard-chart-card{min-height:0!important;padding:7px!important;overflow-x:auto!important;overflow-y:hidden!important;max-width:100%!important;min-width:0!important;touch-action:pan-x pan-y;overscroll-behavior-x:contain}
+  html body #appView#appView #dashboardView.bamco-interior .dashboard-chart-card{min-height:0!important;padding:7px!important;overflow-x:auto!important;overflow-y:hidden!important;max-width:100%!important;min-width:0!important;touch-action:pan-x pan-y;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch!important}
   html body #appView#appView #dashboardView.bamco-interior .dashboard-chart-card canvas{display:block!important;width:var(--chart-width,640px)!important;max-width:none!important;height:auto!important;max-height:none!important;min-height:0!important}
   #dashboardView .dashboard-performance-range .performance-range-controls{display:grid!important;grid-template-columns:1fr!important;gap:6px!important;align-items:stretch!important}
   #dashboardView .dashboard-date-field{display:grid!important;grid-template-columns:minmax(0,1fr) 38px!important;width:100%!important}
-  #dashboardView .performance-range-actions{padding:0!important;background:transparent!important}
+  html body #appView#appView #dashboardView.bamco-interior :is(.dashboard-filter-actions,.performance-range-actions){padding:0!important;margin-top:6px!important;background:transparent!important;border:0!important;box-shadow:none!important;overflow:visible!important}
 
   /* Automated workflow messages: readable and tappable on phone. */
   .workflow-message{width:100%!important;max-width:100%!important;margin:4px 0!important;border-radius:10px!important;font-size:15px!important;line-height:1.75!important;box-sizing:border-box!important;overflow:hidden!important}

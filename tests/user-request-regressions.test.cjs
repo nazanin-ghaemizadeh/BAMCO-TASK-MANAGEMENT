@@ -55,14 +55,15 @@ test('message center is one send flow and uses one renderer for portal and email
   assert.match(center,/id="messageChannel"/);
   assert.match(center,/>ارسال<\/button>/);
   assert.doesNotMatch(center,/messageCustomText|recipient-channel|شناسه<\/th>|استیکر/);
-  assert.match(renderer,/const widths=\['\d+%','\d+%','\d+%','\d+%','\d+%'\]/);
+  assert.match(renderer,/const riskColumns=\[/);
+  assert.match(renderer,/const waitingColumns=\[/);
   assert.match(renderer,/kind==='warning'/);
   assert.match(renderer,/overdue_task_ids/);
   assert.match(renderer,/\?task=/);
   assert.match(center,/BamcoMessageRender\.html/);
   assert.match(inbox,/BamcoMessageRender\.html/);
-  assert.match(inbox,/qa\('\[data-mid\]',list\)\.forEach\(x=>x\.remove\(\)\)/);
-  assert.match(inbox,/qa\('\.message-actions',list\)\.forEach\(x=>x\.remove\(\)\)/);
+  assert.match(inbox,/cleanMessageUi/);
+  assert.match(inbox,/#messagesView \.message-actions\{display:none!important\}/);
   assert.match(inbox,/suite-table-options/);
   assert.match(sql,/create or replace view public\.sent_message_log/);
   assert.match(sql,/from public\.message_deliveries/);
@@ -77,14 +78,15 @@ test('task history is Persian and resolves owner names',()=>{
   const history=read('assets/js/messaging-history-root-20260911.js');
   assert.match(history,/owner_id:'متولی'/);
   assert.match(history,/field==='owner_id'.*person/s);
-  assert.match(history,/ایجاد وظیفه/);
-  assert.match(history,/ویرایش وظیفه/);
-  assert.match(history,/عامل:/);
+  assert.match(history,/وظیفه ایجاد شد/);
+  assert.match(history,/اطلاعات وظیفه.*تغییر کرد/s);
+  assert.match(history,/انجام‌دهنده:/);
 });
 
-test('template editor has one owner and verifies the saved server value',()=>{
-  const editor=read('assets/js/templates.js'),rootFix=read('assets/js/admin-root-fixes-20260911.js');
-  assert.match(editor,/q\('#openDesktopTemplateEditor',view\)\.onclick=open/);
-  assert.match(editor,/سرور تغییرات متن پیام را تأیید نکرد/);
-  assert.doesNotMatch(rootFix,/installTemplateGuard|setInterval\(\(\)=>\{if\(window\.bamcoTemplateEditor/);
+test('removed message-text editor cannot be reintroduced beside the canonical send flow',()=>{
+  const rootFix=read('assets/js/admin-root-fixes-20260911.js');
+  assert.match(rootFix,/deadSelector=.*#templatesView/);
+  assert.match(rootFix,/purgeMessageTextUi/);
+  assert.match(rootFix,/state\.view==='templates'/);
+  assert.equal(fs.existsSync(path.join(root,'assets/js/templates.js')),false);
 });

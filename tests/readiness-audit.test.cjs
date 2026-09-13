@@ -1,5 +1,7 @@
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
 const {fixture,until,pause}=require('./helpers/app-fixture.cjs');
 
 test('vehicle creation ignores double submission and an unconfirmed update keeps the editor open',async t=>{
@@ -39,4 +41,16 @@ test('ten selected recipients retain separate previews; queue failure can retry 
  f.failures.add('queue_message_batch');d.querySelector('#confirmSendMessage').click();await until(()=>!d.querySelector('#confirmSendMessage').disabled);assert(d.querySelector('#messagePreviewDialog').open);assert(!f.calls.some(c=>c.endpoint==='send-message-queue'));
  f.failures.delete('queue_message_batch');d.querySelector('#confirmSendMessage').click();await until(()=>!d.querySelector('#messagePreviewDialog').open);assert.equal(f.calls.filter(c=>c.endpoint==='send-message-queue').length,1);assert.equal(f.calls.filter(c=>c.endpoint==='prepare_workflow_messages').length,1);
  assert.deepEqual(f.errors,[]);
+});
+
+test('buttons use regular labels, semantic action colors and evenly wrapped mobile command rows',async t=>{
+ const f=await fixture({styles:true});t.after(()=>f.dispose());const {d,w}=f;await f.open('dashboard');
+ const regular=d.querySelector('#clearPerf'),add=d.querySelector('#addTaskBtn'),remove=d.querySelector('#kanbanDeleteBtn'),tab=d.querySelector('#nav [data-view="dashboard"]');
+ for(const button of [regular,add,remove,tab])assert.equal(w.getComputedStyle(button).fontWeight,'400');
+ const root=path.join(__dirname,'..'),mobile=fs.readFileSync(path.join(root,'assets/css/mobile-compat-20260911.css'),'utf8'),ui=fs.readFileSync(path.join(root,'assets/css/unified-ui.css'),'utf8');
+ assert.match(mobile,/justify-content:stretch!important;overflow-x:hidden!important/);
+ assert.match(mobile,/flex:1 1 116px!important/);
+ assert.match(mobile,/dashboard-chart-card canvas\{display:block!important;width:var\(--chart-width,640px\)!important;max-width:none!important/);
+ assert.match(mobile,/dashboard-filter-actions,.performance-range-actions\).*background:transparent!important.*box-shadow:none!important/s);
+ assert.match(ui,/#workloadChart\).*#performanceChart/s);assert.match(ui,/button\.danger.*background:#bd3535!important/s);assert.match(ui,/button\.primary.*background:#176b4d!important/s);
 });

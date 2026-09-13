@@ -23,6 +23,7 @@
     if(view.firstElementChild!==head)view.prepend(head);
     const h=head.querySelector('h3');if(h.textContent!==title)h.textContent=title;
     const commandBack=ownedBack(view);
+    if(commandBack){commandBack.classList.add('content-back');commandBack.style.order='-100'}
     let managementBar=null;
     if(eligible(view)){
       if(commandBack){
