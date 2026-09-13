@@ -15,6 +15,7 @@
   if(endpoint==='token')data={access_token:'browser-fixture-token',refresh_token:'browser-fixture-refresh',expires_in:3600,user:{id:api.actor.id}};
   else if(endpoint==='user')data={id:api.actor.id};
   else if(endpoint==='session-audit')data=body.action==='start'?{ok:true,session:{id:'browser-test-session'}}:{ok:true,ended:body.action==='end'};
+  else if(endpoint==='letters')data=Array.from({length:53},(_,i)=>({id:'letter-'+i,letter_number:'1405/10/'+(i+1),letter_date:'1405/06/22',recipient:'گیرنده آزمایشی',subject:'موضوع نامه آزمایشی '+(i+1),version:1,storage_path:null}));
   else if(endpoint==='can_access_letters')data=api.actor.active!==false&&(api.actor.role==='manager'||(api.letterAccess||[]).includes(api.actor.id));
   else if(endpoint==='profiles')data=filter(api.profiles);
   else if(endpoint==='task_status_view')data=api.actor.role==='manager'?api.tasks:api.tasks.filter(t=>t.owner_id===api.actor.id);

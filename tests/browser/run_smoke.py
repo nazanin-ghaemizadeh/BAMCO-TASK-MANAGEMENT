@@ -57,6 +57,23 @@ async def visible_count(page,selector):
     return await page.locator(selector).evaluate_all("els=>els.filter(el=>{const s=getComputedStyle(el);return s.display!=='none'&&s.visibility!=='hidden'&&el.getClientRects().length>0}).length")
 
 async def manager_checks(page,result):
+    await open_tab(page,'letters')
+    await expect(page.locator('#lettersTable tbody tr')).to_have_count(53)
+    await expect(page.locator('#lettersView h3')).to_have_count(1)
+    await expect(page.locator('#lettersView > .bamco-command-bar')).to_have_count(1)
+    assert await page.locator('#lettersView .letter-toolbar .content-back').count()==1
+    assert await page.locator('#lettersView .letter-toolbar #addLetter').count()==1
+    geometry=await page.locator('#lettersView .letters-scroll').evaluate("e=>({h:e.clientHeight,total:e.scrollHeight,bottom:e.getBoundingClientRect().bottom,viewport:innerHeight})")
+    assert geometry['h']>100 and geometry['total']>geometry['h'] and geometry['bottom']<=geometry['viewport']+2,geometry
+    await page.locator('#lettersView .letters-scroll').evaluate('e=>e.scrollTop=e.scrollHeight')
+    assert await page.locator('#lettersView .letters-scroll').evaluate('e=>e.scrollTop')>0
+    await expect(page.locator('#lettersSearch')).to_have_attribute('placeholder','جست‌وجوی نامه…')
+    assert await page.locator('#lettersSearch').evaluate('e=>e.clientHeight')>=32
+    await page.locator('#lettersSearch').fill('ناموجود')
+    await expect(page.locator('#lettersTable tbody')).to_contain_text('نامه‌ای مطابق جست‌وجو پیدا نشد')
+    await page.locator('#lettersSearch').fill('')
+    await expect(page.locator('#lettersTable tbody tr')).to_have_count(53)
+    await home(page); result['letters_toolbar_search_and_scroll']='pass'
     assert await page.locator('#nav [data-view="templates"],#nav [data-view="messageTemplates"],#templatesView,#messageTemplatesView').count()==0,'removed message-text UI returned'
     result['message_text_removed']='pass'
     assert await page.locator('#nav [data-view="requestReport"],#requestReportView').count()==0,'removed request report returned'
