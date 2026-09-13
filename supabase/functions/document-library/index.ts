@@ -66,6 +66,16 @@ const serviceHeaders = (service: string) => ({
   "Content-Type": "application/json",
 });
 
+// Bound upstream stalls, including response-body reads, rather than keeping the
+// UI waiting until the Edge runtime kills the request.
+function boundedFetch(input: string, init: RequestInit = {}) {
+  return fetch(input, { ...init, signal: AbortSignal.timeout(init.body instanceof File ? 45000 : 15000) });
+}
+function afterCommit(work: Promise<unknown>) {
+  const handled = work.catch((error) => console.error("Document post-commit maintenance failed", error));
+  if (typeof EdgeRuntime !== "undefined") EdgeRuntime.waitUntil(handled);
+}
+
 async function parse(response: Response) {
   const text = await response.text();
   let data: any = null;
@@ -101,10 +111,10 @@ function validateFile(file: File) {
 async function authManager(req: Request, url: string, anon: string, service: string) {
   const authorization = req.headers.get("Authorization") || "";
   if (!authorization) throw Object.assign(new Error("ورود معتبر نیست."), { status: 401 });
-  const userResponse = await fetch(`${url}/auth/v1/user`, { headers: { apikey: anon, Authorization: authorization } });
+  const userResponse = await boundedFetch(`${url}/auth/v1/user`, { headers: { apikey: anon, Authorization: authorization } });
   if (!userResponse.ok) throw Object.assign(new Error("نشست کاربری معتبر نیست."), { status: 401 });
   const user = await userResponse.json();
-  const rows = await parse(await fetch(
+  const rows = await parse(await boundedFetch(
     `${url}/rest/v1/profiles?id=eq.${encodeURIComponent(user.id)}&select=id,role,active`,
     { headers: serviceHeaders(service) },
   ));
@@ -115,7 +125,7 @@ async function authManager(req: Request, url: string, anon: string, service: str
 }
 
 async function audit(url: string, service: string, userId: string, action: string, targetId: string | null, metadata: Record<string, unknown> = {}) {
-  await parse(await fetch(`${url}/rest/v1/security_audit_log`, {
+  await parse(await boundedFetch(`${url}/rest/v1/security_audit_log`, {
     method: "POST",
     headers: { ...serviceHeaders(service), Prefer: "return=minimal" },
     body: JSON.stringify({ user_id: userId, action, target_type: "document", target_id: targetId, metadata }),
@@ -123,17 +133,17 @@ async function audit(url: string, service: string, userId: string, action: strin
 }
 
 async function category(url: string, service: string, id: number) {
-  const rows = await parse(await fetch(`${url}/rest/v1/document_categories?id=eq.${id}&select=id,title`, { headers: serviceHeaders(service) }));
+  const rows = await parse(await boundedFetch(`${url}/rest/v1/document_categories?id=eq.${id}&select=id,title`, { headers: serviceHeaders(service) }));
   return rows?.[0] || null;
 }
 
 async function documentRow(url: string, service: string, id: number) {
-  const rows = await parse(await fetch(`${url}/rest/v1/documents?id=eq.${id}&select=*`, { headers: serviceHeaders(service) }));
+  const rows = await parse(await boundedFetch(`${url}/rest/v1/documents?id=eq.${id}&select=*`, { headers: serviceHeaders(service) }));
   return rows?.[0] || null;
 }
 
 async function uploadObject(url: string, service: string, path: string, file: File, mime: string) {
-  const response = await fetch(`${url}/storage/v1/object/${BUCKET}/${encodedPath(path)}`, {
+  const response = await boundedFetch(`${url}/storage/v1/object/${BUCKET}/${encodedPath(path)}`, {
     method: "POST",
     headers: {
       apikey: service,
@@ -152,7 +162,7 @@ async function uploadObject(url: string, service: string, path: string, file: Fi
 
 async function deleteObjects(url: string, service: string, paths: string[]) {
   if (!paths.length) return;
-  const response = await fetch(`${url}/storage/v1/object/${BUCKET}`, {
+  const response = await boundedFetch(`${url}/storage/v1/object/${BUCKET}`, {
     method: "DELETE",
     headers: serviceHeaders(service),
     body: JSON.stringify({ prefixes: paths }),
@@ -187,7 +197,7 @@ Deno.serve(async (req) => {
       const path = `categories/${categoryId}/${crypto.randomUUID()}.${extension(file, mime)}`;
       await uploadObject(url, service, path, file, mime);
       try {
-        const rows = await parse(await fetch(`${url}/rest/v1/documents`, {
+        const rows = await parse(await boundedFetch(`${url}/rest/v1/documents`, {
           method: "POST",
           headers: { ...serviceHeaders(service), Prefer: "return=representation" },
           body: JSON.stringify({
@@ -203,10 +213,13 @@ Deno.serve(async (req) => {
           }),
         }));
         const doc = rows?.[0];
-        await audit(url, service, user.id, "document_upload", String(doc?.id || ""), { category_id: categoryId, mime_type: mime, file_size: file.size });
+        if (!doc?.id) throw new Error("ثبت اطلاعات سند تأیید نشد.");
+        afterCommit(audit(url, service, user.id, "document_upload", String(doc.id), { category_id: categoryId, mime_type: mime, file_size: file.size }));
         return json(req, { ok: true, document: doc });
       } catch (error) {
-        await deleteObjects(url, service, [path]).catch(() => {});
+        if (!(error instanceof Error) || !["TimeoutError", "AbortError", "TypeError"].includes(error.name)) {
+          await deleteObjects(url, service, [path]).catch(() => {});
+        }
         throw error;
       }
     }
@@ -235,36 +248,23 @@ Deno.serve(async (req) => {
         version: Number(old.version || 1) + 1,
       };
       try {
-        const rows = await parse(await fetch(`${url}/rest/v1/documents?id=eq.${id}`, {
+        const rows = await parse(await boundedFetch(`${url}/rest/v1/documents?id=eq.${id}`, {
           method: "PATCH",
           headers: { ...serviceHeaders(service), Prefer: "return=representation" },
           body: JSON.stringify(patch),
         }));
         if (!rows?.length) throw new Error("به‌روزرسانی اطلاعات سند انجام نشد.");
-        try {
-          await deleteObjects(url, service, [old.storage_path]);
-        } catch (cleanupError) {
-          await fetch(`${url}/rest/v1/documents?id=eq.${id}`, {
-            method: "PATCH",
-            headers: { ...serviceHeaders(service), Prefer: "return=minimal" },
-            body: JSON.stringify({
-              category_id: old.category_id,
-              title: old.title,
-              description: old.description,
-              original_file_name: old.original_file_name,
-              storage_path: old.storage_path,
-              mime_type: old.mime_type,
-              file_size: old.file_size,
-              version: old.version,
-            }),
-          });
-          await deleteObjects(url, service, [path]).catch(() => {});
-          throw cleanupError;
-        }
-        await audit(url, service, user.id, "document_update", String(id), { operation: "replace", version: patch.version, mime_type: mime, file_size: file.size });
+        // Metadata now points at the new object. Cleanup/audit failure must
+        // never roll it back or remove the successfully committed file.
+        afterCommit(Promise.allSettled([
+          deleteObjects(url, service, [old.storage_path]),
+          audit(url, service, user.id, "document_update", String(id), { operation: "replace", version: patch.version, mime_type: mime, file_size: file.size }),
+        ]).then(results => { for (const result of results) if (result.status === "rejected") console.error("Document maintenance failed", result.reason); }));
         return json(req, { ok: true, document: rows[0] });
       } catch (error) {
-        await deleteObjects(url, service, [path]).catch(() => {});
+        if (!(error instanceof Error) || !["TimeoutError", "AbortError", "TypeError"].includes(error.name)) {
+          await deleteObjects(url, service, [path]).catch(() => {});
+        }
         throw error;
       }
     }
@@ -278,7 +278,7 @@ Deno.serve(async (req) => {
       const title = clean(form.get("title") || old.title, 220);
       if (!title) return json(req, { error: "عنوان فایل الزامی است." }, 400);
       const description = clean(form.get("description") ?? old.description, 4000);
-      const rows = await parse(await fetch(`${url}/rest/v1/documents?id=eq.${id}`, {
+      const rows = await parse(await boundedFetch(`${url}/rest/v1/documents?id=eq.${id}`, {
         method: "PATCH",
         headers: { ...serviceHeaders(service), Prefer: "return=representation" },
         body: JSON.stringify({ category_id: categoryId, title, description: description || null }),
@@ -291,14 +291,14 @@ Deno.serve(async (req) => {
       const id = Number(form.get("document_id"));
       const old = await documentRow(url, service, id);
       if (!old) return json(req, { ok: true });
-      await parse(await fetch(`${url}/rest/v1/documents?id=eq.${id}`, {
+      await parse(await boundedFetch(`${url}/rest/v1/documents?id=eq.${id}`, {
         method: "DELETE",
         headers: { ...serviceHeaders(service), Prefer: "return=representation" },
       }));
       try {
         await deleteObjects(url, service, [old.storage_path]);
       } catch (error) {
-        await fetch(`${url}/rest/v1/documents`, {
+        await boundedFetch(`${url}/rest/v1/documents`, {
           method: "POST",
           headers: { ...serviceHeaders(service), Prefer: "return=minimal" },
           body: JSON.stringify(old),
@@ -313,14 +313,14 @@ Deno.serve(async (req) => {
       const id = Number(form.get("category_id"));
       const cat = await category(url, service, id);
       if (!cat) return json(req, { ok: true });
-      const docs = await parse(await fetch(`${url}/rest/v1/documents?category_id=eq.${id}&select=storage_path,id`, { headers: serviceHeaders(service) }));
+      const docs = await parse(await boundedFetch(`${url}/rest/v1/documents?category_id=eq.${id}&select=storage_path,id`, { headers: serviceHeaders(service) }));
       const paths = docs.map((doc: any) => doc.storage_path).filter(Boolean);
       if (paths.length) await deleteObjects(url, service, paths);
-      await parse(await fetch(`${url}/rest/v1/document_categories?id=eq.${id}`, {
+      await parse(await boundedFetch(`${url}/rest/v1/document_categories?id=eq.${id}`, {
         method: "DELETE",
         headers: { ...serviceHeaders(service), Prefer: "return=minimal" },
       }));
-      await parse(await fetch(`${url}/rest/v1/security_audit_log`, {
+      await parse(await boundedFetch(`${url}/rest/v1/security_audit_log`, {
         method: "POST",
         headers: { ...serviceHeaders(service), Prefer: "return=minimal" },
         body: JSON.stringify({
