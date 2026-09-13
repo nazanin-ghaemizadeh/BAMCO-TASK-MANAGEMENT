@@ -100,7 +100,7 @@ window.bamcoLoadRequestWorkflow=async function(){
     return{requests:manager?all.filter(r=>routeById.get(String(r.id))?.actionable):all,history,routes:routes||[]};
   }
 };
-function toast(message,error=false){return window.bamcoNotice(message,{error})}
+function toast(message,error=false){return window.bamcoToast?window.bamcoToast(message,error):window.bamcoNotice(message,{error})}
 function safe(s){return String(s??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
 function displayId(t){return t.legacy_id||t.id}
 function ownerName(t){const p=state.profiles.find(x=>x.id===t.owner_id);return p?.full_name||p?.excel_name||(t.owner_deleted_at?(t.former_owner_name||'متولی قبلی')+(t.archived||t.status==='انجام شده'?' (حساب حذف شده)':' (متولی حذف شده؛ نیازمند تعیین تکلیف)'):t.legacy_owner_name)||'—'}

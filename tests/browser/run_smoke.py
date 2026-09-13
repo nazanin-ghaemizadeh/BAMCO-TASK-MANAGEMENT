@@ -119,7 +119,7 @@ async def manager_checks(page,result):
     await rows.first.click(); await expect(delete).to_be_enabled()
     await delete.click(); await page.locator('[data-notice-cancel]').click(); await expect(rows).to_have_count(3)
     await page.evaluate("__testApi.fail.push('cancel_message_deliveries')")
-    await delete.click(); await page.locator('[data-notice-ok]').click(); await expect(page.locator('#bamcoNoticeDialog')).to_have_attribute('data-kind','error'); await page.locator('[data-notice-ok]').click()
+    await delete.click(); await page.locator('[data-notice-ok]').click(); await expect(page.locator('.bamco-toast[data-kind=error]')).to_be_visible(); await page.locator('.bamco-toast[data-kind=error] button').click()
     await page.evaluate('__testApi.fail=[]')
     await delete.click(); await page.locator('[data-notice-ok]').click(); await expect(rows).to_have_count(2); await page.locator('[data-notice-ok]').click()
     await page.wait_for_timeout(400)

@@ -2,6 +2,7 @@
 (()=>{
 'use strict';
 const paths={
+ guide:'M12 5v16M12 5C8 2 4 3 2 4v16c4-2 7-1 10 1 3-2 6-3 10-1V4c-2-1-6-2-10 1',
  resources:'M3 7h7l2 2h9v12H3zM3 7V3h7l2 4',
  documents:'M6 2h8l4 4v16H6zM14 2v5h4M9 11h6M9 15h6M9 19h4',
  letters:'M3 6h18v14H3zM3 7l9 7 9-7M7 3h10',
@@ -31,7 +32,7 @@ const paths={
  temporary:'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18M12 7v5l4 2',
  logout:'M10 4H4v16h6M15 8l4 4-4 4M9 12h10'
 };
-const views={documents:'documents',letters:'letters',sitesAccess:'sitesAccess',kanban:'kanban',archive:'archive',taskTimeline:'calendar',approvals:'check',requestHistory:'history',approvalChains:'chain',people:'people',loginActivity:'login',activeSessions:'screen',messages:'messages',messageCenter:'send',sentMessages:'check',responseTracking:'reply',templates:'text',stickers:'sticker',vehiclePermanent:'vehicle',vehicleTemporary:'temporary',dashboard:'dashboard',performanceReport:'reports',messageReport:'messages',responseReport:'reply',requestReport:'tasks',loginReport:'login',systemOptions:'configuration',alertSettings:'bell',emailSettings:'messages',settings:'user',groupChat:'people',directMessages:'messages',taskChats:'conversations'};
+const views={userGuide:'guide',documents:'documents',letters:'letters',sitesAccess:'sitesAccess',kanban:'kanban',archive:'archive',taskTimeline:'calendar',approvals:'check',requestHistory:'history',approvalChains:'chain',people:'people',loginActivity:'login',activeSessions:'screen',messages:'messages',messageCenter:'send',sentMessages:'check',responseTracking:'reply',templates:'text',stickers:'sticker',vehiclePermanent:'vehicle',vehicleTemporary:'temporary',dashboard:'dashboard',performanceReport:'reports',messageReport:'messages',responseReport:'reply',requestReport:'tasks',loginReport:'login',systemOptions:'configuration',alertSettings:'bell',emailSettings:'messages',settings:'user',groupChat:'people',directMessages:'messages',taskChats:'conversations'};
 const svg=key=>`<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="${paths[key]||paths.configuration}"/></svg>`;
 function install(){
  const nav=document.querySelector('#nav');if(!nav)return;

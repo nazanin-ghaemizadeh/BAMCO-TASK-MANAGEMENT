@@ -25,8 +25,8 @@ Deno.serve(async req=>{
   const result=await globalThis.BamcoEmailQueue.run(admin,batch_id,async(snapshot,delivery)=>{
    let stickerUrl=''
    if(snapshot.sticker_path){const {data,error}=await admin.storage.from('stickers').createSignedUrl(snapshot.sticker_path,60*60*24*7);if(!error)stickerUrl=data.signedUrl}
-   const tracking='شناسه پیگیری: '+delivery.thread_key
-   const response=await fetch('https://api.mailerino.com/v1/send',{method:'POST',signal:AbortSignal.timeout(20000),headers:{Authorization:`Bearer ${mailerinoKey}`,'Content-Type':'application/json'},body:JSON.stringify({from:emailFrom,to:snapshot.recipient_email,cc:snapshot.cc_emails||[],replyTo:Deno.env.get('EMAIL_REPLY_TO')||'bamco.task.reminder@outlook.com',subject:`${snapshot.subject} [${delivery.thread_key}]`,text:`${snapshot.final_text}\n\n${tracking}`,html:globalThis.BamcoMessageRender.html(snapshot,{stickerUrl,tracking:delivery.thread_key,subject:snapshot.subject,reportDate:snapshot.created_at,senderName})})})
+   const tracking=globalThis.BamcoMessageRender.isReminder(snapshot)?'':'شناسه پیگیری: '+delivery.thread_key
+   const response=await fetch('https://api.mailerino.com/v1/send',{method:'POST',signal:AbortSignal.timeout(20000),headers:{Authorization:`Bearer ${mailerinoKey}`,'Content-Type':'application/json'},body:JSON.stringify({from:emailFrom,to:snapshot.recipient_email,cc:snapshot.cc_emails||[],replyTo:Deno.env.get('EMAIL_REPLY_TO')||'bamco.task.reminder@outlook.com',subject:`${snapshot.subject} [${delivery.thread_key}]`,text:globalThis.BamcoMessageRender.bodyText({...snapshot,body_template:snapshot.final_text})+(tracking?`\n\n${tracking}`:''),html:globalThis.BamcoMessageRender.html(snapshot,{stickerUrl,tracking:delivery.thread_key,subject:snapshot.subject,reportDate:snapshot.created_at,senderName})})})
    const info=await response.json().catch(()=>({}));if(!response.ok)throw Error(typeof info.message==='string'?info.message:typeof info.error==='string'?info.error:`سرویس ایمیل خطای ${response.status} برگرداند.`)
    return info
   });return reply(result)

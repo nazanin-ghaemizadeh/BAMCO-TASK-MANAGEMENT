@@ -112,7 +112,7 @@ async function sendReminder(){
       q('#confirmReminderSend').onclick=confirmReminder;
     }
     q('#reminderResult').textContent='';
-    q('#reminderPreviewContent').innerHTML=snapshots.map(s=>`<section><h4>${esc(s.recipient_name)}</h4><p>کانال: ${esc(channels[channel])}</p><div style="white-space:pre-wrap;overflow-wrap:anywhere">${esc(s.final_text)}</div></section>`).join('<hr>');
+    q('#reminderPreviewContent').innerHTML=snapshots.map(s=>`<section><h4>${esc(s.recipient_name)}</h4><p>کانال: ${esc(channels[channel])}</p><div style="white-space:pre-wrap;overflow-wrap:anywhere">${esc(BamcoMessageRender.bodyText(s))}</div></section>`).join('<hr>');
     q('#confirmReminderSend').textContent='تأیید و ارسال';q('#confirmReminderSend').disabled=false;q('#reminderPreviewDialog').showModal();
   }catch(err){toast(err.message,true)}finally{sending=false;render()}
 }

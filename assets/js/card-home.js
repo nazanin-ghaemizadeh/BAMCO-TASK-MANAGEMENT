@@ -20,7 +20,8 @@ function install(){
   ['tasks',['kanban','archive','taskTimeline','approvals','requestHistory','approvalChains']],
   ['vehicle',['vehiclePermanent','vehicleTemporary']],
   ['conversations',['groupChat','directMessages','taskChats']],
-  ['resources',['documents','letters','sitesAccess']]
+  ['resources',['documents','letters','sitesAccess']],
+  ['guide',['userGuide']]
  ];
  const aliases={loginReport:'loginActivity',messageReport:'sentMessages'};
  const groupObserver=new MutationObserver(()=>syncGroups());
