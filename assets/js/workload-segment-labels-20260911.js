@@ -27,10 +27,11 @@ function draw(){
   if(!groups.has(owner))groups.set(owner,new Map());
   const m=groups.get(owner);m.set(p,(m.get(p)||0)+1);
  }
- const owners=[...groups.entries()].sort((a,b)=>[...b[1].values()].reduce((x,y)=>x+y,0)-[...a[1].values()].reduce((x,y)=>x+y,0)).slice(0,10);
+ const total=entry=>[...entry[1].values()].reduce((sum,value)=>sum+Number(value||0),0);
+ const owners=[...groups.entries()].sort((a,b)=>total(b)-total(a)||String(a[0]).localeCompare(String(b[0]),'fa',{numeric:true,sensitivity:'base'})).slice(0,10);
  const priorities=[...new Set(data.map(t=>String(t.priority||'بدون اولویت')))];
  const dpr=window.devicePixelRatio||1,parent=canvas.parentElement,mobile=!!window.matchMedia?.('(max-width:760px)').matches,parentWidth=Math.max(280,parent?.clientWidth||canvas.clientWidth||320),w=mobile?Math.max(parentWidth,260+owners.length*105):Math.max(420,parentWidth),h=445;
- canvas.dataset.logicalHeight=String(h);canvas.dataset.chartItems=String(owners.length);canvas.style.setProperty('--chart-width',w+'px');canvas.style.height=h+'px';canvas.style.width=w+'px';parent?.classList.toggle('dashboard-chart-scroll',mobile&&w>parentWidth);if(parent){parent.setAttribute('aria-label',mobile&&w>parentWidth?'نمودار؛ برای مشاهده کامل افقی پیمایش کنید':'نمودار');const key=`${w}:${owners.length}`;if(parent.dataset.chartScrollKey!==key){parent.dataset.chartScrollKey=key;requestAnimationFrame(()=>{parent.scrollLeft=0})}}
+ canvas.dataset.logicalHeight=String(h);canvas.dataset.chartItems=String(owners.length);canvas.dataset.chartOrder=owners.map(([owner])=>owner).join('|');canvas.style.setProperty('--chart-width',w+'px');canvas.style.height=h+'px';canvas.style.width=w+'px';parent?.classList.toggle('dashboard-chart-scroll',mobile&&w>parentWidth);if(parent){parent.setAttribute('aria-label',mobile&&w>parentWidth?'نمودار؛ برای مشاهده کامل افقی پیمایش کنید':'نمودار');const key=`${w}:${owners.length}`;if(parent.dataset.chartScrollKey!==key){parent.dataset.chartScrollKey=key;requestAnimationFrame(()=>{parent.scrollLeft=0})}}
  const pixelW=Math.round(w*dpr),pixelH=Math.round(h*dpr);if(canvas.width!==pixelW)canvas.width=pixelW;if(canvas.height!==pixelH)canvas.height=pixelH;
  const ctx=canvas.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);ctx.fillStyle='#fff';ctx.fillRect(0,0,w,h);ctx.direction='rtl';ctx.textAlign='right';ctx.fillStyle='#173f35';ctx.font='bold 21px "B Nazanin",Tahoma,serif';ctx.fillText('حجم کار فعال به تفکیک متولی',w-18,31);
  if(!owners.length){ctx.textAlign='center';ctx.fillStyle='#7a8e85';ctx.font='18px "B Nazanin",Tahoma,serif';ctx.fillText('اطلاعاتی برای نمایش وجود ندارد',w/2,h/2);return}
