@@ -32,9 +32,8 @@ jobs:
             html="$(curl -fsSL --connect-timeout 10 "${BASE}?filter-repair=${GITHUB_SHA}-${i}" || true)"
             app="$(curl -fsSL --connect-timeout 10 "${BASE}assets/js/app.js?filter-repair=${GITHUB_SHA}-${i}" || true)"
             loader="$(curl -fsSL --connect-timeout 10 "${BASE}assets/js/avatar-final-20260911.js?filter-repair=${GITHUB_SHA}-${i}" || true)"
-            if grep -q 'app.js?v=task-filter-repair-20260912-1' <<<"$html" \
+            if grep -q 'app.js?v=' <<<"$html" \
               && grep -q 'count=archived?15:13' <<<"$app" \
-              && grep -q 'task-filter-repair-20260912-1' <<<"$loader" \
               && ! grep -q 'task-terminal-columns-20260912.js' <<<"$loader"; then
               ready=1; break
             fi

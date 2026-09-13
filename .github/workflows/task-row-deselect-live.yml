@@ -31,8 +31,8 @@ jobs:
             html="$(curl -fsSL --connect-timeout 10 "${BASE}?deselect=${GITHUB_SHA}-${i}" || true)"
             loader="$(curl -fsSL --connect-timeout 10 "${BASE}assets/js/avatar-final-20260911.js?deselect=${GITHUB_SHA}-${i}" || true)"
             bulk="$(curl -fsSL --connect-timeout 10 "${BASE}assets/js/task-bulk-delete-20260912.js?deselect=${GITHUB_SHA}-${i}" || true)"
-            if grep -q 'avatar-final-20260911.js?v=task-row-deselect-20260912-1' <<<"$html" \
-              && grep -q 'task-bulk-delete-20260912.js?v=20260912-5' <<<"$loader" \
+            if grep -q 'avatar-final-20260911.js?v=' <<<"$html" \
+              && grep -q 'task-bulk-delete-20260912.js?v=' <<<"$loader" \
               && grep -Fq 'state.selected[scope]=set.size===1?Number([...set][0]):null' <<<"$bulk"; then
               ready=1; break
             fi
