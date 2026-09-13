@@ -11,7 +11,8 @@ Deno.serve(async req=>{
  let newPath:string|null=null,committed=false;
  try{
   const token=(req.headers.get('authorization')||'').replace(/^Bearer /i,'');const {data:{user},error:authError}=await db.auth.getUser(token);if(authError||!user)fail('نشست معتبر نیست؛ دوباره وارد شوید.',401);
-  const {data:profile}=await db.from('profiles').select('active,role').eq('id',user!.id).single();if(!profile?.active||!['manager','owner'].includes(profile.role))fail('دسترسی به نامه‌ها مجاز نیست.',403);
+  const {data:profile}=await db.from('profiles').select('active,role').eq('id',user!.id).single();if(!profile?.active)fail('دسترسی به نامه‌ها مجاز نیست.',403);
+  if(profile.role!=='manager'){const {data:grant,error}=await db.from('letter_access').select('user_id').eq('user_id',user!.id).single();if(error||!grant)fail('دسترسی به نامه‌ها برای شما فعال نشده است.',403);}
   const form=req.headers.get('content-type')?.includes('multipart/form-data')?await req.formData():null;
   const data:Record<string,unknown>=form?Object.fromEntries(form.entries()):await req.json();
   if(data.action==='download'){

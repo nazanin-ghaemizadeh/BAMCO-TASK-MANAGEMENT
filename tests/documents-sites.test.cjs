@@ -130,8 +130,8 @@ test('documents and sites join the standard home card and interior command bar',
   const home=fs.readFileSync(path.join(ROOT,'assets/js/card-home.js'),'utf8');
   const interior=fs.readFileSync(path.join(ROOT,'assets/js/interior-ui.js'),'utf8');
   const css=fs.readFileSync(path.join(ROOT,'assets/css/documents-sites.css'),'utf8');
-  assert.match(sidebar,/makeGroup\('منابع و دسترسی‌ها','resources',\['documents','sitesAccess'\]/);
-  assert.match(home,/\['resources',\['documents','sitesAccess'\]\]/);
+  assert.match(sidebar,/makeGroup\('منابع و دسترسی‌ها','resources',\['documents','letters','sitesAccess'\]/);
+  assert.match(home,/\['resources',\['documents','letters','sitesAccess'\]\]/);
   assert.match(interior,/feature-toolbar-actions/);
   assert.match(css,/#documentsView,#sitesAccessView/);
   assert.match(css,/feature-toolbar-actions\.bamco-command-bar/);

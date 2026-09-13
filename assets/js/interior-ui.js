@@ -4,7 +4,7 @@
   'use strict';
   const excluded=new Set(['homeView','welcomeView']);
   const headings={dashboardView:'داشبورد',templatesView:'متن پیام‌ها',settingsView:'تنظیمات کاربری'};
-  const toolbarSelector='.task-toolbar,.vehicle-toolbar,.people-actions,.manager-toolbar,.workspace-actions,.workspace-report-tools,.suite-toolbar,.sticker-toolbar,.message-center-actions,.response-quick,.tt-switch,.desktop-template-fieldset,.feature-toolbar-actions,.bamco-management-toolbar';
+  const toolbarSelector='.task-toolbar,.vehicle-toolbar,.people-actions,.manager-toolbar,.workspace-actions,.workspace-report-tools,.suite-toolbar,.sticker-toolbar,.message-center-actions,.response-quick,.tt-switch,.desktop-template-fieldset,.feature-toolbar-actions,.letter-toolbar,.bamco-management-toolbar';
   const ownedCommandSelector='.message-command-row button,.sent-command-row button,.response-command-row button';
   let pending=false,observer;
   const eligible=view=>view?.matches('.workspace > .view')&&!excluded.has(view.id);

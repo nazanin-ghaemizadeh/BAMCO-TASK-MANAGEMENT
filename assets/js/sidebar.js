@@ -86,7 +86,7 @@
     const vehicle=makeGroup('مدیریت خودرو','vehicle',['vehiclePermanent','vehicleTemporary'],'◇');
     const reports=makeGroup('گزارش‌ها','reports',['dashboard'],'▦');
     const configuration=makeGroup('تنظیمات','configuration',['systemOptions'],'⚙');
-    const resources=makeGroup('منابع و دسترسی‌ها','resources',['documents','sitesAccess'],'▧');
+    const resources=makeGroup('منابع و دسترسی‌ها','resources',['documents','letters','sitesAccess'],'▧');
     if(settings)nav.appendChild(settings);
     const groups=[task,email,people,vehicle,reports,configuration,resources];
     const refreshVisibility=()=>groups.forEach(g=>{
