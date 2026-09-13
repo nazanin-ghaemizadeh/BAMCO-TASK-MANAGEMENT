@@ -1,7 +1,7 @@
 begin;
 create table if not exists public.letter_access (
  user_id uuid primary key references public.profiles(id) on delete cascade,
- granted_by uuid references public.profiles(id),
+ granted_by uuid references public.profiles(id) on delete set null,
  granted_at timestamptz not null default now()
 );
 alter table public.letter_access enable row level security;
