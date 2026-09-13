@@ -3,7 +3,7 @@ const {JSDOM}=require('jsdom');
 const pause=ms=>new Promise(r=>setTimeout(r,ms));
 function fixture(options={}){
  const dom=new JSDOM('<div id="settingsView"></div>',{url:'https://example.test/',runScripts:'outside-only'}),w=dom.window,calls=[];let tick,sub=null;
- w.state={profile:{id:'owner'},token:'token'};w.SB_URL='https://example.test';w.SB_KEY='key';w.isSecureContext=true;w.PushManager=function(){};w.matchMedia=()=>({matches:true});
+ w.state={profile:{id:'owner'},token:'token'};if(options.auth)w.bamcoAuth={snapshot:()=>1,isCurrent:s=>s===1};w.SB_URL='https://example.test';w.SB_KEY='key';w.isSecureContext=true;w.PushManager=function(){};w.matchMedia=()=>({matches:true});
  w.Notification={permission:'default',requestPermission:async()=>{calls.push('permission');w.Notification.permission='granted';return 'granted'}};
  const nativeTimeout=w.setTimeout.bind(w);w.setTimeout=(fn,ms)=>nativeTimeout(fn,ms>=12000?30:ms);w.setInterval=fn=>tick=fn;
  const subscription={endpoint:'endpoint',toJSON:()=>({endpoint:'endpoint'}),unsubscribe:async()=>{sub=null;calls.push('browser-unsubscribe');return true}};
@@ -22,4 +22,8 @@ test('a service worker that never becomes ready releases the button for retry',a
 });
 test('a stalled network request is aborted and releases the button',async t=>{
  const f=fixture({networkStuck:true});t.after(f.close);f.button.click();await pause(60);assert.equal(f.button.disabled,false);assert.match(f.status.textContent,/دوباره تلاش/);assert.notEqual(f.button.dataset.enabled,'true');
+});
+
+test('push controls remain usable after normal token renewal',async t=>{
+ const f=fixture({auth:true});t.after(f.close);f.w.state.token='renewed';f.button.click();await pause(20);assert.equal(f.button.dataset.enabled,'true');f.button.click();await pause(20);assert.equal(f.button.dataset.enabled,'false');
 });
