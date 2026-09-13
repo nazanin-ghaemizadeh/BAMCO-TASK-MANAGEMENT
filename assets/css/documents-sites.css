@@ -54,4 +54,4 @@ html body #siteDialog #siteForm .feature-checkline input[type="checkbox"]{flex:0
 #documentDialog [data-file-name]{font-weight:400;overflow-wrap:anywhere;unicode-bidi:plaintext;min-width:0}
 #documentDialog [data-file-detail]{color:#527065}
 #documentUploadStatus{padding:10px 14px;background:#eef5f1;border-radius:8px;line-height:1.8}
-@media(max-width:600px){#userGuideView .guide-document-card{grid-template-columns:minmax(0,1fr);padding:20px;margin:16px auto;gap:12px}#userGuideView .guide-document-card>.feature-row-actions{grid-column:1;flex-wrap:wrap}#userGuideView .feature-file-main>b{font-size:22px}#userGuideView .manager-toolbar{gap:4px!important;padding-inline:6px!important;overflow-x:hidden!important}#userGuideView .manager-toolbar>button{flex:1 1 105px!important;min-width:0!important;padding-inline:5px!important;font-size:12px!important}}
+@media(max-width:600px){#userGuideView .guide-document-card{grid-template-columns:minmax(0,1fr);padding:20px;margin:16px auto;gap:12px}#userGuideView .guide-document-card>.feature-row-actions{grid-column:1;flex-wrap:wrap}#userGuideView .feature-file-main>b{font-size:22px}}

@@ -55,6 +55,8 @@
   html body #appView#appView :is(.message-command-row,.response-command-row,.sent-command-row,.feature-toolbar-actions,.sticker-toolbar,.tt-toolbar,.bamco-command-bar)>button{
     min-height:44px!important;white-space:nowrap!important;
   }
+  html body #appView#appView #userGuideView .manager-toolbar{gap:4px!important;padding-inline:6px!important;overflow-x:hidden!important}
+  html body #appView#appView #userGuideView .manager-toolbar>button{flex:1 1 90px!important;min-width:0!important;padding-inline:4px!important;font-size:12px!important;white-space:normal!important;overflow-wrap:anywhere!important}
   html body #appView#appView :is(.bamco-icon-button,.dashboard-calendar-btn,.chat-refresh,.chat-attach,.chat-sticker-toggle,.chat-send,#ttPrev,#ttNext){
     flex:0 0 40px!important;width:40px!important;min-width:40px!important;
   }
