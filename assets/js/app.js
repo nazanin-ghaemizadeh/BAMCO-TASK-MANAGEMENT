@@ -39,6 +39,7 @@ function apiErrorMessage(data,status){
 const safeReadRpcs=new Set(['chat_directory_v2','chat_directory','chat_conversation_list','chat_system_message_payload','resolve_message_sticker']);
 window.bamcoNetworkErrors=[];
 async function api(path,{method='GET',body,auth=true,prefer,keepalive=false}={}){
+ const session=window.bamcoAuth?.snapshot?.(),current=()=>session?window.bamcoAuth.isCurrent(session):token===state.token;
  const token=state.token,headers={apikey:SB_KEY,'Content-Type':'application/json',Accept:'application/json'};
  if(auth&&token)headers.Authorization=`Bearer ${token}`;if(prefer)headers.Prefer=prefer;
  const endpoint=path.split('?')[0],readOnly=method==='GET'||(method==='POST'&&safeReadRpcs.has(endpoint.split('/').pop()));
@@ -47,14 +48,16 @@ async function api(path,{method='GET',body,auth=true,prefer,keepalive=false}={})
  for(let attempt=0;attempt<(readOnly?2:1);attempt++){
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),20000);
   try{
+   if(auth&&!current())throw new Error('حساب ورود تغییر کرده است.');
+   if(auth&&state.token)headers.Authorization=`Bearer ${state.token}`;
    const res=await fetch(SB_URL+path,{method,headers,keepalive,cache:'no-store',signal:controller.signal,body:body===undefined?undefined:JSON.stringify(body)});
    const text=await res.text();let data=null;try{data=text?JSON.parse(text):null}catch{data=text}
    if(!res.ok){const error=new Error(apiErrorMessage(data,res.status));error.status=res.status;error.code=data?.code;throw error}
-   if(auth&&token!==state.token)throw new Error('نشست کاربری تغییر کرده است؛ صفحه موردنظر را دوباره باز کنید.');
+   if(auth&&!current())throw new Error('نشست کاربری تغییر کرده است؛ صفحه موردنظر را دوباره باز کنید.');
    return data;
   }catch(err){
    const network=err.name==='TypeError'||err.name==='AbortError'||controller.signal.aborted,temporary=network||[502,503,504].includes(err.status);
-   if(readOnly&&attempt===0&&temporary&&(!auth||token===state.token)&&navigator.onLine!==false){await new Promise(resolve=>setTimeout(resolve,350));continue}
+   if(readOnly&&attempt===0&&temporary&&(!auth||current())&&navigator.onLine!==false){await new Promise(resolve=>setTimeout(resolve,350));continue}
    if(network){const detail=navigator.onLine===false?'اتصال اینترنت قطع است.':controller.signal.aborted?'پاسخ سرور در زمان مقرر دریافت نشد.':'ارتباط با سرور برقرار نشد.';const error=new Error(detail+(readOnly?' دوباره تلاش کنید.':' نتیجه عملیات مشخص نیست؛ پیش از تکرار، وضعیت آن را بررسی کنید.'));error.code='NETWORK_ERROR';error.cause=err;err=error}
    window.bamcoNetworkErrors.push({endpoint,method,status:err.status||0,code:err.code||'REQUEST_ERROR',at:new Date().toISOString()});if(window.bamcoNetworkErrors.length>30)window.bamcoNetworkErrors.shift();
    throw err;
@@ -63,7 +66,15 @@ async function api(path,{method='GET',body,auth=true,prefer,keepalive=false}={})
 }
 
 const select=(table,q='select=*')=>api(`/rest/v1/${table}?${q}`);
-async function selectAll(table,q='select=*',pageSize=1000){
+const selectAllPending=new Map();
+function selectAll(table,q='select=*',pageSize=1000){
+ const identity=window.bamcoAuth?.snapshot?.()||{token:state.token};
+ const key=JSON.stringify([identity,table,q,pageSize,state.taskRevision||0]);
+ if(selectAllPending.has(key))return selectAllPending.get(key);
+ const job=selectAllPages(table,q,pageSize).finally(()=>{if(selectAllPending.get(key)===job)selectAllPending.delete(key)});
+ selectAllPending.set(key,job);return job;
+}
+async function selectAllPages(table,q='select=*',pageSize=1000){
   const rows=[];
   for(let from=0;;from+=pageSize){
     const page=await api(`/rest/v1/${table}?${q}&offset=${from}&limit=${pageSize}`);
@@ -137,7 +148,7 @@ function showLogin(){
   window.bamcoAuth?.clear();window.bamcoSession?.clear();
   window.bamcoConversations?.close();window.bamcoChat?.close();
   sessionStorage.removeItem('bamco_session');
-  Object.assign(state,{token:'',user:null,profile:null,profiles:[],tasks:[],requests:[],requestHistory:[],requestRoutes:[],view:'dashboard',editing:null,reviewing:null,reviewEdit:null,resubmitting:null,dateInput:null,selected:{kanban:null,archive:null}});
+  Object.assign(state,{workspaceRefreshPromise:null,token:'',user:null,profile:null,profiles:[],tasks:[],requests:[],requestHistory:[],requestRoutes:[],view:'dashboard',editing:null,reviewing:null,reviewEdit:null,resubmitting:null,dateInput:null,selected:{kanban:null,archive:null}});
   $('#appView').classList.add('hidden');
   $('#loginView').classList.remove('hidden');
 }
@@ -165,7 +176,7 @@ async function enterApp(){
   window.bamcoShowHome?.();
   if(state.profile.must_change_password){$('#cancelPasswordBtn').classList.add('hidden');$('#passwordDialog').showModal()}else{
     if(window.bamcoOpenHomeWelcome)window.bamcoOpenHomeWelcome();else showView('kanban');
-    await refresh().catch(()=>{});
+    void refresh().catch(()=>{});
   }
 }
 async function refresh(){
@@ -865,7 +876,7 @@ showLogin();
     renderRequests();renderRequestHistory();
   };
 
-  refresh=async function(){
+  const refreshWorkspace=async function(){
     if(!state.profile||state.profile.must_change_password)return;
     const loadingUser=state.user?.id,taskRevision=state.taskRevision||0;
     try{
@@ -882,6 +893,12 @@ showLogin();
       renderAll();
       requestAnimationFrame(()=>{installResizableTable('kanban');installResizableTable('archive')});
     }catch(err){toast(err.message,true);throw err}
+  };
+
+  refresh=function(){
+    if(state.workspaceRefreshPromise)return state.workspaceRefreshPromise;
+    const job=refreshWorkspace().finally(()=>{if(state.workspaceRefreshPromise===job)state.workspaceRefreshPromise=null});
+    state.workspaceRefreshPromise=job;return job;
   };
 
   document.addEventListener('bamco:task-options',()=>{dataVersion++;resetRenderCaches();for(const scope of ['kanban','archive'])for(const [index,type]of [[4,'status'],[5,'priority']])if(tableFilters[scope][index])tableFilters[scope][index]=window.bamcoOptions.label(type,tableFilters[scope][index]);});

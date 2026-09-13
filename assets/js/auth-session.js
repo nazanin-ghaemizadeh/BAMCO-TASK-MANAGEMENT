@@ -9,6 +9,8 @@
   expiresAt=Number(data.expires_at||0)*1000||Date.now()+Number(data.expires_in||3600)*1000;
   clearTimeout(timer);if(refreshToken)timer=setTimeout(()=>ensureFresh(true).catch(()=>expire()),Math.max(1000,expiresAt-Date.now()-60000));
  }
+ function snapshot(){return {generation,userId:state.user?.id}}
+ function isCurrent(value){return !!value&&value.generation===generation&&value.userId===state.user?.id&&!!state.token}
  function clear(){generation++;clearTimeout(timer);timer=null;refreshToken='';expiresAt=0;refreshing=null;window.bamcoMedia?.clear()}
  function expire(){clear();if(typeof showLogin==='function')showLogin()}
  async function ensureFresh(force=false){
@@ -17,16 +19,17 @@
    const started=generation;
    const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),15000);
    try{const response=await transport(SB_URL+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{apikey:SB_KEY,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:refreshToken}),signal:controller.signal}),data=await response.json();if(started!==generation)return;if(!response.ok){expire();throw Error('اعتبار ورود پایان یافته است؛ دوباره وارد شوید.')}accept(data)}
-   finally{clearTimeout(timeout);refreshing=null}
+   finally{clearTimeout(timeout);if(started===generation)refreshing=null}
   })();
   return refreshing;
  }
  window.fetch=async(input,init={})=>{
   const url=typeof input==='string'?input:input.url,headers=new Headers(init.headers||(input instanceof Request?input.headers:undefined));
   if(typeof SB_URL==='undefined'||!url.startsWith(SB_URL+'/')||!state.token||headers.get('Authorization')!=='Bearer '+state.token)return transport(input,init);
-  await ensureFresh();if(!state.token)throw Error('دوباره وارد شوید.');headers.set('Authorization','Bearer '+state.token);const sentToken=state.token;
+  const session=snapshot();await ensureFresh();if(!isCurrent(session))throw Error('حساب ورود تغییر کرده است.');if(!state.token)throw Error('دوباره وارد شوید.');headers.set('Authorization','Bearer '+state.token);const sentToken=state.token;
   let response=await transport(input,{...init,headers});
-  if(response.status===401&&refreshToken&&!ending){if(state.token===sentToken)await ensureFresh(true);if(!state.token)throw Error('دوباره وارد شوید.');headers.set('Authorization','Bearer '+state.token);response=await transport(input,{...init,headers})}
+  if(!isCurrent(session))throw Error('حساب ورود تغییر کرده است.');
+  if(response.status===401&&refreshToken&&!ending){if(state.token===sentToken)await ensureFresh(true);if(!isCurrent(session))throw Error('حساب ورود تغییر کرده است.');if(!state.token)throw Error('دوباره وارد شوید.');headers.set('Authorization','Bearer '+state.token);response=await transport(input,{...init,headers})}
   return response;
  };
  async function signOut(){
@@ -52,5 +55,5 @@
   await update('profiles',`id=eq.${state.profile.id}`,{must_change_password:false,updated_at:new Date().toISOString()});
   state.profile.must_change_password=false;return state.profile;
  }
- window.bamcoAuth={accept,ensureFresh,clear,signOut,changePassword};
+ window.bamcoAuth={snapshot,isCurrent,accept,ensureFresh,clear,signOut,changePassword};
 })();
