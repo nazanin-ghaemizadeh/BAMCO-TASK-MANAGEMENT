@@ -67,6 +67,16 @@ async def manager_checks(page,result):
     assert geometry['h']>100 and geometry['total']>geometry['h'] and geometry['bottom']<=geometry['viewport']+2,geometry
     await page.locator('#lettersView .letters-scroll').evaluate('e=>e.scrollTop=e.scrollHeight')
     assert await page.locator('#lettersView .letters-scroll').evaluate('e=>e.scrollTop')>0
+    await page.evaluate("window.__stableLetters=document.querySelector('#lettersTable');window.__lettersScroll=__stableLetters.parentElement.scrollTop")
+    await page.locator('#refreshLetters').click()
+    await page.wait_for_timeout(200)
+    assert await page.evaluate("document.querySelector('#lettersTable')===window.__stableLetters")
+    assert await page.evaluate("Math.abs(__stableLetters.parentElement.scrollTop-window.__lettersScroll)<2")
+    await page.evaluate("__testApi.fail.push('can_access_letters');window.dispatchEvent(new Event('focus'))")
+    await expect(page.locator('#lettersError')).to_contain_text('بررسی دسترسی')
+    await expect(page.locator('#lettersView')).to_be_visible()
+    await page.evaluate("__testApi.fail=__testApi.fail.filter(x=>x!=='can_access_letters')")
+
     await expect(page.locator('#lettersSearch')).to_have_attribute('placeholder','جست‌وجوی نامه…')
     assert await page.locator('#lettersSearch').evaluate('e=>e.clientHeight')>=32
     await page.locator('#lettersSearch').fill('ناموجود')

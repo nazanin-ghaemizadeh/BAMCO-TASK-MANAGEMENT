@@ -24,7 +24,7 @@ function validateAll(){
   if(data.legacy_id&&(ids.get(Number(data.legacy_id))||0)>1)errors.push('شناسه در همین فایل تکراری است');
   for(const [raw,label,field] of [[r.rawStart,'تاریخ شروع','start_date'],[r.rawDone,'تاریخ انجام','done_date'],[r.rawDue,'تاریخ پایان','due_date']]){if(String(raw||'').trim()&&!data[field])errors.push(`${label} نامعتبر است`)}
   try{const candidate={...data};window.bamcoOptions.normalizeTask(candidate,null);Object.assign(data,candidate);if(importArchived&&!window.bamcoOptions.status(data)?.archivable)errors.push('این وضعیت اجازه ورود مستقیم به آرشیو ندارد')}catch(error){errors.push(error.message)}
-  r.errors=[...new Set(errors.filter(Boolean))];
+  r.errors=[...new Set([...errors,r.serverError].filter(Boolean))];
  });
  return preview.filter(r=>r.errors.length);
 }
@@ -38,7 +38,7 @@ function renderErrors(){
  return bad;
 }
 function editRow(e){
- const input=e.target.closest('[data-field]'),tr=e.target.closest('tr[data-row]');if(!input||!tr)return;const r=preview.find(x=>String(x.row)===String(tr.dataset.row));if(!r)return;const f=input.dataset.field,v=input.value;
+ const input=e.target.closest('[data-field]'),tr=e.target.closest('tr[data-row]');if(!input||!tr)return;const r=preview.find(x=>String(x.row)===String(tr.dataset.row));if(!r)return;const f=input.dataset.field,v=input.value;r.serverError='';
  if(f==='legacy_id')r.data.legacy_id=Number(en(v))||null;
  else if(f==='rawStart'){r.rawStart=v;r.data.start_date=iso(v)}
  else if(f==='rawDone'){r.rawDone=v;r.data.done_date=iso(v)}
@@ -62,11 +62,11 @@ async function parse(file){
   const bad=renderErrors();if(!bad.length)await commit();
 }
 async function commit(){
- if(committing)return;const bad=renderErrors();if(bad.length){toast(`${fa(bad.length)} ردیف هنوز نیاز به اصلاح دارد.`,true);return}
- committing=true;const button=document.querySelector('#commitImportBtn');if(button)button.disabled=true;let ok=0,failed=0,firstError='';
+ if(committing)return;preview.forEach(r=>r.serverError='');const bad=renderErrors();if(bad.length){toast(`${fa(bad.length)} ردیف هنوز نیاز به اصلاح دارد.`,true);return}
+ committing=true;const button=document.querySelector('#commitImportBtn');if(button)button.disabled=true;let ok=0,failed=0,firstError='';const remaining=[];
  try{
-  for(const r of preview){try{await insert('tasks',{...r.data,created_by:state.profile.id});ok++}catch(e){failed++;if(!firstError)firstError=e.message}}
-  document.querySelector('#importDialog')?.close();toast(`${fa(ok)} رکورد وارد شد${failed?`؛ ${fa(failed)} خطا`:' و خطایی وجود نداشت.'}${firstError?' '+firstError:''}`,failed>0);preview=[];importFile=null;await refresh();
+  for(const r of preview){try{await insert('tasks',{...r.data,created_by:state.profile.id});ok++}catch(e){failed++;r.serverError=e.message;remaining.push(r);if(!firstError)firstError=e.message}}
+  if(!failed)document.querySelector('#importDialog')?.close();toast(`${fa(ok)} رکورد وارد شد${failed?`؛ ${fa(failed)} خطا`:' و خطایی وجود نداشت.'}${firstError?' '+firstError:''}`,failed>0);preview=remaining;if(!failed)importFile=null;try{await refresh()}finally{if(failed)renderErrors()}
  }finally{committing=false;if(button)button.disabled=false;const file=document.querySelector('#importFile');if(file)file.value=''}
 }
 async function exportRows(archived){
