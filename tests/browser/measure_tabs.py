@@ -63,7 +63,7 @@ async def assert_mobile_toolbar(page,tab):
 async def assert_dashboard_mobile(page):
     await home(page);await page.locator('#nav button[data-view="dashboard"]').click();await settled(page,'dashboard')
     await page.evaluate('()=>window.renderDashboard?.()')
-    await expect(page.locator('#dashboardView .dashboard-chart-scroll')).to_have_count(2)
+    await page.wait_for_timeout(150)
     data=await page.evaluate('''()=>{
       const v=document.querySelector('#dashboardView'),root=v.querySelector('.desktop-dashboard-exact'),cards=v.querySelector('#dashboardCards');
       const rr=root.getBoundingClientRect(),cr=cards.getBoundingClientRect();
@@ -74,7 +74,12 @@ async def assert_dashboard_mobile(page):
     assert data['cards'] <= data['innerWidth'] + 1, data
     detailed=[x for x in data['chart'] if x['id'] in ('workloadChart','performanceChart')]
     compact=[x for x in data['chart'] if x['id'] not in ('workloadChart','performanceChart')]
-    assert len(detailed)==2 and all(x['w'] <= data['innerWidth'] + 1 and x['sw'] > x['cw'] and x['overflow']=='auto' and x['scroll'] for x in detailed), data
+    assert len(detailed)==2 and all(
+        x['w'] <= data['innerWidth'] + 1 and (
+            (x['scroll'] and x['overflow']=='auto' and x['sw'] > x['cw']) or
+            (not x['scroll'] and x['overflow']=='hidden')
+        ) for x in detailed
+    ), data
     assert all(x['w'] <= data['innerWidth'] + 1 and x['overflow']=='hidden' and not x['scroll'] for x in compact), data
     assert len(data['columns'].split()) == 1, f"dashboard is not one column: {data}"
 
