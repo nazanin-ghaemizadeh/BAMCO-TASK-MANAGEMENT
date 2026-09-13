@@ -144,7 +144,8 @@ async def manager_checks(page,result):
     await open_tab(page,'kanban')
     row=page.locator('#kanbanBody tr[data-task-id="1"]'); await row.click(); await expect(page.locator('#kanbanEditBtn')).to_be_enabled(); await expect(page.locator('#kanbanArchiveBtn')).to_be_enabled(); await expect(page.locator('#kanbanDeleteBtn')).to_be_enabled()
     history=page.locator('#kanbanView [data-task-history]'); await expect(history).to_be_visible(); await history.click(); await expect(page.locator('#bamcoTaskHistoryDialog')).to_be_visible()
-    txt=await page.locator('#bamcoTaskHistoryDialog').inner_text(); assert 'متولی' in txt and 'تاریخ پایان' in txt and 'وضعیت' in txt and 'متولی آزمایشی' in txt,'Persian task history incomplete'; assert 'owner_id' not in txt and 'due_date' not in txt,'raw history field leaked'
+    history_dialog=page.locator('#bamcoTaskHistoryDialog'); await expect(history_dialog).to_contain_text('متولی آزمایشی')
+    txt=await history_dialog.inner_text(); assert 'متولی' in txt and 'تاریخ پایان' in txt and 'وضعیت' in txt and 'متولی آزمایشی' in txt,'Persian task history incomplete'; assert 'owner_id' not in txt and 'due_date' not in txt,'raw history field leaked'
     await page.locator('#bamcoTaskHistoryDialog .bth-close').click(); await home(page); result['persian_task_history_and_kanban_actions']='pass'
 
     await open_tab(page,'archive')

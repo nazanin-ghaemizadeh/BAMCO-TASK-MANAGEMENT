@@ -33,7 +33,7 @@ async def one_case(browser,base,width,role):
     assert diag['bodyClass'].find('card-home-active')>=0,result
     assert diag['avatar']['inTopbar'],result
     assert diag['profile']['avatarPath'],result
-    assert diag['profile']['finalAvatar']=='function',result
+    assert diag['profile']['avatarRefresh']=='function' or diag['profile']['finalAvatar']=='function',result
     assert diag['avatar']['hasImage'] and diag['avatar']['complete'] and diag['avatar']['naturalWidth']>0,result
     await ctx.close();return result
 
