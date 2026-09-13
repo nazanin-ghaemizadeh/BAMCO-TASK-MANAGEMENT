@@ -157,7 +157,12 @@ async def manager_checks(page,result):
     await home(page); result['stickers']='pass'
 
 async def sweep_tabs(page,role,result):
-    views=await page.locator('#nav button[data-view]').evaluate_all("(els,role)=>els.filter(b=>!b.disabled&&(role==='manager'||!b.classList.contains('manager-only'))).map(b=>b.dataset.view)",role)
+    await home(page)
+    if role=='manager':
+        await expect(page.locator('#lettersNav')).to_be_visible()
+    else:
+        await expect(page.locator('#lettersNav')).to_be_hidden()
+    views=await page.locator('#nav button[data-view]').evaluate_all("(els,role)=>els.filter(b=>!b.disabled&&!b.classList.contains('hidden')&&(role==='manager'||!b.classList.contains('manager-only'))).map(b=>b.dataset.view)",role)
     seen=[]; times={}
     for tab in views:
         if tab in seen: continue

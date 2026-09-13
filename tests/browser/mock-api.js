@@ -15,6 +15,7 @@
   if(endpoint==='token')data={access_token:'browser-fixture-token',refresh_token:'browser-fixture-refresh',expires_in:3600,user:{id:api.actor.id}};
   else if(endpoint==='user')data={id:api.actor.id};
   else if(endpoint==='session-audit')data=body.action==='start'?{ok:true,session:{id:'browser-test-session'}}:{ok:true,ended:body.action==='end'};
+  else if(endpoint==='can_access_letters')data=api.actor.active!==false&&(api.actor.role==='manager'||(api.letterAccess||[]).includes(api.actor.id));
   else if(endpoint==='profiles')data=filter(api.profiles);
   else if(endpoint==='task_status_view')data=api.actor.role==='manager'?api.tasks:api.tasks.filter(t=>t.owner_id===api.actor.id);
   else if(endpoint==='change_requests')data=api.requests;
