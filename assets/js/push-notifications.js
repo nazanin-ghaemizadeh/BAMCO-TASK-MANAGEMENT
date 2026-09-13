@@ -7,8 +7,8 @@ const installed=()=>navigator.standalone||matchMedia('(display-mode: standalone)
 async function call(action,extra={}){const r=await fetch(SB_URL+'/functions/v1/web-push',{method:'POST',headers:{apikey:SB_KEY,Authorization:'Bearer '+state.token,'Content-Type':'application/json'},body:JSON.stringify({action,...extra}),cache:'no-store'});const data=await r.json();if(!r.ok)throw Error(data.error||'ثبت اعلان انجام نشد.');return data}
 async function ready(){if(!supported())return;registration=await navigator.serviceWorker.register(new URL('push-sw.js',document.baseURI),{scope:new URL('./',document.baseURI).pathname,updateViaCache:'none'});await navigator.serviceWorker.ready;const config=await call('config');publicKey=config.publicKey;return registration}
 function bytes(s){return Uint8Array.from(atob(s.replace(/-/g,'+').replace(/_/g,'/')),c=>c.charCodeAt(0))}
-function mount(){const host=document.querySelector('#userSettingsView')||document.querySelector('#profileView')||document.querySelector('#settingsView');if(!host||host.querySelector('#pushSettings'))return;
- const box=document.createElement('section');box.id='pushSettings';box.className='push-settings';box.innerHTML='<h3>اعلان روی این دستگاه</h3><p>برای دریافت اعلان هنگام بسته‌بودن سامانه، دریافت اعلان را فعال کنید.</p><p role="status" class="push-status"></p><button type="button" class="primary">فعال‌سازی اعلان</button>';host.append(box);const status=box.querySelector('.push-status'),button=box.querySelector('button');
+function mount(){const view=document.querySelector('#settingsView');const host=view?.querySelector('.manager-form')||view;if(!host||view.querySelector('#pushSettings'))return;
+ const box=document.createElement('section');box.id='pushSettings';box.className='push-settings';box.innerHTML='<h3>اعلان روی این دستگاه</h3><p>برای دریافت اعلان هنگام بسته‌بودن سامانه، دریافت اعلان را فعال کنید.</p><p role="status" class="push-status"></p><button type="button" class="primary">فعال‌سازی اعلان</button>';host.prepend(box);const status=box.querySelector('.push-status'),button=box.querySelector('button');
  if(ios()&&!installed()){status.textContent='در آیفون، ابتدا BAMCO را به صفحه اصلی اضافه کنید و از همان آیکن وارد شوید.';button.disabled=true;return}
  if(!supported()){status.textContent='این مرورگر از اعلان پس‌زمینه پشتیبانی نمی‌کند.';button.disabled=true;return}
  button.onclick=async()=>{if(busy)return;busy=true;button.disabled=true;try{
@@ -22,5 +22,6 @@ function mount(){const host=document.querySelector('#userSettingsView')||documen
 }
 async function unsubscribe(){if(!supported())return;const r=registration||await navigator.serviceWorker.getRegistration(new URL('./',document.baseURI).href);const s=await r?.pushManager.getSubscription();if(s){try{await call('unsubscribe',{endpoint:s.endpoint})}finally{await s.unsubscribe()}}}
 window.bamcoPush={unsubscribe};
+document.addEventListener('click',event=>{if(event.target.closest('[data-view="settings"],#headerSettingsBtn')&&typeof state!=='undefined'&&state.profile)mount()});
 setInterval(()=>{if(typeof state==='undefined'||!state.profile)return;if(boundUser!==state.profile.id){boundUser=state.profile.id;document.querySelector('#pushSettings')?.remove()}mount();if(!openedNotification&&new URL(location.href).searchParams.has('notification')){openedNotification=true;showView('messages');const url=new URL(location.href);url.searchParams.delete('notification');history.replaceState(null,'',url)}},1500);
 })();

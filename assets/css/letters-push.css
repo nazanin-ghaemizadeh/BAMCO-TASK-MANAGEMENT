@@ -11,3 +11,5 @@ html body #appView#appView #lettersView .letter-toolbar{display:flex!important;f
 html body #appView#appView #lettersView #lettersSearch{flex:0 1 280px!important;width:280px!important;min-width:180px!important;height:36px!important;line-height:1.5!important;padding:4px 10px!important}
 html body #appView#appView #lettersView #lettersError:empty{display:none!important}
 @media(max-width:600px){html body #appView#appView #lettersView .letter-toolbar>button{flex:1 1 auto!important;width:auto!important}html body #appView#appView #lettersView #lettersSearch{flex:1 1 100%!important;width:100%!important;min-width:0!important}}
+
+#settingsView .manager-form>#pushSettings{grid-column:1/-1;width:100%;min-width:0;box-sizing:border-box;margin:0 0 12px}#settingsView #pushSettings button{min-height:40px}
