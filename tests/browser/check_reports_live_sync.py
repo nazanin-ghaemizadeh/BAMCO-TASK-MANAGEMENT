@@ -60,8 +60,8 @@ async def main():
                 await expect(bulk).to_be_enabled()
                 assert await page.evaluate("state.view")=='responseReport'
 
-                # One 15-second live-sync contract; manual refresh must not reload the page.
-                assert await page.evaluate("window.bamcoLiveSync?.interval") == 15000
+                # A lightweight five-second change check; manual refresh must not reload the page.
+                assert await page.evaluate("window.bamcoLiveSync?.interval") == 5000
                 before=await page.evaluate("performance.getEntriesByType('navigation').length")
                 await page.evaluate("window.bamcoLiveSync.refresh()")
                 await page.wait_for_timeout(400)

@@ -46,6 +46,7 @@ async function fixture(options={}){
     body.p_stages.forEach((s,i)=>{const sid=1000+tables.approval_chain_stages.length;tables.approval_chain_stages.push({id:sid,chain_id:id,stage_no:i+1,title:s.title,approval_rule:s.rule});s.approvers.forEach(approver_id=>tables.approval_stage_approvers.push({stage_id:sid,approver_id}))});data=id;
    }
    if(endpoint==='task_status_view')data=actor.role==='manager'?(tables.tasks||[]):(tables.tasks||[]).filter(t=>t.owner_id===actor.id);
+   if(endpoint==='sent_message_dataset_version')data='sent-fixture-v1';
    if(endpoint==='profiles'){data=url.searchParams.has('id')?filter(profiles):profiles;if(method==='PATCH')data.forEach(p=>Object.assign(p,body))}
    if(endpoint==='user_sessions')data=sessions;
    if(endpoint==='admin-users'){

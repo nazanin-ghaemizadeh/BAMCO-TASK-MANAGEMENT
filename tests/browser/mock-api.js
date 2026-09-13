@@ -24,6 +24,8 @@
   else if(endpoint==='can_access_letters')data=api.actor.active!==false&&(api.actor.role==='manager'||(api.letterAccess||[]).includes(api.actor.id));
   else if(endpoint==='profiles')data=filter(api.profiles);
   else if(endpoint==='task_status_view')data=api.actor.role==='manager'?api.tasks:api.tasks.filter(t=>t.owner_id===api.actor.id);
+  else if(endpoint==='task_dataset_version')data=api.taskDatasetVersion||'fixture-v1';
+  else if(endpoint==='sent_message_dataset_version')data=api.sentMessageDatasetVersion||'sent-fixture-v1';
   else if(endpoint==='change_requests')data=api.requests;
   else if(endpoint==='email_templates'){
    data=filter(api.templates);if(method==='PATCH')data.forEach(row=>Object.assign(row,body));
