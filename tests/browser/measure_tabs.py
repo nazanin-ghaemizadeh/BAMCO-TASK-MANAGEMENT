@@ -65,12 +65,15 @@ async def assert_dashboard_mobile(page):
     data=await page.evaluate('''()=>{
       const v=document.querySelector('#dashboardView'),root=v.querySelector('.desktop-dashboard-exact'),cards=v.querySelector('#dashboardCards');
       const rr=root.getBoundingClientRect(),cr=cards.getBoundingClientRect();
-      const chart=[...v.querySelectorAll('.dashboard-chart-card')].map(x=>({w:x.getBoundingClientRect().width,sw:x.scrollWidth,cw:x.clientWidth,overflow:getComputedStyle(x).overflowX}));
+      const chart=[...v.querySelectorAll('.dashboard-chart-card')].map(x=>({id:x.querySelector('canvas')?.id||'',w:x.getBoundingClientRect().width,sw:x.scrollWidth,cw:x.clientWidth,overflow:getComputedStyle(x).overflowX,scroll:x.classList.contains('dashboard-chart-scroll')}));
       return {root:rr.width,cards:cr.width,columns:getComputedStyle(root).gridTemplateColumns,cardColumns:getComputedStyle(cards).gridTemplateColumns,chart,innerWidth};
     }''')
     assert data['root'] <= data['innerWidth'] + 1, data
     assert data['cards'] <= data['innerWidth'] + 1, data
-    assert all(x['w'] <= data['innerWidth'] + 1 and x['sw'] > x['cw'] and x['overflow']=='auto' for x in data['chart']), data
+    detailed=[x for x in data['chart'] if x['id'] in ('workloadChart','performanceChart')]
+    compact=[x for x in data['chart'] if x['id'] not in ('workloadChart','performanceChart')]
+    assert len(detailed)==2 and all(x['w'] <= data['innerWidth'] + 1 and x['sw'] > x['cw'] and x['overflow']=='auto' and x['scroll'] for x in detailed), data
+    assert all(x['w'] <= data['innerWidth'] + 1 and x['sw'] <= x['cw'] + 2 and not x['scroll'] for x in compact), data
     assert len(data['columns'].split()) == 1, f"dashboard is not one column: {data}"
 
 async def assert_automated_message_route(page):
