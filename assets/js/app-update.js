@@ -36,7 +36,7 @@ function showNotice({title,message,version,kind='info',primary,secondary='بعد
 }
 
 async function clearAppCaches(){
- if('serviceWorker' in navigator){const registrations=await navigator.serviceWorker.getRegistrations().catch(()=>[]);await Promise.all(registrations.map(registration=>registration.unregister().catch(()=>false)))}
+ if('serviceWorker' in navigator){const registrations=await navigator.serviceWorker.getRegistrations().catch(()=>[]);await Promise.all(registrations.filter(registration=>!new URL(registration.active?.scriptURL||registration.waiting?.scriptURL||registration.installing?.scriptURL||location.href).pathname.endsWith('/push-sw.js')).map(registration=>registration.unregister().catch(()=>false)))}
  if('caches' in window){const names=await caches.keys().catch(()=>[]);await Promise.all(names.filter(name=>/bamco/i.test(name)&&!/sticker/i.test(name)).map(name=>caches.delete(name).catch(()=>false)))}
 }
 

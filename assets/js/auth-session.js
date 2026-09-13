@@ -33,6 +33,7 @@
   if(ending)return;ending=true;
   let auditError=null,logoutError=null;
   try{
+   try{await window.bamcoPush?.unsubscribe()}catch{}
    try{await window.bamcoSession?.end('logout')}catch(error){auditError=error}
    if(state.token){
     const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),10000);
