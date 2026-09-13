@@ -92,7 +92,8 @@ async def manager_checks(page,result):
     headers=await page.locator('#messageCenterView thead tr:first-child th').all_text_contents()
     assert headers==['نام','کار فعال','هشدار','دیرکرد','وضعیت پیام','آخرین ارسال'],f'message headers: {headers!r}'
     controls=await command_texts(page,'#messageCenterView .message-command-row')
-    assert controls[:4]==['بازگشت به خانه','خروجی اکسل','تازه‌سازی','ارسال'],f'message controls: {controls!r}'
+    assert controls[:3]==['بازگشت به خانه','خروجی اکسل','تازه‌سازی'],f'message controls: {controls!r}'
+    assert len(controls)>=5 and controls[3].startswith('کانال ارسال') and controls[4]=='ارسال',f'message channel/send controls: {controls!r}'
     assert await visible_count(page,'#messageCenterView button')>=4,'message controls not visible'
     assert await visible_count(page,'#messageCenterView .bamco-management-toolbar .content-back')==0,'duplicate message-center home button visible'
     await expect(page.locator('#messageChannel')).to_be_visible()
