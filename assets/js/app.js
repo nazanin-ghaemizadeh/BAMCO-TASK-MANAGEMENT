@@ -108,16 +108,18 @@ function languageClass(value){return /[\u0600-\u06ff]/.test(String(value??''))?'
 function cell(value,formatted=value){return `<td class="${languageClass(value)}">${safe(formatted??'')}</td>`}
 const tableFilters={kanban:{},archive:{}};
 
+const persianDateFormatter=new Intl.DateTimeFormat('fa-IR-u-ca-persian-nu-latn',{year:'numeric',month:'numeric',day:'numeric'});
+const persianTimeFormatter=new Intl.DateTimeFormat('fa-IR',{hour:'2-digit',minute:'2-digit'});
 function persianParts(date){
   if(!date)return null;
   const d=typeof date==='string'?new Date(`${date}T12:00:00`):date;
   if(Number.isNaN(d.getTime()))return null;
-  const parts=new Intl.DateTimeFormat('fa-IR-u-ca-persian-nu-latn',{year:'numeric',month:'numeric',day:'numeric'}).formatToParts(d);
+  const parts=persianDateFormatter.formatToParts(d);
   const get=t=>Number(parts.find(p=>p.type===t)?.value);
   return {y:get('year'),m:get('month'),d:get('day')};
 }
 function jalaliText(iso){const p=persianParts(iso);return p?fa(`${p.y}/${String(p.m).padStart(2,'0')}/${String(p.d).padStart(2,'0')}`):'—'}
-function jalaliDateTime(value){if(!value)return'—';const d=new Date(value);if(Number.isNaN(d.getTime()))return'—';const date=jalaliText(d);const time=new Intl.DateTimeFormat('fa-IR',{hour:'2-digit',minute:'2-digit'}).format(d);return `${date}، ${time}`}
+function jalaliDateTime(value){if(!value)return'—';const d=new Date(value);if(Number.isNaN(d.getTime()))return'—';const date=jalaliText(d);const time=persianTimeFormatter.format(d);return `${date}، ${time}`}
 function jalaliToISO(y,m,d){
   y=Number(en(y));m=Number(en(m));d=Number(en(d));
   if(!y||m<1||m>12||d<1||d>31)return null;
@@ -752,11 +754,25 @@ showLogin();
     return entry[key];
   };
 
+  function taskFilterValue(t,index){
+    switch(index){
+      case 0:return fa(displayId(t));case 1:return t.title||'';case 2:return t.description||'';
+      case 3:return ownerName(t);case 4:return t.status||'';case 5:return t.priority||'';
+      case 6:return jalaliText(t.start_date);case 7:return jalaliText(t.done_date);
+      case 8:return jalaliText(window.bamcoOptions.kind(t)==='waiting'?null:t.due_date);
+      case 9:return fa(window.bamcoOptions.kind(t)==='waiting'?0:t.reminder_days);
+      case 10:return jalaliDateTime(t.last_updated_at);
+      case 11:return window.bamcoOptions.kind(t)==='waiting'?'فاقد شرایط دیرکرد':norm(t.due_state)==='دیرکرد'?'دیرکرد':norm(t.due_state).includes('هشدار')?'دوره هشدار':'فاقد شرایط دیرکرد';
+      case 12:return t.manager_notes||'';case 13:return fa(t.delay_days||0);case 14:return fa(t.advance_days||0);
+      default:return '';
+    }
+  }
+
   function filterValues(scope,index){
     const cache=optionCache[scope],cached=cache.get(index);
     if(cached?.version===dataVersion)return cached.values;
     const archived=latestArchived[scope];
-    let values=[...new Set(latestRows[scope].map(t=>String(taskColumnValues(t,archived)[index]??'')).filter(v=>v&&v!=='—'))].sort((a,b)=>a.localeCompare(b,'fa',{numeric:true,sensitivity:'base'}));
+    let values=[...new Set(latestRows[scope].map(t=>String(taskFilterValue(t,index)??'')).filter(v=>v&&v!=='—'))].sort((a,b)=>a.localeCompare(b,'fa',{numeric:true,sensitivity:'base'}));
     if(index===4||index===5)values=window.bamcoOptions.ordered(index===4?'status':'priority',values);
     cache.set(index,{version:dataVersion,values});
     return values;
@@ -802,7 +818,7 @@ showLogin();
     const filters=tableFilters[scope];
     updateColumnFilters(scope,allRows,archived);
     const rows=allRows.filter(t=>!query||[t.title,t.description,ownerName(t),t.status,t.priority,displayId(t)].some(v=>String(v??'').toLowerCase().includes(query)))
-      .filter(t=>taskColumnValues(t,archived).every((v,index)=>!filters[index]||String(v??'')===filters[index]));
+      .filter(t=>!Object.values(filters).some(Boolean)||taskColumnValues(t,archived).every((v,index)=>!filters[index]||String(v??'')===filters[index]));
     const sort=window.BAMCO_TASK_SORT?.[scope];
     if(sort&&window.BAMCO_COMPARE_VALUES)rows.sort((a,b)=>sort.direction*window.BAMCO_COMPARE_VALUES(taskColumnValues(a,archived)[sort.index],taskColumnValues(b,archived)[sort.index]));
     let visibleRows=rows;
@@ -878,7 +894,7 @@ showLogin();
 
   const refreshWorkspace=async function(){
     if(!state.profile||state.profile.must_change_password)return;
-    const loadingUser=state.user?.id,taskRevision=state.taskRevision||0;
+    const loadingUser=state.user?.id,loadingSession=window.bamcoAuth?.snapshot?.(),taskRevision=state.taskRevision||0;
     try{
       const optionsPromise=window.bamcoOptions.load();
       const profilesPromise=isManager()?select('profiles','select=id,email,login_name,must_change_password,password_changed_at,full_name,display_name,gender,excel_name,role,active,default_message_channel,messaging_enabled&order=full_name'):Promise.resolve([state.profile]);
@@ -886,12 +902,21 @@ showLogin();
       const requestsPromise=selectAll('change_requests','select=*&request_status=in.(pending,in_review,needs_revision)&order=created_at.asc');
       const historyPromise=selectAll('change_requests','select=*&request_status=in.(approved,rejected,cancelled)&order=created_at.desc');
       const routesPromise=rpc('request_routing_status',{}).catch(()=>[]);
-      const [profiles,tasks,requests,history,routes]=await Promise.all([profilesPromise,tasksPromise,requestsPromise,historyPromise,routesPromise,optionsPromise]);
-      if(state.user?.id!==loadingUser)return;
-      state.profiles=profiles;if(taskRevision===(state.taskRevision||0))state.tasks=tasks;state.requests=requests;state.requestHistory=history;state.requestRoutes=routes;
-      dataVersion++;resetRenderCaches();
-      renderAll();
-      requestAnimationFrame(()=>{installResizableTable('kanban');installResizableTable('archive')});
+      // Tasks become usable independently of the workflow/history endpoints.
+      const results=await Promise.allSettled([
+        Promise.all([profilesPromise,tasksPromise,optionsPromise]).then(([profiles,tasks])=>{
+          if(state.user?.id!==loadingUser||(loadingSession&&!window.bamcoAuth.isCurrent(loadingSession)))return;
+          state.profiles=profiles;if(taskRevision===(state.taskRevision||0))state.tasks=tasks;
+          dataVersion++;resetRenderCaches();renderAll();
+          requestAnimationFrame(()=>{installResizableTable('kanban');installResizableTable('archive')});
+        }),
+        Promise.all([requestsPromise,historyPromise,routesPromise]).then(([requests,history,routes])=>{
+          if(state.user?.id!==loadingUser||(loadingSession&&!window.bamcoAuth.isCurrent(loadingSession)))return;
+          state.requests=requests;state.requestHistory=history;state.requestRoutes=routes;
+          renderRequests();renderRequestHistory();
+        })
+      ]);
+      const failed=results.find(result=>result.status==='rejected');if(failed)throw failed.reason;
     }catch(err){toast(err.message,true);throw err}
   };
 

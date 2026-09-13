@@ -62,19 +62,33 @@ function install(){
  }
  syncGroups();
  const dialog=document.createElement('dialog');dialog.className='home-welcome-dialog';dialog.setAttribute('aria-labelledby','homeWelcomeTitle');dialog.innerHTML='<button class="welcome-dismiss" type="button" aria-label="بستن خوشامدگویی" autofocus><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button><div class="home-welcome-copy"><p class="welcome-person"></p><h2 id="homeWelcomeTitle">به سامانه مدیریت، پایش و پیگیری امور خوش آمدید</h2></div><img class="home-sticker female" alt="استیکر زن در وضعیت مطلوب"><img class="home-sticker male" alt="استیکر مرد در وضعیت مطلوب">';document.body.append(dialog);
- let welcomeStickerPromise=null,welcomeStickerGeneration=0,welcomeStickerReadyToken=null;
- async function loadWelcomeStickers(generation){
-  const token=typeof state!=='undefined'?state.token:null;if(!token)return;
-  const images=[...dialog.querySelectorAll('.home-sticker')];images.forEach(image=>image.style.visibility='hidden');
-  try{const sets=await select('sticker_sets','active=eq.true&select=id&order=created_at.desc&limit=1'),set=sets[0];if(!set)return;
-   const rows=await select('stickers',`set_id=eq.${encodeURIComponent(set.id)}&state_key=eq.state1&gender=in.(female,male)&select=set_id,gender,storage_path`);
-   const loaded=await Promise.all(['female','male'].map(async gender=>{const row=rows.find(r=>r.gender===gender&&String(r.set_id)===String(set.id));if(!row)throw Error('استیکر وضعیت مطلوب نسخه فعال کامل نیست.');return{gender,url:await bamcoMedia.get('stickers',row.storage_path)}}));
-   if(generation!==welcomeStickerGeneration||state.token!==token)return;
-   welcomeStickerReadyToken=token;
-   for(const item of loaded){const image=dialog.querySelector('.'+item.gender);image.src=item.url;image.style.visibility='visible';image.dataset.stickerSet=String(set.id)}
-  }catch(err){if(generation===welcomeStickerGeneration)console.warn('welcome-stickers',err.message)}
+ let welcomeStickerPromise=null,welcomeStickerGeneration=0,welcomeStickerReadyUser=null;
+ async function loadWelcomeStickers(generation,force){
+  const user=typeof state!=='undefined'?state.user?.id:null;if(!user||!state.token)return;
+  const session=window.bamcoAuth?.snapshot?.(),key='bamco.stickers.welcome.'+user;
+  const current=()=>generation===welcomeStickerGeneration&&state.user?.id===user&&!!state.token&&(!session||window.bamcoAuth.isCurrent(session));
+  let presentation=0;
+  async function display(pack){
+   const ticket=++presentation;
+   if(!pack?.id||!['female','male'].every(g=>typeof pack[g]==='string'&&pack[g]))return;
+   const loaded=await Promise.all(['female','male'].map(async gender=>{const url=await bamcoMedia.get('stickers',pack[gender]);const preview=new Image();preview.src=url;if(preview.decode)await preview.decode();return{gender,url}}));
+   if(!current()||ticket!==presentation)return;
+   welcomeStickerReadyUser=user;
+   for(const item of loaded){const image=dialog.querySelector('.'+item.gender);if(image.src!==item.url)image.src=item.url;image.style.visibility='visible';image.dataset.stickerSet=String(pack.id)}
+  }
+  // Reuse the last authenticated pair immediately; validate the active pack in parallel.
+  if(!force)try{const saved=JSON.parse(sessionStorage.getItem(key)||'null');if(saved)void display(saved).catch(()=>{})}catch{}
+  try{
+   const [sets,rows]=await Promise.all([select('sticker_sets','active=eq.true&select=id&order=created_at.desc&limit=1'),select('stickers','state_key=eq.state1&gender=in.(female,male)&select=set_id,gender,storage_path')]);
+   if(!current())return;
+   const set=sets[0],pack={id:set?.id};
+   for(const gender of ['female','male'])pack[gender]=rows.find(r=>r.gender===gender&&String(r.set_id)===String(set?.id))?.storage_path;
+   if(!set||!pack.female||!pack.male){presentation++;dialog.querySelectorAll('.home-sticker').forEach(img=>{img.removeAttribute('src');img.style.visibility='hidden'});sessionStorage.removeItem(key);return}
+   await display(pack);if(current())try{sessionStorage.setItem(key,JSON.stringify(pack))}catch{}
+  }catch(err){if(current())console.warn('welcome-stickers',err.message)}
  }
- function stickers(force=false){if(!force&&welcomeStickerReadyToken&&welcomeStickerReadyToken===state.token)return Promise.resolve();if(force)welcomeStickerReadyToken=null;if(welcomeStickerPromise&&!force)return welcomeStickerPromise;const generation=++welcomeStickerGeneration,job=loadWelcomeStickers(generation);welcomeStickerPromise=job;return job.finally(()=>{if(welcomeStickerPromise===job)welcomeStickerPromise=null})}
+ function stickers(force=false){if(!force&&welcomeStickerReadyUser&&welcomeStickerReadyUser===state.user?.id)return Promise.resolve();if(welcomeStickerPromise&&!force)return welcomeStickerPromise;const generation=++welcomeStickerGeneration,job=loadWelcomeStickers(generation,force);welcomeStickerPromise=job;return job.finally(()=>{if(welcomeStickerPromise===job)welcomeStickerPromise=null})}
+ q('#welcomeView')?.remove();
  window.bamcoPrepareWelcomeStickers=()=>stickers();window.addEventListener('bamco-stickers-ready',()=>stickers(true));document.addEventListener('bamco:stickers-changed',()=>stickers(true));
  let homeExpected=false,repairFrame=0,homeEpoch=0,homeTimers=[];
  function clearHomeTimers(){homeTimers.forEach(clearTimeout);homeTimers=[]}
@@ -139,7 +153,7 @@ function install(){
  });
  dialog.addEventListener('cancel',()=>{if(homeExpected)requestAnimationFrame(settleHome)});
  top.querySelector('.home-return').addEventListener('click',()=>{settleHome();home.focus({preventScroll:true})});
- new MutationObserver(()=>{if(app.classList.contains('hidden')){leaveHome();welcomed=false;if(dialog.open)dialog.close();document.body.classList.remove('card-home-active','content-only')}else if(homeExpected&&!dialog.open)scheduleHomeRepair()}).observe(app,{attributes:true,attributeFilter:['class']});
+ new MutationObserver(()=>{if(app.classList.contains('hidden')){leaveHome();welcomed=false;welcomeStickerGeneration++;welcomeStickerPromise=null;welcomeStickerReadyUser=null;dialog.querySelectorAll('.home-sticker').forEach(img=>{img.removeAttribute('src');img.style.visibility='hidden'});if(dialog.open)dialog.close();document.body.classList.remove('card-home-active','content-only')}else if(homeExpected&&!dialog.open)scheduleHomeRepair()}).observe(app,{attributes:true,attributeFilter:['class']});
  addEventListener('pageshow',()=>{if(homeExpected&&!dialog.open&&!app.classList.contains('hidden'))settleHome()});
  if(!app.classList.contains('hidden'))window.bamcoOpenHomeWelcome();
 }

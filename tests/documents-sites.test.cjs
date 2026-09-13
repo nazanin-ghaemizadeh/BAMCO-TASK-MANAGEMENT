@@ -161,9 +161,11 @@ test('sites access buttons use the regular font face without synthetic bold',()=
 });
 
 
-test('DOCX preview loads local JSZip before docx-preview',()=>{
+test('DOCX viewer is excluded from login and loads JSZip before docx-preview on demand',()=>{
   const html=fs.readFileSync(path.join(ROOT,'index.html'),'utf8');
-  const zip=html.indexOf('assets/vendor/jszip.min.js'),docx=html.indexOf('assets/vendor/docx-preview.min.js');
+  assert.doesNotMatch(html,/<script[^>]+assets\/vendor\/(?:jszip|docx-preview)/);
+  const loader=fs.readFileSync(path.join(ROOT,'assets/js/documents-sites.js'),'utf8');
+  const zip=loader.indexOf('assets/vendor/jszip.min.js'),docx=loader.indexOf('assets/vendor/docx-preview.min.js');
   assert.ok(zip>=0&&docx>zip);
   assert.ok(fs.statSync(path.join(ROOT,'assets/vendor/jszip.min.js')).size>10000);
 });

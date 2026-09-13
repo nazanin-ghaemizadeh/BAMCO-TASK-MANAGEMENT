@@ -188,11 +188,13 @@
   }
 
   function updateWelcomeStickers(){
+    if(window.bamcoPrepareWelcomeStickers)return;
     setWelcomeSticker(q('#welcomeHappyFemale'),'female');
     setWelcomeSticker(q('#welcomeHappyMale'),'male');
   }
 
   function ensureWelcomeView(){
+    if(window.bamcoOpenHomeWelcome)return null;
     const workspace=q('.workspace');if(!workspace)return null;
     let view=q('#welcomeView');
     if(!view){view=document.createElement('section');view.id='welcomeView';workspace.appendChild(view)}
