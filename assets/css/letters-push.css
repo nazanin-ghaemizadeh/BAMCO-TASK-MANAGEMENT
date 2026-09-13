@@ -13,3 +13,6 @@ html body #appView#appView #lettersView #lettersError:empty{display:none!importa
 @media(max-width:600px){html body #appView#appView #lettersView .letter-toolbar>button{flex:1 1 auto!important;width:auto!important}html body #appView#appView #lettersView #lettersSearch{flex:1 1 100%!important;width:100%!important;min-width:0!important}}
 
 #settingsView .manager-form>#pushSettings{grid-column:1/-1;width:100%;min-width:0;box-sizing:border-box;margin:0 0 12px}#settingsView #pushSettings button{min-height:40px}
+html body #appView#appView #settingsView .manager-form>#pushSettings{display:block!important;border:1px solid #c7d4ce!important;border-radius:12px!important;background:#fff!important;padding:16px!important;margin:0 0 16px!important;box-shadow:none!important}
+html body #appView#appView #settingsView #pushSettings h3{display:block!important;margin:0 0 8px!important;padding:0!important;border:0!important;background:transparent!important}
+html body #appView#appView #settingsView #pushSettings .push-status{margin:8px 0!important;color:#176b4d!important}
