@@ -215,6 +215,35 @@ async def sweep_tabs(page,role,result):
         view=page.locator('#'+tab+'View'); assert await view.locator('.workspace-loading').count()<=1,f'{tab} duplicate loader'; assert 'bamco-view-settling' not in (await view.get_attribute('class') or ''),f'{tab} stuck settling'; await heartbeat(page)
     result['all_visible_tabs']=seen; result['tab_load_ms']=times
 
+async def guide_checks(page,result,role,width):
+    await home(page)
+    await open_tab(page,'userGuide')
+    card=page.locator('#userGuideView .guide-document-card')
+    await expect(card).to_be_visible()
+    await expect(page.locator('#userGuideView .content-back')).to_have_count(1)
+    assert await page.locator('#userGuideView button').filter(has_text='بازگشت به خانه').count()==1
+    geometry=await card.locator('.feature-file-main').evaluate("e=>({w:e.getBoundingClientRect().width,h:e.querySelector('b').getBoundingClientRect().height,overflow:e.scrollWidth>e.clientWidth+1})")
+    assert geometry['w']>200 and geometry['h']<85 and not geometry['overflow'],geometry
+    await page.screenshot(path=str(OUT/f'{width}-{role}-guide.png'),full_page=True)
+    if role=='manager':
+        await page.locator('[data-guide-upload]').click()
+        dialog=page.locator('#documentDialog')
+        await expect(dialog).to_be_visible()
+        size=await dialog.evaluate('e=>e.getBoundingClientRect().width')
+        assert size<=min(680,width-16),size
+        await dialog.locator('input[type=file]').set_input_files({'name':'BAMCO-User-Guide.pdf','mimeType':'application/pdf','buffer':b'%PDF-1.7 fixture'})
+        await expect(dialog.locator('[data-file-name]')).to_have_text('BAMCO-User-Guide.pdf')
+        await page.screenshot(path=str(OUT/f'{width}-{role}-guide-upload.png'),full_page=True)
+        await page.evaluate("__testApi.delay['document-library']=600")
+        await dialog.locator('button[type=submit]').click()
+        await expect(dialog.locator('button[type=submit]')).to_be_disabled()
+        await expect(dialog.locator('#documentUploadStatus')).to_be_visible()
+        await expect(dialog).not_to_be_visible()
+        await expect(card).to_contain_text('نسخه ۲')
+    else:
+        await expect(page.locator('[data-guide-upload]')).to_have_count(0)
+    result['populated_guide_layout_and_upload']='pass'
+
 async def case(browser,base,offline,width,role):
     mobile=width<700
     context=await browser.new_context(viewport={'width':width,'height':844 if mobile else 900},is_mobile=mobile,has_touch=mobile)
@@ -233,6 +262,7 @@ async def case(browser,base,offline,width,role):
         if role=='manager': await manager_checks(page,result)
         else:
             assert not await page.locator('#nav [data-view="templates"],#nav [data-view="messageTemplates"]').is_visible(); result['owner_manager_controls_hidden']='pass'
+        await guide_checks(page,result,role,width)
         await sweep_tabs(page,role,result); assert not errors,errors; result['javascript_errors']=errors; await page.screenshot(path=str(OUT/f'{width}-{role}.png'),full_page=True); result['status']='passed'
     except Exception as exc:
         result['status']='failed'; result['error']=repr(exc); result['javascript_errors']=errors
