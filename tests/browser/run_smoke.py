@@ -115,7 +115,7 @@ async def manager_checks(page,result):
     expected=['ردیف','نوع','فرستنده','گیرنده','موضوع','کانال','وضعیت','زمان ارسال','تلاش','خطا','جزئیات']
     assert headers==expected,f'sent headers: {headers!r}'
     assert await page.locator('#sentMessagesView .sent-overview,#sentMessagesView .sent-log-summary').count()==0,'sent overview cards returned'
-    await expect(page.locator('#sentSearch')).to_be_visible(); await expect(page.locator('#sentStatusFilter')).to_be_visible(); await expect(page.locator('#sentChannelFilter')).to_be_visible()
+    assert await page.locator('#sentSearch,#sentStatusFilter,#sentChannelFilter').count()==0,'removed sent-message filters returned'
     await expect(page.locator('#sentMessagesView tbody')).to_contain_text('مدیر آزمایشی'); await expect(page.locator('#sentMessagesView tbody')).to_contain_text('به‌روزرسانی وظیفه'); await expect(page.locator('#sentMessagesView tbody')).to_contain_text('پیام داخل سامانه')
     assert await visible_count(page,'#sentMessagesView .suite-table-options')==0,'table settings leaked into sent messages'
     await home(page); result['sent_log_unified_without_cards']='pass'
