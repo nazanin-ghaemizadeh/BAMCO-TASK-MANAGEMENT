@@ -77,7 +77,7 @@ async function fixture(options={}){
    return new Response(JSON.stringify(data),{status,headers:{'Content-Type':'application/json'}});
   };
   const NativeObserver=w.MutationObserver;w.MutationObserver=class extends NativeObserver{constructor(cb){super(cb);observers.push(this)}};
-  w.matchMedia=()=>({matches:false,addEventListener(){},removeEventListener(){}});w.ResizeObserver=class{observe(){}disconnect(){}};
+  w.matchMedia=query=>({matches:!!options.mobile&&/max-width\s*:\s*(?:700|760|850|900)px/.test(query),addEventListener(){},removeEventListener(){}});if(options.mobile)Object.defineProperty(w.HTMLElement.prototype,'clientWidth',{configurable:true,get(){return Number(this.dataset?.testWidth)||390}});w.ResizeObserver=class{observe(){}disconnect(){}};
   w.HTMLDialogElement.prototype.showModal=function(){this.open=true};
   w.HTMLDialogElement.prototype.close=function(){this.open=false;this.dispatchEvent(new w.Event('close'))};
   w.HTMLCanvasElement.prototype.getContext=()=>new Proxy({measureText:()=>({width:20}),createLinearGradient:()=>({addColorStop(){}})},{get:(o,k)=>o[k]||(()=>{})});

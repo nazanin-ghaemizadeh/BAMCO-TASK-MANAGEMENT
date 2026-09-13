@@ -77,7 +77,9 @@ test('chat exposes requested messaging controls',()=>{
 
 test('dashboard and Excel formatting remain responsive and conditional',()=>{
   const app=read('assets/js/app.js');
-  assert.match(app,/Math\.max\(window\.matchMedia.*\?640:320,canvas\.parentElement\.clientWidth\)/);
+  assert.match(app,/wide=\['workloadChart','performanceChart'\]\.includes\(canvas\.id\)/);
+  assert.match(app,/Math\.max\(parentWidth,260\+items\*105\)/);
+  assert.match(app,/mobile\?\[\.\.\.rows\]\.reverse\(\):rows/);
   assert.match(app,/درخواست‌های منتظر بررسی/);
   assert.match(app,/درخواست تعریف وظیفه/);
   assert.match(app,/کارهای بدون زمان‌بندی/);

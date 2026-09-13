@@ -50,7 +50,8 @@ test('buttons use regular labels, semantic action colors and evenly wrapped mobi
  const root=path.join(__dirname,'..'),mobile=fs.readFileSync(path.join(root,'assets/css/mobile-compat-20260911.css'),'utf8'),ui=fs.readFileSync(path.join(root,'assets/css/unified-ui.css'),'utf8');
  assert.match(mobile,/justify-content:stretch!important;overflow-x:hidden!important/);
  assert.match(mobile,/flex:1 1 116px!important/);
- assert.match(mobile,/dashboard-chart-card canvas\{display:block!important;width:var\(--chart-width,640px\)!important;max-width:none!important/);
+ assert.match(mobile,/dashboard-chart-card\.dashboard-chart-scroll\{overflow-x:auto!important.*direction:rtl!important/s);
+ assert.match(mobile,/dashboard-chart-card canvas\{display:block!important;width:var\(--chart-width,100%\)!important;max-width:none!important/);
  assert.match(mobile,/dashboard-filter-actions,.performance-range-actions\).*background:transparent!important.*box-shadow:none!important/s);
  assert.match(ui,/#workloadChart\).*#performanceChart/s);assert.match(ui,/button\.danger.*background:#bd3535!important/s);assert.match(ui,/button\.primary.*background:#176b4d!important/s);
 });

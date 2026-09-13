@@ -29,15 +29,15 @@ function draw(){
  }
  const owners=[...groups.entries()].sort((a,b)=>[...b[1].values()].reduce((x,y)=>x+y,0)-[...a[1].values()].reduce((x,y)=>x+y,0)).slice(0,10);
  const priorities=[...new Set(data.map(t=>String(t.priority||'بدون اولویت')))];
- const dpr=window.devicePixelRatio||1,w=Math.max(420,canvas.parentElement?.clientWidth||canvas.clientWidth||800),h=445;
- canvas.dataset.logicalHeight=String(h);canvas.style.height=h+'px';canvas.style.width='100%';
+ const dpr=window.devicePixelRatio||1,parent=canvas.parentElement,mobile=!!window.matchMedia?.('(max-width:760px)').matches,parentWidth=Math.max(280,parent?.clientWidth||canvas.clientWidth||320),w=mobile?Math.max(parentWidth,260+owners.length*105):Math.max(420,parentWidth),h=445;
+ canvas.dataset.logicalHeight=String(h);canvas.dataset.chartItems=String(owners.length);canvas.style.setProperty('--chart-width',w+'px');canvas.style.height=h+'px';canvas.style.width=w+'px';parent?.classList.toggle('dashboard-chart-scroll',mobile&&w>parentWidth);if(parent){parent.setAttribute('aria-label',mobile&&w>parentWidth?'نمودار؛ برای مشاهده کامل افقی پیمایش کنید':'نمودار');const key=`${w}:${owners.length}`;if(parent.dataset.chartScrollKey!==key){parent.dataset.chartScrollKey=key;requestAnimationFrame(()=>{parent.scrollLeft=0})}}
  const pixelW=Math.round(w*dpr),pixelH=Math.round(h*dpr);if(canvas.width!==pixelW)canvas.width=pixelW;if(canvas.height!==pixelH)canvas.height=pixelH;
  const ctx=canvas.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);ctx.fillStyle='#fff';ctx.fillRect(0,0,w,h);ctx.direction='rtl';ctx.textAlign='right';ctx.fillStyle='#173f35';ctx.font='bold 21px "B Nazanin",Tahoma,serif';ctx.fillText('حجم کار فعال به تفکیک متولی',w-18,31);
  if(!owners.length){ctx.textAlign='center';ctx.fillStyle='#7a8e85';ctx.font='18px "B Nazanin",Tahoma,serif';ctx.fillText('اطلاعاتی برای نمایش وجود ندارد',w/2,h/2);return}
  const left=60,right=Math.max(left+220,w-185),top=62,bottom=h-82,max=Math.max(1,...owners.map(([,m])=>[...m.values()].reduce((a,b)=>a+b,0))),gap=16,bw=Math.max(42,Math.min(78,((right-left)-gap*(owners.length+1))/owners.length)),tickStep=Math.max(1,Math.ceil(max/5)),axisMax=Math.ceil(max/tickStep)*tickStep,scale=(bottom-top)/axisMax;
  for(let value=0;value<=axisMax;value+=tickStep){const y=bottom-value*scale;ctx.strokeStyle='#edf2f0';ctx.beginPath();ctx.moveTo(left,y);ctx.lineTo(right,y);ctx.stroke();ctx.fillStyle='#879a91';ctx.textAlign='right';ctx.font='12px "B Nazanin",Tahoma,serif';ctx.fillText(faNum(value),left-8,y+4)}
  let x=left+Math.max(0,(right-left-(owners.length*bw+(owners.length+1)*gap))/2)+gap;
- for(const [owner,m] of owners){
+ for(const [owner,m] of (mobile?[...owners].reverse():owners)){
   let y=bottom;
   for(const p of priorities){
    const value=m.get(p)||0;if(!value)continue;
@@ -50,18 +50,10 @@ function draw(){
  }
  let ly=82;for(const p of priorities){ctx.fillStyle=window.bamcoOptions?.color?.('priority',p)||'#76a68f';ctx.fillRect(w-44,ly-10,16,16);ctx.fillStyle='#435b51';ctx.textAlign='right';ctx.font='14px "B Nazanin",Tahoma,serif';ctx.fillText(p,w-52,ly+2);ly+=27}
 }
-// Use one renderer for navigation, filters, refresh and delayed resize events.
+// The dashboard's canonical render calls this function once per redraw.
 window.bamcoDrawWorkload=draw;
 function schedule(){requestAnimationFrame(()=>requestAnimationFrame(draw))}
 function hook(){
- const original=window.renderDashboard;
- if(typeof original==='function'&&!original.__bamcoReferenceWorkload){
-  const wrapped=function(...args){const out=original.apply(this,args);schedule();setTimeout(draw,60);return out};wrapped.__bamcoReferenceWorkload=true;window.renderDashboard=wrapped;
- }
- document.addEventListener('change',e=>{if(e.target.matches('#dashOwner,#dashPriority,#dashStatus,#dashBucket'))schedule()});
- document.addEventListener('click',e=>{if(e.target.closest('#resetDashFilters,#nav [data-view="dashboard"]'))schedule()},true);
- addEventListener('resize',()=>{if(typeof state!=='undefined'&&state.view==='dashboard')schedule()},{passive:true});
- new MutationObserver(()=>{if(!q('#dashboardView')?.classList.contains('hidden'))schedule()}).observe(q('#dashboardView')||document.body,{childList:true,subtree:true});
  schedule();
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',hook,{once:true});else hook();

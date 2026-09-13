@@ -77,8 +77,9 @@
   #dashboardView .dashboard-cards article{min-width:0!important;padding:8px!important;border-radius:11px!important}
   #dashboardView .dashboard-cards small{font-size:13px!important;line-height:1.35!important}
   #dashboardView .dashboard-cards strong{font-size:20px!important;margin-top:2px!important}
-  html body #appView#appView #dashboardView.bamco-interior .dashboard-chart-card{min-height:0!important;padding:7px!important;overflow-x:auto!important;overflow-y:hidden!important;max-width:100%!important;min-width:0!important;touch-action:pan-x pan-y;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch!important}
-  html body #appView#appView #dashboardView.bamco-interior .dashboard-chart-card canvas{display:block!important;width:var(--chart-width,640px)!important;max-width:none!important;height:auto!important;max-height:none!important;min-height:0!important}
+  html body #appView#appView #dashboardView.bamco-interior .dashboard-chart-card{min-height:0!important;padding:7px!important;overflow:hidden!important;max-width:100%!important;min-width:0!important;touch-action:pan-y;box-sizing:border-box!important}
+  html body #appView#appView #dashboardView.bamco-interior .dashboard-chart-card.dashboard-chart-scroll{overflow-x:auto!important;overflow-y:hidden!important;direction:rtl!important;touch-action:pan-x pan-y;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch!important;scrollbar-gutter:stable}
+  html body #appView#appView #dashboardView.bamco-interior .dashboard-chart-card canvas{display:block!important;width:var(--chart-width,100%)!important;max-width:none!important;height:auto!important;max-height:none!important;min-height:0!important}
   #dashboardView .dashboard-performance-range .performance-range-controls{display:grid!important;grid-template-columns:1fr!important;gap:6px!important;align-items:stretch!important}
   #dashboardView .dashboard-date-field{display:grid!important;grid-template-columns:minmax(0,1fr) 38px!important;width:100%!important}
   html body #appView#appView #dashboardView.bamco-interior :is(.dashboard-filter-actions,.performance-range-actions){padding:0!important;margin-top:6px!important;background:transparent!important;border:0!important;box-shadow:none!important;overflow:visible!important}

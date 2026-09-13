@@ -91,11 +91,9 @@ function drawWorkload(){
 }
 function paintDashboardCards(){qa('#dashboardCards article').forEach(card=>{card.style.removeProperty('background');card.style.removeProperty('background-image')})}
 function hookDashboard(){
- const apply=()=>{const original=window.renderDashboard;if(typeof original!=='function'||original.__bamcoWorkloadFixV2)return false;const wrapped=function(...args){const canvas=q('#workloadChart');if(canvas)canvas.dataset.logicalHeight='445';const out=original.apply(this,args);paintDashboardCards();drawWorkload();requestAnimationFrame(drawWorkload);return out};wrapped.__bamcoWorkloadFixV2=true;window.renderDashboard=wrapped;return true};
+ const apply=()=>{const original=window.renderDashboard;if(typeof original!=='function'||original.__bamcoWorkloadFixV2)return false;const wrapped=function(...args){const out=original.apply(this,args);paintDashboardCards();return out};wrapped.__bamcoWorkloadFixV2=true;window.renderDashboard=wrapped;return true};
  if(!apply()){let n=0,t=setInterval(()=>{if(apply()||++n>50)clearInterval(t)},100)}
- document.addEventListener('change',e=>{if(e.target.matches('#dashOwner,#dashPriority,#dashStatus,#dashBucket'))requestAnimationFrame(drawWorkload)});
- document.addEventListener('click',e=>{if(e.target.closest('#resetDashFilters,#nav [data-view="dashboard"]'))requestAnimationFrame(()=>{paintDashboardCards();drawWorkload()})},true);
- addEventListener('resize',()=>{if(state?.view==='dashboard')requestAnimationFrame(drawWorkload)},{passive:true});
+ document.addEventListener('click',e=>{if(e.target.closest('#resetDashFilters,#nav [data-view="dashboard"]'))requestAnimationFrame(paintDashboardCards)},true);
 }
 function removePerformanceDefinition(){q('#performanceReportView .report-definition')?.remove()}
 
