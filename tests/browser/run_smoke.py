@@ -121,10 +121,10 @@ async def manager_checks(page,result):
     await page.evaluate("__testApi.fail.push('cancel_message_deliveries')")
     await delete.click(); await page.locator('[data-notice-ok]').click(); await expect(page.locator('.bamco-toast[data-kind=error]')).to_be_visible(); await page.locator('.bamco-toast[data-kind=error] button').click()
     await page.evaluate('__testApi.fail=[]')
-    await delete.click(); await page.locator('[data-notice-ok]').click(); await expect(rows).to_have_count(2); await page.locator('[data-notice-ok]').click()
+    await delete.click(); await page.locator('[data-notice-ok]').click(); await expect(rows).to_have_count(2); await expect(page.locator('.bamco-toast[data-kind=success]')).to_be_visible(); await page.locator('.bamco-toast[data-kind=success] button').click()
     await page.wait_for_timeout(400)
     await rows.nth(0).click(); await rows.nth(1).click(modifiers=['Control']); await expect(delete).to_have_text('حذف ۲ رکورد')
-    await delete.click(); await page.locator('[data-notice-ok]').click(); await expect(rows).to_have_count(0); await page.locator('[data-notice-ok]').click()
+    await delete.click(); await page.locator('[data-notice-ok]').click(); await expect(rows).to_have_count(0); await expect(page.locator('.bamco-toast[data-kind=success]')).to_be_visible(); await page.locator('.bamco-toast[data-kind=success] button').click()
     await home(page); result['response_report_root_controls_and_delete']='pass'
     await page.evaluate('__testApi.deliveries=__testApi.responseTrackingFixture.map(x=>({...x}))')
 
