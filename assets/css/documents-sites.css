@@ -26,3 +26,8 @@ html body #documentsView .feature-toolbar-actions button{font-weight:400!importa
 /* Persian helper text must not inherit the Latin credential font. */
 #credentialDialog input[name="password"]::placeholder{font-family:BamcoPersian,"B Nazanin",BNazanin,Tahoma,sans-serif!important;direction:rtl;text-align:right}
 #sitesAccessView .feature-site-card dd.fa-text{font-family:BamcoPersian,"B Nazanin",BNazanin,Tahoma,sans-serif!important;direction:rtl;text-align:right}
+
+/* Override generic column-form labels only for the active checkbox. */
+html body #siteDialog.bamco-dialog #siteForm .form-grid label.feature-checkline,
+html body #siteDialog #siteForm .form-grid label.feature-checkline{display:flex!important;flex-direction:row!important;direction:rtl!important;align-items:center!important;justify-content:flex-start!important;gap:8px!important}
+html body #siteDialog #siteForm .feature-checkline input[type="checkbox"]{flex:0 0 auto!important;width:18px!important;height:18px!important;margin:0!important;order:0!important}
