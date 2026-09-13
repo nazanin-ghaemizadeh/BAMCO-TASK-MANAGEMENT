@@ -124,7 +124,9 @@ async def manager_checks(page,result):
     controls=await command_texts(page,'#responseTrackingView .response-command-row')
     assert controls[0]=='بازگشت به خانه','tracking home order'
     assert 'از تاریخ' in controls[1] and 'تا تاریخ' in controls[1],'tracking date order'
-    assert controls[2:5]==['تازه‌سازی','خروجی اکسل','ارسال یادآوری'],f'tracking controls: {controls!r}'
+    assert controls[2:4]==['تازه‌سازی','خروجی اکسل'],f'tracking controls: {controls!r}'
+    assert all(label in controls[4] for label in ('داخل سامانه','ایمیل','هر دو')),f'tracking channel control: {controls!r}'
+    assert controls[5]=='ارسال یادآوری',f'tracking reminder control: {controls!r}'
     assert await page.locator('#responseFrom').input_value() and await page.locator('#responseTo').input_value(),'tracking current-month defaults missing'
     assert 'شناسه پیگیری' not in ''.join(await page.locator('#responseTrackingView thead tr:first-child th').all_text_contents()),'tracking id still visible'
     assert await visible_count(page,'#responseTrackingView .bamco-management-toolbar .content-back')==0,'duplicate tracking home button visible'
