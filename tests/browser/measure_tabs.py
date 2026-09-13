@@ -102,7 +102,8 @@ async def one_case(browser,base,width,role):
     page=await ctx.new_page();page.set_default_timeout(10000);errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
     await page.add_init_script(FIXTURE);await page.goto(base,wait_until='load',timeout=15000);await login(page,role)
     if mobile: await assert_mobile_geometry(page)
-    views=await page.locator('#nav button[data-view]').evaluate_all("(els,role)=>els.filter(b=>!b.disabled&&(role==='manager'||!b.classList.contains('manager-only'))).map(b=>b.dataset.view)",role)
+    await expect(page.locator('#lettersNav')).to_be_visible() if role=='manager' else await expect(page.locator('#lettersNav')).to_be_hidden()
+    views=await page.locator('#nav button[data-view]').evaluate_all("(els,role)=>els.filter(b=>!b.disabled&&!b.classList.contains('hidden')&&(role==='manager'||!b.classList.contains('manager-only'))).map(b=>b.dataset.view)",role)
     metrics={};seen=[]
     for tab in views:
       if tab in seen or not await page.locator('#'+tab+'View').count(): continue
