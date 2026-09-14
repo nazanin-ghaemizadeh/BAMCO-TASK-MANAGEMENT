@@ -43,17 +43,11 @@ html body.card-navigation #appView #homeView #nav [data-view]:hover{background:#
 html body.card-navigation #appView #homeView #nav [data-view]:focus-visible{outline:2px solid #4b956b!important;outline-offset:1px!important}
 html body.card-navigation #appView #homeView #nav .nav-chevron,html body.card-navigation #appView #homeView #nav .nav-login-root,html body.card-navigation #appView #homeView #nav .hidden{display:none!important}
 
-/* Freeze card slots while the instant welcome is open. Access checks can
-   finish in the background without moving cards already visible underneath. */
-html body.home-welcome-open #appView #homeView #nav>.nav-group[data-group="people"]{grid-row:1!important;grid-column:1!important}
-html body.home-welcome-open #appView #homeView #nav>.nav-group[data-group="messages"]{grid-row:1!important;grid-column:2!important}
-html body.home-welcome-open #appView #homeView #nav>.nav-group[data-group="reports"]{grid-row:1!important;grid-column:3!important}
-html body.home-welcome-open #appView #homeView #nav>.nav-group[data-group="configuration"]{grid-row:2!important;grid-column:1!important}
-html body.home-welcome-open #appView #homeView #nav>.nav-group[data-group="tasks"]{grid-row:2!important;grid-column:2!important}
-html body.home-welcome-open #appView #homeView #nav>.nav-group[data-group="vehicle"]{grid-row:2!important;grid-column:3!important}
-html body.home-welcome-open #appView #homeView #nav>.nav-group[data-group="conversations"]{grid-row:3!important;grid-column:1!important}
-html body.home-welcome-open #appView #homeView #nav>.nav-group[data-group="resources"]{grid-row:3!important;grid-column:2!important}
-html body.home-welcome-open #appView #homeView #nav>.nav-group[data-group="guide"]{grid-row:3!important;grid-column:3!important}
+/* The welcome layer is independent from the live home DOM. Access checks may
+   still add or remove routes, but none of those mutations can paint behind it. */
+html body.home-welcome-open{background:#e8f1ec!important}
+html body.home-welcome-open #appView{visibility:hidden!important}
+html body.home-welcome-open .home-welcome-dialog::backdrop{background:linear-gradient(135deg,#e8f1ec 0%,#dceae3 100%)!important;backdrop-filter:none!important}
 
 html body.card-navigation #appView #homeFixedFooter{position:fixed!important;inset:auto 0 0!important;z-index:80!important;display:block!important;min-height:42px!important;margin:0!important;padding:9px 12px!important;border:0!important;background:#f3f7f5!important;color:#6d7f74!important;font-size:12px!important;line-height:1.8!important;text-align:center!important;text-align-last:center!important;box-shadow:none!important}
 html body.card-navigation #appView #homeFixedFooter a{color:inherit!important;text-decoration:none!important}
@@ -76,15 +70,6 @@ html body.content-only #appView .card-topbar,html body.content-only #appView #ho
  html body.card-navigation #appView .card-topbar>strong{font-size:19px!important}
  html body.card-navigation #appView .card-topbar .header-tools{width:160px!important}
  html body.card-navigation #appView .card-topbar .account-copy strong{font-size:14px!important;max-width:102px!important}
- html body.home-welcome-open #appView #homeView #nav>.nav-group[data-group="people"]{grid-row:1!important;grid-column:1!important}
- html body.home-welcome-open #appView #homeView #nav>.nav-group[data-group="messages"]{grid-row:1!important;grid-column:2!important}
- html body.home-welcome-open #appView #homeView #nav>.nav-group[data-group="reports"]{grid-row:2!important;grid-column:1!important}
- html body.home-welcome-open #appView #homeView #nav>.nav-group[data-group="configuration"]{grid-row:2!important;grid-column:2!important}
- html body.home-welcome-open #appView #homeView #nav>.nav-group[data-group="tasks"]{grid-row:3!important;grid-column:1!important}
- html body.home-welcome-open #appView #homeView #nav>.nav-group[data-group="vehicle"]{grid-row:3!important;grid-column:2!important}
- html body.home-welcome-open #appView #homeView #nav>.nav-group[data-group="conversations"]{grid-row:4!important;grid-column:1!important}
- html body.home-welcome-open #appView #homeView #nav>.nav-group[data-group="resources"]{grid-row:4!important;grid-column:2!important}
- html body.home-welcome-open #appView #homeView #nav>.nav-group[data-group="guide"]{grid-row:5!important;grid-column:1!important}
 }
 @media(max-width:620px){
  html body.card-navigation #appView .card-topbar{grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;grid-template-rows:80px auto!important;height:auto!important;min-height:126px!important;flex-basis:auto!important;gap:7px!important;padding:8px 12px!important}
@@ -94,14 +79,5 @@ html body.content-only #appView .card-topbar,html body.content-only #appView #ho
  html body.card-navigation #appView #homeView #nav{grid-template-columns:1fr!important;gap:10px!important;--home-row-height:36px}
  html body.card-navigation #appView #homeView #nav .nav-group{padding:10px!important}
  html body.card-navigation #appView #homeView #nav [data-view]{font-size:16px!important}
- html body.home-welcome-open #appView #homeView #nav>.nav-group[data-group="people"]{grid-row:1!important;grid-column:1!important}
- html body.home-welcome-open #appView #homeView #nav>.nav-group[data-group="messages"]{grid-row:2!important;grid-column:1!important}
- html body.home-welcome-open #appView #homeView #nav>.nav-group[data-group="reports"]{grid-row:3!important;grid-column:1!important}
- html body.home-welcome-open #appView #homeView #nav>.nav-group[data-group="configuration"]{grid-row:4!important;grid-column:1!important}
- html body.home-welcome-open #appView #homeView #nav>.nav-group[data-group="tasks"]{grid-row:5!important;grid-column:1!important}
- html body.home-welcome-open #appView #homeView #nav>.nav-group[data-group="vehicle"]{grid-row:6!important;grid-column:1!important}
- html body.home-welcome-open #appView #homeView #nav>.nav-group[data-group="conversations"]{grid-row:7!important;grid-column:1!important}
- html body.home-welcome-open #appView #homeView #nav>.nav-group[data-group="resources"]{grid-row:8!important;grid-column:1!important}
- html body.home-welcome-open #appView #homeView #nav>.nav-group[data-group="guide"]{grid-row:9!important;grid-column:1!important}
 }
 @media(prefers-reduced-motion:reduce){html body.card-navigation #appView #homeView #nav [data-view]{transition:none!important}}
