@@ -146,15 +146,16 @@ function install(){
  window.bamcoLeaveHome=leaveHome;
  window.bamcoShowHome=settleHome;
  let welcomed=false;
- window.bamcoOpenHomeWelcome=()=>{if(welcomed||app.classList.contains('hidden'))return;if(typeof state!=='undefined'&&state.profile?.must_change_password)return;welcomed=true;clearHomeTimers();homeExpected=true;homeEpoch++;showHome();dialog.querySelector('.welcome-person').textContent=(q('#userName')?.textContent||'همکار')+' عزیز';dialog.showModal();void stickers()};
+ window.bamcoOpenHomeWelcome=()=>{if(welcomed||app.classList.contains('hidden'))return;if(typeof state!=='undefined'&&state.profile?.must_change_password)return;welcomed=true;clearHomeTimers();homeExpected=true;homeEpoch++;showHome();document.body.classList.add('home-welcome-open');dialog.querySelector('.welcome-person').textContent=(q('#userName')?.textContent||'همکار')+' عزیز';dialog.showModal();void stickers()};
  dialog.querySelector('.welcome-dismiss').addEventListener('click',()=>dialog.close());
  dialog.addEventListener('close',()=>{
+  document.body.classList.remove('home-welcome-open');
   if(homeExpected&&(typeof state==='undefined'||state.view==='home'))settleHome();
   if(homeExpected)requestAnimationFrame(()=>home.focus({preventScroll:true}));
  });
  dialog.addEventListener('cancel',()=>{if(homeExpected)requestAnimationFrame(settleHome)});
  top.querySelector('.home-return').addEventListener('click',()=>{settleHome();home.focus({preventScroll:true})});
- new MutationObserver(()=>{if(app.classList.contains('hidden')){leaveHome();welcomed=false;welcomeStickerGeneration++;welcomeStickerPromise=null;welcomeStickerReadyUser=null;dialog.querySelectorAll('.home-sticker').forEach(img=>{img.removeAttribute('src');img.style.visibility='hidden'});if(dialog.open)dialog.close();document.body.classList.remove('card-home-active','content-only')}else if(homeExpected&&!dialog.open)scheduleHomeRepair()}).observe(app,{attributes:true,attributeFilter:['class']});
+ new MutationObserver(()=>{if(app.classList.contains('hidden')){leaveHome();welcomed=false;welcomeStickerGeneration++;welcomeStickerPromise=null;welcomeStickerReadyUser=null;dialog.querySelectorAll('.home-sticker').forEach(img=>{img.removeAttribute('src');img.style.visibility='hidden'});if(dialog.open)dialog.close();document.body.classList.remove('card-home-active','content-only','home-welcome-open')}else if(homeExpected&&!dialog.open)scheduleHomeRepair()}).observe(app,{attributes:true,attributeFilter:['class']});
  addEventListener('pageshow',()=>{if(homeExpected&&!dialog.open&&!app.classList.contains('hidden'))settleHome()});
  if(!app.classList.contains('hidden'))window.bamcoOpenHomeWelcome();
 }
