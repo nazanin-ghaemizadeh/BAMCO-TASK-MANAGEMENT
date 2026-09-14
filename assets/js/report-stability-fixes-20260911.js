@@ -6,7 +6,7 @@ const q=(s,r=document)=>r?.querySelector?.(s)||null;
 const qa=(s,r=document)=>[...(r?.querySelectorAll?.(s)||[])];
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const digits=v=>typeof fa==='function'?fa(v):String(v??'').replace(/\d/g,d=>'۰۱۲۳۴۵۶۷۸۹'[d]);
-let responseRows=[],dateTarget=null,syncBusy=false,rawTabRender=null,responseDeleting=false,taskDatasetVersion='',sentDatasetVersion='';
+let responseRows=[],dateTarget=null,syncBusy=false,rawTabRender=null,responseDeleting=false,taskDatasetVersion='',sentDatasetVersion='',monitoringStartedAt=null;
 function installCss(){
  q('#bamcoCanonicalReportCss')?.remove();const s=document.createElement('style');s.id='bamcoCanonicalReportCss';s.textContent=`
  #performanceReportView .canonical-report,#responseReportView .canonical-report{min-height:160px}
@@ -47,6 +47,12 @@ function inputIso(input){const raw=typeof en==='function'?en(input?.value||''):S
 function personName(id){const p=(state.profiles||[]).find(x=>String(x.id)===String(id));return p?.display_name||p?.full_name||p?.email||String(id||'—')}
 function personRole(id){return (state.profiles||[]).find(x=>String(x.id)===String(id))?.role||''}
 function within(value,from,to){const day=String(value||'').slice(0,10);return !!day&&(!from||day>=from)&&(!to||day<=to)}
+function afterMonitoringStart(value){return !monitoringStartedAt||String(value||'')>=monitoringStartedAt}
+async function loadMonitoringStart(){
+ if(monitoringStartedAt!==null)return monitoringStartedAt;
+ try{const rows=await selectAll('app_settings','select=key,value&key=eq.performance_monitoring_started_at&limit=1'),raw=rows?.[0]?.value;monitoringStartedAt=String(raw?.value||raw||'').trim()}catch{monitoringStartedAt=''}
+ return monitoringStartedAt;
+}
 function temporal(t){try{return window.bamcoTaskPresentation?.(t)?.temporal||String(t?.due_state||'')}catch{return String(t?.due_state||'')}}
 function terminal(t){try{return !!window.bamcoOptions?.terminal?.(t)}catch{return false}}
 function completed(t){try{return !!window.bamcoOptions?.completed?.(t)}catch{return false}}
@@ -56,12 +62,12 @@ async function renderPerformance(force=false){
  const epoch=++renderEpoch.performanceReport,view=q('#performanceReportView');if(!view)return;const range=currentMonthRange();
  if(force||!q('.canonical-report',view))panel(view,'گزارش عملکرد',perfTools(range),'<div class="table-wrap"><table class="workspace-table"><thead></thead><tbody><tr><td class="empty">در حال دریافت اطلاعات…</td></tr></tbody></table></div>');window.bamcoInteriorUI?.decorateView?.(view);
  const from=inputIso(q('#canonicalPerfFrom')),to=inputIso(q('#canonicalPerfTo'));let query='select=requested_by,request_type,created_at&request_type=eq.create&order=created_at.desc';if(from)query+=`&created_at=gte.${from}T00:00:00`;if(to)query+=`&created_at=lte.${to}T23:59:59`;
- let requests=[];try{requests=await selectAll('change_requests',query)}catch(err){if(epoch===renderEpoch.performanceReport&&state.view==='performanceReport')showError(view,err,'performanceReport');return}
+ let requests=[];try{[requests]=await Promise.all([selectAll('change_requests',query),loadMonitoringStart()])}catch(err){if(epoch===renderEpoch.performanceReport&&state.view==='performanceReport')showError(view,err,'performanceReport');return}
  if(epoch!==renderEpoch.performanceReport||state.view!=='performanceReport')return;const table=q('table',view);if(!table)return;
  const tasks=state.tasks||[],ids=[...new Set([...tasks.map(t=>t.owner_id),...requests.map(r=>r.requested_by)])].filter(Boolean),defaultRange=!!range&&from===range.from&&to===range.to;
  const headers=['متولی','کل واگذارشده','فعال','هشدار','دیرکرد',defaultRange?'محول‌شده در این ماه':'محول‌شده در بازه',defaultRange?'انجام‌شده در این ماه':'انجام‌شده در بازه','درصد تکمیل',defaultRange?'درخواست تعریف وظیفه این ماه':'درخواست تعریف وظیفه در بازه'];
  table.tHead.innerHTML='<tr>'+headers.map(h=>`<th>${esc(h)}</th>`).join('')+'</tr>';
- table.tBodies[0].innerHTML=ids.map((id,i)=>{const all=tasks.filter(t=>String(t.owner_id)===String(id)),active=all.filter(t=>!t.archived&&!terminal(t)),due=all.filter(t=>t.due_date&&(!from||String(t.due_date).slice(0,10)>=from)&&(!to||String(t.due_date).slice(0,10)<=to)),done=due.filter(completed),pct=due.length?Math.round(done.length/due.length*100):0,level=pct>=80?'high':pct>=60?'medium':pct>=40?'warning':'low',manager=personRole(id)==='manager',req=manager?all.filter(t=>String(t.created_by)===String(id)&&within(t.created_at,from,to)).length:requests.filter(r=>String(r.requested_by)===String(id)).length,metricTitle=manager?'تسک‌هایی که مدیر در این بازه برای خودش تعریف کرده است':'درخواست‌های تعریف وظیفه ثبت‌شده در این بازه';return `<tr data-canonical-row="1" data-workspace-index="${i}"><td>${esc(personName(id))}</td><td>${digits(all.length)}</td><td>${digits(active.length)}</td><td>${digits(active.filter(t=>temporal(t)==='دوره هشدار').length)}</td><td>${digits(active.filter(t=>temporal(t)==='دیرکرد').length)}</td><td>${digits(due.length)}</td><td>${digits(done.length)}</td><td class="completion-cell"><div class="performance-progress ${level}" style="--p:${Math.max(0,Math.min(100,pct))}%"><i></i><span>${digits(pct)}٪</span></div></td><td title="${esc(metricTitle)}" data-definition-metric="${manager?'manager-self-task':'owner-request'}">${digits(req)}</td></tr>`}).join('')||'<tr><td colspan="9" class="empty">رکوردی ثبت نشده است.</td></tr>';
+ table.tBodies[0].innerHTML=ids.map((id,i)=>{const all=tasks.filter(t=>String(t.owner_id)===String(id)),active=all.filter(t=>!t.archived&&!terminal(t)),due=all.filter(t=>t.due_date&&(!from||String(t.due_date).slice(0,10)>=from)&&(!to||String(t.due_date).slice(0,10)<=to)),done=due.filter(completed),pct=due.length?Math.round(done.length/due.length*100):0,level=pct>=80?'high':pct>=60?'medium':pct>=40?'warning':'low',manager=personRole(id)==='manager',req=manager?all.filter(t=>String(t.created_by)===String(id)&&within(t.created_at,from,to)&&afterMonitoringStart(t.created_at)).length:requests.filter(r=>String(r.requested_by)===String(id)&&afterMonitoringStart(r.created_at)).length,metricTitle=manager?'تسک‌هایی که مدیر از شروع پایش برای خودش تعریف کرده است':'درخواست‌های تعریف وظیفه ثبت‌شده از شروع پایش';return `<tr data-canonical-row="1" data-workspace-index="${i}"><td>${esc(personName(id))}</td><td>${digits(all.length)}</td><td>${digits(active.length)}</td><td>${digits(active.filter(t=>temporal(t)==='دوره هشدار').length)}</td><td>${digits(active.filter(t=>temporal(t)==='دیرکرد').length)}</td><td>${digits(due.length)}</td><td>${digits(done.length)}</td><td class="completion-cell"><div class="performance-progress ${level}" style="--p:${Math.max(0,Math.min(100,pct))}%"><i></i><span>${digits(pct)}٪</span></div></td><td title="${esc(metricTitle)}" data-definition-metric="${manager?'manager-self-task':'owner-request'}">${digits(req)}</td></tr>`}).join('')||'<tr><td colspan="9" class="empty">رکوردی ثبت نشده است.</td></tr>';
 }
 function responseLabel(v){return({replied:'پاسخ داده',awaiting:'بدون پاسخ',failed:'خطای ارسال',reminder_needed:'نیازمند یادآوری'})[v]||v||'—'}
 function channel(v){return v==='email'?'ایمیل':v==='portal'?'داخل سامانه':v==='both'?'هر دو':v||'—'}
