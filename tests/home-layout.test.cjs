@@ -30,7 +30,7 @@ function fixture(){
   querySelector(s){return this.querySelectorAll(s)[0]||null}
  }
  const nav=new Element('nav'),boxes={};
- for(const key of ['conversations','vehicle','finance','tasks','configuration','reports','messages','people','resources','guide']){
+ for(const key of ['conversations','vehicle','tasks','configuration','reports','messages','people','resources','guide']){
   const group=new Element('div',['nav-group'],{group:key}),box=new Element('div',['nav-group-items']);
   group.insertBefore(new Element('h3',['nav-group-toggle']),null);group.insertBefore(box,null);nav.insertBefore(group,null);boxes[key]=box;
  }
@@ -40,9 +40,9 @@ function fixture(){
  return{nav,boxes,button,sync:context.sync,order:context.order,reset:()=>{writes=0},writes:()=>writes};
 }
 
-test('ten cards including finance, user guide and each subsection follow the approved RTL reference',()=>{
+test('nine cards including petty cash under reports follow the approved RTL reference',()=>{
  const f=fixture();for(const [,ids] of f.order)for(const id of [...ids].reverse())f.button(id);
- f.sync();assert.deepEqual(f.nav.children.map(x=>x.dataset.group),['people','messages','reports','configuration','tasks','vehicle','finance','conversations','resources','guide']);
+ f.sync();assert.deepEqual(f.nav.children.map(x=>x.dataset.group),['people','messages','reports','configuration','tasks','vehicle','conversations','resources','guide']);
  for(const [key,ids] of f.order)assert.deepEqual(f.boxes[key].children.map(x=>x.dataset.view),Array.from(ids));
 });
 

@@ -15,11 +15,10 @@ function install(){
  const groups=[
   ['people',['people','loginActivity','activeSessions']],
   ['messages',['messages','messageCenter','sentMessages','responseTracking','stickers']],
-  ['reports',['dashboard','performanceReport','responseReport','requestReport']],
+  ['reports',['dashboard','performanceReport','responseReport','requestReport','pettyCash']],
   ['configuration',['systemOptions','alertSettings','emailSettings','settings']],
   ['tasks',['kanban','archive','taskTimeline','approvals','requestHistory','approvalChains']],
   ['vehicle',['vehiclePermanent','vehicleTemporary']],
-  ['finance',['pettyCash']],
   ['conversations',['groupChat','directMessages','taskChats']],
   ['resources',['documents','letters','sitesAccess']],
   ['guide',['userGuide']]

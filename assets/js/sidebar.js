@@ -84,8 +84,7 @@
     const people=makeGroup('مدیریت افراد','people',['people'],'♙');
     const email=makeGroup('مدیریت پیام','messages',['messageCenter','sentMessages','messages','templates','stickers'],'✉');
     const vehicle=makeGroup('مدیریت خودرو','vehicle',['vehiclePermanent','vehicleTemporary'],'◇');
-    const finance=makeGroup('مدیریت مالی','finance',['pettyCash'],'﷼');
-    const reports=makeGroup('گزارش‌ها','reports',['dashboard'],'▦');
+    const reports=makeGroup('گزارش‌ها','reports',['dashboard','pettyCash'],'▦');
     const configuration=makeGroup('تنظیمات','configuration',['systemOptions'],'⚙');
     const resources=makeGroup('منابع و دسترسی‌ها','resources',['documents','letters','sitesAccess'],'▧');
     if(settings)nav.appendChild(settings);
