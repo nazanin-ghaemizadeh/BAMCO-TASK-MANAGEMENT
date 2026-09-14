@@ -74,7 +74,7 @@
     if (!form || form.elements.parent_id) return;
     const label = document.createElement('label');
     label.className = 'category-parent-field';
-    label.innerHTML = 'دسته مادر<select name="parent_id"><option value="">بدون دسته مادر</option></select>';
+    label.innerHTML = '<span dir="rtl">دسته مادر</span><select name="parent_id"><option value="">بدون دسته مادر</option></select>';
     const labels = qa(':scope > label', form);
     (labels[0] || q('.modal-head', form)).after(label);
   }

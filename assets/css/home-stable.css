@@ -81,3 +81,5 @@ html body.content-only #appView .card-topbar,html body.content-only #appView #ho
  html body.card-navigation #appView #homeView #nav [data-view]{font-size:16px!important}
 }
 @media(prefers-reduced-motion:reduce){html body.card-navigation #appView #homeView #nav [data-view]{transition:none!important}}
+/* Reserve late-authorized card rows so the home grid never jumps after login. */
+#homeView :is(#lettersNav,#pettyCashNav,#vehiclePermanentNav,#vehicleTemporaryNav).hidden{display:flex!important;visibility:hidden!important;pointer-events:none!important}

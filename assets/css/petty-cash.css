@@ -3,6 +3,7 @@
 
 #pettyCashView .cash-toolbar{border-top:1px solid #bdd3ca;border-bottom:1px solid #bdd3ca;padding:10px 0}
 #pettyCashView .cash-table tbody td[colspan]{height:180px;text-align:center!important;vertical-align:middle;color:#657a72;font-size:17px}
+#pettyCashBody>tr>td[colspan="10"]{height:180px!important;text-align:center!important;vertical-align:middle!important}
 #pettyCashDialog .cash-file-picker{position:relative;display:flex;min-height:120px;justify-content:center;padding:16px;border:1px dashed #9dbeb0;border-radius:12px;background:#f7faf8;cursor:pointer;overflow:hidden}
 #pettyCashDialog .cash-file-picker input[type=file]{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;z-index:1}
 #pettyCashDialog .cash-file-choice{display:flex;align-items:center;gap:12px;min-width:0}
