@@ -47,6 +47,10 @@ async function fixture(options={}){
    }
    if(endpoint==='task_status_view')data=actor.role==='manager'?(tables.tasks||[]):(tables.tasks||[]).filter(t=>t.owner_id===actor.id);
    if(endpoint==='sent_message_dataset_version')data='sent-fixture-v1';
+   if(endpoint==='dismiss_my_inbox'){
+    const now=new Date().toISOString(),notes=(tables.notifications||[]).filter(x=>x.user_id===actor.id&&x.dismissed_at==null),linked=new Set((tables.message_deliveries||[]).filter(x=>x.chat_thread_id).map(x=>String(x.portal_message_id))),portal=(tables.portal_message_recipients||[]).filter(x=>x.recipient_id===actor.id&&x.dismissed_at==null&&!linked.has(String(x.message_id)));
+    [...notes,...portal].forEach(x=>{x.dismissed_at=now;x.read_at=x.read_at||now});data={notifications:notes.length,messages:portal.length};
+   }
    if(endpoint==='profiles'){data=url.searchParams.has('id')?filter(profiles):profiles;if(method==='PATCH')data.forEach(p=>Object.assign(p,body))}
    if(endpoint==='user_sessions')data=sessions;
    if(endpoint==='admin-users'){
