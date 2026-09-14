@@ -57,12 +57,6 @@
   }
   html body #appView#appView #userGuideView .manager-toolbar{gap:4px!important;padding-inline:6px!important;overflow-x:hidden!important}
   html body #appView#appView #userGuideView .manager-toolbar>button{flex:1 1 90px!important;min-width:0!important;padding-inline:4px!important;font-size:12px!important;white-space:normal!important;overflow-wrap:anywhere!important}
-  html body .bamco-toast-stack{top:auto!important;right:12px!important;bottom:calc(12px + env(safe-area-inset-bottom,0px))!important;left:12px!important;transform:none!important;width:auto!important;max-width:none!important;gap:7px!important}
-  html body .bamco-toast{width:100%!important;min-width:0!important;align-items:flex-start!important;gap:9px!important;padding:11px 12px!important;border-radius:11px!important;font-size:16px!important;line-height:1.55!important;text-align:right!important;overflow:hidden!important}
-  html body .bamco-toast-copy{display:grid!important;flex:1 1 auto!important;min-width:0!important;gap:1px!important;overflow-wrap:anywhere!important;word-break:normal!important}
-  html body .bamco-toast-copy strong{font-size:17px!important;line-height:1.45!important}
-  html body .bamco-toast-icon{display:grid!important;place-items:center!important;flex:0 0 30px!important;width:30px!important;height:30px!important;border-radius:50%!important;background:#d8eee1!important;color:#176b4d!important;font-family:Tahoma,sans-serif!important;font-size:20px!important;font-weight:700!important}
-  html body .bamco-toast-close{display:grid!important;place-items:center!important;flex:0 0 32px!important;width:32px!important;height:32px!important;min-width:32px!important;padding:0!important;margin:-3px -2px 0 0!important;font-size:22px!important;line-height:1!important}
   html body #appView#appView :is(.bamco-icon-button,.dashboard-calendar-btn,.chat-refresh,.chat-attach,.chat-sticker-toggle,.chat-send,#ttPrev,#ttNext){
     flex:0 0 40px!important;width:40px!important;min-width:40px!important;
   }
