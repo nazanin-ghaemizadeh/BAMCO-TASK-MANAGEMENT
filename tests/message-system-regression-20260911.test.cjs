@@ -98,3 +98,15 @@ test('automatic message sticker is resolved from the active pack every time',asy
  global.rpc=async(name,args)=>{calls.push([name,args]);return current};global.bamcoMedia={get:async(bucket,path)=>path};
  try{const snapshot={id:70,sticker_path:'old-pack/female-state3.png'};assert.equal(await renderer.stickerUrl(snapshot),current);current='third-pack/female-state3.png';assert.equal(await renderer.stickerUrl(snapshot),current);assert.equal(calls.length,2);assert.equal(calls[0][0],'resolve_message_sticker');assert.equal(calls[0][1].p_snapshot_id,70)}finally{delete global.rpc;delete global.bamcoMedia}
 });
+
+test('email-safe automatic report has distinct headers and never serializes a blob sticker',()=>{
+ const {JSDOM}=require('jsdom'),renderer=require('../assets/js/message-renderer.js');
+ const snapshot={body_template:'[استیکر]\n\n[جدول امور هشداری]',warning_task_ids:[1],tasks:[{id:1,title:'کار نمونه',status:'در حال انجام',priority:'فوری',due_date:'2026-09-14',due_state:'warning'}]};
+ const html=renderer.html(snapshot,{stickerUrl:'blob:https://example.test/private'});
+ const dom=new JSDOM(html),d=dom.window.document,headers=[...d.querySelectorAll('.workflow-warning-section th')].map(x=>x.textContent.trim());
+ assert.deepEqual(headers,['شناسه','عنوان فعالیت','وضعیت','اولویت','تاریخ پایان']);
+ assert.equal(d.querySelectorAll('.workflow-warning-section tbody tr:first-child td').length,5);
+ assert.doesNotMatch(html,/blob:/);
+ assert.doesNotMatch(html,/استیکر وضعیت امور/);
+ dom.window.close();
+});
