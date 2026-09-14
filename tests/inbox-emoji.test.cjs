@@ -18,6 +18,11 @@ test('failed dismiss keeps the card and unread count available for retry',async 
  await f.open('messages');await until(()=>f.d.querySelector('[data-dismiss-notification="91"]'));f.failures.add('notifications');f.d.querySelector('[data-dismiss-notification="91"]').click();await until(()=>f.calls.some(x=>x.endpoint==='ui-notice'));assert(f.d.querySelector('[data-notification="91"]'));assert.equal(f.d.querySelector('#messageBadge').textContent,'۱');
 });
 
+test('clear-all sits beside refresh and atomically dismisses every visible inbox item',async t=>{
+ const now=new Date().toISOString(),tables={notifications:[{id:101,user_id:'test-manager',title:'اعلان اول',body:'متن',created_at:now},{id:102,user_id:'test-owner',title:'اعلان دیگری',body:'متن',created_at:now}],portal_message_recipients:[{message_id:61,recipient_id:'test-manager',read_at:null,portal_messages:{subject:'پیام',body:'متن',created_at:now}}]};
+ const f=await fixture({tables});t.after(()=>f.dispose());const {d,w}=f;await f.open('messages');await until(()=>!d.querySelector('#clearAllMessages').disabled);assert.equal(d.querySelector('#clearAllMessages').previousElementSibling.id,'refreshMessages');d.querySelector('#clearAllMessages').click();await until(()=>f.calls.some(x=>x.endpoint==='dismiss_my_inbox'));await until(()=>d.querySelectorAll('#messageList .message-card').length===0);assert.match(d.querySelector('#messageList').textContent,/پیامی برای شما ثبت نشده/);assert(tables.notifications[0].dismissed_at);assert.equal(tables.notifications[1].dismissed_at,undefined);assert(tables.portal_message_recipients[0].dismissed_at);assert.equal(d.querySelector('#messageBadge').textContent,'');assert(f.calls.some(x=>x.endpoint==='ui-confirm'));assert.deepEqual(f.errors,[]);
+});
+
 test('complete emoji groups are selectable without losing drafts; emoji sequences and image stickers keep shared sizing',async t=>{
  const f=await fixture({styles:true,fetchResult:({endpoint})=>endpoint==='chat-emoji.json'?catalog:undefined});t.after(()=>f.dispose());const {d,w}=f;
  await f.open('groupChat');await until(()=>d.querySelector('.chat-sticker-toggle'));assert.match(d.querySelector('.messenger-head .chat-avatar img').getAttribute('src'),/bamco-icon-192/);d.querySelector('.chat-sticker-toggle').click();await until(()=>d.querySelector('.chat-emoji-choice'));
