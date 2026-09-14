@@ -34,6 +34,15 @@ test('database migration exposes only own system chain and creates self-system a
   assert.match(sql,/delete from public\.chat_messages where thread_id=p_thread_id/);
 });
 
+test('sent history contains only daily reports and reminders',()=>{
+  const sql=read('supabase/migrations/20260914065000_limit_sent_log_to_reports_and_reminders.sql');
+  assert.match(sql,/where b\.kind in \('daily', 'reminder'\)/);
+  assert.doesNotMatch(sql,/system_chat|portal_event|union all/i);
+  const ui=read('assets/js/admin-root-fixes-20260911.js');
+  assert.match(ui,/فقط گزارش وضعیت امور و یادآوری‌ها/);
+  assert.match(ui,/sent-command-row\+\.table-wrap\{margin-top:0;border-top:0/);
+});
+
 
 test('automatic message renders three separate task sections from one snapshot',()=>{
   const renderer=require(path.join(__dirname,'..','assets/js/message-renderer.js'));
