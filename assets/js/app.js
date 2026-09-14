@@ -301,7 +301,7 @@ $('#taskForm').addEventListener('submit',async e=>{
       else await insert('tasks',{...data,created_by:state.profile.id});
     }else{
       if(completing&&state.editing){
-        await rpc('submit_change_request',{p_request_type:'complete',p_task_id:state.editing.id,p_proposed_data:{done_date:data.done_date},p_note:null});
+        await rpc('submit_change_request',{p_request_type:'complete',p_task_id:state.editing.id,p_proposed_data:{done_date:data.done_date,due_date:data.due_date},p_note:null});
       }else{
         await rpc('submit_change_request',{p_request_type:state.editing?'update':'create',p_task_id:state.editing?.id||null,p_proposed_data:data,p_note:null});
       }
