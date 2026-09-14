@@ -29,7 +29,8 @@ Deno.serve(async req=>{
   }
   if(data.action!=='save')fail('عملیات مجاز نیست.');
   const id=clean(data.id)||crypto.randomUUID(),expected=Number(data.version),isEdit=!!clean(data.id);
-  const fields={letter_number:digits(data.letter_number),letter_date:digits(data.letter_date),recipient:clean(data.recipient),subject:clean(data.subject)};
+  const direction=clean(data.direction)||'outgoing';if(!['incoming','outgoing'].includes(direction))fail('نوع نامه معتبر نیست.');
+  const fields={letter_number:digits(data.letter_number),letter_date:digits(data.letter_date),recipient:clean(data.recipient),subject:clean(data.subject),direction};
   if(!fields.letter_number||fields.letter_number.length>120||!fields.recipient||fields.recipient.length>300||!fields.subject||fields.subject.length>1000)fail('شماره، گیرنده و موضوع نامه را کامل کنید.');
   if(!/^\d{4}\/(0[1-9]|1[0-2])\/(0[1-9]|[12]\d|3[01])$/.test(fields.letter_date))fail('تاریخ را به صورت ۱۴۰۵/۰۶/۲۲ وارد کنید.');
   let old:any=null;

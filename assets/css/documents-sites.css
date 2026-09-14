@@ -26,6 +26,7 @@ html body #documentsView .feature-toolbar-actions button{font-weight:400!importa
 /* Persian helper text must not inherit the Latin credential font. */
 #credentialDialog input[name="password"]::placeholder{font-family:BamcoPersian,"B Nazanin",BNazanin,Tahoma,sans-serif!important;direction:rtl;text-align:right}
 #sitesAccessView .feature-site-card dd.fa-text{font-family:BamcoPersian,"B Nazanin",BNazanin,Tahoma,sans-serif!important;direction:rtl;text-align:right}
+.feature-disclosure{width:34px;height:34px;min-height:34px;padding:0;border:1px solid #bfd2ca;border-radius:9px;background:#fff;color:#18513f;font-size:20px;line-height:1;transition:transform .18s}.feature-disclosure[aria-expanded="true"]{transform:rotate(180deg)}.feature-site-head{grid-template-columns:34px 48px minmax(0,1fr) auto}.feature-site-card.feature-collapsed>:not(.feature-site-head){display:none!important}.feature-category{margin-inline-start:calc(var(--category-depth,0) * 22px)}.feature-category>header{display:grid;grid-template-columns:34px minmax(0,1fr) auto;align-items:center}.feature-category.feature-collapsed>.feature-document-list{display:none}.feature-category.feature-collapsed>header{border-bottom:0}.cash-dashboard-dialog{width:min(900px,94vw);max-width:900px}.cash-dashboard-dialog .cash-summary{display:grid!important;grid-template-columns:repeat(4,minmax(140px,1fr));gap:12px}.cash-dashboard-dialog .cash-summary article{border-radius:14px;padding:18px}.cash-dashboard-dialog .cash-summary article:nth-child(1){background:#dff4ea}.cash-dashboard-dialog .cash-summary article:nth-child(2){background:#dfeeff}.cash-dashboard-dialog .cash-summary article:nth-child(3){background:#ffe5e5}.cash-dashboard-dialog .cash-summary article:nth-child(4){background:#fff1cf}@media(max-width:760px){.feature-site-head{grid-template-columns:34px 42px minmax(0,1fr)}.feature-site-head>.feature-badge{grid-column:2/-1}.feature-category>header{grid-template-columns:34px minmax(0,1fr)}.feature-category>header>.feature-row-actions{grid-column:1/-1}.cash-dashboard-dialog .cash-summary{grid-template-columns:repeat(2,1fr)}}
 
 /* Override generic column-form labels only for the active checkbox. */
 html body #siteDialog.bamco-dialog #siteForm .form-grid label.feature-checkline,
@@ -55,3 +56,7 @@ html body #siteDialog #siteForm .feature-checkline input[type="checkbox"]{flex:0
 #documentDialog [data-file-detail]{color:#527065}
 #documentUploadStatus{padding:10px 14px;background:#eef5f1;border-radius:8px;line-height:1.8}
 @media(max-width:600px){#userGuideView .guide-document-card{grid-template-columns:minmax(0,1fr);padding:20px;margin:16px auto;gap:12px}#userGuideView .guide-document-card>.feature-row-actions{grid-column:1;flex-wrap:wrap}#userGuideView .feature-file-main>b{font-size:22px}}
+
+/* Keep the document disclosure on the physical left in the RTL interface. */
+.feature-category>header{direction:ltr}
+.feature-category>header>*{direction:rtl}
