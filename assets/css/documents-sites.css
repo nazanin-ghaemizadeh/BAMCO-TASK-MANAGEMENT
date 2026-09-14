@@ -57,6 +57,19 @@ html body #siteDialog #siteForm .feature-checkline input[type="checkbox"]{flex:0
 #documentUploadStatus{padding:10px 14px;background:#eef5f1;border-radius:8px;line-height:1.8}
 @media(max-width:600px){#userGuideView .guide-document-card{grid-template-columns:minmax(0,1fr);padding:20px;margin:16px auto;gap:12px}#userGuideView .guide-document-card>.feature-row-actions{grid-column:1;flex-wrap:wrap}#userGuideView .feature-file-main>b{font-size:22px}}
 
-/* Keep the document disclosure on the physical left in the RTL interface. */
-.feature-category>header{direction:ltr}
-.feature-category>header>*{direction:rtl}
+/* Structured, accessible disclosure layout for documents and sites. */
+.feature-disclosure{display:grid;place-items:center;width:38px;height:38px;min-height:38px;padding:0;border:1px solid #bad0c7;border-radius:50%;background:#fff;color:#176b50;box-shadow:0 1px 4px #123f3312}
+.feature-disclosure svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:transform .18s ease}
+.feature-disclosure[aria-expanded="true"]{transform:none;background:#edf6f2}
+.feature-disclosure[aria-expanded="true"] svg{transform:rotate(180deg)}
+.feature-category{margin-inline-start:calc(var(--category-depth,0) * 24px)}
+.feature-category>header{display:grid;grid-template-columns:38px auto minmax(220px,1fr);grid-template-areas:"toggle actions title";align-items:center;gap:12px;direction:ltr}
+.feature-category>header>.feature-disclosure{grid-area:toggle}
+.feature-category>header>.feature-row-actions{grid-area:actions;direction:rtl;justify-content:flex-start}
+.feature-category>header>div:not(.feature-row-actions){grid-area:title;direction:rtl;text-align:right;justify-self:stretch}
+.feature-site-grid{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:10px}
+.feature-site-card{width:100%;border-radius:12px;padding:12px 14px}
+.feature-site-head{display:grid;grid-template-columns:38px 48px minmax(0,1fr) auto;gap:12px;align-items:center;direction:ltr}
+.feature-site-head>*{direction:rtl}
+.feature-site-head>div:nth-of-type(2){text-align:right}
+@media(max-width:760px){.feature-category{margin-inline-start:calc(var(--category-depth,0) * 12px)}.feature-category>header{grid-template-columns:38px minmax(0,1fr);grid-template-areas:"toggle title" "actions actions"}.feature-category>header>.feature-row-actions{width:100%;justify-content:flex-start}.feature-site-head{grid-template-columns:38px 42px minmax(0,1fr)}.feature-site-head>.feature-badge{grid-column:2/-1}}
