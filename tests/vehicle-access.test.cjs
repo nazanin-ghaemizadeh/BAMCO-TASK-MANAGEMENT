@@ -13,6 +13,10 @@ test('manager saves scoped vehicle grants in the shared searchable dialog',async
  f.d.querySelector('#vehicleTemporaryView .vehicle-access-button').click();await until(()=>f.d.querySelector('#vehicleAccessDialog input[type=checkbox]'));
  const dialog=f.d.querySelector('#vehicleAccessDialog');assert(dialog.classList.contains('permission-dialog'));assert(dialog.querySelector('[data-search]'));dialog.querySelector('input[value="test-owner"]').checked=true;dialog.querySelector('form').requestSubmit();await until(()=>f.calls.some(c=>c.endpoint==='set_vehicle_access'));const call=f.calls.find(c=>c.endpoint==='set_vehicle_access');assert.equal(call.body.p_scope,'temporary');assert.deepEqual(call.body.p_user_ids,['test-owner']);assert.deepEqual(f.errors,[]);
 });
+test('each vehicle tab displays identifiers from one independently of database keys',async t=>{
+ const f=await fixture({tables:{vehicle_temporary_records:[{id:4,plate_number:'79و'}]}});t.after(()=>f.dispose());await f.open('vehicleTemporary');await until(()=>f.d.querySelector('#vehicleTemporaryView tbody tr[data-id]'));
+ assert.equal(f.d.querySelector('#vehicleTemporaryView tbody tr[data-id] td').textContent.trim(),'۱');assert.deepEqual(f.errors,[]);
+});
 test('owner preview is removed from navigation and workspace',async t=>{
  const f=await fixture();t.after(()=>f.dispose());
  assert.equal(f.d.querySelector('[data-view="ownerPreview"],#ownerPreviewView'),null);
