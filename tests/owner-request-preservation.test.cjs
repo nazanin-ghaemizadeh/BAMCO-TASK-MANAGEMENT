@@ -15,6 +15,13 @@ test('owner sends actual selected dates and full details; failed request keeps t
  assert.equal(payload.start_date,start);assert.equal(payload.due_date,due);assert.equal(payload.reminder_days,4);assert.equal(payload.owner_id,'test-owner');assert.equal(payload.description,'Full description');assert.equal(payload.status,'در حال انجام');assert.deepEqual(f.errors,[]);
 });
 
+test('owner completion keeps the selected due date in the approval request',async t=>{
+ const task={id:44,title:'Complete with corrected due date',owner_id:'test-owner',status:'در حال انجام',priority:'متوسط',archived:false,start_date:'2026-09-01',due_date:'2026-09-20'};
+ const f=await fixture({role:'owner',tables:{tasks:[task]}});t.after(()=>f.dispose());const {d,w}=f;await f.open('kanban');await until(()=>d.querySelector('[data-task-id="44"]'));d.querySelector('[data-task-id="44"]').click();d.querySelector('#kanbanEditBtn').click();const form=d.querySelector('#taskForm');
+ form.elements.status.value='انجام شده';form.elements.status.dispatchEvent(new w.Event('change',{bubbles:true}));await until(()=>form.elements.status.dataset.archiveConfirmed==='1');assert.equal(d.querySelector('[data-date-input="due_date_j"]').disabled,false);assert.equal(d.querySelector('[data-date-input="done_date_j"]').disabled,false);
+ w.eval("setJalaliField('due_date_j','2026-09-24')");form.requestSubmit();await until(()=>!d.querySelector('#taskDialog').open);const call=f.calls.filter(c=>c.endpoint==='submit_change_request').at(-1);assert.equal(call.body.p_request_type,'complete');assert.equal(call.body.p_proposed_data.due_date,'2026-09-24');assert(call.body.p_proposed_data.done_date);assert.deepEqual(f.errors,[]);
+});
+
 test('Kanban export, clear and message navigation share the task selection model',async t=>{
  const tasks=Array.from({length:40},(_,i)=>({id:i+1,title:'Task '+(i+1),status:'ثبت شده',priority:'متوسط',archived:false,owner_id:null}));
  const f=await fixture({tables:{tasks}});t.after(()=>f.dispose());const {d,w}=f;await f.open('kanban');
