@@ -15,6 +15,14 @@ Deno.serve(async req=>{
   if(profile.role!=='manager'){const {data:grant,error}=await db.from('letter_access').select('user_id').eq('user_id',user!.id).single();if(error||!grant)fail('دسترسی به نامه‌ها برای شما فعال نشده است.',403);}
   const form=req.headers.get('content-type')?.includes('multipart/form-data')?await req.formData():null;
   const data:Record<string,unknown>=form?Object.fromEntries(form.entries()):await req.json();
+  if(data.action==='delete'){
+   if(profile.role!=='manager')fail('فقط مدیر می‌تواند نامه را حذف کند.',403);
+   const {data:row,error}=await db.from('letters').select('id,storage_path,version').eq('id',data.id).single();if(error||!row)fail('نامه پیدا نشد.',404);
+   if(row.version!==Number(data.version))fail('نامه توسط فرد دیگری تغییر کرده؛ تازه‌سازی کنید.',409);
+   const {data:deleted,error:deleteError}=await db.from('letters').delete().eq('id',row.id).eq('version',row.version).select('id').single();if(deleteError||!deleted)fail('حذف نامه تأیید نشد؛ تازه‌سازی کنید.',409);
+   if(row.storage_path){const {error:storageError}=await db.storage.from(bucket).remove([row.storage_path]);if(storageError)console.error('letter-storage-cleanup',row.id,storageError.message)}
+   return reply({deleted:true});
+  }
   if(data.action==='download'){
    const {data:row,error}=await db.from('letters').select('storage_path,file_name').eq('id',data.id).single();if(error||!row)fail('نامه پیدا نشد.',404);if(!row!.storage_path)fail('فایل این نامه هنوز بارگذاری نشده است.',404);
    const {data:signed,error:signError}=await db.storage.from(bucket).createSignedUrl(row!.storage_path,60,{download:row!.file_name});if(signError)throw signError;return reply({url:signed!.signedUrl});

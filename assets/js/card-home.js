@@ -19,6 +19,7 @@ function install(){
   ['configuration',['systemOptions','alertSettings','emailSettings','settings']],
   ['tasks',['kanban','archive','taskTimeline','approvals','requestHistory','approvalChains']],
   ['vehicle',['vehiclePermanent','vehicleTemporary']],
+  ['finance',['pettyCash']],
   ['conversations',['groupChat','directMessages','taskChats']],
   ['resources',['documents','letters','sitesAccess']],
   ['guide',['userGuide']]
