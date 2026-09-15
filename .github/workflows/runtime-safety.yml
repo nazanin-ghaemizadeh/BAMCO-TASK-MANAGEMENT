@@ -27,6 +27,8 @@ jobs:
           cache: npm
       - name: Install test dependencies
         run: npm ci
+      - name: Diagnostic fresh source bundle
+        run: npm run build:assets
       - name: JavaScript syntax
         run: |
           for file in assets/js/*.js; do
