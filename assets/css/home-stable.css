@@ -83,5 +83,39 @@ html body.content-only #appView .card-topbar,html body.content-only #appView #ho
 @media(prefers-reduced-motion:reduce){html body.card-navigation #appView #homeView #nav [data-view]{transition:none!important}}
 /* Reserve late-authorized card rows so the home grid never jumps after login. */
 #homeView :is(#lettersNav,#pettyCashNav,#vehiclePermanentNav,#vehicleTemporaryNav).hidden{display:flex!important;visibility:hidden!important;pointer-events:none!important}
-/* Keep access-gated groups in their grid slot while the first permission pass settles. */
-html body.card-home-active:not(.home-access-settled) #homeView #nav>.nav-group.hidden{display:flex!important;visibility:hidden!important;pointer-events:none!important}
+/* Keep access-gated groups in their grid slot for the entire home session; access resolution must never reflow cards. */
+html body.card-home-active #homeView #nav>.nav-group.hidden{display:flex!important;visibility:hidden!important;pointer-events:none!important}
+html body.card-home-active #homeView,html body.card-home-active #homeView #nav,html body.card-home-active #homeView #nav>.nav-group{contain:layout!important;overflow-anchor:none!important}
+/* Each card owns a permanent grid slot; late-created permission groups cannot push another card away. */
+html body.card-home-active #homeView #nav>.nav-group[data-group="people"]{grid-column:1!important;grid-row:1!important}
+html body.card-home-active #homeView #nav>.nav-group[data-group="messages"]{grid-column:2!important;grid-row:1!important}
+html body.card-home-active #homeView #nav>.nav-group[data-group="reports"]{grid-column:3!important;grid-row:1!important}
+html body.card-home-active #homeView #nav>.nav-group[data-group="configuration"]{grid-column:1!important;grid-row:2!important}
+html body.card-home-active #homeView #nav>.nav-group[data-group="tasks"]{grid-column:2!important;grid-row:2!important}
+html body.card-home-active #homeView #nav>.nav-group[data-group="vehicle"]{grid-column:3!important;grid-row:2!important}
+html body.card-home-active #homeView #nav>.nav-group[data-group="conversations"]{grid-column:1!important;grid-row:3!important}
+html body.card-home-active #homeView #nav>.nav-group[data-group="resources"]{grid-column:2!important;grid-row:3!important}
+html body.card-home-active #homeView #nav>.nav-group[data-group="guide"]{grid-column:3!important;grid-row:3!important}
+@media(max-width:1000px){
+ html body.card-home-active #homeView #nav>.nav-group[data-group="people"]{grid-column:1!important;grid-row:1!important}
+ html body.card-home-active #homeView #nav>.nav-group[data-group="messages"]{grid-column:2!important;grid-row:1!important}
+ html body.card-home-active #homeView #nav>.nav-group[data-group="reports"]{grid-column:1!important;grid-row:2!important}
+ html body.card-home-active #homeView #nav>.nav-group[data-group="configuration"]{grid-column:2!important;grid-row:2!important}
+ html body.card-home-active #homeView #nav>.nav-group[data-group="tasks"]{grid-column:1!important;grid-row:3!important}
+ html body.card-home-active #homeView #nav>.nav-group[data-group="vehicle"]{grid-column:2!important;grid-row:3!important}
+ html body.card-home-active #homeView #nav>.nav-group[data-group="conversations"]{grid-column:1!important;grid-row:4!important}
+ html body.card-home-active #homeView #nav>.nav-group[data-group="resources"]{grid-column:2!important;grid-row:4!important}
+ html body.card-home-active #homeView #nav>.nav-group[data-group="guide"]{grid-column:1!important;grid-row:5!important}
+}
+@media(max-width:620px){
+ html body.card-home-active #homeView #nav>.nav-group[data-group]{grid-column:1!important}
+ html body.card-home-active #homeView #nav>.nav-group[data-group="people"]{grid-row:1!important}
+ html body.card-home-active #homeView #nav>.nav-group[data-group="messages"]{grid-row:2!important}
+ html body.card-home-active #homeView #nav>.nav-group[data-group="reports"]{grid-row:3!important}
+ html body.card-home-active #homeView #nav>.nav-group[data-group="configuration"]{grid-row:4!important}
+ html body.card-home-active #homeView #nav>.nav-group[data-group="tasks"]{grid-row:5!important}
+ html body.card-home-active #homeView #nav>.nav-group[data-group="vehicle"]{grid-row:6!important}
+ html body.card-home-active #homeView #nav>.nav-group[data-group="conversations"]{grid-row:7!important}
+ html body.card-home-active #homeView #nav>.nav-group[data-group="resources"]{grid-row:8!important}
+ html body.card-home-active #homeView #nav>.nav-group[data-group="guide"]{grid-row:9!important}
+}
