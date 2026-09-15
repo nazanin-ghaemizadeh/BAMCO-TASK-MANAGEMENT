@@ -43,13 +43,17 @@ test('authenticated avatars persist in the shared image cache across reloads and
  await b.w.bamcoMedia.get('avatars','people/me.jpg');assert.equal(calls,2);b.dom.window.close();
 });
 
-test('resource views warm after first paint and structural observers stay scoped',()=>{
+test('resource views and People avatars warm after first paint while observers stay scoped',()=>{
  const prefetch=read('assets/js/feature-prefetch.js');
  const structure=read('assets/js/feature-structure.js');
  assert.match(prefetch,/requestAnimationFrame/);
  assert.match(prefetch,/requestIdleCallback/);
  assert.match(prefetch,/refreshDocuments/);
  assert.match(prefetch,/refreshSites/);
+ assert.match(prefetch,/warmAvatars/);
+ assert.match(prefetch,/select\('profiles','select=id,avatar_path&order=id'\)/);
+ assert.match(prefetch,/bamcoMedia\.get\('avatars',path\)/);
+ assert.match(prefetch,/button\.dataset\.view==='people'/);
  assert.match(prefetch,/document\.addEventListener\('click',[\s\S]*?,true\)/);
  assert.doesNotMatch(structure,/observe\(document\.body/);
  assert.match(structure,/observe\(documents/);
@@ -65,10 +69,10 @@ test('canonical bundle input directly includes late runtime modules',()=>{
  assert.doesNotMatch(build,/avatar-final-20260911\.js/);
 });
 
-test('release workflow builds and tests bundles before publishing cache keys',()=>{
+test('release workflow builds and regression-gates bundles before publishing cache keys',()=>{
  const workflow=read('.github/workflows/release-version.yml');
  const buildAt=workflow.indexOf('npm run build:assets');
- const testAt=workflow.indexOf('npm test');
+ const testAt=workflow.indexOf('npm run test:regression');
  const bumpAt=workflow.indexOf('Bump release marker');
  assert(buildAt>=0&&testAt>buildAt&&bumpAt>testAt);
  assert.match(workflow,/git add version\.json index\.html assets\/js\/bamco\.bundle\.js assets\/css\/bamco\.bundle\.css/);
