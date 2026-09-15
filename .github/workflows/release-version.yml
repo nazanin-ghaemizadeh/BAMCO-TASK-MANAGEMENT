@@ -48,6 +48,21 @@ jobs:
           if n!=1: raise SystemExit('manifest version query not found')
           text,n=re.subn(r'(assets/js/app-update\.js\?v=)[^"&]+',rf'\g<1>{release}',text,count=1)
           if n!=1: raise SystemExit('app updater cache key not found')
+
+          # These modules own the release-critical coherence fixes. Their cache
+          # keys must change with the release marker so an already-open browser
+          # cannot mix old selection/navigation code with the new database rules.
+          for asset in (
+              'assets/js/table-selection.js',
+              'assets/js/shell.js',
+              'assets/js/card-home.js',
+              'assets/js/feature-structure.js',
+              'assets/js/letters.js',
+          ):
+              pattern=rf'({re.escape(asset)}\?v=)[^"&]+'
+              text,n=re.subn(pattern,rf'\g<1>{release}',text,count=1)
+              if n!=1: raise SystemExit(f'cache key not found: {asset}')
+
           index.write_text(text,encoding='utf-8')
           PY
       - name: Commit release marker

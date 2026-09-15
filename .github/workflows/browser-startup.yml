@@ -25,7 +25,7 @@ jobs:
           python -m pip install playwright==1.57.0
           python -m playwright install --with-deps chromium
       - name: Exercise the real page with isolated APIs on desktop and mobile
-        run: python tests/browser/run_smoke.py
+        run: python tests/browser/run_smoke_dom.py
       - name: Upload browser results
         if: always()
         uses: actions/upload-artifact@v4

@@ -12,7 +12,7 @@ function selectedIds(t){const scope=taskScope(t);if(scope&&window.bamcoTaskSelec
 function clearTask(t){const scope=taskScope(t);if(scope)window.bamcoTaskSelection?.clear(scope)}
 function clear(value){const t=tableOf(value);if(t){clearTask(t);model(t).ids.clear();notify(t)}else for(const m of models.values()){clearTask(m.table);m.ids.clear();if(m.table.isConnected)notify(m.table)}}
 function selectRow(row,event={}){const t=row.closest('table'),m=model(t),id=key(row),was=m.ids.has(id),additiveByDefault=!!row.closest('#responseReportView');if(event.shiftKey&&m.anchor){const list=rows(t).filter(r=>!r.hidden&&!r.classList.contains('suite-filtered-out')&&!r.classList.contains('page-row-hidden')),a=list.findIndex(r=>key(r)===m.anchor),b=list.indexOf(row);if(a>=0&&b>=0){for(const r of list.slice(Math.min(a,b),Math.max(a,b)+1))m.ids.add(key(r))}}else{if(!event.ctrlKey&&!event.metaKey&&!additiveByDefault)m.ids.clear();if(!was)m.ids.add(id);else m.ids.delete(id);m.anchor=id}notify(t)}
-function usesLocalSelection(row){return !!row.closest('#kanbanView,#archiveView,#messageCenterView,#responseTrackingView,#lettersView')}
+function usesLocalSelection(row){return !!row.closest('#kanbanView,#archiveView,#messageCenterView,#responseTrackingView')}
 function genericTable(t){return !!t&&!t.closest('dialog')&&!t.closest('#kanbanView,#archiveView,#messageCenterView,#responseTrackingView')}
 document.addEventListener('click',e=>{const row=e.target.closest('.workspace tbody tr');if(row&&!row.closest('dialog')&&!e.target.closest('button,a,input,select,textarea')&&rows(row.closest('table')).includes(row)){
   if(usesLocalSelection(row))return;
