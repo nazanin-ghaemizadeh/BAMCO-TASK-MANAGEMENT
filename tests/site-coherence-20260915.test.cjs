@@ -26,6 +26,20 @@ test('task lifecycle events use the public display id and one safe inbox surface
  assert.doesNotMatch(sql,/coalesce\(new\.legacy_id,new\.id\)::text/);
 });
 
+test('all resequencing paths resync task references and task chat bodies',()=>{
+ const sql=read('supabase/migrations/20260915123000_sync_task_display_refs_after_all_resequences.sql');
+ const partial=sql.match(/create or replace function private\.resequence_task_display_ids_from[\s\S]*?\$function\$;/)?.[0]||'';
+ const archived=sql.match(/create or replace function private\.resequence_archived_task_display_ids[\s\S]*?\$function\$;/)?.[0]||'';
+ const portal=sql.match(/create or replace function private\.create_portal_event[\s\S]*?\$function\$;/)?.[0]||'';
+ assert.match(partial,/perform private\.sync_task_display_references\(\)/);
+ assert.match(archived,/perform private\.sync_task_display_references\(\)/);
+ assert.match(portal,/update public\.chat_messages/);
+ assert.match(portal,/BAMCO_PORTAL_MESSAGE_V1:%/);
+ assert.match(sql,/having count\(\*\)=1/);
+ assert.match(sql,/n\.user_id=r\.recipient_id/);
+ assert.match(sql,/select private\.sync_task_display_references\(\)/);
+});
+
 test('letters use the same shared toggle selection as other workspace tables',()=>{
  const selection=read('assets/js/table-selection.js'),letters=read('assets/js/letters.js');
  const local=selection.match(/function usesLocalSelection\(row\)\{[^}]+\}/)?.[0]||'';
