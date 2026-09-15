@@ -50,7 +50,8 @@ function within(value,from,to){const day=String(value||'').slice(0,10);return !!
 function afterMonitoringStart(value){return !monitoringStartedAt||String(value||'')>=monitoringStartedAt}
 async function loadMonitoringStart(){
  if(monitoringStartedAt!==null)return monitoringStartedAt;
- try{const rows=await selectAll('app_settings','select=key,value&key=eq.performance_monitoring_started_at&limit=1'),raw=rows?.[0]?.value;monitoringStartedAt=String(raw?.value||raw||'').trim()}catch{monitoringStartedAt=''}
+ try{const rows=await selectAll('app_settings','select=key,value&key=eq.performance_monitoring_started_at&limit=1'),raw=rows?.[0]?.value;monitoringStartedAt=String(raw?.value||raw||'').trim()}catch{}
+ if(!monitoringStartedAt)monitoringStartedAt='2026-09-14T00:00:00Z';
  return monitoringStartedAt;
 }
 function temporal(t){try{return window.bamcoTaskPresentation?.(t)?.temporal||String(t?.due_state||'')}catch{return String(t?.due_state||'')}}
