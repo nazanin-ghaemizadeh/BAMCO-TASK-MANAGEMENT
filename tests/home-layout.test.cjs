@@ -103,7 +103,9 @@ test('welcome card contains no waiting-work UI or logic',()=>{
 });
 
 test('instant welcome isolates the dialog from the mutating home dashboard',()=>{
- const js=read('assets/js/card-home.js'),css=read('assets/css/home-stable.css');assert.match(js,/classList\.add\('home-welcome-open'\)[\s\S]*dialog\.showModal\(\)/);assert.match(js,/dialog\.addEventListener\('close',[\s\S]*classList\.remove\('home-welcome-open'\)/);
+ const js=read('assets/js/card-home.js'),css=read('assets/css/home-stable.css');
+ assert.match(js,/classList\.add\([^)]*'home-welcome-open'[^)]*\)[\s\S]*dialog\.showModal\(\)/);
+ assert.match(js,/dialog\.addEventListener\('close',[\s\S]*classList\.remove\('home-welcome-open'\)/);
  assert.match(css,/home-welcome-open #appView\{visibility:hidden!important\}/);
  assert.match(css,/home-welcome-dialog::backdrop\{background:linear-gradient\([^)]+\)[^}]+backdrop-filter:none!important\}/);
  assert.doesNotMatch(css,/home-welcome-open[^}]+data-group=/);
