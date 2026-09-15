@@ -3,7 +3,7 @@
   const q = (s, r = document) => r?.querySelector(s);
   const qa = (s, r = document) => [...(r?.querySelectorAll(s) || [])];
   const openSites = new Set(), openCategories = new Set();
-  let categoryMap = new Map(), frame = 0, inboxFrame = 0;
+  let categoryMap = new Map(), timer = 0;
 
   function disclosure(kind, id, open) {
     return `<button type="button" class="feature-disclosure" data-${kind}-toggle="${id}" aria-expanded="${open}" aria-label="${open ? 'بستن' : 'باز کردن'}"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5.5 7.5 4.5 4.5 4.5-4.5"/></svg></button>`;
@@ -66,38 +66,9 @@
     } catch {}
   }
   function schedule() {
-    if (frame) return;
-    frame = requestAnimationFrame(() => {
-      frame = 0;
-      enhanceSites();
-      enhanceCategories();
-    });
+    clearTimeout(timer);
+    timer = setTimeout(() => { enhanceSites(); enhanceCategories(); }, 20);
   }
-
-  // Task relations always use the immutable tasks.id, but every number shown to
-  // users must use legacy_id. The inbox module historically composed a task-chat
-  // heading from thread.task_id; normalize only that visible heading from the
-  // already-loaded task catalogue. This is intentionally presentation-only.
-  const latinDigits = value => String(value ?? '').replace(/[۰-۹]/g, d => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)));
-  const persianDigits = value => String(value ?? '').replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
-  function normalizeInboxTaskIds() {
-    const tasks = typeof state !== 'undefined' && Array.isArray(state.tasks) ? state.tasks : [];
-    if (!tasks.length) return;
-    const publicByInternal = new Map(tasks.map(task => [String(task.id), String(task.legacy_id ?? task.id)]));
-    qa('#messageList .message-notification h4').forEach(title => {
-      const text = title.textContent || '', match = text.match(/^وظیفه\s+([۰-۹0-9]+)/);
-      if (!match) return;
-      const internal = latinDigits(match[1]), publicId = publicByInternal.get(internal);
-      if (!publicId || publicId === internal) return;
-      const next = text.replace(/^وظیفه\s+[۰-۹0-9]+/, `وظیفه ${persianDigits(publicId)}`);
-      if (next !== text) title.textContent = next;
-    });
-  }
-  function scheduleInboxNormalization() {
-    if (inboxFrame) return;
-    inboxFrame = requestAnimationFrame(() => { inboxFrame = 0; normalizeInboxTaskIds(); });
-  }
-
   function ensureCategoryParent() {
     const form = q('#docCategoryForm');
     if (!form || form.elements.parent_id) return;
@@ -155,12 +126,10 @@
     }
     schedule();
   }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['open'] });
-  const documents = q('#documentsFeatureBody'), sites = q('#sitesFeatureBody'), inbox = q('#messageList');
+  const documents = q('#documentsFeatureBody'), sites = q('#sitesFeatureBody');
   if (documents) new MutationObserver(schedule).observe(documents, { childList: true, subtree: true });
   if (sites) new MutationObserver(schedule).observe(sites, { childList: true, subtree: true });
-  if (inbox) new MutationObserver(scheduleInboxNormalization).observe(inbox, { childList: true, subtree: true });
-  document.addEventListener('bamco-inbox-updated', scheduleInboxNormalization);
   q('#documentsRefresh')?.addEventListener('click', () => setTimeout(refreshCategoryMap, 50));
-  window.addEventListener('focus', () => { refreshCategoryMap(); scheduleInboxNormalization(); });
-  refreshCategoryMap(); schedule(); scheduleInboxNormalization();
+  window.addEventListener('focus', refreshCategoryMap);
+  refreshCategoryMap(); schedule();
 })();
