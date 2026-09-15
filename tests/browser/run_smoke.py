@@ -61,7 +61,7 @@ async def manager_checks(page,result):
     await expect(page.locator('#letterTypeDialog')).to_be_visible()
     await page.locator('#letterTypeDialog [data-letter-mode="outgoing"]').click()
     await expect(page.locator('#lettersTable tbody tr')).to_have_count(53)
-    await expect(page.locator('#lettersView h3')).to_have_count(1)
+    await expect(page.locator('#lettersView .letters-heading h3')).to_have_count(1)
     await expect(page.locator('#lettersView > .bamco-command-bar')).to_have_count(1)
     assert await page.locator('#lettersView .letter-toolbar .content-back').count()==1
     assert await page.locator('#lettersView .letter-toolbar #addLetter').count()==1
