@@ -18,25 +18,29 @@ test('avatar runtime has one canonical loader and no polling storm',()=>{
  const finalRuntime=read('assets/js/final-production-fixes-20260911.js');
  assert.doesNotMatch(topbar,/\[0,100,350,900,1800\]/);
  assert.doesNotMatch(topbar,/observe\(document\.body/);
+ assert.match(topbar,/#applyAvatarCrop/);
+ assert.match(topbar,/bamcoMedia\?\.invalidate\?\.\('avatars',path\)/);
  assert.doesNotMatch(finalRuntime,/setInterval\(/);
  assert.doesNotMatch(finalRuntime,/cache:'no-store'/);
  assert.doesNotMatch(finalRuntime,/select\('profiles'/);
  assert.match(finalRuntime,/window\.refreshProfileAvatar/);
 });
 
-test('authenticated avatars persist in the shared image cache across reloads',async()=>{
+test('authenticated avatars persist in the shared image cache across reloads and invalidate after edits',async()=>{
  const source=read('assets/js/media-cache.js');
  const disk=new Map();let calls=0;
  const make=()=>{
   const dom=new JSDOM('',{url:'https://app.test/',runScripts:'outside-only'}),w=dom.window;
   w.state={user:{id:'one'},token:'valid'};w.SB_URL='https://db.test';w.SB_KEY='public';
-  w.fetch=async()=>{calls++;return new Response('avatar')};w.Response=Response;w.AbortController=AbortController;
+  w.fetch=async()=>{calls++;return new Response('avatar-'+calls)};w.Response=Response;w.AbortController=AbortController;
   w.URL.createObjectURL=()=> 'blob:avatar-'+calls;w.URL.revokeObjectURL=()=>{};
   w.caches={open:async()=>({match:async k=>disk.get(k)?.clone(),put:async(k,v)=>disk.set(k,v.clone()),keys:async()=>[...disk.keys()].map(url=>({url})),delete:async k=>disk.delete(k)}),delete:async()=>{disk.clear()}};
   w.eval(source);return {dom,w};
  };
  let a=make();await a.w.bamcoMedia.get('avatars','people/me.jpg');assert.equal(calls,1);a.dom.window.close();
- let b=make();await b.w.bamcoMedia.get('avatars','people/me.jpg');assert.equal(calls,1);b.dom.window.close();
+ let b=make();await b.w.bamcoMedia.get('avatars','people/me.jpg');assert.equal(calls,1);
+ await b.w.bamcoMedia.invalidate('avatars','people/me.jpg');
+ await b.w.bamcoMedia.get('avatars','people/me.jpg');assert.equal(calls,2);b.dom.window.close();
 });
 
 test('resource views warm after first paint and structural observers stay scoped',()=>{
