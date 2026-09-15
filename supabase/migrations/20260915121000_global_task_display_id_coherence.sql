@@ -57,7 +57,8 @@ begin
      and n.body is distinct from pm.body;
 
   -- Workflow snapshots carry both the immutable task PK and a presentation copy
-  -- of legacy_id. Refresh only the presentation copy.
+  -- of legacy_id. Refresh only the presentation copy. Guard the lateral expansion
+  -- so malformed/non-array historical payloads cannot abort the migration.
   with rebuilt as (
     select s.id,
            coalesce(jsonb_agg(
@@ -66,7 +67,9 @@ begin
              end order by e.ord
            ),'[]'::jsonb) as tasks
       from public.message_snapshots s
-      cross join lateral jsonb_array_elements(s.tasks) with ordinality as e(item,ord)
+      cross join lateral jsonb_array_elements(
+        case when jsonb_typeof(s.tasks)='array' then s.tasks else '[]'::jsonb end
+      ) with ordinality as e(item,ord)
       left join public.tasks t
         on t.id=case when e.item->>'id' ~ '^[0-9]+$' then (e.item->>'id')::bigint end
      where jsonb_typeof(s.tasks)='array'
@@ -207,17 +210,18 @@ begin
 end
 $function$;
 
--- Backfill existing events safely. An immutable PK match is unambiguous.
+-- Backfill existing lifecycle events only when BOTH the visible number and the
+-- quoted title identify the same current task. A bare number can be ambiguous:
+-- an older public display ID can equal another task's immutable PK.
 update public.portal_messages pm
    set entity_type='task',entity_id=t.id::text
   from public.tasks t
  where pm.entity_id is null
    and pm.template_key in ('task_created','task_updated','task_transferred')
    and pm.body ~ '^وظیفه [0-9]+ '
-   and substring(pm.body from '^وظیفه ([0-9]+) ')::bigint=t.id;
+   and substring(pm.body from '^وظیفه ([0-9]+) ')::bigint=t.id
+   and position('«'||coalesce(t.title,'')||'»' in pm.body)>0;
 
--- Older rows that already used the public number are linked only when the title
--- also matches, avoiding accidental collisions with another task's immutable PK.
 update public.portal_messages pm
    set entity_type='task',entity_id=t.id::text
   from public.tasks t
@@ -229,14 +233,25 @@ update public.portal_messages pm
 
 -- Existing lifecycle rows may currently appear twice in "پیام‌های من": once as
 -- a portal recipient and once as the notification generated from its system chat.
--- Keep the notification and dismiss only the duplicate portal-recipient surface.
+-- Dismiss the portal copy only when the canonical notification demonstrably
+-- exists for the same recipient, thread and event timestamp.
 update public.portal_message_recipients r
    set read_at=coalesce(r.read_at,pm.created_at,now()),
        dismissed_at=coalesce(r.dismissed_at,pm.created_at,now())
   from public.portal_messages pm
  where pm.id=r.message_id
    and pm.entity_type='task'
-   and pm.template_key in ('task_created','task_updated','task_transferred','task_deleted');
+   and pm.template_key in ('task_created','task_updated','task_transferred','task_deleted')
+   and exists(
+     select 1
+       from public.chat_messages cm
+       join public.notifications n
+         on n.entity_type='chat_thread'
+        and n.entity_id=cm.thread_id::text
+        and n.created_at=cm.created_at
+        and n.user_id=r.recipient_id
+      where cm.source_portal_message_id=pm.id
+   );
 
 create or replace function private.resequence_task_display_ids()
 returns void
