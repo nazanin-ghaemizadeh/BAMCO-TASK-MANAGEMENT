@@ -3,7 +3,8 @@
   const q = (s, r = document) => r?.querySelector(s);
   const qa = (s, r = document) => [...(r?.querySelectorAll(s) || [])];
   const openSites = new Set(), openCategories = new Set();
-  let categoryMap = new Map(), timer = 0;
+  const microtask = window.queueMicrotask || (fn => Promise.resolve().then(fn));
+  let categoryMap = new Map(), scheduled = false;
 
   function disclosure(kind, id, open) {
     return `<button type="button" class="feature-disclosure" data-${kind}-toggle="${id}" aria-expanded="${open}" aria-label="${open ? 'بستن' : 'باز کردن'}"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5.5 7.5 4.5 4.5 4.5-4.5"/></svg></button>`;
@@ -66,8 +67,13 @@
     } catch {}
   }
   function schedule() {
-    clearTimeout(timer);
-    timer = setTimeout(() => { enhanceSites(); enhanceCategories(); }, 20);
+    if (scheduled) return;
+    scheduled = true;
+    microtask(() => {
+      scheduled = false;
+      enhanceSites();
+      enhanceCategories();
+    });
   }
   function ensureCategoryParent() {
     const form = q('#docCategoryForm');
