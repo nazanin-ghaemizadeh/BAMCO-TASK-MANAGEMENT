@@ -1,11 +1,15 @@
 const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs');
 
-test('profile refresh updates both header and settings avatars',()=>{
+test('profile refresh updates both header and settings avatars through one canonical loader',()=>{
  const canonical=fs.readFileSync('assets/js/login-avatar-workload-fix-20260911.js','utf8');
  const final=fs.readFileSync('assets/js/final-production-fixes-20260911.js','utf8');
+ assert.match(canonical,/#avatar/);
+ assert.match(canonical,/#profileAvatarPreview/);
  assert.match(canonical,/targets\.length&&targets\.every\(/);
- assert.match(final,/function avatarTargets\(\)\{return\[q\('#avatar'\),q\('#profileAvatarPreview'\)\]/);
- assert.match(final,/paintAvatars\(await fetchAvatar\(path\),path\)/);
+ assert.match(final,/window\.refreshProfileAvatar/);
+ assert.doesNotMatch(final,/cache:'no-store'/);
+ assert.doesNotMatch(final,/setInterval\(/);
+ assert.doesNotMatch(final,/select\('profiles'/);
 });
 
 test('manager activity uses created tasks after the saved monitoring baseline',()=>{
