@@ -1,0 +1,62 @@
+name: Release version and update notice
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'version.json'
+      - '.github/workflows/release-version.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  bump:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Bump release marker
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, re
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          version_path=Path('version.json')
+          data=json.loads(version_path.read_text(encoding='utf-8'))
+          today=datetime.now(timezone.utc).strftime('%Y.%m.%d')
+          previous=str(data.get('version',''))
+          match=re.fullmatch(r'(\d{4}\.\d{2}\.\d{2})\.(\d+)',previous)
+          patch=int(match.group(2))+1 if match and match.group(1)==today else 1
+          release=f'{today}.{patch}'
+          data['version']=release
+          data['released_at']=datetime.now(timezone.utc).isoformat(timespec='seconds')
+          data['title']='به‌روزرسانی سامانه'
+          version_path.write_text(json.dumps(data,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+
+          index=Path('index.html')
+          text=index.read_text(encoding='utf-8')
+          text,n=re.subn(r'(<meta name="bamco-app-version" content=")[^"]+("\s*/>)',rf'\g<1>{release}\g<2>',text,count=1)
+          if n!=1: raise SystemExit('app version meta not found')
+          text,n=re.subn(r'(manifest\.webmanifest\?v=)[^"&]+',rf'\g<1>{release}',text,count=1)
+          if n!=1: raise SystemExit('manifest version query not found')
+          text,n=re.subn(r'(assets/js/app-update\.js\?v=)[^"&]+',rf'\g<1>{release}',text,count=1)
+          if n!=1: raise SystemExit('app updater cache key not found')
+          index.write_text(text,encoding='utf-8')
+          PY
+      - name: Commit release marker
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'BAMCO Release Bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add version.json index.html
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Bump release version for update notice"
+          git push
