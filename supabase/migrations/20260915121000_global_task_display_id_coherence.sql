@@ -1,6 +1,6 @@
 -- Keep the public task identifier (legacy_id) coherent everywhere it is shown.
 -- Internal tasks.id remains the immutable relational key and must never leak into
--- user-facing task notifications or generated task tables.
+-- user-facing task notifications, chats or generated task tables.
 
 alter table public.portal_messages
   add column if not exists entity_type text,
@@ -43,6 +43,14 @@ begin
      and pm.body ~ '^وظیفه [0-9]+'
      and pm.body is distinct from regexp_replace(pm.body,'^(وظیفه )[0-9]+',E'\\1'||t.legacy_id::text);
 
+  -- System-chat copies point to the portal message by immutable message ID.
+  update public.chat_messages cm
+     set body=pm.body
+    from public.portal_messages pm
+   where cm.source_portal_message_id=pm.id
+     and pm.entity_type='task'
+     and cm.body is distinct from pm.body;
+
   -- The notification card is the visible copy of a lifecycle event. Match the
   -- exact system-chat event timestamp so unrelated notifications in that thread
   -- are never rewritten.
@@ -55,6 +63,17 @@ begin
      and n.created_at=cm.created_at
      and pm.entity_type='task'
      and n.body is distinct from pm.body;
+
+  -- Task-direct thread titles are also presentation data. Keep their immutable
+  -- task_id/direct_key relationships, but refresh the number shown to users.
+  update public.chat_threads ct
+     set title='وظیفه '||t.legacy_id::text||' — '||left(coalesce(t.title,''),90)
+    from public.tasks t
+   where ct.task_id=t.id
+     and ct.thread_type='direct'
+     and ct.direct_key like 'task:%'
+     and ct.title ~ '^وظیفه [0-9]+ — '
+     and ct.title is distinct from 'وظیفه '||t.legacy_id::text||' — '||left(coalesce(t.title,''),90);
 
   -- Workflow snapshots carry both the immutable task PK and a presentation copy
   -- of legacy_id. Refresh only the presentation copy. Guard the lateral expansion
@@ -207,6 +226,42 @@ begin
     perform private.create_portal_event(new.owner_id,'به‌روزرسانی وظیفه',v_body,'task_updated','task',new.id::text);
   end if;
   return new;
+end
+$function$;
+
+-- Task-direct conversations keep task_id/direct_key as immutable relational keys,
+-- while the generated title uses the current public display number.
+create or replace function public.chat_ensure_task_direct(p_task_id bigint,p_other_user uuid)
+returns uuid
+language plpgsql
+security definer
+set search_path to ''
+as $function$
+declare
+  v_uid uuid := (select auth.uid());
+  v_owner uuid;
+  v_title text;
+  v_display_id bigint;
+  v_key text;
+  v_id uuid;
+begin
+  if v_uid is null or p_other_user is null or p_other_user=v_uid then raise exception 'invalid_recipient'; end if;
+  select owner_id,title,legacy_id into v_owner,v_title,v_display_id from public.tasks where id=p_task_id;
+  if not found then raise exception 'task_not_found'; end if;
+  if not coalesce((select private.is_manager()) or v_owner=v_uid,false) then raise exception 'forbidden'; end if;
+  if not exists(select 1 from public.profiles where id=p_other_user and active) then raise exception 'invalid_recipient'; end if;
+  v_key := 'task:'||p_task_id::text||':'||case when v_uid::text < p_other_user::text then v_uid::text||':'||p_other_user::text else p_other_user::text||':'||v_uid::text end;
+  select id into v_id from public.chat_threads where direct_key=v_key limit 1;
+  if v_id is null then
+    begin
+      insert into public.chat_threads(thread_type,title,task_id,direct_key,created_by)
+      values('direct','وظیفه '||coalesce(v_display_id,p_task_id)::text||' — '||left(coalesce(v_title,''),90),p_task_id,v_key,v_uid) returning id into v_id;
+    exception when unique_violation then
+      select id into v_id from public.chat_threads where direct_key=v_key limit 1;
+    end;
+  end if;
+  insert into public.chat_members(thread_id,user_id) values(v_id,v_uid),(v_id,p_other_user) on conflict do nothing;
+  return v_id;
 end
 $function$;
 
