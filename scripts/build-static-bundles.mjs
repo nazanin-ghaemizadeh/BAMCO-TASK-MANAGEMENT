@@ -55,9 +55,12 @@ const javascript = [
   'assets/js/admin-root-fixes-20260911.js',
   'assets/js/report-stability-fixes-20260911.js',
   'assets/js/messaging-history-root-20260911.js',
-  'assets/js/avatar-final-20260911.js',
+  'assets/js/task-bulk-delete-20260912.js',
+  'assets/js/task-toolbar-actions-20260912.js',
+  'assets/js/final-production-fixes-20260911.js',
   'assets/js/documents-sites.js',
   'assets/js/feature-structure.js',
+  'assets/js/feature-prefetch.js',
   'assets/js/access-editor.js',
   'assets/js/letters.js',
   'assets/js/push-notifications.js'
