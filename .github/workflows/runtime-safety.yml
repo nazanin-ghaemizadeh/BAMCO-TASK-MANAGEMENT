@@ -7,6 +7,7 @@ on:
       - 'assets/js/**'
       - 'assets/css/**'
       - 'tests/**'
+      - 'scripts/**'
       - 'package*.json'
       - 'index.html'
       - '.github/workflows/runtime-safety.yml'
@@ -27,6 +28,8 @@ jobs:
           cache: npm
       - name: Install test dependencies
         run: npm ci
+      - name: Build canonical bundle from source
+        run: npm run build:assets
       - name: JavaScript syntax
         run: |
           for file in assets/js/*.js; do
