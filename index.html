@@ -4,7 +4,7 @@
   <link rel="preload" href="assets/fonts/BNazanin.woff2" as="font" type="font/woff2" crossorigin>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <meta name="bamco-app-version" content="2026.09.15.68" />
+  <meta name="bamco-app-version" content="2026.09.15.69" />
   <meta name="application-name" content="BAMCO" />
   <meta name="apple-mobile-web-app-title" content="BAMCO" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -14,17 +14,13 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.supabase.co https://cdn.jsdelivr.net/gh/jdecked/twemoji@v17.0.3/assets/svg/; font-src 'self' data:; connect-src 'self' https://zhhongjhhbvpmoquvkhl.supabase.co https://lsfqjjynrajthxnhmjyj.supabase.co; frame-src 'self' blob: https://*.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
   <title>BAMCO Task Management</title>
   <meta name="description" content="سامانه آنلاین مدیریت، پایش و پیگیری امور خودروسازان بم" />
-  <link rel="manifest" href="manifest.webmanifest?v=2026.09.15.68" />
+  <link rel="manifest" href="manifest.webmanifest?v=2026.09.15.69" />
   <link rel="icon" type="image/png" sizes="192x192" href="assets/images/bamco-icon-192.png" />
   <link rel="apple-touch-icon" sizes="180x180" href="assets/images/bamco-apple-touch-icon.png" />
-  <script defer src="assets/js/app-update.js?v=2026.09.15.68"></script>
-  <link rel="stylesheet" href="assets/css/app.css?v=mobile-shell-20260911-1">
-  <link rel="stylesheet" href="assets/css/documents-sites.css?v=docs-sites-fixed-shell-20260915-1">
-<link rel="stylesheet" href="assets/css/department-entry.css?v=mobile-entry-20260911-1">
+  <script defer src="assets/js/app-update.js?v=2026.09.15.69"></script>
+  <link rel="stylesheet" href="assets/css/bamco.bundle.css?v=2026.09.15.69">
 <script defer src="assets/js/department-entry.js?v=mobile-entry-20260911-4"></script>
 <style id="entryCritical">html,body{margin:0;min-height:100%;background:#f4f8f5}body.department-pending>#loginView,body.department-pending>#appView{display:none!important}#departmentEntry{min-height:100vh;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 5vw;text-align:center;direction:rtl;color:#164d3b;font-family:"B Nazanin",Tahoma,serif}#departmentEntry[hidden]{display:none!important}#departmentEntry header{display:flex;flex-direction:column;align-items:center}#departmentEntry header img{width:244px;height:152px;box-sizing:border-box;object-fit:contain;background:#0c5842;border-radius:16px;padding:24px 30px}.department-grid{width:min(1020px,100%);display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px}.department-grid button{aspect-ratio:1;border:1px solid #caddcf;border-radius:22px;background:#fff;color:#18543e;font:inherit;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:22px}.department-icon{display:grid;place-items:center;width:86px;height:86px;border-radius:19px;background:#e5f2e9}.department-icon svg{width:48px;height:48px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}.department-grid strong{font-size:22px}.department-state{font-size:16px}@media(max-width:620px){#departmentEntry{min-height:100dvh;justify-content:flex-start;padding:18px 12px 24px;overflow:auto}#departmentEntry header{margin:0 auto 16px}#departmentEntry header img{width:166px;height:104px;padding:15px 20px;border-radius:14px}#departmentEntry h1{font-size:21px;line-height:1.7;margin:12px 0 2px}#departmentEntry header p{font-size:16px}.department-grid{grid-template-columns:1fr;gap:10px;max-width:430px}.department-grid button{aspect-ratio:auto;min-height:96px;display:grid;grid-template-columns:58px minmax(0,1fr) auto;align-items:center;gap:12px;padding:12px 14px;text-align:right;border-radius:14px}.department-grid strong{font-size:17px;text-align:right}.department-icon{width:54px;height:54px}.department-icon svg{width:32px;height:32px}.department-state{font-size:13px;white-space:nowrap}}</style>
-  <link rel="stylesheet" href="assets/css/access-editor.css?v=20260913-12">
-  <link rel="stylesheet" href="assets/css/letters-push.css?v=letter-picker-20260914-42">
 </head>
 <body class="department-pending">
   <main id="departmentEntry" aria-labelledby="departmentTitle">
@@ -54,7 +50,7 @@
     </section>
   </main>
 
-  <script src="assets/js/auth-ui.js?v=editable-login-20260910-1" data-login-controls></script>
+  <script defer src="assets/js/auth-ui.js?v=editable-login-20260910-1" data-login-controls></script>
 
   <div id="appView" class="app hidden">
     <aside id="sidebar" class="sidebar">
@@ -175,72 +171,6 @@
   <dialog id="importDialog" class="modal"><div class="modal-head"><div><h3>پیش‌نمایش ورود از اکسل</h3><p id="importSummary"></p></div><button type="button" data-close="importDialog">×</button></div><label>رفتار با شناسه تکراری<select id="duplicateMode"><option value="reject">رد رکورد</option><option value="update">به‌روزرسانی رکورد موجود</option><option value="create">ایجاد رکورد جدید</option></select></label><div class="table-wrap"><table><thead><tr><th>ردیف</th><th>شناسه</th><th>عنوان</th><th>متولی</th><th>وضعیت</th></tr></thead><tbody id="importPreviewBody"></tbody></table></div><div class="modal-actions"><button type="button" class="ghost" data-close="importDialog">انصراف</button><button id="commitImportBtn" class="primary">ورود رکوردهای معتبر</button></div></dialog>
   <dialog id="avatarCropDialog" class="modal avatar-crop-dialog"><div class="modal-head"><div><h3>تنظیم تصویر پروفایل</h3><p>تصویر را جابه‌جا کنید و با نوار زیر اندازه را تنظیم کنید.</p></div><button type="button" data-close="avatarCropDialog">×</button></div><div class="crop-stage"><canvas id="avatarCropCanvas" width="360" height="360"></canvas></div><label class="crop-zoom">اندازه تصویر<input id="avatarCropZoom" type="range" min="1" max="3" value="1" step="0.01"></label><div class="modal-actions"><button type="button" class="ghost" data-close="avatarCropDialog">انصراف</button><button id="applyAvatarCrop" type="button" class="primary">تأیید محدوده تصویر</button></div></dialog>
 
-  <script defer src="assets/js/message-renderer.js?v=20260914-31"></script>
-  <script defer src="assets/js/media-cache.js?v=20260913-18"></script>
-  <script defer src="assets/js/notices.js?v=mobile-center-20260915-43"></script>
-  <script defer src="assets/js/table-selection.js?v=2026.09.15.68"></script>
-  <script defer src="assets/js/shell.js?v=2026.09.15.68"></script>
-
-  <script defer src="assets/js/stickers.js?v=20260913-18"></script>
-
-  <script defer src="assets/js/task-options.js?v=catalog-edit-20260910-2"></script>
-  <script defer src="assets/js/dashboard-metrics.js?v=dashboard-report-sync-20260915-48"></script>
-  <script defer src="assets/js/app.js?v=stable-route-home-20260915-2"></script>
-  <script defer src="assets/js/people-task-transfer.js?v=people-transfer-20260910-1"></script>
-  <script defer src="assets/js/auth-session.js?v=20260913-16"></script>
-
-<script defer src="assets/js/excel.js?v=excel-root-20260911-4"></script>
-  <script defer src="assets/js/vehicles.js?v=iran-plate-three-part-20260915-2"></script>
-  <link rel="stylesheet" href="assets/css/petty-cash.css?v=petty-cash-layout-20260914-40">
-  <script defer src="assets/js/petty-cash.js?v=cash-dashboard-verified-20260915-1"></script>
-  <script defer src="assets/js/tasks-io.js?v=20260913-15"></script>
-  <script defer src="assets/js/table-ui.js?v=details-20260910-1"></script>
-  <script defer src="assets/js/timeline.js?v=catalog-20260910-1"></script>
-  <script defer src="assets/js/tables.js?v=details-20260910-1"></script>
-  <script defer src="assets/js/ui-helpers.js?v=user-fixes-20260911-1"></script>
-
-  <script defer src="assets/js/sticker-assets.js?v=details-20260910-1"></script>
-  <script defer src="assets/js/sidebar.js?v=guide-group-dedupe-20260915-1" data-sidebar-groups></script>
-  <script defer src="assets/js/phase1-workflow.js?v=details-20260910-1"></script>
-<script defer src="assets/js/phase2-message-engine.js?v=mobile-welcome-20260912-8"></script>
-<script defer src="assets/js/phase3-response-tracking.js?v=20260913-19"></script>
-<script defer src="assets/js/task-ui.js?v=20260913-18" data-user-request-fixes-v2></script>
-<script defer src="assets/js/ux.js?v=details-20260910-1" data-final-polish></script>
-  <script defer src="assets/js/unified-ui.js?v=user-fixes-20260911-1"></script>
-  <link rel="stylesheet" href="assets/css/navigation-completeness.css?v=details-20260910-1">
-  <script defer src="assets/js/production-runtime.js?v=petty-report-20260914-37"></script>
-<script defer src="assets/js/tab-workspace.js?v=20260913-18"></script>
-<script defer src="assets/js/conversations.js?v=task-order-20260915-1"></script>
-<script defer src="assets/js/session-runtime.js?v=session-confirmation-20260910-1"></script>
-<script defer src="assets/js/request-sync.js?v=dashboard-report-sync-20260915-48"></script>
-
-  <link rel="stylesheet" href="assets/css/card-home.css?v=welcome-home-20260912-5">
-<script defer src="assets/js/card-home.js?v=2026.09.15.68"></script>
-<script defer src="assets/js/interior-ui.js?v=cash-toolbar-20260914-41"></script>
-<script defer src="assets/js/table-pages.js?v=prepaint-20260911-1"></script>
-<link rel="stylesheet" href="assets/css/interface-refinement.css?v=details-20260910-1">
-<script defer src="assets/js/table-suite.js?v=prepaint-20260911-1"></script>
-<link rel="stylesheet" href="assets/css/visual-polish.css?v=welcome-close-20260910-2">
-<script defer src="assets/js/visual-polish.js?v=20260913-21"></script>
-<link rel="stylesheet" href="assets/css/usability.css?v=preview-fonts-20260910-1">
-<script defer src="assets/js/usability.js?v=compact-history-20260912-4"></script>
-<script defer src="assets/js/styled-excel.js?v=catalog-20260910-1"></script>
-<script defer src="assets/js/excel-io-fixes.js?v=excel-flex-20260911-1"></script>
-<script defer src="assets/js/chat-emoji-renderer.js?v=20260913-6"></script>
-<script defer src="assets/js/chat-ui.js?v=20260913-16"></script>
-<link rel="stylesheet" href="assets/css/tab-workspace.css?v=details-20260910-1">
-<link rel="stylesheet" href="assets/css/release-fixes.css?v=user-fixes-20260911-1">
-<link rel="stylesheet" href="assets/css/unified-ui.css?v=guide-20260913-20">
-<link rel="stylesheet" href="assets/css/home-stable.css?v=home-fixed-grid-20260915-1">
-<link rel="stylesheet" href="assets/css/home-post-welcome-fix-20260911.css?v=20260911-2">
-<script defer src="assets/js/runtime-fixes-20260911.js?v=dashboard-report-sync-20260915-48"></script>
-<script defer src="assets/js/dashboard-response-fixes-20260911.js?v=mobile-chart-root-20260913-1"></script>
-<script defer src="assets/js/login-avatar-workload-fix-20260911.js?v=profile-sync-20260915-43"></script>
-<script defer src="assets/js/workload-segment-labels-20260911.js?v=mobile-chart-sort-20260913-2"></script>
-<script defer src="assets/js/admin-root-fixes-20260911.js?v=sent-route-guard-20260915-2"></script>
-<script defer src="assets/js/report-stability-fixes-20260911.js?v=dashboard-report-sync-20260915-48"></script>
-<script defer src="assets/js/messaging-history-root-20260911.js?v=mobile-welcome-20260912-8"></script>
-<script defer src="assets/js/avatar-final-20260911.js?v=profile-sync-20260915-43"></script>
 <style id="systemMessageCardLayoutRootFix">
 html body .chat-bubble.bamco-system-message .system-message-open{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;grid-template-areas:"title title" "date sender" "chips chips" "cta cta"!important;column-gap:12px!important;align-items:end!important;direction:ltr!important}
 html body .chat-bubble.bamco-system-message .system-message-open-head{display:contents!important}
@@ -251,11 +181,6 @@ html body .chat-bubble.bamco-system-message .system-message-open-chips{grid-area
 html body .chat-bubble.bamco-system-message .system-message-open-cta{grid-area:cta!important;direction:rtl!important}
 @media(max-width:600px){html body .chat-bubble.bamco-system-message .system-message-open{grid-template-areas:"title title" "sender sender" "date date" "chips chips" "cta cta"!important}.system-message-open-date{white-space:normal!important}}
 </style>
-<script defer src="assets/js/documents-sites.js?v=feature-stability-verified-20260915-2"></script>
-<script defer src="assets/js/feature-structure.js?v=2026.09.15.68"></script>
-<script defer src="assets/js/access-editor.js?v=20260913-17"></script>
-<script defer src="assets/js/letters.js?v=2026.09.15.68"></script>
-<script defer src="assets/js/push-notifications.js?v=owner-activation-20260914-28"></script>
+<script defer src="assets/js/bamco.bundle.js?v=2026.09.15.69"></script>
 </body>
 </html>
-

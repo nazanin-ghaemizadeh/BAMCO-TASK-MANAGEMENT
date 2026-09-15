@@ -101,7 +101,7 @@ function install(){
   try{window.scrollTo({top:0,left:0,behavior:'auto'})}catch{window.scrollTo(0,0)}
   for(const node of [document.documentElement,document.body,app,workspace,home])if(node&&node.scrollTop)node.scrollTop=0;
  }
- function showHome(){
+ function repairHome({reset=false,sync=false}={}){
   if(app.classList.contains('hidden'))return;
   homeExpected=true;
   if(!home.isConnected)workspace.append(home);
@@ -116,8 +116,10 @@ function install(){
   document.body.classList.remove('welcome-active','content-only');
   if(typeof state!=='undefined')state.view='home';
   const title=q('#viewTitle');if(title)title.textContent='میز کار';q('#addTaskBtn')?.classList.add('hidden');
-  syncGroups();resetHomeScroll();
+  if(sync)syncGroups();
+  if(reset)resetHomeScroll();
  }
+ function showHome(){repairHome({reset:true,sync:true})}
  function homeBroken(){
   if(!homeExpected||dialog.open||app.classList.contains('hidden'))return false;
   return !home.isConnected||home.classList.contains('hidden')||nav.parentElement!==home||!top.isConnected||top.classList.contains('hidden')||document.body.classList.contains('content-only')||!document.body.classList.contains('card-home-active');
@@ -125,13 +127,13 @@ function install(){
  function scheduleHomeRepair(){
   if(repairFrame||!homeBroken())return;
   const epoch=homeEpoch;
-  repairFrame=requestAnimationFrame(()=>{repairFrame=0;if(epoch===homeEpoch&&homeBroken())showHome()});
+  repairFrame=requestAnimationFrame(()=>{repairFrame=0;if(epoch===homeEpoch&&homeBroken())repairHome()});
  }
  function settleHome(){
   clearHomeTimers();homeExpected=true;const epoch=++homeEpoch;document.body.classList.remove('home-access-settled');showHome();
   homeTimers=[0,40,120,300,700,1400].map(ms=>setTimeout(()=>{
    if(epoch!==homeEpoch||!homeExpected||dialog.open||app.classList.contains('hidden'))return;
-   if(homeBroken())showHome();
+   if(homeBroken())repairHome();
   },ms));
   homeTimers.push(setTimeout(()=>{if(epoch===homeEpoch&&!dialog.open)document.body.classList.add('home-access-settled')},1800));
  }

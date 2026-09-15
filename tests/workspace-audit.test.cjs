@@ -63,5 +63,5 @@ test('a new release clears app data caches and preserves sticker/sign-in state',
  for(const key of ['bamco.chat.cache','bamco.requests','bamco.sent-email'])assert.equal(f.w.localStorage.getItem(key),null);
  assert.equal(f.w.localStorage.getItem('bamco.sticker.cache'),'keep');assert.equal(f.w.localStorage.getItem('bamco.auth.preference'),'keep');
  assert(f.calls.filter(c=>c.url.includes('/rest/v1/')&&!c.url.includes('sticker')).every(c=>c.cache==='no-store'));
- const html=fs.readFileSync(path.join(root,'index.html'),'utf8');assert.equal((html.match(/assets\/js\/conversations.js/g)||[]).length,1);assert(!html.includes('completion-ui.js'));assert(!fs.readFileSync(path.join(root,'assets/js/production-runtime.js'),'utf8').includes('function renderTasksChat'));
+ const html=fs.readFileSync(path.join(root,'index.html'),'utf8'),bundle=fs.readFileSync(path.join(root,'assets/js/bamco.bundle.js'),'utf8');assert.equal((bundle.match(/source: assets\/js\/conversations.js/g)||[]).length,1);assert(!html.includes('completion-ui.js'));assert(!fs.readFileSync(path.join(root,'assets/js/production-runtime.js'),'utf8').includes('function renderTasksChat'));
 });

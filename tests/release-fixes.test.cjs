@@ -10,7 +10,8 @@ test('entry is lightweight and management gate precedes login',()=>{
   const html=fs.readFileSync(fs.existsSync(stagedEntry)?stagedEntry:path.join(root,'index.html'),'utf8');
   assert.ok(html.indexOf('id="departmentEntry"')<html.indexOf('id="loginView"'));
   assert.doesNotMatch(html,/data:image\//);
-  assert.match(html,/release-fixes\.css/);
+  assert.match(html,/bamco\.bundle\.css/);
+  assert.match(read('assets/css/bamco.bundle.css'),/source: assets\/css\/release-fixes\.css/);
 });
 
 test('permanent vehicle template upload is enabled without embedding the PDF',()=>{

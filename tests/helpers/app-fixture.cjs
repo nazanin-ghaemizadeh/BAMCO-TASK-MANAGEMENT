@@ -21,7 +21,14 @@ async function fixture(options={}){
   if(url.pathname.endsWith('.css')&&!options.styles)return new Response('');
   try{return new Response(fs.readFileSync(path.join(root,url.pathname)),{headers:{'Content-Type':url.pathname.endsWith('.css')?'text/css':'application/javascript'}})}catch{return new Response('',{status:404})}
  });
- const html=fs.readFileSync(path.join(root,'index.html'),'utf8').replace(/<script\b[^>]*src="assets\/js\/(?:auth-ui|department-entry)\.js[^>]*><\/script>/g,tag=>options.authUi&&tag.includes('/auth-ui.')?tag:'');
+ // Keep legacy integration fixtures at one browser task per source file. The
+ // production bundle itself is exercised by startup-bundle/responsiveness and
+ // browser smoke tests; expanding it here preserves the fixtures' async seams.
+ const bundle=fs.readFileSync(path.join(root,'assets/js/bamco.bundle.js'),'utf8');
+ const sourceTags=[...bundle.matchAll(/\/\* source: (assets\/js\/[^ ]+) \*\//g)].map(([,src])=>`<script defer src="${src}"></script>`).join('\n');
+ const html=fs.readFileSync(path.join(root,'index.html'),'utf8')
+  .replace(/<script\b[^>]*src="assets\/js\/(?:auth-ui|department-entry)\.js[^>]*><\/script>/g,tag=>options.authUi&&tag.includes('/auth-ui.')?tag:'')
+  .replace(/<script\b[^>]*src="assets\/js\/bamco\.bundle\.js[^>]*><\/script>/,sourceTags);
  const dom=new JSDOM(html,{url:'https://bamco.test/',runScripts:'dangerously',resources:{interceptors:[local]},pretendToBeVisual:true,virtualConsole:vc,beforeParse(w){
   w.Response=Response;w.Request=Request;w.Headers=Headers;w.AbortController=AbortController;w.Blob=Blob;w.TextEncoder=TextEncoder;w.CSS={escape:s=>String(s)};w.print=()=>{};w.scrollTo=()=>{};w.HTMLElement.prototype.scrollTo=function(){};w.HTMLElement.prototype.scrollIntoView=function(){};for(const [key,value] of Object.entries(options.storage||{}))w.localStorage.setItem(key,value);
   w.fetch=async(input,init={})=>{

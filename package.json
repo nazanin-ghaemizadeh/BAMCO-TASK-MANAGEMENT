@@ -2,6 +2,9 @@
   "name": "bamco-task-management",
   "private": true,
   "scripts": {
+    "build:assets": "node scripts/build-static-bundles.mjs",
+    "check:assets": "node scripts/build-static-bundles.mjs --check",
+    "pretest": "npm run check:assets",
     "dev": "vite",
     "test": "node --test --test-force-exit tests/*.test.cjs"
   },

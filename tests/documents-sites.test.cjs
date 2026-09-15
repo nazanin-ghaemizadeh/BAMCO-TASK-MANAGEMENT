@@ -73,12 +73,16 @@ test('feature uses local XLSX loader and no public preview service or unsafe eva
 
 test('index wires both feature views and source files after integration',()=>{
   const html=fs.readFileSync(path.join(ROOT,'index.html'),'utf8');
+  const js=fs.readFileSync(path.join(ROOT,'assets/js/bamco.bundle.js'),'utf8');
+  const css=fs.readFileSync(path.join(ROOT,'assets/css/bamco.bundle.css'),'utf8');
   assert.match(html,/data-view="documents"/);
   assert.match(html,/data-view="sitesAccess"/);
   assert.match(html,/id="documentsView"/);
   assert.match(html,/id="sitesAccessView"/);
-  assert.match(html,/assets\/js\/documents-sites\.js/);
-  assert.match(html,/assets\/css\/documents-sites\.css/);
+  assert.match(html,/assets\/js\/bamco\.bundle\.js/);
+  assert.match(html,/assets\/css\/bamco\.bundle\.css/);
+  assert.match(js,/source: assets\/js\/documents-sites\.js/);
+  assert.match(css,/source: assets\/css\/documents-sites\.css/);
 });
 
 test('feature runtime boots without console error and exposes both views for a normal user',async()=>{

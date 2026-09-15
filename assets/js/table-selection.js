@@ -10,7 +10,14 @@ function notify(t){paint(t);t.dispatchEvent(new CustomEvent('bamco-selection-cha
 function taskScope(t){return t?.closest('#kanbanView')?'kanban':t?.closest('#archiveView')?'archive':null}
 function selectedIds(t){const scope=taskScope(t);if(scope&&window.bamcoTaskSelection)return window.bamcoTaskSelection.ids(scope).map(String);return [...model(t).ids]}
 function clearTask(t){const scope=taskScope(t);if(scope)window.bamcoTaskSelection?.clear(scope)}
-function clear(value){const t=tableOf(value);if(t){clearTask(t);model(t).ids.clear();notify(t)}else for(const m of models.values()){clearTask(m.table);m.ids.clear();if(m.table.isConnected)notify(m.table)}}
+function clear(value){
+ const t=tableOf(value);
+ if(t){clearTask(t);model(t).ids.clear();notify(t);return}
+ // An explicit selector may legitimately point to a table that has not been
+ // rendered yet. Treat that as a no-op; only a parameterless call means all.
+ if(value!=null)return;
+ for(const m of models.values()){clearTask(m.table);m.ids.clear();if(m.table.isConnected)notify(m.table)}
+}
 function selectRow(row,event={}){const t=row.closest('table'),m=model(t),id=key(row),was=m.ids.has(id),additiveByDefault=!!row.closest('#responseReportView');if(event.shiftKey&&m.anchor){const list=rows(t).filter(r=>!r.hidden&&!r.classList.contains('suite-filtered-out')&&!r.classList.contains('page-row-hidden')),a=list.findIndex(r=>key(r)===m.anchor),b=list.indexOf(row);if(a>=0&&b>=0){for(const r of list.slice(Math.min(a,b),Math.max(a,b)+1))m.ids.add(key(r))}}else{if(!event.ctrlKey&&!event.metaKey&&!additiveByDefault)m.ids.clear();if(!was)m.ids.add(id);else m.ids.delete(id);m.anchor=id}notify(t)}
 function usesLocalSelection(row){return !!row.closest('#kanbanView,#archiveView,#messageCenterView,#responseTrackingView')}
 function genericTable(t){return !!t&&!t.closest('dialog')&&!t.closest('#kanbanView,#archiveView,#messageCenterView,#responseTrackingView')}

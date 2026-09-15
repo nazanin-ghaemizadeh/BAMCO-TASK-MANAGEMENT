@@ -39,6 +39,7 @@ jobs:
           from pathlib import Path
           rt=Path('assets/js/production-runtime.js').read_text(encoding='utf-8')
           page=Path('index.html').read_text(encoding='utf-8')
+          bundle=Path('assets/js/bamco.bundle.js').read_text(encoding='utf-8')
           sess=Path('assets/js/session-runtime.js').read_text(encoding='utf-8')
           ui=Path('assets/js/conversations.js').read_text(encoding='utf-8')
           forbidden=["qa('#nav>.nav-group').forEach(x=>x.remove())",'replaceChildren(','.innerHTML=\'\'']
@@ -46,8 +47,9 @@ jobs:
               assert x not in rt, f'unsafe navigation rebuild found: {x}'
           for view in ['groupChat','directMessages','taskChats','loginActivity','activeSessions','performanceReport','responseReport','requestReport','systemOptions']:
               assert view in rt, f'missing tested view: {view}'
+          assert page.count('assets/js/bamco.bundle.js')==1, 'application bundle must load once'
           for script in ["production-runtime.js", "tab-workspace.js", "conversations.js", "session-runtime.js"]:
-              assert page.count(script)==1, f"runtime must load once: {script}"
+              assert bundle.count(f'source: assets/js/{script}')==1, f"runtime must be bundled once: {script}"
           assert "navigation-completeness.js" not in page
           assert "[300,900,1800]" not in rt
           assert "setTimeout(()=>{qa('#appView .view')" not in ui

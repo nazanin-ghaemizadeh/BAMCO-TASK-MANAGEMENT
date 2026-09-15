@@ -26,8 +26,10 @@
    function update(){
     const data=rows(),range=pageWindow(data.length,model.size,model.page);model.page=range.page;
     data.forEach((row,i)=>{const hidden=i<range.start||i>=range.end;if(row.classList.contains('table-page-hidden')!==hidden)row.classList.toggle('table-page-hidden',hidden)});
-    pager.querySelector('.page-range').textContent=`${number(range.total?range.start+1:0)} تا ${number(range.end)} از ${number(range.total)} ردیف`;
-    pager.querySelector('.page-position').textContent=`${number(range.page)} / ${number(range.pages)}`;
+    const rangeText=`${number(range.total?range.start+1:0)} تا ${number(range.end)} از ${number(range.total)} ردیف`,positionText=`${number(range.page)} / ${number(range.pages)}`;
+    const rangeNode=pager.querySelector('.page-range'),positionNode=pager.querySelector('.page-position');
+    if(rangeNode.textContent!==rangeText)rangeNode.textContent=rangeText;
+    if(positionNode.textContent!==positionText)positionNode.textContent=positionText;
     pager.querySelectorAll('[data-page]').forEach(b=>b.disabled=['first','prev'].includes(b.dataset.page)?range.page===1:range.page===range.pages);
     return range;
    }
