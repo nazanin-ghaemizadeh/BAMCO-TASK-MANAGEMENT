@@ -18,7 +18,9 @@ test('task lifecycle events use the public display id and one safe inbox surface
  assert.match(sql,/perform private\.sync_task_display_references\(\)/);
  assert.match(sql,/coalesce\(t->>''legacy_id'',t->>''id''\)/);
  assert.match(sql,/position\('«'\|\|coalesce\(t\.title,''\)\|\|'»' in pm\.body\)>0/);
- assert.match(sql,/cm\.source_portal_message_id=pm\.id/);
+ assert.match(sql,/update public\.chat_messages cm/);
+ assert.match(sql,/create or replace function public\.chat_ensure_task_direct/);
+ assert.match(sql,/select owner_id,title,legacy_id into v_owner,v_title,v_display_id/);
  assert.match(sql,/n\.user_id=r\.recipient_id/);
  assert.match(sql,/case when jsonb_typeof\(s\.tasks\)='array' then s\.tasks else '\[\]'::jsonb end/);
  assert.doesNotMatch(sql,/coalesce\(new\.legacy_id,new\.id\)::text/);
@@ -43,10 +45,14 @@ test('home self-repair does not repeatedly reset scroll or reorder cards',()=>{
  assert.doesNotMatch(source,/homeBroken\(\)\)showHome\(\)/);
 });
 
-test('document and site structural enhancement is batched before paint without starving load',()=>{
+test('document/site structure and inbox task IDs settle without post-paint jumps',()=>{
  const source=read('assets/js/feature-structure.js');
  assert.match(source,/requestAnimationFrame/);
  assert.match(source,/frame = requestAnimationFrame\(\(\) =>/);
+ assert.match(source,/function normalizeInboxTaskIds\(\)/);
+ assert.match(source,/publicByInternal = new Map/);
+ assert.match(source,/task\.legacy_id \?\? task\.id/);
+ assert.match(source,/bamco-inbox-updated/);
  assert.doesNotMatch(source,/queueMicrotask|microtask\(/);
  assert.doesNotMatch(source,/setTimeout\(\(\) => \{ enhanceSites\(\); enhanceCategories\(\); \}, 20\)/);
 });
