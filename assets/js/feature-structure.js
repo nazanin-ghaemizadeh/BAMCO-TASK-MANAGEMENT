@@ -101,7 +101,8 @@
     } catch (error) { toast(error.message, true); }
     finally { button.disabled = false; }
   }
-  function openCashDashboard() {
+  async function openCashDashboard() {
+    if (window.bamcoPettyCash?.load) await window.bamcoPettyCash.load();
     let dialog = q('#cashDashboardDialog');
     if (!dialog) { dialog = document.createElement('dialog'); dialog.id = 'cashDashboardDialog'; dialog.className = 'modal cash-dashboard-dialog'; document.body.append(dialog); }
     const source = q('#pettyCashSummary');
@@ -115,7 +116,7 @@
     if (category) { event.preventDefault(); event.stopPropagation(); const id = category.dataset.categoryToggle; openCategories.has(id) ? openCategories.delete(id) : openCategories.add(id); enhanceCategories(); return; }
     const add = event.target.closest('[data-add-subcategory]');
     if (add) { event.preventDefault(); q('#addDocumentCategory')?.click(); setTimeout(() => populateParent(add.dataset.addSubcategory), 0); return; }
-    if (event.target.closest('#cashDashboardToggle')) { event.preventDefault(); event.stopImmediatePropagation(); openCashDashboard(); }
+    if (event.target.closest('#cashDashboardToggle')) { event.preventDefault(); event.stopImmediatePropagation(); void openCashDashboard(); }
   }, true);
   document.addEventListener('submit', saveCategory, true);
   new MutationObserver(records => {
