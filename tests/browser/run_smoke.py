@@ -63,7 +63,7 @@ async def manager_checks(page,result):
         await letter_dialog.locator('[data-letter-mode="outgoing"]').click()
     await expect(page.locator('#lettersTable tbody tr')).to_have_count(53)
     await expect(page.locator('#lettersView .letters-heading h3')).to_have_count(1)
-    await expect(page.locator('#lettersView > .bamco-command-bar')).to_have_count(1)
+    await expect(page.locator('#lettersView .letter-toolbar.bamco-command-bar')).to_have_count(1)
     assert await page.locator('#lettersView .letter-toolbar .content-back').count()==1
     assert await page.locator('#lettersView .letter-toolbar #addLetter').count()==1
     geometry=await page.locator('#lettersView .letters-scroll').evaluate("e=>({h:e.clientHeight,total:e.scrollHeight,bottom:e.getBoundingClientRect().bottom,viewport:innerHeight})")
