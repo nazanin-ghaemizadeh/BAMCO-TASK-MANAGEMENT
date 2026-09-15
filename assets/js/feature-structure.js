@@ -140,7 +140,7 @@
     const category = event.target.closest('[data-category-toggle]');
     if (category) { event.preventDefault(); event.stopPropagation(); const id = category.dataset.categoryToggle; openCategories.has(id) ? openCategories.delete(id) : openCategories.add(id); enhanceCategories(); return; }
     const add = event.target.closest('[data-add-subcategory]');
-    if (add) { event.preventDefault(); q('#addDocumentCategory')?.click(); queueMicrotask(() => populateParent(add.dataset.addSubcategory)); return; }
+    if (add) { event.preventDefault(); q('#addDocumentCategory')?.click(); populateParent(add.dataset.addSubcategory); return; }
     if (event.target.closest('#cashDashboardToggle')) { event.preventDefault(); event.stopImmediatePropagation(); void openCashDashboard(); }
   }, true);
   document.addEventListener('submit', saveCategory, true);
