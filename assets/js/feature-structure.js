@@ -59,10 +59,11 @@
     });
   }
   async function refreshCategoryMap() {
+    if (!state?.token) return;
     try {
       const rows = await selectAll('document_categories', 'select=id,parent_id,title&order=sort_order.asc,id.asc');
       categoryMap = new Map(rows.map(row => [String(row.id), row]));
-      enhanceCategories();
+      schedule();
     } catch {}
   }
   function schedule() {
@@ -74,7 +75,6 @@
     });
   }
 
-  // Task relations use immutable task IDs; visible headings use legacy_id.
   const latinDigits = value => String(value ?? '').replace(/[۰-۹]/g, d => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)));
   const persianDigits = value => String(value ?? '').replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
   function normalizeInboxTaskIds() {
@@ -140,23 +140,23 @@
     const category = event.target.closest('[data-category-toggle]');
     if (category) { event.preventDefault(); event.stopPropagation(); const id = category.dataset.categoryToggle; openCategories.has(id) ? openCategories.delete(id) : openCategories.add(id); enhanceCategories(); return; }
     const add = event.target.closest('[data-add-subcategory]');
-    if (add) { event.preventDefault(); q('#addDocumentCategory')?.click(); setTimeout(() => populateParent(add.dataset.addSubcategory), 0); return; }
+    if (add) { event.preventDefault(); q('#addDocumentCategory')?.click(); populateParent(add.dataset.addSubcategory); return; }
     if (event.target.closest('#cashDashboardToggle')) { event.preventDefault(); event.stopImmediatePropagation(); void openCashDashboard(); }
   }, true);
   document.addEventListener('submit', saveCategory, true);
-  new MutationObserver(records => {
-    if (records.some(record => record.target.id === 'docCategoryDialog' && record.attributeName === 'open')) {
-      const form = q('#docCategoryForm'), row = categoryMap.get(String(form?.elements?.id?.value || ''));
-      populateParent(row?.parent_id || '');
-    }
-    schedule();
-  }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['open'] });
+  const categoryDialog = q('#docCategoryDialog');
+  if (categoryDialog) new MutationObserver(() => {
+    if (!categoryDialog.open) return;
+    const form = q('#docCategoryForm'), row = categoryMap.get(String(form?.elements?.id?.value || ''));
+    populateParent(row?.parent_id || '');
+  }).observe(categoryDialog, { attributes: true, attributeFilter: ['open'] });
   const documents = q('#documentsFeatureBody'), sites = q('#sitesFeatureBody'), inbox = q('#messageList');
   if (documents) new MutationObserver(schedule).observe(documents, { childList: true, subtree: true });
   if (sites) new MutationObserver(schedule).observe(sites, { childList: true, subtree: true });
   if (inbox) new MutationObserver(scheduleInboxNormalization).observe(inbox, { childList: true, subtree: true });
   document.addEventListener('bamco-inbox-updated', scheduleInboxNormalization);
-  q('#documentsRefresh')?.addEventListener('click', () => setTimeout(refreshCategoryMap, 50));
-  window.addEventListener('focus', () => { refreshCategoryMap(); scheduleInboxNormalization(); });
-  refreshCategoryMap(); schedule(); scheduleInboxNormalization();
+  q('#documentsRefresh')?.addEventListener('click', () => void refreshCategoryMap());
+  window.addEventListener('focus', () => { schedule(); scheduleInboxNormalization(); });
+  window.bamcoFeatureStructure = { refreshCategories: refreshCategoryMap, schedule };
+  void refreshCategoryMap(); schedule(); scheduleInboxNormalization();
 })();

@@ -7,6 +7,7 @@ on:
       - 'assets/js/**'
       - 'assets/css/**'
       - 'tests/**'
+      - 'scripts/**'
       - 'package*.json'
       - 'index.html'
       - '.github/workflows/runtime-safety.yml'
@@ -27,6 +28,8 @@ jobs:
           cache: npm
       - name: Install test dependencies
         run: npm ci
+      - name: Build canonical bundle from source
+        run: npm run build:assets
       - name: JavaScript syntax
         run: |
           for file in assets/js/*.js; do
@@ -63,5 +66,5 @@ jobs:
           print('runtime safety: PASS')
           PY
 
-      - name: Navigation and loading regression tests
-        run: node --test --test-force-exit tests/*.test.cjs
+      - name: Full regression suite with documented baseline
+        run: npm run test:regression
