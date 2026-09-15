@@ -77,7 +77,6 @@ function install(){
    welcomeStickerReadyUser=user;
    for(const item of loaded){const image=dialog.querySelector('.'+item.gender);if(image.src!==item.url)image.src=item.url;image.style.visibility='visible';image.dataset.stickerSet=String(pack.id)}
   }
-  // Reuse the last authenticated pair immediately; validate the active pack in parallel.
   if(!force)try{const saved=JSON.parse(sessionStorage.getItem(key)||'null');if(saved)void display(saved).catch(()=>{})}catch{}
   try{
    const [sets,rows]=await Promise.all([select('sticker_sets','active=eq.true&select=id&order=created_at.desc&limit=1'),select('stickers','state_key=eq.state1&gender=in.(female,male)&select=set_id,gender,storage_path')]);
@@ -91,10 +90,9 @@ function install(){
  function stickers(force=false){if(!force&&welcomeStickerReadyUser&&welcomeStickerReadyUser===state.user?.id)return Promise.resolve();if(welcomeStickerPromise&&!force)return welcomeStickerPromise;const generation=++welcomeStickerGeneration,job=loadWelcomeStickers(generation,force);welcomeStickerPromise=job;return job.finally(()=>{if(welcomeStickerPromise===job)welcomeStickerPromise=null})}
  q('#welcomeView')?.remove();
  window.bamcoPrepareWelcomeStickers=()=>stickers();window.addEventListener('bamco-stickers-ready',()=>stickers(true));document.addEventListener('bamco:stickers-changed',()=>stickers(true));
- let homeExpected=false,repairFrame=0,homeEpoch=0,homeTimers=[];
- function clearHomeTimers(){homeTimers.forEach(clearTimeout);homeTimers=[]}
+ let homeExpected=false,repairFrame=0,homeEpoch=0;
  function leaveHome(){
-  homeExpected=false;homeEpoch++;clearHomeTimers();
+  homeExpected=false;homeEpoch++;document.body.classList.remove('home-access-settled');
   if(repairFrame){cancelAnimationFrame(repairFrame);repairFrame=0}
  }
  function resetHomeScroll(){
@@ -130,12 +128,9 @@ function install(){
   repairFrame=requestAnimationFrame(()=>{repairFrame=0;if(epoch===homeEpoch&&homeBroken())repairHome()});
  }
  function settleHome(){
-  clearHomeTimers();homeExpected=true;const epoch=++homeEpoch;document.body.classList.remove('home-access-settled');showHome();
-  homeTimers=[0,40,120,300,700,1400].map(ms=>setTimeout(()=>{
-   if(epoch!==homeEpoch||!homeExpected||dialog.open||app.classList.contains('hidden'))return;
-   if(homeBroken())repairHome();
-  },ms));
-  homeTimers.push(setTimeout(()=>{if(epoch===homeEpoch&&!dialog.open)document.body.classList.add('home-access-settled')},1800));
+  homeExpected=true;const epoch=++homeEpoch;
+  showHome();document.body.classList.add('home-access-settled');
+  requestAnimationFrame(()=>{if(epoch===homeEpoch&&homeBroken())repairHome()});
  }
  function syncMode(){const loggedIn=!app.classList.contains('hidden'),atHome=!home.classList.contains('hidden');document.body.classList.toggle('card-home-active',loggedIn&&atHome);document.body.classList.toggle('content-only',loggedIn&&!atHome);if(homeExpected&&!dialog.open)scheduleHomeRepair()}
  const repairObserver=new MutationObserver(scheduleHomeRepair);
@@ -143,13 +138,12 @@ function install(){
  repairObserver.observe(workspace,{childList:true});
  repairObserver.observe(home,{attributes:true,attributeFilter:['class','style','hidden']});
  repairObserver.observe(top,{attributes:true,attributeFilter:['class','style','hidden']});
- repairObserver.observe(document.body,{attributes:true,attributeFilter:['class']});
  new MutationObserver(syncMode).observe(home,{attributes:true,attributeFilter:['class']});
  nav.addEventListener('click',e=>{if(e.target.closest('button[data-view]'))leaveHome()},true);
  window.bamcoLeaveHome=leaveHome;
  window.bamcoShowHome=settleHome;
  let welcomed=false;
- window.bamcoOpenHomeWelcome=()=>{if(welcomed||app.classList.contains('hidden'))return;if(typeof state!=='undefined'&&state.profile?.must_change_password)return;welcomed=true;clearHomeTimers();homeExpected=true;homeEpoch++;showHome();document.body.classList.add('home-welcome-open');dialog.querySelector('.welcome-person').textContent=(q('#userName')?.textContent||'همکار')+' عزیز';dialog.showModal();void stickers()};
+ window.bamcoOpenHomeWelcome=()=>{if(welcomed||app.classList.contains('hidden'))return;if(typeof state!=='undefined'&&state.profile?.must_change_password)return;welcomed=true;homeExpected=true;homeEpoch++;showHome();document.body.classList.add('home-access-settled','home-welcome-open');dialog.querySelector('.welcome-person').textContent=(q('#userName')?.textContent||'همکار')+' عزیز';dialog.showModal();void stickers()};
  dialog.querySelector('.welcome-dismiss').addEventListener('click',()=>dialog.close());
  dialog.addEventListener('close',()=>{
   document.body.classList.remove('home-welcome-open');
