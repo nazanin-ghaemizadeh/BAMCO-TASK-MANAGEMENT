@@ -54,6 +54,7 @@ jobs:
           # cannot mix old selection/navigation code with the new database rules.
           for asset in (
               'assets/js/table-selection.js',
+              'assets/js/shell.js',
               'assets/js/card-home.js',
               'assets/js/feature-structure.js',
               'assets/js/letters.js',
