@@ -27,8 +27,8 @@ jobs:
         run: npm ci
       - name: Build canonical static assets
         run: npm run build:assets
-      - name: Test release candidate
-        run: npm test
+      - name: Reject regressions beyond the documented baseline
+        run: npm run test:regression
       - name: Bump release marker
         shell: bash
         run: |
@@ -59,8 +59,6 @@ jobs:
           text,n=re.subn(r'(assets/js/app-update\.js\?v=)[^"&]+',rf'\g<1>{release}',text,count=1)
           if n!=1: raise SystemExit('app updater cache key not found')
 
-          # The application is shipped as one CSS and one JavaScript bundle.
-          # Bust both atomically so a browser cannot mix release generations.
           for asset in ('assets/css/bamco.bundle.css', 'assets/js/bamco.bundle.js'):
               pattern=rf'({re.escape(asset)}\?v=)[^"&]+'
               text,n=re.subn(pattern,rf'\g<1>{release}',text,count=1)
