@@ -32,6 +32,8 @@ security definer
 set search_path to ''
 as $function$
 begin
+  -- Portal task events keep the immutable task PK as their link, while the
+  -- visible number is always refreshed from the current public display ID.
   update public.portal_messages pm
      set body=regexp_replace(pm.body,'^(وظیفه )[0-9]+',E'\\1'||t.legacy_id::text)
     from public.tasks t
@@ -41,6 +43,9 @@ begin
      and pm.body ~ '^وظیفه [0-9]+'
      and pm.body is distinct from regexp_replace(pm.body,'^(وظیفه )[0-9]+',E'\\1'||t.legacy_id::text);
 
+  -- The notification card is the visible copy of a lifecycle event. Match the
+  -- exact system-chat event timestamp so unrelated notifications in that thread
+  -- are never rewritten.
   update public.notifications n
      set body=pm.body
     from public.chat_messages cm
@@ -51,6 +56,8 @@ begin
      and pm.entity_type='task'
      and n.body is distinct from pm.body;
 
+  -- Workflow snapshots carry both the immutable task PK and a presentation copy
+  -- of legacy_id. Refresh only the presentation copy.
   with rebuilt as (
     select s.id,
            coalesce(jsonb_agg(
@@ -92,14 +99,26 @@ begin
   select coalesce(nullif(display_name,''),nullif(full_name,''),email::text,'سامانه')
     into v_sender_name from public.profiles where id=v_sender;
   v_sender_name:=coalesce(v_sender_name,'سامانه');
+
   insert into public.portal_messages(
     sender_id,subject,body,importance,allow_reply,require_ack,template_key,sender_name_snapshot,entity_type,entity_id
   ) values(
     v_sender,left(coalesce(p_title,'پیام سامانه'),240),coalesce(p_body,''),'normal',false,false,
     coalesce(nullif(p_type,''),'system_event'),v_sender_name,nullif(p_entity_type,''),nullif(p_entity_id,'')
   ) returning id into mid;
+
+  -- The recipient INSERT trigger creates the system-chat copy and notification.
+  -- For task lifecycle events that notification is the single canonical inbox
+  -- surface, so hide the portal-recipient duplicate immediately afterwards.
   insert into public.portal_message_recipients(message_id,recipient_id)
   values(mid,p_user) on conflict do nothing;
+
+  if p_entity_type='task' then
+    update public.portal_message_recipients
+       set read_at=coalesce(read_at,now()),
+           dismissed_at=coalesce(dismissed_at,now())
+     where message_id=mid and recipient_id=p_user;
+  end if;
 end
 $function$;
 
@@ -130,9 +149,9 @@ begin
     return old;
   end if;
 
-  -- The after-row notification trigger runs before the statement-level display-ID
-  -- resequencer. Rank this row with the resequencer's exact ordering so the event
-  -- already contains the final public identifier, including Excel-imported rows.
+  -- AFTER ROW runs before the statement-level display-ID resequencer. Rank the
+  -- row with the exact resequencer ordering so the event already contains the
+  -- final public identifier, including Excel-imported rows.
   v_id:=private.task_display_id_for_order(new.id,new.legacy_id)::text;
 
   if tg_op='INSERT' then
@@ -188,16 +207,36 @@ begin
 end
 $function$;
 
--- Backfill links for existing task events when the body contains either the
--- immutable PK (the reported bug) or the task's currently valid display ID.
+-- Backfill existing events safely. An immutable PK match is unambiguous.
 update public.portal_messages pm
    set entity_type='task',entity_id=t.id::text
   from public.tasks t
  where pm.entity_id is null
    and pm.template_key in ('task_created','task_updated','task_transferred')
    and pm.body ~ '^وظیفه [0-9]+ '
-   and substring(pm.body from '^وظیفه ([0-9]+) ')::bigint in (t.id,t.legacy_id)
+   and substring(pm.body from '^وظیفه ([0-9]+) ')::bigint=t.id;
+
+-- Older rows that already used the public number are linked only when the title
+-- also matches, avoiding accidental collisions with another task's immutable PK.
+update public.portal_messages pm
+   set entity_type='task',entity_id=t.id::text
+  from public.tasks t
+ where pm.entity_id is null
+   and pm.template_key in ('task_created','task_updated','task_transferred')
+   and pm.body ~ '^وظیفه [0-9]+ '
+   and substring(pm.body from '^وظیفه ([0-9]+) ')::bigint=t.legacy_id
    and position('«'||coalesce(t.title,'')||'»' in pm.body)>0;
+
+-- Existing lifecycle rows may currently appear twice in "پیام‌های من": once as
+-- a portal recipient and once as the notification generated from its system chat.
+-- Keep the notification and dismiss only the duplicate portal-recipient surface.
+update public.portal_message_recipients r
+   set read_at=coalesce(r.read_at,pm.created_at,now()),
+       dismissed_at=coalesce(r.dismissed_at,pm.created_at,now())
+  from public.portal_messages pm
+ where pm.id=r.message_id
+   and pm.entity_type='task'
+   and pm.template_key in ('task_created','task_updated','task_transferred','task_deleted');
 
 create or replace function private.resequence_task_display_ids()
 returns void
