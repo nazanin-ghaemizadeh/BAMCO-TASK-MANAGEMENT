@@ -1,0 +1,39 @@
+name: One-shot shell task display ID patch
+
+on:
+  push:
+    branches: [fix/site-coherence-20260915]
+    paths: ['.github/workflows/patch-shell-task-id.yml']
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/site-coherence-20260915
+      - name: Use public task ID in inbox conversation names
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          path=Path('assets/js/shell.js')
+          text=path.read_text(encoding='utf-8')
+          old="threadNames=new Map(threads.map(t=>[t.id,t.task_id?'وظیفه '+fa(t.task_id)+' · '+t.title:t.title]));"
+          new="threadNames=new Map(threads.map(t=>{const task=t.task_id?(state.tasks||[]).find(x=>String(x.id)===String(t.task_id)):null;return[t.id,t.task_id?'وظیفه '+fa(task?.legacy_id||t.task_id)+' · '+t.title:t.title]}));"
+          if old in text:
+              text=text.replace(old,new,1)
+              path.write_text(text,encoding='utf-8')
+          elif new not in text:
+              raise SystemExit('target inbox task-id expression not found')
+          PY
+          git config user.name 'BAMCO Fix Bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git rm .github/workflows/patch-shell-task-id.yml
+          git add assets/js/shell.js
+          git commit -m 'fix: show public task ID in inbox thread names'
+          git push
