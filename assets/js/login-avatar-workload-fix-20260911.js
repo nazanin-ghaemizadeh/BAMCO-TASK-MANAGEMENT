@@ -85,6 +85,11 @@ function schedule(){
   });
 }
 function resetSource(){lastPath='';lastSource='';loadingPath='';loadingPromise=null}
+function invalidateEditedAvatar(){
+  const path=String(profile()?.avatar_path||'');
+  resetSource();
+  if(path)void window.bamcoMedia?.invalidate?.('avatars',path);
+}
 function boot(){
   window.refreshProfileAvatar=refresh;
   window.bamcoTopbarAvatar={refresh,repair:ensureHeaderAccount,reset:resetSource};
@@ -92,6 +97,7 @@ function boot(){
   if(app)new MutationObserver(()=>{if(!app.classList.contains('hidden'))schedule()}).observe(app,{attributes:true,attributeFilter:['class']});
   document.addEventListener('click',e=>{
     if(e.target.closest('#logoutBtn'))resetSource();
+    else if(e.target.closest('#applyAvatarCrop'))invalidateEditedAvatar();
     else if(e.target.closest('[data-view="settings"],.welcome-dismiss,.home-return'))schedule();
   },true);
   addEventListener('pageshow',schedule);
