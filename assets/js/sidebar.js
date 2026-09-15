@@ -79,8 +79,11 @@
     if(settings){settings.classList.add('nav-settings-root');settings.title='تنظیمات';if(!settings.querySelector('b'))settings.insertAdjacentHTML('afterbegin','<b>⚙</b>')}
     const permanent=document.createElement('button');permanent.dataset.view='vehiclePermanent';permanent.className='hidden vehicle-access-nav';permanent.innerHTML='<b>▣</b><span>تحویل دائم</span>';
     const temporary=document.createElement('button');temporary.dataset.view='vehicleTemporary';temporary.className='hidden vehicle-access-nav';temporary.innerHTML='<b>▤</b><span>تحویل موقت</span>';
-    const userGuide=document.createElement('button');userGuide.type='button';userGuide.dataset.view='userGuide';userGuide.innerHTML='<b>▤</b><span>راهنمای استفاده سامانه</span>';
-    nav.append(permanent,temporary,userGuide);qa('#nav>.nav-divider').forEach(x=>x.remove());
+    const userGuide=q('#nav button[data-view="userGuide"]')||document.createElement('button');
+    if(!userGuide.dataset.view){userGuide.type='button';userGuide.dataset.view='userGuide';userGuide.innerHTML='<b>▤</b><span>راهنمای استفاده سامانه</span>'}
+    nav.append(permanent,temporary,userGuide);
+    qa('#nav>.nav-group[data-group="guide"]').filter(g=>!g.querySelector('[data-view="userGuide"]')).forEach(g=>g.remove());
+    qa('#nav>.nav-divider').forEach(x=>x.remove());
     const task=makeGroup('مدیریت وظایف','tasks',['kanban','archive','taskTimeline','approvals','requestHistory','approvalChains'],'☑');
     const people=makeGroup('مدیریت افراد','people',['people'],'♙');
     const email=makeGroup('مدیریت پیام','messages',['messageCenter','sentMessages','messages','templates','stickers'],'✉');
