@@ -9,7 +9,7 @@ test('changed browser scripts are syntactically valid',()=>{
  }
 });
 
-test('task lifecycle events use the public display id and one inbox surface',()=>{
+test('task lifecycle events use the public display id and one safe inbox surface',()=>{
  const sql=read('supabase/migrations/20260915121000_global_task_display_id_coherence.sql');
  assert.match(sql,/task_display_id_for_order/);
  assert.match(sql,/v_id:=private\.task_display_id_for_order\(new\.id,new\.legacy_id\)/);
@@ -17,6 +17,10 @@ test('task lifecycle events use the public display id and one inbox surface',()=
  assert.match(sql,/dismissed_at=coalesce\(dismissed_at,now\(\)\)/);
  assert.match(sql,/perform private\.sync_task_display_references\(\)/);
  assert.match(sql,/coalesce\(t->>''legacy_id'',t->>''id''\)/);
+ assert.match(sql,/position\('«'\|\|coalesce\(t\.title,''\)\|\|'»' in pm\.body\)>0/);
+ assert.match(sql,/cm\.source_portal_message_id=pm\.id/);
+ assert.match(sql,/n\.user_id=r\.recipient_id/);
+ assert.match(sql,/case when jsonb_typeof\(s\.tasks\)='array' then s\.tasks else '\[\]'::jsonb end/);
  assert.doesNotMatch(sql,/coalesce\(new\.legacy_id,new\.id\)::text/);
 });
 
