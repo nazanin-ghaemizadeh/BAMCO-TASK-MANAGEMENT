@@ -39,9 +39,10 @@ test('home self-repair does not repeatedly reset scroll or reorder cards',()=>{
  assert.doesNotMatch(source,/homeBroken\(\)\)showHome\(\)/);
 });
 
-test('document and site structural enhancement happens before the next paint',()=>{
+test('document and site structural enhancement is batched before paint without starving load',()=>{
  const source=read('assets/js/feature-structure.js');
- assert.match(source,/queueMicrotask/);
- assert.match(source,/microtask\(\(\) =>/);
+ assert.match(source,/requestAnimationFrame/);
+ assert.match(source,/frame = requestAnimationFrame\(\(\) =>/);
+ assert.doesNotMatch(source,/queueMicrotask|microtask\(/);
  assert.doesNotMatch(source,/setTimeout\(\(\) => \{ enhanceSites\(\); enhanceCategories\(\); \}, 20\)/);
 });
