@@ -128,11 +128,12 @@ function install(){
   repairFrame=requestAnimationFrame(()=>{repairFrame=0;if(epoch===homeEpoch&&homeBroken())showHome()});
  }
  function settleHome(){
-  clearHomeTimers();homeExpected=true;const epoch=++homeEpoch;showHome();
+  clearHomeTimers();homeExpected=true;const epoch=++homeEpoch;document.body.classList.remove('home-access-settled');showHome();
   homeTimers=[0,40,120,300,700,1400].map(ms=>setTimeout(()=>{
    if(epoch!==homeEpoch||!homeExpected||dialog.open||app.classList.contains('hidden'))return;
    if(homeBroken())showHome();
   },ms));
+  homeTimers.push(setTimeout(()=>{if(epoch===homeEpoch&&!dialog.open)document.body.classList.add('home-access-settled')},1800));
  }
  function syncMode(){const loggedIn=!app.classList.contains('hidden'),atHome=!home.classList.contains('hidden');document.body.classList.toggle('card-home-active',loggedIn&&atHome);document.body.classList.toggle('content-only',loggedIn&&!atHome);if(homeExpected&&!dialog.open)scheduleHomeRepair()}
  const repairObserver=new MutationObserver(scheduleHomeRepair);

@@ -5,7 +5,7 @@ window.__bamcoFinalProductionFixLoader20260911=true;
 const loadFinal=()=>{
   if(document.querySelector('script[data-bamco-final-production-fixes]'))return;
   const s=document.createElement('script');
-  s.src='assets/js/final-production-fixes-20260911.js?v=task-toolbar-actions-20260912-1';
+  s.src='assets/js/final-production-fixes-20260911.js?v=profile-sync-20260915-43';
   s.dataset.bamcoFinalProductionFixes='1';
   s.async=false;
   document.head.appendChild(s);

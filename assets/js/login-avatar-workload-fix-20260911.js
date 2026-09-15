@@ -53,7 +53,9 @@ async function refresh(){
   const path=String(p.avatar_path||'');
   const targets=[q('#avatar'),q('#profileAvatarPreview')].filter(Boolean);
   if(!path){targets.forEach(paintInitial);return true}
-  if(targets.some(el=>el.querySelector('img[data-profile-avatar]')&&el.dataset.avatarLoaded===path))return true;
+  // Header and settings are separate consumers.  Do not stop after only one of
+  // them has the current image (the header is normally painted first).
+  if(targets.length&&targets.every(el=>el.querySelector('img[data-profile-avatar]')&&el.dataset.avatarLoaded===path))return true;
   if(loadingPath===path&&loadingPromise)return loadingPromise;
   loadingPath=path;
   loadingPromise=(async()=>{

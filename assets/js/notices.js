@@ -12,7 +12,7 @@ function installToastStyles(){if(document.querySelector('#bamcoToastStyles'))ret
 .bamco-toast-close{display:grid;place-items:center;width:38px;height:38px;min-width:38px;padding:0;margin:0;border:0;border-radius:9px;background:transparent;color:inherit;cursor:pointer;font:24px/1 Tahoma,sans-serif}
 .bamco-toast-close:hover,.bamco-toast-close:focus-visible{background:#173f3512;outline:2px solid #176b4d;outline-offset:1px}
 @media(max-width:760px){
- .bamco-toast-stack{inset:auto 10px calc(10px + env(safe-area-inset-bottom,0px)) 10px;transform:none;width:auto;max-width:none;gap:6px}
+ .bamco-toast-stack{inset:50% auto auto 50%;transform:translate(-50%,-50%);width:min(420px,calc(100vw - 24px));max-width:none;gap:6px}
  .bamco-toast{grid-template-columns:30px minmax(0,1fr) 42px;align-items:start;gap:8px;max-height:min(30dvh,190px);padding:10px;border-radius:11px;font-size:16px;line-height:1.5;box-shadow:0 5px 20px #143c3528}
  .bamco-toast-icon{width:30px;height:30px;font-size:18px}
  .bamco-toast-close{width:42px;height:42px;min-width:42px;margin:-6px -5px 0 0;font-size:22px}
