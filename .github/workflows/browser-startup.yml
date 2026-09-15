@@ -3,7 +3,7 @@ name: Browser startup regression
 on:
   push:
     branches: [main]
-    paths: ['assets/**', 'index.html', 'tests/browser/**', '.github/workflows/browser-startup.yml']
+    paths: ['assets/**', 'index.html', 'tests/**', 'scripts/**', 'package*.json', '.github/workflows/browser-startup.yml']
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -14,9 +14,19 @@ permissions:
 jobs:
   chromium:
     runs-on: ubuntu-latest
-    timeout-minutes: 6
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install application test dependencies
+        run: npm ci
+      - name: Build canonical bundles from source
+        run: npm run build:assets
+      - name: Run Node regression suite
+        run: npm test
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
