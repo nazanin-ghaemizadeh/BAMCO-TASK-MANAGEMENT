@@ -37,7 +37,10 @@
    if(actor!==state.user?.id||token!==state.token)return;
    const next=JSON.stringify([requests,routes,history]);
    if(next===lastSnapshot){enforceVisibleScope();return}
+   const definitions=await selectAll('change_requests','select=id,requested_by,request_type,created_at,request_status&order=created_at.desc').catch(()=>state.definitionRequests||[]);
+   if(actor!==state.user?.id||token!==state.token)return;
    lastSnapshot=next;state.requests=requests;state.requestRoutes=routes;state.requestHistory=history;
+   state.definitionRequests=definitions;
    renderScoped();enforceVisibleScope();
    if(state.view==='dashboard')window.renderDashboard?.();
   })();

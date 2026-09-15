@@ -16,7 +16,7 @@ const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const fa=n=>String(n??'').replace(/\d/g,d=>'۰۱۲۳۴۵۶۷۸۹'[d]);
 const en=n=>String(n??'').replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d));
 const norm=s=>String(s??'').replace(/ي/g,'ی').replace(/ك/g,'ک').replace(/\u200c/g,' ').replace(/\s+/g,' ').trim();
-const state={token:'',user:null,profile:null,profiles:[],tasks:[],requests:[],requestHistory:[],requestRoutes:[],view:'dashboard',editing:null,reviewing:null,reviewEdit:null,resubmitting:null,dateInput:null,selected:{kanban:null,archive:null}};
+const state={token:'',user:null,profile:null,profiles:[],tasks:[],requests:[],requestHistory:[],definitionRequests:[],requestRoutes:[],dashboardMonitoringStart:window.bamcoDashboardMetrics?.DEFAULT_MONITORING_START||'2026-09-14T00:00:00Z',view:'dashboard',editing:null,reviewing:null,reviewEdit:null,resubmitting:null,dateInput:null,selected:{kanban:null,archive:null}};
 
 function loginEmail(value){const login=String(value||'').trim().toLowerCase();return login.includes('@')?login:login+'@no-email.invalid'}
 
@@ -150,7 +150,7 @@ function showLogin(){
   window.bamcoAuth?.clear();window.bamcoSession?.clear();
   window.bamcoConversations?.close();window.bamcoChat?.close();
   sessionStorage.removeItem('bamco_session');
-  Object.assign(state,{workspaceRefreshPromise:null,token:'',user:null,profile:null,profiles:[],tasks:[],requests:[],requestHistory:[],requestRoutes:[],view:'dashboard',editing:null,reviewing:null,reviewEdit:null,resubmitting:null,dateInput:null,selected:{kanban:null,archive:null}});
+  Object.assign(state,{workspaceRefreshPromise:null,token:'',user:null,profile:null,profiles:[],tasks:[],requests:[],requestHistory:[],definitionRequests:[],requestRoutes:[],dashboardMonitoringStart:window.bamcoDashboardMetrics?.DEFAULT_MONITORING_START||'2026-09-14T00:00:00Z',view:'dashboard',editing:null,reviewing:null,reviewEdit:null,resubmitting:null,dateInput:null,selected:{kanban:null,archive:null}});
   $('#appView').classList.add('hidden');
   $('#loginView').classList.remove('hidden');
 }
@@ -414,9 +414,17 @@ showLogin();
   const sortPerformanceRows=rows=>[...rows].sort((a,b)=>(Number(b?.[1]||0)+Number(b?.[2]||0))-(Number(a?.[1]||0)+Number(a?.[2]||0))||chartNameCompare(a,b));
   const bucketOf=task=>{if(!window.bamcoOptions.status(task)?.tracks_deadline)return'فاقد شرایط دیرکرد';const due=norm(task.due_state);return due==='دیرکرد'?'دیرکرد':due.includes('هشدار')?'دوره هشدار':'فاقد شرایط دیرکرد'};
   const setOptions=(id,values)=>{const el=$id(id);if(!el)return;const old=el.value||'همه';el.innerHTML=values.map(v=>`<option>${safe(v)}</option>`).join('');el.value=values.includes(old)?old:'همه'};
-  function refreshFilters(){const rows=state.tasks||[],active=rows.filter(t=>!t.archived);setOptions('dashOwner',['همه',...[...new Set(rows.map(ownerName).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'fa'))]);setOptions('dashPriority',['همه',...PRIORITY_ORDER().filter(v=>rows.some(t=>norm(t.priority)===v))]);setOptions('dashStatus',['همه',...STATUS_ORDER().filter(v=>active.some(t=>norm(t.status)===v))]);setOptions('dashBucket',['همه',...BUCKET_ORDER.filter(v=>active.some(t=>bucketOf(t)===v))])}
+  function refreshFilters(){const rows=state.tasks||[],active=rows.filter(t=>!t.archived),profileOwners=(state.profiles||[]).map(p=>p.full_name||p.excel_name||p.display_name||p.email).filter(Boolean);setOptions('dashOwner',['همه',...[...new Set([...rows.map(ownerName),...profileOwners].filter(Boolean))].sort((a,b)=>a.localeCompare(b,'fa'))]);setOptions('dashPriority',['همه',...PRIORITY_ORDER().filter(v=>rows.some(t=>norm(t.priority)===v))]);setOptions('dashStatus',['همه',...STATUS_ORDER().filter(v=>active.some(t=>norm(t.status)===v))]);setOptions('dashBucket',['همه',...BUCKET_ORDER.filter(v=>active.some(t=>bucketOf(t)===v))])}
   function filtered(){let kanban=state.tasks.filter(t=>!t.archived),archive=state.tasks.filter(t=>t.archived);const owner=$id('dashOwner')?.value||'همه',priority=$id('dashPriority')?.value||'همه',status=$id('dashStatus')?.value||'همه',bucket=$id('dashBucket')?.value||'همه';if(owner!=='همه'){kanban=kanban.filter(t=>norm(ownerName(t))===norm(owner));archive=archive.filter(t=>norm(ownerName(t))===norm(owner))}if(priority!=='همه'){kanban=kanban.filter(t=>norm(t.priority)===norm(priority));archive=archive.filter(t=>norm(t.priority)===norm(priority))}if(status!=='همه'){kanban=kanban.filter(t=>norm(t.status)===norm(status));archive=[]}if(bucket!=='همه'){kanban=kanban.filter(t=>bucketOf(t)===norm(bucket));archive=[]}return[kanban,archive]}
-  function renderCards(kanban,archive){const active=kanban.filter(t=>!window.bamcoOptions.terminal(t)),allRequests=[...(state.requests||[]),...(state.requestHistory||[])],spec=[['total','کل کارهای فعال',active.length],['in_progress','در حال انجام',active.filter(t=>window.bamcoOptions.kind(t)==='active').length],['waiting','منتظر پاسخ',active.filter(t=>window.bamcoOptions.kind(t)==='waiting').length],['overdue','دارای دیرکرد',active.filter(t=>bucketOf(t)==='دیرکرد').length],['warning','در دوره هشدار',active.filter(t=>bucketOf(t)==='دوره هشدار').length],['archive_total','کل کارهای آرشیو شده',archive.length],['pending_requests','درخواست‌های منتظر بررسی',(state.requests||[]).filter(r=>['pending','in_review'].includes(r.request_status)).length],['create_requests','درخواست تعریف وظیفه',allRequests.filter(r=>r.request_type==='create').length],['unscheduled','کارهای بدون زمان‌بندی',active.filter(t=>!t.start_date&&!t.due_date).length]];$id('dashboardCards').innerHTML=spec.map(([key,label,value])=>`<article data-key="${key}"><small>${label}</small><strong>${fa(value)}</strong></article>`).join('')}
+  function selectedDashboardOwnerId(){const selected=$id('dashOwner')?.value||'همه';if(selected==='همه')return null;const profile=(state.profiles||[]).find(p=>norm(p.full_name||p.excel_name||p.display_name||p.email)===norm(selected));return profile?.id||null}
+  function renderCards(kanban,archive){
+    const active=kanban.filter(t=>!window.bamcoOptions.terminal(t)),ownerId=selectedDashboardOwnerId(),allRequests=window.bamcoDashboardMetrics?.uniqueRequests?.([...(state.definitionRequests||[]),...(state.requests||[]),...(state.requestHistory||[])])||[...(state.definitionRequests||[]),...(state.requests||[]),...(state.requestHistory||[])],metrics=window.bamcoDashboardMetrics;
+    const definitionCount=metrics?.definitionCountForSelection?metrics.definitionCountForSelection({ownerId,profiles:state.profiles,tasks:state.tasks,requests:allRequests,baseline:state.dashboardMonitoringStart}):allRequests.filter(r=>r.request_type==='create').length;
+    const pendingCount=metrics?.pendingReviewCount?metrics.pendingReviewCount({ownerId,requests:allRequests}):(state.requests||[]).filter(r=>['pending','in_review'].includes(r.request_status)).length;
+    const unscheduledCount=metrics?.unscheduledCount?metrics.unscheduledCount({ownerId,tasks:active,isTerminal:t=>window.bamcoOptions.terminal(t)}):active.filter(t=>!t.start_date&&!t.due_date).length;
+    const spec=[['total','کل کارهای فعال',active.length],['in_progress','در حال انجام',active.filter(t=>window.bamcoOptions.kind(t)==='active').length],['waiting','منتظر پاسخ',active.filter(t=>window.bamcoOptions.kind(t)==='waiting').length],['overdue','دارای دیرکرد',active.filter(t=>bucketOf(t)==='دیرکرد').length],['warning','در دوره هشدار',active.filter(t=>bucketOf(t)==='دوره هشدار').length],['archive_total','کل کارهای آرشیو شده',archive.length],['pending_requests','درخواست‌های منتظر بررسی',pendingCount],['create_requests','درخواست تعریف وظیفه',definitionCount],['unscheduled','کارهای بدون زمان‌بندی',unscheduledCount]];
+    $id('dashboardCards').innerHTML=spec.map(([key,label,value])=>`<article data-key="${key}"><small>${label}</small><strong>${fa(value)}</strong></article>`).join('')
+  }
   function sizeCanvas(canvas){const dpr=window.devicePixelRatio||1,parent=canvas.parentElement,mobile=!!window.matchMedia?.("(max-width:760px)").matches,items=Math.max(0,Number(canvas.dataset.chartItems)||0),wide=['workloadChart','performanceChart'].includes(canvas.id),parentWidth=Math.max(280,parent?.clientWidth||canvas.clientWidth||320),w=mobile&&wide?Math.max(parentWidth,260+items*105):parentWidth;if(!canvas.dataset.logicalHeight)canvas.dataset.logicalHeight=canvas.getAttribute('height')||'300';const h=Number(canvas.dataset.logicalHeight);canvas.style.setProperty("--chart-width",`${w}px`);parent.tabIndex=0;parent.setAttribute("aria-label",mobile&&wide&&w>parentWidth?"نمودار؛ برای مشاهده کامل افقی پیمایش کنید":"نمودار");parent.classList.toggle('dashboard-chart-scroll',mobile&&wide&&w>parentWidth);canvas.style.width=`${w}px`;canvas.style.height=`${h}px`;const scrollKey=`${w}:${items}`;if(parent.dataset.chartScrollKey!==scrollKey){parent.dataset.chartScrollKey=scrollKey;requestAnimationFrame(()=>{parent.scrollLeft=0})}if(canvas.width!==Math.round(w*dpr)||canvas.height!==Math.round(h*dpr)){canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr)}const ctx=canvas.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);return{ctx,w,h,mobile}}
   function frame(canvas,title,subtitle=''){const {ctx,w,h,mobile}=sizeCanvas(canvas);ctx.clearRect(0,0,w,h);ctx.fillStyle='#fff';ctx.fillRect(0,0,w,h);ctx.direction='rtl';ctx.textAlign='right';ctx.fillStyle='#173f35';ctx.font='bold 21px BamcoScript,"B Nazanin","Times New Roman",serif';ctx.fillText(title,w-18,31);if(subtitle){ctx.fillStyle='#6a8077';ctx.font='15px BamcoScript,"B Nazanin","Times New Roman",serif';ctx.fillText(subtitle,w-18,55)}return{ctx,w,h,mobile}}
   function empty(canvas,title,message='اطلاعاتی برای نمایش وجود ندارد',subtitle=''){const {ctx,w,h}=frame(canvas,title,subtitle);ctx.textAlign='center';ctx.fillStyle='#7a8e85';ctx.font='18px BamcoScript,"B Nazanin","Times New Roman",serif';ctx.fillText(message,w/2,h/2)}
@@ -901,6 +909,8 @@ showLogin();
       const tasksPromise=selectAll('task_status_view','select=*&order=id.desc');
       const requestsPromise=selectAll('change_requests','select=*&request_status=in.(pending,in_review,needs_revision)&order=created_at.asc');
       const historyPromise=selectAll('change_requests','select=*&request_status=in.(approved,rejected,cancelled)&order=created_at.desc');
+      const definitionRequestsPromise=selectAll('change_requests','select=id,requested_by,request_type,created_at,request_status&order=created_at.desc').catch(()=>[]);
+      const monitoringStartPromise=selectAll('app_settings','select=key,value&key=eq.performance_monitoring_started_at&limit=1').then(rows=>{const raw=rows?.[0]?.value,value=String(raw?.value||raw||'').trim();if(value)state.dashboardMonitoringStart=value;return value}).catch(()=>state.dashboardMonitoringStart);
       const routesPromise=rpc('request_routing_status',{}).catch(()=>[]);
       // Tasks become usable independently of the workflow/history endpoints.
       const results=await Promise.allSettled([
@@ -910,10 +920,11 @@ showLogin();
           dataVersion++;resetRenderCaches();renderAll();
           requestAnimationFrame(()=>{installResizableTable('kanban');installResizableTable('archive')});
         }),
-        Promise.all([requestsPromise,historyPromise,routesPromise]).then(([requests,history,routes])=>{
+        Promise.all([requestsPromise,historyPromise,definitionRequestsPromise,routesPromise,monitoringStartPromise]).then(([requests,history,definitionRequests,routes])=>{
           if(state.user?.id!==loadingUser||(loadingSession&&!window.bamcoAuth.isCurrent(loadingSession)))return;
-          state.requests=requests;state.requestHistory=history;state.requestRoutes=routes;
+          state.requests=requests;state.requestHistory=history;state.definitionRequests=definitionRequests;state.requestRoutes=routes;
           renderRequests();renderRequestHistory();
+          if(state.view==='dashboard')window.renderDashboard?.();
         })
       ]);
       const failed=results.find(result=>result.status==='rejected');if(failed)throw failed.reason;
