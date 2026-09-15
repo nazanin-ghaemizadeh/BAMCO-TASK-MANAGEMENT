@@ -32,9 +32,6 @@ security definer
 set search_path to ''
 as $function$
 begin
-  -- Portal task events are linked by the immutable task PK, then rendered with
-  -- the current public display number. Deleted-task events deliberately keep
-  -- the number that was valid at deletion time because the task no longer exists.
   update public.portal_messages pm
      set body=regexp_replace(pm.body,'^(وظیفه )[0-9]+',E'\\1'||t.legacy_id::text)
     from public.tasks t
@@ -44,8 +41,6 @@ begin
      and pm.body ~ '^وظیفه [0-9]+'
      and pm.body is distinct from regexp_replace(pm.body,'^(وظیفه )[0-9]+',E'\\1'||t.legacy_id::text);
 
-  -- Notification cards are snapshots of the portal event. Keep those snapshots
-  -- synchronized with the linked portal message as display IDs are resequenced.
   update public.notifications n
      set body=pm.body
     from public.chat_messages cm
@@ -56,8 +51,6 @@ begin
      and pm.entity_type='task'
      and n.body is distinct from pm.body;
 
-  -- Workflow message snapshots store immutable task IDs plus a display-ID copy.
-  -- Refresh only that display copy; task identity/history remains unchanged.
   with rebuilt as (
     select s.id,
            coalesce(jsonb_agg(
@@ -137,9 +130,9 @@ begin
     return old;
   end if;
 
-  -- On INSERT the after-row notification trigger runs before the statement-level
-  -- resequencer. Rank the row using the exact same ordering as the resequencer,
-  -- so the notification already contains the final public display ID.
+  -- The after-row notification trigger runs before the statement-level display-ID
+  -- resequencer. Rank this row with the resequencer's exact ordering so the event
+  -- already contains the final public identifier, including Excel-imported rows.
   v_id:=private.task_display_id_for_order(new.id,new.legacy_id)::text;
 
   if tg_op='INSERT' then
@@ -155,7 +148,7 @@ begin
 
   if row(new.title,new.description,new.owner_id,new.status,new.priority,new.start_date,new.done_date,new.due_date,new.reminder_days,new.manager_notes,new.archived)
      is not distinct from
-     row(old.title,old.description,old.owner_id,old.status,old.priority,old.start_date,old.done_date,new.due_date,new.reminder_days,new.manager_notes,new.archived) then
+     row(old.title,old.description,old.owner_id,old.status,old.priority,old.start_date,old.done_date,old.due_date,old.reminder_days,old.manager_notes,old.archived) then
     return new;
   end if;
 
@@ -206,7 +199,6 @@ update public.portal_messages pm
    and substring(pm.body from '^وظیفه ([0-9]+) ')::bigint in (t.id,t.legacy_id)
    and position('«'||coalesce(t.title,'')||'»' in pm.body)>0;
 
--- Every display-ID resequence now repairs all user-facing references atomically.
 create or replace function private.resequence_task_display_ids()
 returns void
 language plpgsql
@@ -249,7 +241,7 @@ begin
   order by p.oid desc limit 1;
   if v_oid is null then raise exception 'prepare_workflow_messages not found'; end if;
   v_def:=pg_get_functiondef(v_oid);
-  v_next:=replace(v_def,"(t->>'id')||' | '","coalesce(t->>'legacy_id',t->>'id')||' | '");
+  v_next:=replace(v_def,'(t->>''id'')||'' | ''','coalesce(t->>''legacy_id'',t->>''id'')||'' | ''');
   if v_next=v_def then raise exception 'workflow task-id fragment not found'; end if;
   execute v_next;
 end
