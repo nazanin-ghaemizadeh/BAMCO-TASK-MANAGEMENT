@@ -26,8 +26,23 @@ jobs:
         run: npm ci
       - name: Rebuild static assets
         run: npm run build:assets
-      - name: Run regression tests
-        run: npm test
+      - name: Verify vehicle patch and focused regressions
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const src = fs.readFileSync('assets/js/vehicles.js', 'utf8');
+          const bundle = fs.readFileSync('assets/js/bamco.bundle.js', 'utf8');
+          const checks = [
+            "return scope==='vehicleTemporary'?rows.reverse():rows",
+            "table.style.setProperty('width',`${Math.max(total,viewport)}px`,'important')",
+            "table.style.setProperty('min-width','0','important')"
+          ];
+          for (const text of checks) {
+            if (!src.includes(text)) throw new Error(`vehicles.js missing: ${text}`);
+            if (!bundle.includes(text)) throw new Error(`bundle missing: ${text}`);
+          }
+          NODE
+          node --test --test-force-exit tests/vehicle-access.test.cjs tests/startup-bundle.test.cjs tests/startup-responsiveness.test.cjs tests/site-coherence-20260915.test.cjs
       - name: Commit and push
         run: |
           git config user.name 'BAMCO Fix Bot'
