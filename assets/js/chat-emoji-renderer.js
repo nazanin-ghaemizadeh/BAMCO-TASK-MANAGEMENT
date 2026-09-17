@@ -11,9 +11,10 @@ function render(root){
  while(walker.nextNode()){const n=walker.currentNode;if(!n.parentElement?.closest('textarea,input,script,style,select,[data-emoji-fallback]')&&isEmoji(n.data))nodes.push(n)}
  for(const n of nodes){const f=document.createDocumentFragment();for(const g of segments(n.data)){
   if(!isEmoji(g)){f.append(document.createTextNode(g));continue}
+  const isolate=document.createElement('span');isolate.className='bamco-emoji-isolate';isolate.dir='ltr';isolate.style.unicodeBidi='isolate';isolate.style.display='inline-block';
   const image=document.createElement('img');image.className='bamco-emoji';image.alt=g;image.draggable=false;image.referrerPolicy='no-referrer';image.loading='lazy';image.decoding='async';
   image.src='https://cdn.jsdelivr.net/gh/jdecked/twemoji@v17.0.3/assets/svg/'+code(g)+'.svg';
-  image.onerror=()=>{const fallback=document.createElement('span');fallback.dataset.emojiFallback='';fallback.className='bamco-emoji-fallback';fallback.textContent=g;image.replaceWith(fallback)};f.append(image);
+  image.onerror=()=>{const fallback=document.createElement('span');fallback.dataset.emojiFallback='';fallback.className='bamco-emoji-fallback';fallback.textContent=g;image.replaceWith(fallback)};isolate.append(image);f.append(isolate);
  }n.replaceWith(f)}
 }
 window.bamcoEmoji={render};
