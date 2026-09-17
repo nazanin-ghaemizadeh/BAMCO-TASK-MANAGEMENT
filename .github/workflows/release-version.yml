@@ -1,6 +1,11 @@
 name: Release version and update notice
 
 on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'version.json'
+      - '.github/workflows/release-version.yml'
   workflow_dispatch:
 
 permissions:
