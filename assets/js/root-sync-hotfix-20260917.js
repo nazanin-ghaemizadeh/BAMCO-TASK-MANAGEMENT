@@ -5,19 +5,40 @@ window.__bamcoRootSyncHotfix20260917=true;
 
 const q=(s,r=document)=>r?.querySelector?.(s)||null;
 const qa=(s,r=document)=>[...(r?.querySelectorAll?.(s)||[])];
+const fa=v=>String(v??'').replace(/\d/g,d=>'۰۱۲۳۴۵۶۷۸۹'[d]);
+const en=v=>String(v??'').replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d));
 
-/* Request tables: backend snapshot is newest-first. Display numbering is UI row numbering,
-   deliberately independent from request/task primary keys. */
-function renumberRequestTable(body){
+/* Request tables: keep real request rows newest-first and number only visible data rows.
+   Empty/colspan rows are status messages and must never be overwritten. */
+function requestIdForRow(row){
+  const stored=Number(row?.dataset?.requestId);
+  if(Number.isFinite(stored)&&stored>0)return stored;
+  const first=row?.cells?.[0];
+  if(!first||first.colSpan>1)return null;
+  const parsed=Number(en(first.textContent).replace(/[^0-9]/g,''));
+  if(!Number.isFinite(parsed)||parsed<=0)return null;
+  row.dataset.requestId=String(parsed);
+  return parsed;
+}
+function normalizeRequestTable(body){
   if(!body)return;
-  qa(':scope > tr',body).forEach((row,index)=>{
+  const rows=qa(':scope > tr',body).filter(row=>{
+    if(row.classList?.contains('empty'))return false;
+    if(!row.cells||row.cells.length<2||row.cells[0]?.colSpan>1)return false;
+    return requestIdForRow(row)!==null;
+  });
+  if(!rows.length)return;
+  const sorted=[...rows].sort((a,b)=>requestIdForRow(b)-requestIdForRow(a));
+  const changed=sorted.some((row,index)=>row!==rows[index]);
+  if(changed)sorted.forEach(row=>body.appendChild(row));
+  sorted.forEach((row,index)=>{
     const first=row.cells?.[0];
-    if(first) first.textContent=String(index+1).replace(/\d/g,d=>'۰۱۲۳۴۵۶۷۸۹'[d]);
+    if(first)first.textContent=fa(index+1);
   });
 }
 function repairRequestTables(){
-  renumberRequestTable(q('#approvalBody'));
-  renumberRequestTable(q('#requestHistoryBody'));
+  normalizeRequestTable(q('#approvalBody'));
+  normalizeRequestTable(q('#requestHistoryBody'));
 }
 
 const requestObserver=new MutationObserver(repairRequestTables);
