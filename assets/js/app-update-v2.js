@@ -5,13 +5,24 @@ window.__bamcoAppUpdateV2=true;
 
 const current=document.querySelector('meta[name="bamco-app-version"]')?.content||'';
 const installedKey='bamco.app.installed-version';
+const announcedKey='bamco.app.announced-update';
 const legacyKeys=['bamco.app.pending-version','bamco.app.update-attempts','bamco.app.dismissed-version'];
 const updateParams=['bamco_update','bamco_reload','bamco_probe','bamco_v'];
 let checking=false,lastCheck=0;
 
 const read=(storage,key)=>{try{return storage.getItem(key)||''}catch{return''}};
 const write=(storage,key,value)=>{try{value?storage.setItem(key,value):storage.removeItem(key)}catch{}};
+const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 
+function notify(message,{title='به‌روزرسانی سامانه',duration=9000,icon='↻'}={}){
+ const show=()=>{
+  if(typeof window.bamcoToast!=='function')return false;
+  window.bamcoToast(message,{kind:'info',title,duration,icon});
+  return true;
+ };
+ if(show())return;
+ let tries=0;const timer=setInterval(()=>{if(show()||++tries>40)clearInterval(timer)},100);
+}
 function removeLegacyNotice(){
  document.querySelectorAll('.bamco-update-notice').forEach(node=>node.remove());
 }
@@ -67,6 +78,13 @@ function navigate(version){
  else location.replace(url.href);
  return true;
 }
+function confirmInstalledVersion(){
+ const previous=read(localStorage,installedKey);
+ if(previous&&current&&previous!==current){
+  notify(`نسخه ${current} با موفقیت نصب شد.`,{title:'سامانه به‌روزرسانی شد',duration:10000,icon:'✓'});
+ }
+ if(current)write(localStorage,installedKey,current);
+}
 async function check(force=false){
  if(checking||(!force&&Date.now()-lastCheck<30000))return;
  checking=true;lastCheck=Date.now();clearLegacyState();
@@ -74,13 +92,19 @@ async function check(force=false){
   const latest=await latestVersion();
   if(!latest||!current)return;
   if(latest===current){
-   write(localStorage,installedKey,current);
+   confirmInstalledVersion();
    cleanUpdateQuery();
    return;
   }
   const published=await publishedDocumentVersion();
   if(published!==latest)return;
+  const announced=read(sessionStorage,announcedKey);
+  if(announced!==latest){
+   write(sessionStorage,announcedKey,latest);
+   notify(`نسخه ${latest} آماده است؛ سامانه در حال بارگذاری نسخه جدید است.`,{duration:10000});
+  }
   await clearAppCaches();
+  if(typeof window.__bamcoUpdateNavigate!=='function')await sleep(650);
   navigate(latest);
  }catch{}finally{checking=false}
 }
