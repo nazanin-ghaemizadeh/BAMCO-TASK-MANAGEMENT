@@ -63,17 +63,11 @@ function repairRequestTables(){
 let workflowSync=null,lastWorkflowSync=0;
 async function syncRequestWorkflow(force=false){
   if(workflowSync||(!force&&Date.now()-lastWorkflowSync<12000))return workflowSync;
-  try{if(typeof state==='undefined'||!state?.token||typeof rpc!=='function')return null}catch{return null}
+  try{if(typeof state==='undefined'||!state?.token||typeof window.bamcoRequestSync?.refresh!=='function')return null}catch{return null}
   lastWorkflowSync=Date.now();
   workflowSync=(async()=>{
     try{
-      const snapshot=await rpc('request_workflow_snapshot',{});
-      if(!snapshot||!Array.isArray(snapshot.current_requests)||!Array.isArray(snapshot.history_requests))return;
-      state.requests=[...snapshot.current_requests].sort((a,b)=>Date.parse(b.created_at||0)-Date.parse(a.created_at||0)||Number(b.id)-Number(a.id));
-      state.requestHistory=[...snapshot.history_requests].sort((a,b)=>Date.parse(b.created_at||0)-Date.parse(a.created_at||0)||Number(b.id)-Number(a.id));
-      if(Array.isArray(snapshot.routes))state.requestRoutes=snapshot.routes;
-      if(typeof renderRequests==='function')renderRequests();
-      if(typeof renderRequestHistory==='function')renderRequestHistory();
+      await window.bamcoRequestSync.refresh();
       repairRequestTables();
     }catch{}
   })().finally(()=>{workflowSync=null});

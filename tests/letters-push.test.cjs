@@ -7,6 +7,12 @@ test('emoji sequences preserve skin tone, ZWJ, flags and keycaps as single image
  const dom=new JSDOM('<p id="x"></p>',{runScripts:'outside-only'}),w=dom.window;w.Intl.Segmenter=Intl.Segmenter;w.eval(fs.readFileSync('assets/js/chat-emoji-renderer.js','utf8'));
  const p=w.document.querySelector('p');p.textContent='سلام 👩🏽‍💻 🇮🇷 <script>';w.bamcoEmoji.render(p);assert.equal(p.querySelectorAll('img').length,2);assert.equal(p.querySelector('script'),null);assert(p.textContent.includes('<script>'));assert.equal(p.querySelector('img').alt,'👩🏽‍💻');dom.window.close();
 });
+test('mixed Persian text and emoji artwork keep an isolated inline boundary',()=>{
+ const dom=new JSDOM('<p id="x">سلام 👋 دنیا</p>',{runScripts:'outside-only'}),w=dom.window;w.Intl.Segmenter=Intl.Segmenter;w.eval(fs.readFileSync('assets/js/chat-emoji-renderer.js','utf8'));
+ const root=w.document.querySelector('#x');w.bamcoEmoji.render(root);const isolate=root.querySelector('.bamco-emoji-isolate');
+ assert(isolate);assert.equal(isolate.dir,'ltr');assert.equal(isolate.style.unicodeBidi,'isolate');assert.equal(isolate.querySelector('img.bamco-emoji').alt,'👋');
+ assert(root.textContent.startsWith('سلام '));assert(root.textContent.endsWith(' دنیا'));dom.window.close();
+});
 test('service worker receives background push, keeps destination within app and focuses existing tab',async()=>{
  const listeners={},shown=[],opened=[],self={location:{href:'https://example.test/BAMCO/push-sw.js'},addEventListener:(n,f)=>listeners[n]=f,registration:{scope:'https://example.test/BAMCO/',showNotification:async(...args)=>shown.push(args)},clients:{matchAll:async()=>[],openWindow:async url=>opened.push(url)}};
  vm.runInNewContext(fs.readFileSync('push-sw.js','utf8'),{self,URL});let job;listeners.push({data:{json:()=>({id:'42',title:'عنوان',body:'متن',url:'https://evil.test/'})},waitUntil:p=>job=p});await job;assert.equal(shown[0][1].data.url,'https://example.test/BAMCO/');assert.equal(shown[0][1].tag,'bamco-42');

@@ -13,7 +13,7 @@ function page({current=release.version,latest=release.version,published=latest,s
  const dom=new JSDOM(`<!doctype html><html><head><meta name="bamco-app-version" content="${current}"></head><body><section class="bamco-update-notice">legacy error</section></body></html>`,{url,runScripts:'outside-only'});
  const w=dom.window;
  for(const [key,value] of Object.entries(stored))w.localStorage.setItem(key,value);
- const navigations=[];w.__bamcoUpdateNavigate=href=>navigations.push(href);
+ const navigations=[],toasts=[];w.__bamcoUpdateNavigate=href=>navigations.push(href);w.bamcoToast=(...args)=>toasts.push(args);
  w.fetch=async input=>{
   const href=String(input);
   if(href.includes('version.json'))return new Response(JSON.stringify({version:latest}),{status:200,headers:{'Content-Type':'application/json'}});
@@ -21,7 +21,7 @@ function page({current=release.version,latest=release.version,published=latest,s
   throw new Error('unexpected fetch '+href);
  };
  w.eval(source);w.document.dispatchEvent(new w.Event('DOMContentLoaded'));
- return {dom,navigations};
+ return {dom,navigations,toasts};
 }
 
 test('release file, document version and V2 updater cache key stay aligned',()=>{
@@ -45,13 +45,21 @@ test('legacy failed-update state is removed immediately and never renders the ol
  dom.window.close();
 });
 
-test('a newer fully published deployment triggers one silent cache-busted navigation',async()=>{
- const {dom,navigations}=page({current:'2026.09.17.74',latest:'2026.09.17.75',published:'2026.09.17.75',url:'https://bamco.test/'});await pause(25);
+test('a newer fully published deployment announces and triggers one cache-busted navigation',async()=>{
+ const {dom,navigations,toasts}=page({current:'2026.09.17.74',latest:'2026.09.17.75',published:'2026.09.17.75',url:'https://bamco.test/'});await pause(25);
  assert.equal(navigations.length,1);
+ assert.equal(toasts.length,1);assert.match(toasts[0][0],/2026\.09\.17\.75/);assert.equal(toasts[0][1].title,'به‌روزرسانی سامانه');
  assert.match(navigations[0],/bamco_v=2026\.09\.17\.75/);
  assert.match(navigations[0],/bamco_reload=/);
  assert.equal(dom.window.document.querySelector('.bamco-update-notice'),null);
  dom.window.close();
+});
+
+test('every installed version change produces a visible success notice',async()=>{
+ const {dom,navigations,toasts}=page({current:'2026.09.17.76',latest:'2026.09.17.76',stored:{'bamco.app.installed-version':'2026.09.17.75'},url:'https://bamco.test/?bamco_v=2026.09.17.76'});await pause(25);
+ assert.equal(navigations.length,0);assert.equal(toasts.length,1);
+ assert.match(toasts[0][0],/2026\.09\.17\.76/);assert.equal(toasts[0][1].title,'سامانه به‌روزرسانی شد');
+ assert.equal(dom.window.localStorage.getItem('bamco.app.installed-version'),'2026.09.17.76');dom.window.close();
 });
 
 test('a version race never reloads until version.json and the published document agree',async()=>{
