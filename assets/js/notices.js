@@ -11,8 +11,8 @@ function installToastStyles(){if(document.querySelector('#bamcoToastStyles'))ret
 .bamco-toast-copy>span{min-width:0}
 .bamco-toast-close{display:grid;place-items:center;width:38px;height:38px;min-width:38px;padding:0;margin:0;border:0;border-radius:9px;background:transparent;color:inherit;cursor:pointer;font:24px/1 Tahoma,sans-serif}
 .bamco-toast-close:hover,.bamco-toast-close:focus-visible{background:#173f3512;outline:2px solid #176b4d;outline-offset:1px}
-@media(max-width:760px){
- .bamco-toast-stack{inset:50% auto auto 50%;transform:translate(-50%,-50%);width:min(420px,calc(100vw - 24px));max-width:none;gap:6px}
+@media(max-width:760px),(pointer:coarse){
+ .bamco-toast-stack{position:fixed!important;inset:auto!important;top:50dvh!important;left:50vw!important;right:auto!important;bottom:auto!important;margin:0!important;transform:translate3d(-50%,-50%,0)!important;width:min(420px,calc(100vw - 24px));max-width:none;gap:6px}
  .bamco-toast{grid-template-columns:30px minmax(0,1fr) 42px;align-items:start;gap:8px;max-height:min(30dvh,190px);padding:10px;border-radius:11px;font-size:16px;line-height:1.5;box-shadow:0 5px 20px #143c3528}
  .bamco-toast-icon{width:30px;height:30px;font-size:18px}
  .bamco-toast-close{width:42px;height:42px;min-width:42px;margin:-6px -5px 0 0;font-size:22px}
@@ -27,7 +27,10 @@ function next(){if(active||!queue.length)return;active=true;const job=queue.shif
 window.bamcoToast=(message,error=false,options={})=>{
  if(error&&typeof error==='object'){options=error;error=!!options.error}
  installToastStyles();
- const popover=typeof HTMLElement.prototype.showPopover==='function',host=popover?document.body:([...document.querySelectorAll('dialog[open]')].at(-1)||document.body);
+ // Mobile browser popovers can apply their own top-layer placement. Avoid that
+ // path on touch/small screens so the app-owned centered position always wins.
+ const mobile=window.matchMedia?.('(max-width:760px), (pointer:coarse)')?.matches===true;
+ const popover=!mobile&&typeof HTMLElement.prototype.showPopover==='function',host=popover?document.body:([...document.querySelectorAll('dialog[open]')].at(-1)||document.body);
  let stack=host.querySelector(':scope > .bamco-toast-stack');
  if(!stack){stack=document.createElement('div');stack.className='bamco-toast-stack';if(popover)stack.setAttribute('popover','manual');host.append(stack);if(popover)stack.showPopover();else if(host.tagName==='DIALOG')host.addEventListener('close',()=>{if(stack.isConnected)document.body.append(stack)},{once:true})}
  const kind=options.kind||(error?'error':'success'),item=document.createElement('div');item.className='bamco-toast';item.dataset.kind=kind;item.setAttribute('role',error?'alert':'status');const icon=document.createElement('span');icon.className='bamco-toast-icon';icon.textContent=options.icon||(error?'!':kind==='download'?'↓':'✓');icon.setAttribute('aria-hidden','true');item.append(icon);
