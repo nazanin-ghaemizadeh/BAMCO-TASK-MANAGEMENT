@@ -1,0 +1,42 @@
+name: Root sync release repair
+on:
+  push:
+    paths:
+      - '.github/workflows/root-sync-release-20260917.yml'
+permissions:
+  contents: write
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Repair release wiring
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          s=s.replace('2026.09.16.72','2026.09.17.74').replace('2026.09.17.73','2026.09.17.74')
+          tag='<script defer src="assets/js/root-sync-hotfix-20260917.js?v=2026.09.17.74"></script>'
+          if 'root-sync-hotfix-20260917.js' not in s:
+              s=s.replace('</body>',tag+'\n</body>')
+          p.write_text(s,encoding='utf-8')
+          Path('version.json').write_text('''{\n  "version": "2026.09.17.74",\n  "released_at": "2026-09-17T14:20:00+00:00",\n  "title": "اصلاح ریشه‌ای همگام‌سازی، سوابق، زنجیره تأیید و تصویر پروفایل"\n}\n''',encoding='utf-8')
+          PY
+      - name: Verify release wiring
+        run: |
+          grep -q 'bamco-app-version" content="2026.09.17.74' index.html
+          grep -q 'app-update.js?v=2026.09.17.74' index.html
+          grep -q 'bamco.bundle.js?v=2026.09.17.74' index.html
+          grep -q 'root-sync-hotfix-20260917.js?v=2026.09.17.74' index.html
+          grep -q '"version": "2026.09.17.74"' version.json
+      - name: Commit repair
+        run: |
+          git config user.name 'BAMCO Release Bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add index.html version.json
+          git diff --cached --quiet && exit 0
+          git commit -m 'Wire root sync fixes and release 2026.09.17.74'
+          git push origin HEAD:main
