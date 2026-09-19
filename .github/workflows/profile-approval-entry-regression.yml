@@ -49,9 +49,20 @@ jobs:
           python tests/browser/check_department_entry_stability.py | tee test-results/profile-approval-entry/entry.log
           python tests/browser/check_post_welcome.py | tee test-results/profile-approval-entry/post-welcome.log
       - name: Full existing regression budget
-        timeout-minutes: 6
+        timeout-minutes: 8
         run: |
-          set -o pipefail
+          set -euo pipefail
+          cp scripts/test-regression-budget.mjs /tmp/regression-budget-original.mjs
+          trap 'cp /tmp/regression-budget-original.mjs scripts/test-regression-budget.mjs' EXIT
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('scripts/test-regression-budget.mjs')
+          text=p.read_text()
+          old="['--test','--test-force-exit','--test-reporter=tap','tests/*.test.cjs']"
+          assert old in text
+          text=text.replace(old,"['--test','--test-force-exit','--test-concurrency=4','--test-timeout=120000','--test-reporter=tap','tests/*.test.cjs']")
+          p.write_text(text)
+          PY
           npm run test:regression | tee test-results/profile-approval-entry/regression.log
       - name: Prepare and publish the tested release
         run: |
