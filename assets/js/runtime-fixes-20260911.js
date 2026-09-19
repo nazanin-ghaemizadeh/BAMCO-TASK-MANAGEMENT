@@ -9,17 +9,6 @@ function installStyles(){
   if(q('#bamcoRuntimeFixes20260911Css'))return;
   const style=document.createElement('style');style.id='bamcoRuntimeFixes20260911Css';style.textContent=`
     @media(max-width:700px){
-      html body #departmentEntry{min-height:100dvh!important;height:auto!important;overflow:auto!important;justify-content:flex-start!important;padding:18px 12px 24px!important}
-      html body #departmentEntry header{margin:0 auto 16px!important;max-width:430px!important}
-      html body #departmentEntry header img{width:166px!important;height:104px!important;padding:15px 20px!important;border-radius:14px!important}
-      html body #departmentEntry h1{font-size:21px!important;line-height:1.7!important;margin:12px 0 2px!important}
-      html body #departmentEntry header p{font-size:16px!important;line-height:1.6!important}
-      html body #departmentEntry .department-grid{grid-template-columns:1fr!important;gap:10px!important;width:100%!important;max-width:430px!important}
-      html body #departmentEntry .department-grid button{aspect-ratio:auto!important;min-height:96px!important;width:100%!important;display:grid!important;grid-template-columns:58px minmax(0,1fr) auto!important;align-items:center!important;justify-content:stretch!important;gap:12px!important;padding:12px 14px!important;border-radius:14px!important;text-align:right!important;text-align-last:right!important}
-      html body #departmentEntry .department-icon{width:54px!important;height:54px!important;border-radius:13px!important}
-      html body #departmentEntry .department-icon svg{width:32px!important;height:32px!important}
-      html body #departmentEntry .department-grid strong{font-size:17px!important;line-height:1.7!important;text-align:right!important;text-align-last:right!important}
-      html body #departmentEntry .department-state{font-size:13px!important;white-space:nowrap!important;padding:4px 8px!important}
       html body.content-only #appView #sidebar.sidebar,
       html body.content-only #appView #sidebar.sidebar.collapsed{position:fixed!important;inset:0 0 auto 0!important;left:0!important;right:0!important;top:0!important;width:100%!important;max-width:none!important;min-width:0!important;height:130px!important;max-height:130px!important;transform:none!important;margin:0!important;border-left:0!important;border-right:0!important;border-radius:0!important;overflow:visible!important}
       html body.content-only #appView .workspace,

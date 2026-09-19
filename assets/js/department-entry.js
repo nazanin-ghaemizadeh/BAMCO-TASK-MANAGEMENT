@@ -1,6 +1,6 @@
 /* Department entry: one stable startup owner, no repeated layout repair loop. */
 (()=>{'use strict';
-const wait=(promise,ms)=>Promise.race([promise,new Promise((_,reject)=>setTimeout(()=>reject(new Error('timeout')),ms))]);
+const wait=(promise,ms)=>new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(new Error('timeout')),ms);Promise.resolve(promise).then(resolve,reject).finally(()=>clearTimeout(timer))});
 async function prepareEntry(view){
  const body=document.body,logo=view.querySelector(':scope>header>img');
  let fontOk=false;

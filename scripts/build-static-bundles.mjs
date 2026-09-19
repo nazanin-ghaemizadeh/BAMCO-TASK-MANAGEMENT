@@ -119,6 +119,20 @@ async function sync(path, expected) {
   await writeFile(url, expected);
 }
 
+async function syncEntryCritical() {
+  const source = await read('assets/css/department-entry.css');
+  const critical = 'html,body{margin:0;min-height:100%;background:#f4f8f5}\n' + source
+    .split('/* Other small forms')[0]
+    .replace(/@import[^;]+;\s*/, '')
+    .replaceAll("../fonts/", "assets/fonts/").trim();
+  const index = await read('index.html');
+  const expected = index.replace(/<style id="entryCritical">[\s\S]*?<\/style>/, `<style id="entryCritical">${critical}</style>`);
+  if (!index.includes('<style id="entryCritical">')) throw Error('Entry critical style missing');
+  if (checkOnly && index !== expected) throw Error('Entry critical CSS is stale; run npm run build:assets');
+  if (!checkOnly && index !== expected) await writeFile(new URL('index.html', root), expected);
+}
+await syncEntryCritical();
+
 await Promise.all([
   sync('assets/js/bamco.bundle.js', await buildJavascript()),
   sync('assets/css/bamco.bundle.css', await buildCss())

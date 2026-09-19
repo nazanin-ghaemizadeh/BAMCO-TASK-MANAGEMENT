@@ -16,13 +16,13 @@ async function warmAvatars(force=false){
     let profiles=[];
     try{
       profiles=state.profile?.role==='manager'
-        ?await select('profiles','select=id,avatar_path&order=id')
+        ?await select('profiles','select=id,avatar_path,updated_at&order=id')
         :[state.profile];
     }catch{return}
     if(!sessionCurrent(user,session))return;
-    const paths=[...new Set((profiles||[]).map(p=>String(p?.avatar_path||'')).filter(Boolean))];
+    const paths=(profiles||[]).filter(p=>p?.avatar_path);
     for(let i=0;i<paths.length&&sessionCurrent(user,session);i+=4){
-      await Promise.allSettled(paths.slice(i,i+4).map(path=>window.bamcoMedia.get('avatars',path)));
+      await Promise.allSettled(paths.slice(i,i+4).map(p=>window.bamcoMedia.get('avatars',p.avatar_path,p.updated_at)));
     }
   })();
   avatarWarmPromise=job;

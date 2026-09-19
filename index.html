@@ -4,7 +4,7 @@
   <link rel="preload" href="assets/fonts/BNazanin.woff2" as="font" type="font/woff2" crossorigin>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <meta name="bamco-app-version" content="2026.09.19.1" />
+  <meta name="bamco-app-version" content="2026.09.19.2" />
   <meta name="application-name" content="BAMCO" />
   <meta name="apple-mobile-web-app-title" content="BAMCO" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -14,7 +14,7 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.supabase.co https://cdn.jsdelivr.net/gh/jdecked/twemoji@v17.0.3/assets/svg/; font-src 'self' data:; connect-src 'self' https://zhhongjhhbvpmoquvkhl.supabase.co https://lsfqjjynrajthxnhmjyj.supabase.co; frame-src 'self' blob: https://*.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
   <title>BAMCO Task Management</title>
   <meta name="description" content="سامانه آنلاین مدیریت، پایش و پیگیری امور خودروسازان بم" />
-  <link rel="manifest" href="manifest.webmanifest?v=2026.09.19.1" />
+  <link rel="manifest" href="manifest.webmanifest?v=2026.09.19.2" />
   <link rel="icon" type="image/png" sizes="192x192" href="assets/images/bamco-icon-192.png" />
   <link rel="apple-touch-icon" sizes="180x180" href="assets/images/bamco-apple-touch-icon.png" />
   <script id="bamcoUpdateRecoveryBootstrap">
@@ -26,10 +26,47 @@
     if(changed)history.replaceState(history.state,'',url.pathname+(url.search?url.search:'')+url.hash);
   }catch{}})();
   </script>
-  <script defer src="assets/js/app-update-v2.js?v=2026.09.19.1"></script>
-<link rel="stylesheet" href="assets/css/bamco.bundle.css?v=2026.09.19.1">
-<script defer src="assets/js/department-entry.js?v=mobile-entry-20260911-4"></script>
-<style id="entryCritical">html,body{margin:0;min-height:100%;background:#f4f8f5}body.department-pending>#loginView,body.department-pending>#appView{display:none!important}#departmentEntry{min-height:100vh;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 5vw;text-align:center;direction:rtl;color:#164d3b;font-family:"B Nazanin",Tahoma,serif}#departmentEntry[hidden]{display:none!important}#departmentEntry header{display:flex;flex-direction:column;align-items:center}#departmentEntry header img{width:244px;height:152px;box-sizing:border-box;object-fit:contain;background:#0c5842;border-radius:16px;padding:24px 30px}.department-grid{width:min(1020px,100%);display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px}.department-grid button{aspect-ratio:1;border:1px solid #caddcf;border-radius:22px;background:#fff;color:#18543e;font:inherit;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:22px}.department-icon{display:grid;place-items:center;width:86px;height:86px;border-radius:19px;background:#e5f2e9}.department-icon svg{width:48px;height:48px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}.department-grid strong{font-size:22px}.department-state{font-size:16px}@media(max-width:620px){#departmentEntry{min-height:100dvh;justify-content:flex-start;padding:18px 12px 24px;overflow:auto}#departmentEntry header{margin:0 auto 16px}#departmentEntry header img{width:166px;height:104px;padding:15px 20px;border-radius:14px}#departmentEntry h1{font-size:21px;line-height:1.7;margin:12px 0 2px}#departmentEntry header p{font-size:16px}.department-grid{grid-template-columns:1fr;gap:10px;max-width:430px}.department-grid button{aspect-ratio:auto;min-height:96px;display:grid;grid-template-columns:58px minmax(0,1fr) auto;align-items:center;gap:12px;padding:12px 14px;text-align:right;border-radius:14px}.department-grid strong{font-size:17px;text-align:right}.department-icon{width:54px;height:54px}.department-icon svg{width:32px;height:32px}.department-state{font-size:13px;white-space:nowrap}}</style>
+  <script defer src="assets/js/app-update-v2.js?v=2026.09.19.2"></script>
+<link rel="stylesheet" href="assets/css/bamco.bundle.css?v=2026.09.19.2">
+<script defer src="assets/js/department-entry.js?v=2026.09.19.2"></script>
+<style id="entryCritical">html,body{margin:0;min-height:100%;background:#f4f8f5}
+/* Management selector: authoritative, first-paint-stable layout. */
+@font-face{font-family:BamcoEntry;src:url('assets/fonts/BNazanin.woff2') format('woff2');font-style:normal;font-weight:400;font-display:block}
+body.department-pending #loginView,body.department-pending #appView{display:none!important}
+/* Keep the selector laid out but invisible until its exact font/logo are decoded. Revealing visibility never changes geometry. */
+html body.department-pending #departmentEntry{visibility:hidden!important;opacity:0!important}
+html body.department-pending.department-entry-ready #departmentEntry{visibility:visible!important;opacity:1!important}
+html body.department-pending.department-entry-font-fallback #departmentEntry{font-family:Tahoma,Arial,sans-serif!important}
+html body.department-pending #departmentEntry{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;width:100%!important;min-height:100svh!important;height:100svh!important;box-sizing:border-box!important;overflow:auto!important;overflow-anchor:none!important;scrollbar-gutter:stable!important;padding:32px 5vw!important;background:radial-gradient(ellipse at top,#deeee6,transparent 65%),#f4f8f5!important;direction:rtl!important;color:#164d3b!important;font-family:BamcoEntry,'B Nazanin',Tahoma,serif!important;text-align:center!important;text-align-last:center!important;font-synthesis:weight!important}
+html body.department-pending #departmentEntry[hidden]{display:none!important}
+html body.department-pending #departmentEntry>header{display:flex!important;flex-direction:column!important;align-items:center!important;width:100%!important;max-width:1000px!important;margin:0 auto 30px!important;text-align:center!important}
+html body.department-pending #departmentEntry>header>img{display:block!important;width:244px!important;height:152px!important;flex:0 0 152px!important;object-fit:contain!important;background:#0c5842!important;border-radius:16px!important;padding:24px 30px!important;box-sizing:border-box!important}
+html body.department-pending #departmentEntry h1{min-height:58px!important;display:flex!important;align-items:center!important;justify-content:center!important;font-size:clamp(24px,2.2vw,34px)!important;line-height:1.7!important;margin:12px 0 2px!important;text-align:center!important;text-align-last:center!important}
+html body.department-pending #departmentEntry header p{min-height:32px!important;font-size:20px!important;line-height:1.6!important;color:#658575!important;margin:0!important;text-align:center!important;text-align-last:center!important}
+html body.department-pending #departmentEntry .department-grid{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:22px!important;width:min(1020px,100%)!important;max-width:1020px!important;margin:0 auto!important;align-items:stretch!important}
+html body.department-pending #departmentEntry .department-grid button{display:flex!important;aspect-ratio:1!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:18px!important;width:100%!important;border:1px solid #caddcf!important;border-radius:22px!important;background:#fff!important;font:inherit!important;color:#18543e!important;padding:22px!important;box-shadow:0 8px 25px #174c3410!important;cursor:pointer!important;text-align:center!important;text-align-last:center!important;transform:none!important;transition:border-color .15s ease,box-shadow .15s ease!important}
+html body.department-pending #departmentEntry .department-grid button:not(:disabled):hover{border-color:#298564!important;box-shadow:0 12px 30px #174c3424!important;transform:none!important}
+html body.department-pending #departmentEntry .department-grid button:focus-visible{outline:3px solid #279868!important;outline-offset:4px!important}
+html body.department-pending #departmentEntry .department-grid button:disabled{background:#edf3ef!important;color:#6d8778!important;cursor:default!important}
+html body.department-pending #departmentEntry .department-icon{display:grid!important;place-items:center!important;width:86px!important;height:86px!important;flex:0 0 86px!important;background:#e5f2e9!important;border-radius:19px!important}
+html body.department-pending #departmentEntry .department-icon svg{width:48px!important;height:48px!important;fill:none!important;stroke:currentColor!important;stroke-width:1.5!important;stroke-linecap:round!important;stroke-linejoin:round!important}
+html body.department-pending #departmentEntry .department-grid strong{font-size:22px!important;line-height:1.6!important;text-align:center!important;text-align-last:center!important}
+html body.department-pending #departmentEntry .department-state{font-size:16px!important;line-height:1.5!important;background:#edf5ef!important;padding:5px 18px!important;border-radius:20px!important;text-align:center!important;text-align-last:center!important;white-space:nowrap!important}
+.department-back{display:block;margin:18px auto;border:0;background:transparent;color:#3c7860;font:inherit;cursor:pointer}
+
+@media(max-width:700px){
+ html body.department-pending #departmentEntry{min-height:100svh!important;height:100svh!important;justify-content:flex-start!important;padding:18px 12px 24px!important;overflow-y:auto!important}
+ html body.department-pending #departmentEntry>header{max-width:430px!important;margin:0 auto 16px!important}
+ html body.department-pending #departmentEntry>header>img{width:166px!important;height:104px!important;flex-basis:104px!important;padding:15px 20px!important;border-radius:14px!important}
+ html body.department-pending #departmentEntry h1{min-height:36px!important;font-size:21px!important;line-height:1.7!important;margin:12px 0 2px!important}
+ html body.department-pending #departmentEntry header p{min-height:26px!important;font-size:16px!important;line-height:1.6!important}
+ html body.department-pending #departmentEntry .department-grid{grid-template-columns:1fr!important;gap:10px!important;width:100%!important;max-width:430px!important}
+ html body.department-pending #departmentEntry .department-grid button{height:96px!important;min-height:96px!important;aspect-ratio:auto!important;display:grid!important;grid-template-columns:58px minmax(0,1fr) auto!important;align-items:center!important;justify-content:stretch!important;gap:12px!important;padding:12px 14px!important;border-radius:14px!important;text-align:right!important;text-align-last:right!important}
+ html body.department-pending #departmentEntry .department-icon{width:54px!important;height:54px!important;flex-basis:54px!important;border-radius:13px!important}
+ html body.department-pending #departmentEntry .department-icon svg{width:32px!important;height:32px!important}
+ html body.department-pending #departmentEntry .department-grid strong{font-size:17px!important;line-height:1.7!important;text-align:right!important;text-align-last:right!important}
+ html body.department-pending #departmentEntry .department-state{font-size:13px!important;padding:4px 8px!important;text-align:center!important;text-align-last:center!important}
+}</style>
 </head>
 <body class="department-pending">
   <main id="departmentEntry" aria-labelledby="departmentTitle">
@@ -190,7 +227,7 @@ html body .chat-bubble.bamco-system-message .system-message-open-chips{grid-area
 html body .chat-bubble.bamco-system-message .system-message-open-cta{grid-area:cta!important;direction:rtl!important}
 @media(max-width:600px){html body .chat-bubble.bamco-system-message .system-message-open{grid-template-areas:"title title" "sender sender" "date date" "chips chips" "cta cta"!important}.system-message-open-date{white-space:normal!important}}
 </style>
-<script defer src="assets/js/bamco.bundle.js?v=2026.09.19.1"></script>
-<script defer src="assets/js/root-sync-hotfix-20260917.js?v=2026.09.19.1"></script>
+<script defer src="assets/js/bamco.bundle.js?v=2026.09.19.2"></script>
+<script defer src="assets/js/root-sync-hotfix-20260917.js?v=2026.09.19.2"></script>
 </body>
 </html>

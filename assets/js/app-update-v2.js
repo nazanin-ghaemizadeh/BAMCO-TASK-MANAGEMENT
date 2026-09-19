@@ -8,7 +8,7 @@ const installedKey='bamco.app.installed-version';
 const announcedKey='bamco.app.announced-update';
 const legacyKeys=['bamco.app.pending-version','bamco.app.update-attempts','bamco.app.dismissed-version'];
 const updateParams=['bamco_update','bamco_reload','bamco_probe','bamco_v'];
-let checking=false,lastCheck=0;
+let checking=false,lastCheck=0,releaseNotes=[];
 
 const read=(storage,key)=>{try{return storage.getItem(key)||''}catch{return''}};
 const write=(storage,key,value)=>{try{value?storage.setItem(key,value):storage.removeItem(key)}catch{}};
@@ -54,7 +54,7 @@ async function latestVersion(){
  const url=new URL('version.json',location.href);url.searchParams.set('check',String(Date.now()));
  const response=await fetch(url.href,{cache:'no-store',headers:{Accept:'application/json'}});
  if(!response.ok)throw Error('version check failed');
- const data=await response.json();return String(data?.version||'').trim();
+ const data=await response.json();releaseNotes=Array.isArray(data?.notes)?data.notes.filter(note=>typeof note==='string').slice(0,8):[];return String(data?.version||'').trim();
 }
 async function publishedDocumentVersion(){
  const url=new URL('./',location.href);url.searchParams.set('bamco_probe',String(Date.now()));
@@ -79,6 +79,11 @@ function navigate(version){
  return true;
 }
 function confirmInstalledVersion(){
+ const releaseKey='bamco.app.release-notes-version';
+ if(releaseNotes.length&&read(localStorage,releaseKey)!==current){
+  notify(`نسخه ${current}\n${releaseNotes.join('\n')}`,{title:'سامانه به‌روزرسانی شد',duration:15000,icon:'✓'});
+  write(localStorage,releaseKey,current);write(localStorage,installedKey,current);return;
+ }
  const previous=read(localStorage,installedKey);
  if(previous&&current&&previous!==current){
   notify(`نسخه ${current} با موفقیت نصب شد.`,{title:'سامانه به‌روزرسانی شد',duration:10000,icon:'✓'});

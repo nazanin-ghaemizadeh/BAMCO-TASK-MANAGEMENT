@@ -1,25 +1,38 @@
-/* Authenticated image requests are shared across chat, directory and previews. */
-(()=>{'use strict';const cache=new Map(),urls=new Set();
+/* A single, session-scoped image owner for the directory, header and previews. */
+(()=>{'use strict';
+const cache=new Map(),urls=new Set(),bindings=new WeakMap();
 let generation=0;
 const imageCacheName='bamco-auth-images-v2';
 const imageBuckets=new Set(['avatars','stickers','group-avatars']);
 const validPath=path=>path&&!String(path).split('/').includes('..');
 const cacheKey=(user,bucket,path)=>new URL('media-cache/'+encodeURIComponent(user)+'/'+encodeURIComponent(bucket)+'/'+encodeURIComponent(path),location.href).href;
 async function diskCache(){if(!window.caches)return null;try{return await caches.open(imageCacheName)}catch{return null}}
-async function get(bucket,path){
+function avatarRevision(path,revision){
+ if(revision!=null)return String(revision);
+ const people=[state.profile,...(state.profiles||[])];
+ return String(people.find(p=>p?.avatar_path===path)?.updated_at||'legacy-session');
+}
+async function get(bucket,path,revision){
  if(!imageBuckets.has(bucket)||!validPath(path))throw Error('مسیر تصویر نامعتبر است');
  const user=state.user?.id,epoch=generation,session=window.bamcoAuth?.snapshot?.();
  if(!user||!state.token)throw Error('برای دریافت تصویر وارد سامانه شوید.');
  const current=()=>generation===epoch&&state.user?.id===user&&!!state.token&&(!session||window.bamcoAuth.isCurrent(session));
- const key=user+':'+bucket+':'+path;
+ const version=bucket==='avatars'?avatarRevision(path,revision):'';
+ const key=JSON.stringify([user,bucket,String(path),version]);
  if(!cache.has(key)){
   const pending=(async()=>{
-   const disk=await diskCache(),diskKey=cacheKey(user,bucket,path);let blob=null;
+   // Avatars must never reuse the old path-only persistent cache. Immutable new
+   // paths and updated_at revisions also cover legacy clients replacing avatar.png.
+   const disk=bucket==='avatars'?null:await diskCache(),diskKey=cacheKey(user,bucket,path);let blob=null;
    if(disk)try{const hit=await disk.match(diskKey);if(hit)blob=await hit.blob()}catch{}
    if(!current())throw Error('نشست دریافت تصویر پایان یافته است.');
    if(!blob){
     const encoded=String(path).split('/').map(encodeURIComponent).join('/'),controller=new AbortController(),timer=setTimeout(()=>controller.abort(),15000);
-    try{const res=await fetch(`${SB_URL}/storage/v1/object/authenticated/${bucket}/${encoded}`,{headers:{apikey:SB_KEY,Authorization:`Bearer ${state.token}`},cache:'force-cache',signal:controller.signal});if(!res.ok)throw Error('دریافت تصویر انجام نشد');blob=await res.blob()}finally{clearTimeout(timer)}
+    const suffix=bucket==='avatars'?'?cacheNonce='+encodeURIComponent(version==='legacy-session'?String(epoch)+'-'+Date.now():version):'';
+    try{
+     const res=await fetch(`${SB_URL}/storage/v1/object/authenticated/${bucket}/${encoded}${suffix}`,{headers:{apikey:SB_KEY,Authorization:`Bearer ${state.token}`},cache:bucket==='avatars'?'no-store':'force-cache',signal:controller.signal});
+     if(!res.ok)throw Error('دریافت تصویر انجام نشد');blob=await res.blob();
+    }finally{clearTimeout(timer)}
     if(!current())throw Error('نشست دریافت تصویر پایان یافته است.');
     if(disk)try{await disk.put(diskKey,new Response(blob));const entries=await disk.keys();await Promise.all(entries.slice(0,Math.max(0,entries.length-96)).map(entry=>disk.delete(entry)));if(!current())await disk.delete(diskKey)}catch{}
    }
@@ -30,9 +43,49 @@ async function get(bucket,path){
  }
  return cache.get(key);
 }
-async function invalidate(bucket,path,user=state.user?.id){if(!imageBuckets.has(bucket)||!validPath(path)||!user)return;const key=user+':'+bucket+':'+path;const value=cache.get(key);cache.delete(key);try{const url=await value;if(url){urls.delete(url);URL.revokeObjectURL(url)}}catch{}const disk=await diskCache();if(disk)try{await disk.delete(cacheKey(user,bucket,path))}catch{}}
-async function avatars(root,people){const byId=new Map(people.map(p=>[p.id,p]));await Promise.all([...root.querySelectorAll('[data-profile-photo]')].map(async el=>{const p=byId.get(el.dataset.profilePhoto);if(!p?.avatar_path)return;try{const src=await get('avatars',p.avatar_path);if(!el.isConnected)return;let img=el.querySelector(':scope>img');if(!img){img=document.createElement('img');img.alt='';el.replaceChildren(img)}if(img.src!==src)img.src=src;el.classList.add('has-image')}catch{}}))}
+async function invalidate(bucket,path,user=state.user?.id){
+ if(!imageBuckets.has(bucket)||!validPath(path)||!user)return;
+ // Consumers may still be displaying the previous version. Only retire its cache
+ // entry here; revoke URLs at session teardown, never when a different photo loads.
+ for(const key of cache.keys()){const [u,b,p]=JSON.parse(key);if(u===user&&b===bucket&&p===String(path))cache.delete(key)}
+ const disk=await diskCache();if(disk)try{await disk.delete(cacheKey(user,bucket,path))}catch{}
+}
+function paintInitial(el,p){
+ const initial=String(p?.display_name||p?.full_name||'ب').trim().charAt(0)||'ب';
+ if(el.textContent!==initial||el.children.length)el.replaceChildren(document.createTextNode(initial));
+ el.classList.remove('has-image');el.style.removeProperty('background-image');delete el.dataset.avatarLoaded;
+}
+async function bindAvatar(el,p){
+ if(!el||!p||el.dataset.avatarDraft==='true')return false;
+ const user=state.user?.id,epoch=generation,path=String(p.avatar_path||''),revision=avatarRevision(path,p.updated_at);
+ const signature=JSON.stringify([user,p.id,path,revision,epoch]);
+ const previous=bindings.get(el);
+ if(previous?.signature===signature&&(previous.loading||(!path&&!el.children.length)||(path&&el.querySelector(':scope>img')?.src===previous.src)))return previous.promise;
+ const binding={signature,promise:null,loading:!!path,src:''};bindings.set(el,binding);
+ const current=()=>bindings.get(el)===binding&&el.isConnected&&generation===epoch&&state.user?.id===user&&!!state.token&&el.dataset.avatarDraft!=='true';
+ if(!path){paintInitial(el,p);binding.promise=Promise.resolve(true);return binding.promise}
+ // A different person's recycled cell must never show the previous person's photo.
+ if(el.dataset.avatarPerson!==String(p.id))paintInitial(el,p);
+ el.dataset.avatarPerson=String(p.id);
+ binding.promise=(async()=>{
+  try{
+   const src=await get('avatars',path,revision);if(!current())return false;
+   let img=el.querySelector(':scope>img');if(!img){img=document.createElement('img');el.replaceChildren(img)}
+   img.alt='تصویر پروفایل';img.dataset.profileAvatar='1';img.decoding='async';
+   img.style.cssText='width:100%;height:100%;object-fit:cover;display:block;border-radius:50%';
+   if(img.src!==src)img.src=src;binding.src=src;
+   el.style.removeProperty('background-image');el.dataset.avatarLoaded=path;el.classList.add('has-image');return true;
+  }catch{
+   if(current()){paintInitial(el,p);bindings.delete(el)}return false;
+  }finally{binding.loading=false}
+ })();return binding.promise;
+}
+async function avatars(root,people){
+ if(!root)return;const byId=new Map((people||[]).map(p=>[String(p.id),p]));
+ await Promise.all([...root.querySelectorAll('[data-profile-photo]')].map(el=>{const p=byId.get(String(el.dataset.profilePhoto));return p?bindAvatar(el,p):Promise.resolve(false)}));
+}
 async function groups(root,threads){const byId=new Map(threads.map(t=>[t.id,t]));await Promise.all([...root.querySelectorAll('[data-thread-photo]')].map(async el=>{const t=byId.get(el.dataset.threadPhoto);if(!t?.avatar_path)return;try{const src=await get('group-avatars',t.avatar_path);if(!el.isConnected)return;let img=el.querySelector(':scope>img');if(!img){img=document.createElement('img');img.alt='';el.replaceChildren(img)}if(img.src!==src)img.src=src;el.classList.add('has-image')}catch{}}))}
-function clear(){generation++;if(window.caches)caches.delete(imageCacheName).catch(()=>{});cache.clear();urls.forEach(URL.revokeObjectURL);urls.clear()}
-document.addEventListener('click',e=>{if(e.target.closest('#logoutBtn'))clear()});window.bamcoMedia={get,avatars,groups,invalidate,clear};
+function clear(){generation++;if(window.caches)caches.delete(imageCacheName).catch(()=>{});cache.clear();urls.forEach(url=>URL.revokeObjectURL(url));urls.clear()}
+document.addEventListener('click',e=>{if(e.target.closest('#logoutBtn'))clear()});
+window.bamcoMedia={get,avatars,bindAvatar,groups,invalidate,clear};
 })();

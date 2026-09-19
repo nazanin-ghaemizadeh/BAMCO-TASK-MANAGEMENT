@@ -5,7 +5,7 @@ test('profile refresh updates both header and settings avatars through one canon
  const final=fs.readFileSync('assets/js/final-production-fixes-20260911.js','utf8');
  assert.match(canonical,/#avatar/);
  assert.match(canonical,/#profileAvatarPreview/);
- assert.match(canonical,/targets\.length&&targets\.every\(/);
+ assert.match(canonical,/bamcoMedia\.bindAvatar\(el,state\.profile\)/);
  assert.match(final,/window\.refreshProfileAvatar/);
  assert.doesNotMatch(final,/cache:'no-store'/);
  assert.doesNotMatch(final,/setInterval\(/);

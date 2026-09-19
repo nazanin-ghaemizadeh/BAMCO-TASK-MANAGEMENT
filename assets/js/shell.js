@@ -20,7 +20,48 @@
   }
   document.addEventListener('bamco-selection-change',e=>{if(e.target.closest('#peopleView')){selected=new Set(e.detail.ids);syncPersonSelection()}});
   async function edge(body={},method='POST'){const result=await api('/functions/v1/admin-users',{method,body});if(!result?.ok)throw new Error(result?.error||'عملیات حساب کاربری تأیید نشد.');return result}
-  async function loadPeople(){people=await select('profiles','select=id,email,login_name,must_change_password,password_changed_at,full_name,display_name,role,gender,salutation,active,default_message_channel,messaging_enabled,avatar_path&order=full_name');state.profiles=people;renderPeople()}
+  function mergeProfile(previous,incoming){
+    if(!previous)return {...incoming};
+    const oldTime=Date.parse(previous.updated_at)||0,newTime=Date.parse(incoming.updated_at)||0;
+    if(oldTime>newTime)return {...incoming,...previous};
+    return {...previous,...incoming};
+  }
+  function syncProfiles(rows,{replaceAll=false}={}){
+    const known=new Map([...(state.profiles||[]),...people,state.profile].filter(Boolean).map(p=>[p.id,p]));
+    const merged=(rows||[]).map(p=>mergeProfile(known.get(p.id),p));
+    for(const p of merged)known.set(p.id,p);
+    state.profiles=replaceAll?merged:[...known.values()];
+    people=replaceAll?merged:people.map(p=>known.get(p.id)||p);
+    if(state.profile&&known.has(state.profile.id))state.profile=known.get(state.profile.id);
+    void window.bamcoMedia?.avatars(document,state.profiles);
+    void window.refreshProfileAvatar?.();
+    return state.profiles;
+  }
+  let peopleLoad=null,profileRefresh=null,lastProfileRefresh=0;
+  async function loadPeople(){
+    if(peopleLoad)return peopleLoad;
+    const user=state.user?.id,session=window.bamcoAuth?.snapshot?.();
+    const job=(async()=>{
+      const rows=await select('profiles','select=id,email,login_name,must_change_password,password_changed_at,full_name,display_name,role,gender,salutation,active,default_message_channel,messaging_enabled,avatar_path,updated_at&order=full_name');
+      if(!state.token||state.user?.id!==user||(session&&!window.bamcoAuth.isCurrent(session)))return;
+      syncProfiles(rows,{replaceAll:true});renderPeople();
+    })();peopleLoad=job;
+    try{return await job}finally{if(peopleLoad===job)peopleLoad=null}
+  }
+  async function refreshProfileMetadata(force=false){
+    if(typeof state==='undefined'||!state.token||!state.user||document.hidden)return;
+    if(profileRefresh||(!force&&Date.now()-lastProfileRefresh<15000))return profileRefresh;
+    lastProfileRefresh=Date.now();
+    const user=state.user.id,session=window.bamcoAuth?.snapshot?.();
+    const job=(async()=>{
+      if(isManager()&&!q('#peopleView').classList.contains('hidden'))return loadPeople();
+      const rows=await select('profiles',`id=eq.${user}&select=*`);
+      if(!state.token||state.user?.id!==user||(session&&!window.bamcoAuth.isCurrent(session)))return;
+      if(rows.length)syncProfiles(rows);
+    })();profileRefresh=job;
+    try{return await job}catch{ /* Keep the last confirmed image when offline. */ }
+    finally{if(profileRefresh===job)profileRefresh=null}
+  }
   function renderPeople(){const term=q('#peopleSearch').value.trim().toLowerCase(),rows=people.filter(p=>!term||[p.full_name,p.email,p.login_name,p.role,p.salutation].some(v=>String(v||'').toLowerCase().includes(term)));q('#peopleBody').innerHTML=rows.map(p=>{const initial=esc(String(p.display_name||p.full_name||'ب').trim().charAt(0)||'ب');return `<tr data-id="${p.id}" class="${selected.has(p.id)?'person-selected':''}"><td>${esc(p.full_name)}</td><td>${p.role==='manager'?'مدیر':'متولی'}</td><td>${esc(p.gender||'—')}</td><td class="english">${esc(p.email||'—')}</td><td class="english" dir="ltr">${esc(p.login_name||'—')}</td><td><button type="button" class="ghost" data-person-credentials="${esc(p.id)}" title="ویرایش نام کاربری و تعیین رمز موقت">${p.must_change_password?'رمز موقت؛ نیازمند تغییر':'تعیین رمز جدید'}</button>${p.password_changed_at?`<small class="credential-date">آخرین تغییر: ${esc(new Date(p.password_changed_at).toLocaleString('fa-IR'))}</small>`:''}</td><td>${esc(p.salutation||'—')}</td><td class="people-avatar-cell"><span class="people-avatar" data-profile-photo="${esc(p.id)}" aria-label="تصویر ${esc(p.full_name)}">${initial}</span></td><td>${p.active!==false?'بله':'خیر'}</td></tr>`}).join('')||'<tr><td colspan="9" class="empty">کاربری ثبت نشده است.</td></tr>';syncPersonSelection();if(window.bamcoMedia?.avatars)void window.bamcoMedia.avatars(q('#peopleBody'),rows)}
   function syncMessageAvailability(){const f=q('#personForm'),hasEmail=!!f.elements.email.value.trim(),channel=f.elements.default_message_channel;channel.disabled=false;[...channel.options].forEach(o=>o.disabled=o.value!=='portal'&&!hasEmail);if(!hasEmail||!channel.value)channel.value='portal';q('#personLoginActions').classList.toggle('hidden',!editing)}
   function openPerson(p=null){editing=p;const f=q('#personForm');f.reset();q('#personError').textContent='';f.elements.role.value='owner';f.elements.active.value='true';if(p)for(const k of ['full_name','role','gender','email','salutation','active','default_message_channel'])if(f.elements[k])f.elements[k].value=String(p[k]??'');q('#personDialogTitle').textContent=p?'ویرایش فرد':'افزودن فرد';syncMessageAvailability();q('#personDialog').showModal()}
@@ -71,18 +112,65 @@
       if(errors.length||warnings.length)toast(`${deleted.length.toLocaleString('fa-IR')} حساب حذف شد.\n`+[...errors,...warnings].join('\n'),true);
     }catch(err){toast(err.message,true)}finally{deletingPeople=false;syncPersonSelection()}
   }
-  let avatarUrl='',pendingBlob=null,pendingUrl='',cropImage=null,zoom=1,offX=0,offY=0,drag=false,last=null;
+  let pendingBlob=null,pendingUrl='',cropImage=null,zoom=1,offX=0,offY=0,drag=false,last=null;
   function paint(el,url=''){if(!el)return;el.textContent=(state.profile.display_name||state.profile.full_name||'ب').trim()[0];el.classList.toggle('has-image',!!url);el.style.backgroundImage=url?`url("${url}")`:''}
-  window.refreshProfileAvatar=async()=>{if(!state.profile)return;if(avatarUrl)URL.revokeObjectURL(avatarUrl);avatarUrl='';paint(q('#avatar'));paint(q('#profileAvatarPreview'));if(!state.profile.avatar_path)return;try{const path=state.profile.avatar_path.split('/').map(encodeURIComponent).join('/'),r=await fetch(`${SB_URL}/storage/v1/object/authenticated/avatars/${path}`,{headers:{apikey:SB_KEY,Authorization:`Bearer ${state.token}`},cache:'no-store'});if(!r.ok)throw new Error('دریافت عکس انجام نشد.');avatarUrl=URL.createObjectURL(await r.blob());paint(q('#avatar'),avatarUrl);paint(q('#profileAvatarPreview'),avatarUrl)}catch(err){toast(err.message,true)}};
+  window.refreshProfileAvatar=()=>Promise.all([q('#avatar'),q('#profileAvatarPreview')].filter(Boolean).map(el=>window.bamcoMedia.bindAvatar(el,state.profile)));
   function metrics(){const base=Math.max(360/cropImage.naturalWidth,360/cropImage.naturalHeight),scale=base*zoom,maxX=Math.max(0,(cropImage.naturalWidth*scale-360)/2),maxY=Math.max(0,(cropImage.naturalHeight*scale-360)/2);offX=Math.max(-maxX,Math.min(maxX,offX));offY=Math.max(-maxY,Math.min(maxY,offY));return{scale,x:(360-cropImage.naturalWidth*scale)/2+offX,y:(360-cropImage.naturalHeight*scale)/2+offY}}
   function draw(){if(!cropImage)return;const c=q('#avatarCropCanvas'),ctx=c.getContext('2d'),m=metrics();ctx.clearRect(0,0,360,360);ctx.drawImage(cropImage,m.x,m.y,cropImage.naturalWidth*m.scale,cropImage.naturalHeight*m.scale);ctx.fillStyle='rgba(5,25,19,.55)';ctx.beginPath();ctx.rect(0,0,360,360);ctx.arc(180,180,164,0,Math.PI*2,true);ctx.fill('evenodd');ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.beginPath();ctx.arc(180,180,164,0,Math.PI*2);ctx.stroke()}
   function openCrop(file){if(!file)return;if(file.size>8*1024*1024||!['image/png','image/jpeg','image/webp'].includes(file.type))return toast('فایل باید تصویر PNG، JPG یا WebP و حداکثر ۸ مگابایت باشد.',true);const url=URL.createObjectURL(file),img=new Image();img.onload=()=>{URL.revokeObjectURL(url);cropImage=img;zoom=1;offX=offY=0;q('#avatarCropZoom').value=1;draw();q('#avatarCropDialog').showModal()};img.onerror=()=>toast('تصویر قابل خواندن نیست.',true);img.src=url}
   function point(e){const r=q('#avatarCropCanvas').getBoundingClientRect();return{x:(e.clientX-r.left)*360/r.width,y:(e.clientY-r.top)*360/r.height}}
-  function applyCrop(){if(!cropImage)return;const out=document.createElement('canvas'),m=metrics(),ctx=out.getContext('2d');out.width=out.height=512;ctx.save();ctx.beginPath();ctx.arc(256,256,256,0,Math.PI*2);ctx.clip();ctx.drawImage(cropImage,m.x*512/360,m.y*512/360,cropImage.naturalWidth*m.scale*512/360,cropImage.naturalHeight*m.scale*512/360);ctx.restore();out.toBlob(blob=>{pendingBlob=blob;if(pendingUrl)URL.revokeObjectURL(pendingUrl);pendingUrl=URL.createObjectURL(blob);paint(q('#profileAvatarPreview'),pendingUrl);q('#avatarCropDialog').close();toast('برش عکس آماده است؛ ذخیره تنظیمات حساب را بزنید.');},'image/png')}
-  async function saveProfile(){const button=q('#saveProfileBtn');if(button.disabled)return;button.disabled=true;try{const login=q('#profileLoginName').value.trim().toLowerCase();if(login!==(state.profile.login_name||state.user?.email||'')){const saved=await edge({action:'save_own_login',login_name:login});state.profile.login_name=saved.login_name;state.user.email=saved.login_name.includes('@')?saved.login_name:saved.login_name+'@no-email.invalid';void window.bamcoInbox?.load();}const display_name=q('#profileDisplayName').value.trim();let avatar_path=state.profile.avatar_path||null;if(pendingBlob){avatar_path=`${state.profile.id}/avatar.png`;const path=avatar_path.split('/').map(encodeURIComponent).join('/'),r=await fetch(`${SB_URL}/storage/v1/object/avatars/${path}`,{method:'POST',headers:{apikey:SB_KEY,Authorization:`Bearer ${state.token}`,'x-upsert':'true','Content-Type':'image/png'},body:pendingBlob});if(!r.ok)throw new Error((await r.json().catch(()=>({}))).message||'آپلود تصویر انجام نشد.')}const rows=await update('profiles',`id=eq.${state.profile.id}`,{display_name,avatar_path,updated_at:new Date().toISOString()});state.profile={...state.profile,...rows[0]};pendingBlob=null;q('#userName').textContent=display_name||state.profile.full_name;await window.refreshProfileAvatar();toast('تنظیمات حساب ذخیره شد.')}catch(err){toast(err.message,true)}finally{button.disabled=false}}
+  function applyCrop(){if(!cropImage)return;const out=document.createElement('canvas'),m=metrics(),ctx=out.getContext('2d');out.width=out.height=512;ctx.save();ctx.beginPath();ctx.arc(256,256,256,0,Math.PI*2);ctx.clip();ctx.drawImage(cropImage,m.x*512/360,m.y*512/360,cropImage.naturalWidth*m.scale*512/360,cropImage.naturalHeight*m.scale*512/360);ctx.restore();out.toBlob(blob=>{if(!blob)return toast('آماده‌سازی تصویر انجام نشد.',true);pendingBlob=blob;q('#profileAvatarPreview').dataset.avatarDraft='true';if(pendingUrl)URL.revokeObjectURL(pendingUrl);pendingUrl=URL.createObjectURL(blob);paint(q('#profileAvatarPreview'),pendingUrl);q('#avatarCropDialog').close();toast('برش عکس آماده است؛ ذخیره تنظیمات حساب را بزنید.');},'image/png')}
+  async function saveProfile(){
+    const button=q('#saveProfileBtn');if(button.disabled)return;button.disabled=true;
+    const user=state.user?.id,profileId=state.profile.id,session=window.bamcoAuth?.snapshot?.(),savedBlob=pendingBlob;
+    const current=()=>state.user?.id===user&&!!state.token&&(!session||window.bamcoAuth.isCurrent(session));
+    try{
+      const login=q('#profileLoginName').value.trim().toLowerCase();
+      if(login!==(state.profile.login_name||state.user?.email||'')){
+        const saved=await edge({action:'save_own_login',login_name:login});
+        if(!current())return;
+        state.profile.login_name=saved.login_name;
+        state.user.email=saved.login_name.includes('@')?saved.login_name:saved.login_name+'@no-email.invalid';
+        void window.bamcoInbox?.load();
+      }
+      const display_name=q('#profileDisplayName').value.trim();let avatar_path=state.profile.avatar_path||null;
+      if(savedBlob){
+        // Never overwrite a cached object. Updating the profile row publishes the new image.
+        avatar_path=`${profileId}/avatar-${crypto.randomUUID()}.png`;
+        const path=avatar_path.split('/').map(encodeURIComponent).join('/');
+        const response=await fetch(`${SB_URL}/storage/v1/object/avatars/${path}`,{method:'POST',headers:{apikey:SB_KEY,Authorization:`Bearer ${state.token}`,'x-upsert':'false','Content-Type':'image/png'},body:savedBlob});
+        if(!response.ok)throw new Error((await response.json().catch(()=>({}))).message||'آپلود تصویر انجام نشد.');
+      }
+      if(!current())return;
+      const rows=await update('profiles',`id=eq.${profileId}`,{display_name,avatar_path,updated_at:new Date().toISOString()});
+      if(!current())return;
+      const saved=rows?.find(p=>p.id===profileId);
+      if(!saved||saved.avatar_path!==avatar_path)throw new Error('ذخیره تصویر در حساب تأیید نشد؛ دوباره تلاش کنید.');
+      if(pendingBlob===savedBlob){
+        pendingBlob=null;q('#profileAvatarPreview').removeAttribute('data-avatar-draft');
+        if(pendingUrl){URL.revokeObjectURL(pendingUrl);pendingUrl=''}
+      }
+      syncProfiles([{...state.profile,...saved}]);
+      if(!q('#peopleView').classList.contains('hidden'))renderPeople();
+      q('#userName').textContent=display_name||state.profile.full_name;
+      await window.refreshProfileAvatar();
+      profileChannel?.postMessage({type:'profile-saved'});
+      toast('تنظیمات حساب و تصویر پروفایل ذخیره و همگام شد.');
+    }catch(err){if(current())toast(err.message,true)}finally{button.disabled=false}
+  }
   function loadSettings(){q('#profileDisplayName').value=state.profile.display_name||state.profile.full_name||'';q('#profileEmail').value=state.profile.email||'';q('#profileLoginName').value=state.profile.login_name||state.user?.email||'';window.refreshProfileAvatar()}
-  window.bamcoPeople={async open(id){if(!isManager())return;showView('people');await loadPeople();const person=people.find(p=>p.id===id);if(person){window.bamcoSelection.set('#peopleBody',[id]);openPerson(person)}}};
+  window.bamcoPeople={refresh:loadPeople,syncProfiles,refreshProfileMetadata,async open(id){if(!isManager())return;showView('people');await loadPeople();const person=people.find(p=>p.id===id);if(person){window.bamcoSelection.set('#peopleBody',[id]);openPerson(person)}}};
   window.bamcoAccount={open(){showView('settings');loadSettings()}};
+  let profileChannel=null;try{if(window.BroadcastChannel){profileChannel=new BroadcastChannel('bamco-profile-sync');profileChannel.onmessage=e=>{if(e.data?.type==='profile-saved')void refreshProfileMetadata(true)}}}catch{}
+  addEventListener('focus',()=>void refreshProfileMetadata());
+  addEventListener('pageshow',()=>void refreshProfileMetadata());
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)void refreshProfileMetadata()});
+  setInterval(()=>void refreshProfileMetadata(),30000);
+  document.addEventListener('click',e=>{if(e.target.closest('#logoutBtn')){
+    people=[];peopleLoad=null;profileRefresh=null;lastProfileRefresh=0;pendingBlob=null;
+    if(pendingUrl)URL.revokeObjectURL(pendingUrl);pendingUrl='';q('#profileAvatarPreview').removeAttribute('data-avatar-draft');
+  }});
+
   document.addEventListener('DOMContentLoaded',()=>{
     q('#peopleBody').addEventListener('click',async e=>{const button=e.target.closest('[data-person-credentials]');if(!button)return;e.stopPropagation();if(selected.size>1)return toast('برای ویرایش اطلاعات ورود فقط یک فرد را انتخاب کنید.',true);button.disabled=true;try{showInitialCredentials(await edge({action:'get_credentials',user_id:button.dataset.personCredentials}))}catch(err){toast(err.message,true)}finally{button.disabled=false}});
     syncPersonSelection();q('#peopleSearch').addEventListener('input',renderPeople);q('#peopleBody').addEventListener('dblclick',e=>{if(e.target.closest('button'))return;if(selected.size>1)return toast('برای ویرایش فقط یک فرد را انتخاب کنید.',true);const row=e.target.closest('[data-id]'),person=people.find(x=>x.id===row?.dataset.id);if(person){window.bamcoSelection.set('#peopleBody',[person.id]);openPerson(person)}});q('#addPersonBtn').addEventListener('click',()=>openPerson());q('#editPersonBtn').addEventListener('click',pickPersonToEdit);q('#deletePersonBtn').addEventListener('click',removePerson);q('#personForm').addEventListener('submit',savePerson);q('#editPersonLoginBtn').addEventListener('click',editPersonLogin);q('#personForm').elements.email.addEventListener('input',syncMessageAvailability);document.querySelectorAll('[data-person-close]').forEach(x=>x.addEventListener('click',()=>q('#personDialog').close()));
@@ -93,71 +181,7 @@
 
 
 
-/* module:shell:2 */
-(()=>{
-  'use strict';
-  if(window.__bamcoAvatarHardFix)return;
-  window.__bamcoAvatarHardFix='v5';
-  let currentObjectUrl='';
-
-  // The release builder includes the profile layout in bamco-unified.css.
-
-  const appState=()=>typeof state!=='undefined'?state:null;
-  function label(){
-    const p=appState()?.profile;
-    return String(p?.display_name||p?.full_name||'ب').trim().charAt(0)||'ب';
-  }
-  function render(el,url=''){
-    if(!el)return;
-    el.innerHTML='';
-    el.style.removeProperty('background-image');
-    if(url){
-      const img=document.createElement('img');
-      img.alt='تصویر پروفایل';img.src=url;
-      img.style.setProperty('width','100%','important');
-      img.style.setProperty('height','100%','important');
-      img.style.setProperty('object-fit','cover','important');
-      img.style.setProperty('display','block','important');
-      img.style.setProperty('border-radius','50%','important');
-      el.appendChild(img);el.classList.add('has-image');
-    }else{
-      el.textContent=label();el.classList.remove('has-image');
-    }
-  }
-
-  async function refresh(){
-    const s=appState(),p=s?.profile;
-    if(!p||!s?.token)return;
-    if(currentObjectUrl){URL.revokeObjectURL(currentObjectUrl);currentObjectUrl='';}
-    render(document.querySelector('#avatar'));
-    render(document.querySelector('#profileAvatarPreview'));
-    if(!p.avatar_path)return;
-    try{
-      const path=String(p.avatar_path).split('/').map(encodeURIComponent).join('/');
-      const res=await fetch(`${SB_URL}/storage/v1/object/authenticated/avatars/${path}`,{
-        headers:{apikey:SB_KEY,Authorization:`Bearer ${s.token}`},cache:'no-store'
-      });
-      if(!res.ok)throw new Error('دریافت تصویر پروفایل انجام نشد.');
-      currentObjectUrl=URL.createObjectURL(await res.blob());
-      render(document.querySelector('#avatar'),currentObjectUrl);
-      render(document.querySelector('#profileAvatarPreview'),currentObjectUrl);
-    }catch(err){
-      console.error('avatar-display-hard-fix',err);
-    }
-  }
-
-  window.refreshProfileAvatar=refresh;
-  const style=document.createElement('style');
-  style.id='avatarHardFixStyle';
-  style.textContent=`
-    #appView #avatar,#settingsView #profileAvatarPreview{border-radius:50%!important;overflow:hidden!important;background-image:none!important}
-    #appView #avatar>img,#settingsView #profileAvatarPreview>img{width:100%!important;height:100%!important;object-fit:cover!important;display:block!important;border-radius:50%!important}
-  `;
-  document.head.appendChild(style);
-  [0,250,800,1600].forEach(ms=>setTimeout(()=>{if(appState()?.profile)refresh()},ms));
-})();
-
-
+/* Avatar rendering is owned by bamcoMedia; no competing timed loaders. */
 
 /* Inbox displays the same immutable report used by the sender. Sending is owned by message-center. */
 (()=>{

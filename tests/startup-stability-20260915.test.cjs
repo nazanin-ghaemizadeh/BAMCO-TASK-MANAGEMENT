@@ -18,15 +18,15 @@ test('avatar runtime has one canonical loader and no polling storm',()=>{
  const finalRuntime=read('assets/js/final-production-fixes-20260911.js');
  assert.doesNotMatch(topbar,/\[0,100,350,900,1800\]/);
  assert.doesNotMatch(topbar,/observe\(document\.body/);
- assert.match(topbar,/#applyAvatarCrop/);
- assert.match(topbar,/bamcoMedia\?\.invalidate\?\.\('avatars',path\)/);
+ assert.match(topbar,/bamcoMedia\.bindAvatar\(el,state\.profile\)/);
+ assert.doesNotMatch(topbar,/lastSource|loadingPath/);
  assert.doesNotMatch(finalRuntime,/setInterval\(/);
  assert.doesNotMatch(finalRuntime,/cache:'no-store'/);
  assert.doesNotMatch(finalRuntime,/select\('profiles'/);
  assert.match(finalRuntime,/window\.refreshProfileAvatar/);
 });
 
-test('authenticated avatars persist in the shared image cache across reloads and invalidate after edits',async()=>{
+test('authenticated avatars revalidate across reloads and invalidate after edits without persistent stale bytes',async()=>{
  const source=read('assets/js/media-cache.js');
  const disk=new Map();let calls=0;
  const make=()=>{
@@ -38,9 +38,9 @@ test('authenticated avatars persist in the shared image cache across reloads and
   w.eval(source);return {dom,w};
  };
  let a=make();await a.w.bamcoMedia.get('avatars','people/me.jpg');assert.equal(calls,1);a.dom.window.close();
- let b=make();await b.w.bamcoMedia.get('avatars','people/me.jpg');assert.equal(calls,1);
+ let b=make();await b.w.bamcoMedia.get('avatars','people/me.jpg');assert.equal(calls,2);assert.equal(disk.size,0);
  await b.w.bamcoMedia.invalidate('avatars','people/me.jpg');
- await b.w.bamcoMedia.get('avatars','people/me.jpg');assert.equal(calls,2);b.dom.window.close();
+ await b.w.bamcoMedia.get('avatars','people/me.jpg');assert.equal(calls,3);b.dom.window.close();
 });
 
 test('resource views and People avatars warm after first paint while observers stay scoped',()=>{
@@ -51,8 +51,8 @@ test('resource views and People avatars warm after first paint while observers s
  assert.match(prefetch,/refreshDocuments/);
  assert.match(prefetch,/refreshSites/);
  assert.match(prefetch,/warmAvatars/);
- assert.match(prefetch,/select\('profiles','select=id,avatar_path&order=id'\)/);
- assert.match(prefetch,/bamcoMedia\.get\('avatars',path\)/);
+ assert.match(prefetch,/select\('profiles','select=id,avatar_path,updated_at&order=id'\)/);
+ assert.match(prefetch,/bamcoMedia\.get\('avatars',p\.avatar_path,p\.updated_at\)/);
  assert.match(prefetch,/button\.dataset\.view==='people'/);
  assert.match(prefetch,/document\.addEventListener\('click',[\s\S]*?,true\)/);
  assert.doesNotMatch(structure,/observe\(document\.body/);

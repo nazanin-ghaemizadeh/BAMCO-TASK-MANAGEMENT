@@ -76,3 +76,10 @@ test('directory profile metadata keeps a newer local save when an older refresh 
  await until(()=>f.d.querySelector('[data-profile-photo="test-manager"] img'));
  assert.equal(f.d.querySelector('[data-profile-photo="test-manager"]').dataset.avatarLoaded,'test-manager/new.png');
 });
+
+// Login rewrites the host initials before the canonical refresh runs.
+test('a rerendered avatar host restores its confirmed image without a second network read',async t=>{
+ const h=mediaHarness();t.after(h.close);const el=h.d.querySelector('#a'),profile={id:'one',avatar_path:'one/new.png',updated_at:'2026-09-19T05:00:00Z'};
+ await h.w.bamcoMedia.bindAvatar(el,profile);const src=el.querySelector('img').src;el.textContent='ب';
+ await h.w.bamcoMedia.bindAvatar(el,profile);assert.equal(el.querySelector('img').src,src);assert.equal(h.calls.length,1);
+});
