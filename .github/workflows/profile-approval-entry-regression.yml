@@ -4,38 +4,32 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/profile-approval-entry-regression.yml'
-      - 'scripts/profile-approval-entry/apply.py'
-      - 'scripts/profile-approval-entry/finalize.py'
+      - 'assets/**'
+      - 'index.html'
+      - 'version.json'
+      - 'scripts/build-static-bundles.mjs'
+      - 'tests/**'
   workflow_dispatch:
 permissions:
-  contents: write
+  contents: read
 concurrency:
-  group: profile-approval-entry-publication
-  cancel-in-progress: false
+  group: profile-approval-entry-regression-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   regression:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
           cache: npm
       - run: npm ci
-      - name: Apply reviewed source edits
-        run: |
-          python scripts/profile-approval-entry/apply.py
-          python scripts/profile-approval-entry/finalize.py
-          npm run build:assets
-          npm run check:assets
-      - name: Focused behavioral and integration tests
-        run: |
-          mkdir -p test-results/profile-approval-entry
-          set -o pipefail
-          node --test --test-force-exit tests/profile-approval-entry-root.test.cjs tests/startup-stability-20260915.test.cjs tests/profile-report-mobile-regression.test.cjs tests/request-workflow-visibility.test.cjs tests/app-update.test.cjs | tee test-results/profile-approval-entry/unit.log
+      - name: Verify reproducible production assets
+        run: npm run check:assets
+      - name: Profile request and update notice regression tests
+        run: node --test --test-force-exit tests/profile-approval-entry-root.test.cjs tests/startup-stability-20260915.test.cjs tests/profile-report-mobile-regression.test.cjs tests/request-workflow-visibility.test.cjs tests/app-update.test.cjs
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -45,47 +39,12 @@ jobs:
           python -m playwright install --with-deps chromium
       - name: Real-browser entry and post-login avatar checks
         run: |
-          set -o pipefail
-          python tests/browser/check_department_entry_stability.py | tee test-results/profile-approval-entry/entry.log
-          python tests/browser/check_post_welcome.py | tee test-results/profile-approval-entry/post-welcome.log
-      - name: Full existing regression budget
-        timeout-minutes: 8
-        run: |
-          set -euo pipefail
-          cp scripts/test-regression-budget.mjs /tmp/regression-budget-original.mjs
-          trap 'cp /tmp/regression-budget-original.mjs scripts/test-regression-budget.mjs' EXIT
-          python - <<'PY'
-          from pathlib import Path
-          p=Path('scripts/test-regression-budget.mjs')
-          text=p.read_text()
-          old="['--test','--test-force-exit','--test-reporter=tap','tests/*.test.cjs']"
-          assert old in text
-          text=text.replace(old,"['--test','--test-force-exit','--test-concurrency=4','--test-timeout=120000','--test-reporter=tap','tests/*.test.cjs']")
-          p.write_text(text)
-          PY
-          npm run test:regression | tee test-results/profile-approval-entry/regression.log
-      - name: Prepare and publish the tested release
-        run: |
-          set -euo pipefail
-          python scripts/profile-approval-entry/apply.py --release
-          npm run check:assets
-          git fetch origin main
-          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)"
-          git config user.name 'BAMCO Release Bot'
-          git config user.email 'actions@users.noreply.github.com'
-          rm -rf scripts/profile-approval-entry
-          git add -u
-          git add tests/profile-approval-entry-root.test.cjs
-          git commit -m 'fix: synchronize profile avatars, sort requests newest first, stabilize entry cards'
-          git push origin HEAD:main
-          git rev-parse HEAD > test-results/profile-approval-entry/published-commit.txt
-          cp version.json test-results/profile-approval-entry/version.json
-      - name: Upload validation evidence
+          python tests/browser/check_department_entry_stability.py
+          python tests/browser/check_post_welcome.py
+      - name: Upload browser evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: profile-approval-entry-results
-          path: |
-            test-results/profile-approval-entry/
-            test-results/post-welcome/
+          name: profile-approval-entry-browser
+          path: test-results/post-welcome/
           retention-days: 7
