@@ -5,36 +5,76 @@ on:
     paths:
       - '.github/workflows/profile-approval-entry-regression.yml'
       - 'scripts/profile-approval-entry/apply.py'
+      - 'scripts/profile-approval-entry/finalize.py'
   workflow_dispatch:
 permissions:
   contents: write
+concurrency:
+  group: profile-approval-entry-publication
+  cancel-in-progress: false
 jobs:
   regression:
     runs-on: ubuntu-latest
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: main
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
           cache: npm
       - run: npm ci
-      - name: Archive validation inputs
-        run: tar --exclude=.git --exclude='*.tar.gz' -czf /tmp/bamco-validation.tar.gz .
-      - uses: actions/upload-artifact@v4
-        with:
-          name: bamco-validation
-          path: /tmp/bamco-validation.tar.gz
-          retention-days: 1
-      - name: Apply staged source edits
+      - name: Apply reviewed source edits
         run: |
-          if [ -f scripts/profile-approval-entry/apply.py ]; then
-            python scripts/profile-approval-entry/apply.py
-            npm run build:assets
-            node --test --test-force-exit tests/profile-approval-entry-root.test.cjs
-            npm run test:regression
-          else
-            npm run check:assets
-          fi
+          python scripts/profile-approval-entry/apply.py
+          python scripts/profile-approval-entry/finalize.py
+          npm run build:assets
+          npm run check:assets
+      - name: Focused behavioral and integration tests
+        run: |
+          mkdir -p test-results/profile-approval-entry
+          set -o pipefail
+          node --test --test-force-exit tests/profile-approval-entry-root.test.cjs tests/startup-stability-20260915.test.cjs tests/profile-report-mobile-regression.test.cjs tests/request-workflow-visibility.test.cjs tests/app-update.test.cjs | tee test-results/profile-approval-entry/unit.log
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pinned browser test tools
+        run: |
+          python -m pip install playwright==1.57.0
+          python -m playwright install --with-deps chromium
+      - name: Real-browser entry and post-login avatar checks
+        run: |
+          set -o pipefail
+          python tests/browser/check_department_entry_stability.py | tee test-results/profile-approval-entry/entry.log
+          python tests/browser/check_post_welcome.py | tee test-results/profile-approval-entry/post-welcome.log
+      - name: Full existing regression budget
+        timeout-minutes: 6
+        run: |
+          set -o pipefail
+          npm run test:regression | tee test-results/profile-approval-entry/regression.log
+      - name: Prepare and publish the tested release
+        run: |
+          set -euo pipefail
+          python scripts/profile-approval-entry/apply.py --release
+          npm run check:assets
+          git fetch origin main
+          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)"
+          git config user.name 'BAMCO Release Bot'
+          git config user.email 'actions@users.noreply.github.com'
+          rm -rf scripts/profile-approval-entry
+          git add -u
+          git add tests/profile-approval-entry-root.test.cjs
+          git commit -m 'fix: synchronize profile avatars, sort requests newest first, stabilize entry cards'
+          git push origin HEAD:main
+          git rev-parse HEAD > test-results/profile-approval-entry/published-commit.txt
+          cp version.json test-results/profile-approval-entry/version.json
+      - name: Upload validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: profile-approval-entry-results
+          path: |
+            test-results/profile-approval-entry/
+            test-results/post-welcome/
+          retention-days: 7
