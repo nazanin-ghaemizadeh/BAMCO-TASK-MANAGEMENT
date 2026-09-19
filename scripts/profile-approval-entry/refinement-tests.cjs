@@ -12,6 +12,13 @@ test('descending labels survive refresh and history filtering while action IDs s
  assert.deepEqual(rows('approvalBody').map(r=>r.cells[0].textContent),['۳','۲','۱']);
  assert.deepEqual(rows('approvalBody').map(r=>r.dataset.requestId),['91','35','12']);
  assert.deepEqual(rows('approvalBody').map(r=>r.querySelector('[data-review-request]').dataset.reviewRequest),['91','35','12']);
+ const table=rows('approvalBody')[0].closest('table'),titleHead=table.tHead.rows[0].cells[3];
+ titleHead.click();await until(()=>titleHead.getAttribute('aria-sort')==='ascending');
+ const labelsById=Object.fromEntries(rows('approvalBody').map(r=>[r.dataset.requestId,r.cells[0].textContent]));
+ assert.deepEqual(labelsById,{'91':'۳','35':'۲','12':'۱'});
+ f.d.querySelector('#approvalsView .suite-clear-sort').click();
+ await until(()=>rows('approvalBody')[0].dataset.requestId==='91');
+ assert.deepEqual(rows('approvalBody').map(r=>r.cells[0].textContent),['۳','۲','۱']);
  current.push(request(115,20));await f.w.bamcoRequestSync.refresh();await until(()=>rows('approvalBody').length===4);
  assert.deepEqual(rows('approvalBody').map(r=>r.cells[0].textContent),['۴','۳','۲','۱']);
  assert.equal(rows('approvalBody')[0].dataset.requestId,'115');
