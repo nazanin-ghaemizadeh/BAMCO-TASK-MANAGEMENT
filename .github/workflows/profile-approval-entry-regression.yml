@@ -1,0 +1,37 @@
+name: Profile approval entry regression
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/profile-approval-entry-regression.yml'
+      - 'tests/profile-approval-entry-root.test.cjs'
+      - 'scripts/fix-profile-approval-entry-root.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - name: Check reproducible production assets
+        run: npm run check:assets
+      - name: Focused regression tests
+        run: |
+          if [ -f tests/profile-approval-entry-root.test.cjs ]; then
+            node --test --test-force-exit tests/profile-approval-entry-root.test.cjs
+          fi
+      - name: Archive exact tested source
+        if: always()
+        run: git archive --format=zip HEAD -o /tmp/bamco-tested-source.zip
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bamco-tested-source
+          path: /tmp/bamco-tested-source.zip
+          retention-days: 1
