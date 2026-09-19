@@ -4,7 +4,8 @@ const db=createClient(Deno.env.get('SUPABASE_URL')!,Deno.env.get('SUPABASE_SERVI
 const headers={'Access-Control-Allow-Origin':'https://nazanin-ghaemizadeh.github.io','Access-Control-Allow-Headers':'authorization,apikey,content-type','Access-Control-Allow-Methods':'POST,OPTIONS','Content-Type':'application/json','Cache-Control':'no-store'};
 const reply=(data:unknown,status=200)=>new Response(JSON.stringify(data),{status,headers});
 async function service(action:string,data:any={}){const r=await db.rpc('push_service',{p_action:action,p_data:data});if(r.error)throw r.error;return r.data}
-function endpointAllowed(value:string){try{const u=new URL(value);return u.protocol==='https:'&&!u.port&&!u.username&&!u.password&&(/^(fcm\.googleapis\.com|updates\.push\.services\.mozilla\.com|web\.push\.apple\.com)$/.test(u.hostname)||/^[a-z0-9-]+\.notify\.windows\.com$/.test(u.hostname))}catch{return false}}
+function endpointAllowed(value:string){try{const u=new URL(value);return u.protocol==='https:'&&!u.port&&!u.username&&!u.password&&(/^(fcm\.googleapis\.com|android\.googleapis\.com|updates\.push\.services\.mozilla\.com|web\.push\.apple\.com)$/.test(u.hostname)||/^[a-z0-9-]+\.notify\.windows\.com$/.test(u.hostname))}catch{return false}}
+function normalizeKey(value:unknown,length:number){const key=String(value||'').trim().replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');return key.length===length&&/^[A-Za-z0-9_-]+$/.test(key)?key:''}
 Deno.serve(async req=>{
  if(req.method==='OPTIONS')return new Response(null,{headers});if(req.method!=='POST')return reply({error:'روش مجاز نیست.'},405);
  try{
@@ -27,8 +28,9 @@ Deno.serve(async req=>{
   if(!config.public_key)config=await service('keys',webpush.generateVAPIDKeys());
   if(data.action==='config')return reply({publicKey:config.public_key});
   if(data.action==='subscribe'){
-   const s=data.subscription;if(!s||!endpointAllowed(s.endpoint)||s.endpoint.length>4096||!/^[A-Za-z0-9_-]{87,88}$/.test(s.keys?.p256dh||'')||!/^[A-Za-z0-9_-]{22,24}$/.test(s.keys?.auth||''))return reply({error:'اشتراک اعلان معتبر نیست.'},400);
-   await service('subscribe',{user_id:user.id,subscription:{endpoint:s.endpoint,expirationTime:s.expirationTime||null,keys:{p256dh:s.keys.p256dh,auth:s.keys.auth}}});return reply({subscribed:true});
+   const s=data.subscription,endpoint=String(s?.endpoint||'').trim(),p256dh=normalizeKey(s?.keys?.p256dh,87),auth=normalizeKey(s?.keys?.auth,22);
+   if(!s||!endpointAllowed(endpoint)||endpoint.length>4096||!p256dh||!auth)return reply({error:'اشتراک اعلان معتبر نیست.'},400);
+   await service('subscribe',{user_id:user.id,subscription:{endpoint,expirationTime:s.expirationTime||null,keys:{p256dh,auth}}});return reply({subscribed:true});
   }
   if(data.action==='unsubscribe'){await service('unsubscribe',{user_id:user.id,endpoint:String(data.endpoint||'')});return reply({subscribed:false})}
   return reply({error:'عملیات مجاز نیست.'},400);
