@@ -42,6 +42,10 @@ section=section.replace('${fa(index+1)}','${fa(rows.length-index)}',1)
 p.write_text(text[:a]+section+text[b:],encoding='utf-8')
 replace('tests/request-workflow-visibility.test.cjs',"['۱','۲','۳']","['۳','۲','۱']")
 
+# Generic sorting must move whole request rows, never rewrite their labels.
+replace('assets/js/table-suite.js',
+    "  if(['approvalBody','requestHistoryBody'].includes(table.tBodies[0].id))rows.forEach((row,i)=>{row.cells[0].textContent=String(i+1).replace(/\\d/g,d=>'۰۱۲۳۴۵۶۷۸۹'[d])});\n", '')
+
 # Stop inline Persian-only fonts defeating the shared table font in filters.
 replace('assets/js/usability.js',"\"'B Nazanin',BNazanin,serif\"","\"'BamcoTablePersian','Times New Roman',Times,serif\"",count=3)
 p=ROOT/'assets/js/usability.js';text=p.read_text(encoding='utf-8');a=text.index('function mixedFontCell(');b=text.index('function polishTaskText()',a)
