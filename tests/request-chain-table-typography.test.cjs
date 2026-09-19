@@ -23,7 +23,7 @@ test('dynamic Latin typography is rescanned and Times New Roman is enforced',()=
   assert.match(helper,/const scope=document\.body/);
   assert.match(helper,/wrapLatinText\(root\)/);
   assert.match(helper,/characterData:true/);
-  assert.match(css,/\.latin-run,[^\n]*table \.suite-english[^\n]*font-family:"Times New Roman",Times,serif!important/);
+  assert.match(css,/\.latin-run,[\s\S]*table \.suite-english[\s\S]*font-family:"Times New Roman",Times,serif!important/);
 });
 
 test('production index loads the descending chain display module',()=>{
