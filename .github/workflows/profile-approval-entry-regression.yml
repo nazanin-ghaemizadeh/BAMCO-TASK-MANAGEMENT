@@ -21,25 +21,20 @@ jobs:
           node-version: '24'
           cache: npm
       - run: npm ci
-      - name: Apply staged source edits
-        run: |
-          if [ -f scripts/profile-approval-entry/apply.py ]; then
-            python scripts/profile-approval-entry/apply.py
-          fi
-      - run: npm run build:assets
-      - name: Focused regression tests
-        run: |
-          if [ -f tests/profile-approval-entry-root.test.cjs ]; then
-            node --test --test-force-exit tests/profile-approval-entry-root.test.cjs
-          fi
-      - name: Existing regression budget
-        run: npm run test:regression
-      - name: Save reproducible source and dependencies
-        if: always()
+      - name: Archive validation inputs
         run: tar --exclude=.git --exclude='*.tar.gz' -czf /tmp/bamco-validation.tar.gz .
       - uses: actions/upload-artifact@v4
-        if: always()
         with:
           name: bamco-validation
           path: /tmp/bamco-validation.tar.gz
           retention-days: 1
+      - name: Apply staged source edits
+        run: |
+          if [ -f scripts/profile-approval-entry/apply.py ]; then
+            python scripts/profile-approval-entry/apply.py
+            npm run build:assets
+            node --test --test-force-exit tests/profile-approval-entry-root.test.cjs
+            npm run test:regression
+          else
+            npm run check:assets
+          fi
