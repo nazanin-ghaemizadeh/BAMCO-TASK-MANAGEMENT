@@ -13,7 +13,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: profile-approval-entry-regression-${{ github.ref }}
+  group: request-font-publication-v2-${{ github.ref }}
   cancel-in-progress: true
 env:
   PYTHONIOENCODING: utf-8
