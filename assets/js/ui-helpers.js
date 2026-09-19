@@ -49,21 +49,23 @@ window.__bamcoStableStickerInstalled=true;
       if(installed||app.classList.contains('hidden'))return;
       installed=true;
       const run=()=>{
-        classifyControls(app);
-        wrapLatinText(app);
+        const scope=document.body;
+        classifyControls(scope);
+        wrapLatinText(scope);
         const pending=new Set();let raf=0;
         new MutationObserver(muts=>{
           for(const m of muts){
-            if(m.type!=='childList'||!m.addedNodes.length)continue;
-            m.addedNodes.forEach(node=>{if(node.nodeType===1)pending.add(node)});
+            if(m.type==='childList'&&m.addedNodes.length){
+              m.addedNodes.forEach(node=>{const root=node.nodeType===1?node:node.parentElement;if(root)pending.add(root)});
+            }else if(m.type==='characterData'&&m.target.parentElement)pending.add(m.target.parentElement);
           }
           if(!pending.size||raf)return;
           raf=requestAnimationFrame(()=>{
             raf=0;
             const roots=[...pending];pending.clear();
-            roots.forEach(root=>classifyControls(root));
+            roots.forEach(root=>{classifyControls(root);wrapLatinText(root)});
           });
-        }).observe(app,{childList:true,subtree:true});
+        }).observe(scope,{childList:true,characterData:true,subtree:true});
       };
       if('requestIdleCallback' in window)requestIdleCallback(run,{timeout:600});
       else setTimeout(run,0);
