@@ -10,7 +10,7 @@ def replace(path, old, new, count=1):
     p=ROOT/path
     text=p.read_text(encoding='utf-8')
     if old not in text:
-        assert new in text, f'Unexpected source: {path}'
+        assert new and new in text, f'Unexpected source: {path}'
         return
     assert text.count(old)==count, f'Ambiguous replacement: {path}'
     p.write_text(text.replace(old,new),encoding='utf-8')
@@ -23,7 +23,7 @@ if '--release' in sys.argv:
     data.update(version=version,released_at=datetime.now(timezone.utc).isoformat(timespec='seconds'),title='شماره‌گذاری نزولی درخواست‌ها و فونت یکپارچه جدول‌ها',notes=[
       'شماره ردیف درخواست‌های تأیید و سوابق از بالا نزولی است: ۳، ۲، ۱؛ جدیدترین درخواست بالا و شناسه واقعی و ترتیب مراحل تأیید بدون تغییر است.',
       'متن انگلیسی و اعداد لاتین در همه جدول‌ها، سرستون‌ها، فیلترها و پنجره‌های سامانه با Times New Roman تنظیم شد؛ متن فارسی با B Nazanin باقی می‌ماند.',
-      'اصلاح همگام‌سازی تصویر پروفایل در افراد و نقش‌ها و ثابت‌ماندن چیدمان کارت‌های ورود نیز در این نسخه حفظ شده است.'
+      'همگام‌سازی تصویر پروفایل در افراد و نقش‌ها حفظ شد و بارگذاری فونت عادی و ضخیم کارت‌های ورود، پیش از نمایش نهایی انجام می‌شود.'
     ])
     p.write_text(json.dumps(data,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
     p=ROOT/'index.html';text=p.read_text(encoding='utf-8')
@@ -45,6 +45,13 @@ replace('tests/request-workflow-visibility.test.cjs',"['۱','۲','۳']","['۳','
 # Generic sorting must move whole request rows, never rewrite their labels.
 replace('assets/js/table-suite.js',
     "  if(['approvalBody','requestHistoryBody'].includes(table.tBodies[0].id))rows.forEach((row,i)=>{row.cells[0].textContent=String(i+1).replace(/\\d/g,d=>'۰۱۲۳۴۵۶۷۸۹'[d])});\n", '')
+
+# The management selector must not inherit late table-suite text faces.
+entry_face="@font-face{font-family:BamcoEntry;src:url('../fonts/BNazanin.woff2') format('woff2');font-style:normal;font-weight:400;font-display:block}"
+replace('assets/css/department-entry.css',entry_face,entry_face+"\n@font-face{font-family:BamcoEntry;src:url('../fonts/BNaznnBd.woff2') format('woff2');font-style:normal;font-weight:700;font-display:block}\nhtml body.department-pending #departmentEntry :is(header,h1,p,strong,span,button){font-family:inherit!important}")
+replace('assets/js/department-entry.js',
+    "   await wait(document.fonts.load('22px \"BamcoEntry\"','سامانه مدیریت، پایش و پیگیری امور مهندسی توسعه و تکوین محصول'),2200);\n   fontOk=document.fonts.check('22px \"BamcoEntry\"');",
+    "   const sample='سامانه مدیریت، پایش و پیگیری امور مهندسی توسعه و تکوین محصول';\n   await wait(Promise.all([400,700].map(weight=>document.fonts.load(`${weight} 22px \"BamcoEntry\"`,sample))),2200);\n   fontOk=[400,700].every(weight=>document.fonts.check(`${weight} 22px \"BamcoEntry\"`,sample));")
 
 # Stop inline Persian-only fonts defeating the shared table font in filters.
 replace('assets/js/usability.js',"\"'B Nazanin',BNazanin,serif\"","\"'BamcoTablePersian','Times New Roman',Times,serif\"",count=3)
@@ -75,4 +82,4 @@ css='''
 }
 '''
 p=ROOT/'assets/css/unified-ui.css';text=p.read_text(encoding='utf-8');assert '@layer bamco-table-typography' not in text;p.write_text(text+css,encoding='utf-8')
-print('Updated canonical request labels, table fonts, and existing request expectation.')
+print('Updated canonical request labels, table fonts, entry font gate and existing request expectation.')
