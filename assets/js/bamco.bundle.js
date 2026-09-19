@@ -607,7 +607,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     return [...ids].reduce((sum,id)=>sum+definitionCountForSelection({ownerId:id,profiles,tasks,requests,baseline,from,to}),0);
   }
   function pendingReviewCount({ownerId=null,requests=[]}={}){
-    return uniqueRequests(requests).filter(request=>['pending','in_review'].includes(request.request_status)&&matchesOwner(request.requested_by,ownerId)).length;
+    return uniqueRequests(requests).filter(request=>['pending','in_review','needs_revision'].includes(request.request_status)&&matchesOwner(request.requested_by,ownerId)).length;
   }
   function unscheduledCount({ownerId=null,tasks=[],isTerminal=()=>false}={}){
     return (tasks||[]).filter(task=>!task.archived&&!isTerminal(task)&&matchesOwner(task.owner_id,ownerId)&&!task.start_date&&!task.due_date).length;
