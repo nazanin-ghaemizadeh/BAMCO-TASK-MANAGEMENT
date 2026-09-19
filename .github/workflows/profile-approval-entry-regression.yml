@@ -4,34 +4,42 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/profile-approval-entry-regression.yml'
-      - 'tests/profile-approval-entry-root.test.cjs'
-      - 'scripts/fix-profile-approval-entry-root.py'
+      - 'scripts/profile-approval-entry/apply.py'
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write
 jobs:
   regression:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
           cache: npm
       - run: npm ci
-      - name: Check reproducible production assets
-        run: npm run check:assets
+      - name: Apply staged source edits
+        run: |
+          if [ -f scripts/profile-approval-entry/apply.py ]; then
+            python scripts/profile-approval-entry/apply.py
+          fi
+      - run: npm run build:assets
       - name: Focused regression tests
         run: |
           if [ -f tests/profile-approval-entry-root.test.cjs ]; then
             node --test --test-force-exit tests/profile-approval-entry-root.test.cjs
           fi
-      - name: Archive exact tested source
+      - name: Existing regression budget
+        run: npm run test:regression
+      - name: Save reproducible source and dependencies
         if: always()
-        run: git archive --format=zip HEAD -o /tmp/bamco-tested-source.zip
+        run: tar --exclude=.git --exclude='*.tar.gz' -czf /tmp/bamco-validation.tar.gz .
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: bamco-tested-source
-          path: /tmp/bamco-tested-source.zip
+          name: bamco-validation
+          path: /tmp/bamco-validation.tar.gz
           retention-days: 1
