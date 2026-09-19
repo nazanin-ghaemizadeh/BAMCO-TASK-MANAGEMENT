@@ -597,3 +597,18 @@ html body #appView .view :is(#resetDashFilters,#clearPerf,[data-response-clear-d
 /* The two detailed dashboard charts need the full grid width and a real mobile scroll surface. */
 html body #appView#appView #dashboardView.bamco-interior .dashboard-chart-card:has(#workloadChart),
 html body #appView#appView #dashboardView.bamco-interior .dashboard-chart-card:has(#performanceChart){grid-column:1/-1!important}
+
+/* Table typography is character-scoped, including tables added after startup.
+   The Persian face deliberately contains NO Latin range. English therefore
+   falls through to Times New Roman, also inside mixed Persian/English cells.
+   A named important layer outranks the old unlayered page-specific rules;
+   inline filter fonts are fixed at their source in usability.js.
+   No content rewriting, direction override, global observer or font download. */
+@font-face{font-family:BamcoTablePersian;src:local('B Nazanin'),local('BNazanin'),url('../fonts/BNazanin.woff2') format('woff2');font-weight:400;font-style:normal;font-display:swap;unicode-range:U+0600-06FF,U+0750-077F,U+0870-089F,U+08A0-08FF,U+FB50-FDFF,U+FE70-FEFF}
+@font-face{font-family:BamcoTablePersian;src:local('B Nazanin Bold'),local('BNazanin Bold'),url('../fonts/BNaznnBd.woff2') format('woff2');font-weight:700;font-style:normal;font-display:swap;unicode-range:U+0600-06FF,U+0750-077F,U+0870-089F,U+08A0-08FF,U+FB50-FDFF,U+FE70-FEFF}
+@layer bamco-table-typography{
+ :where(table,[role="table"],[role="grid"]),
+ :where(table,[role="table"],[role="grid"]) :where(caption,thead,tbody,tfoot,tr,th,td,a,span,bdi,b,em,i,strong,small,p,div,label,button,input,textarea,select,optgroup,option,summary,code,pre,time,[role="row"],[role="cell"],[role="columnheader"],[role="rowheader"]){
+  font-family:BamcoTablePersian,'Times New Roman',Times,serif!important;
+ }
+}

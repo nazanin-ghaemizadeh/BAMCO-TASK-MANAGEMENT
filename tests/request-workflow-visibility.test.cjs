@@ -14,7 +14,7 @@ test('manager sees every current request but only the assigned approver receives
  const f=await fixture({fetchResult:({endpoint})=>endpoint==='request_workflow_snapshot'?{current_requests:current,history_requests:[current[0],approved],routes}:undefined}),{d}=f;t.after(()=>f.dispose());
  await f.open('approvals');await until(()=>d.querySelectorAll('#approvalBody tr[data-request-id]').length===3);
  const rows=[...d.querySelectorAll('#approvalBody tr[data-request-id]')];
- assert.deepEqual(rows.map(row=>row.dataset.requestId),['38','37','36']);assert.deepEqual(rows.map(row=>row.cells[0].textContent),['۱','۲','۳']);
+ assert.deepEqual(rows.map(row=>row.dataset.requestId),['38','37','36']);assert.deepEqual(rows.map(row=>row.cells[0].textContent),['۳','۲','۱']);
  assert(rows.every(row=>row.cells[5].textContent.includes('بررسی سرپرست')));assert.equal(d.querySelectorAll('#approvalBody [data-review-request]').length,0);
  await f.open('requestHistory');await until(()=>d.querySelectorAll('#requestHistoryBody tr[data-request-id]').length===1);
  assert.equal(d.querySelector('#requestHistoryBody tr').dataset.requestId,'35');assert.equal(d.querySelector('#requestHistoryBody tr').cells[5].textContent,'تأیید');

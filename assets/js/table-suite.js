@@ -18,7 +18,6 @@ function install(){
   const model=settings.get(table);if(!model.sort)model.unsorted=dataRows(table);model.sort={index,direction};
   const rows=dataRows(table);rows.sort((a,b)=>direction*compareValues(a.cells[index]?.textContent,b.cells[index]?.textContent));
   rows.forEach(row=>table.tBodies[0].append(row));
-  if(['approvalBody','requestHistoryBody'].includes(table.tBodies[0].id))rows.forEach((row,i)=>{row.cells[0].textContent=String(i+1).replace(/\d/g,d=>'۰۱۲۳۴۵۶۷۸۹'[d])});
   [...table.tHead.rows[0].cells].forEach((th,i)=>{if(i===index)th.setAttribute('aria-sort',direction===1?'ascending':'descending');else th.removeAttribute('aria-sort')});
   model.fingerprint=rows.map(r=>r.dataset.taskId||r.dataset.requestId||r.dataset.id||r.textContent).join('\n');
   table.closest('.view')?.querySelector('.focus-scroll')?.scrollTo({top:0});

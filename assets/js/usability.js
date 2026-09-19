@@ -8,19 +8,16 @@ function important(el,name,value){el?.style?.setProperty(name,value,'important')
 function fixFilterSelects(){
  document.querySelectorAll('#kanbanView .column-filters select,#archiveView .column-filters select,#kanbanView .suite-filters select,#archiveView .suite-filters select').forEach(select=>{
   select.setAttribute('dir','rtl');
-  important(select,'font-family',"'B Nazanin',BNazanin,serif");important(select,'direction','rtl');important(select,'text-align','right');important(select,'text-align-last','right');important(select,'padding-right','10px');important(select,'padding-left','28px');
-  [...select.options].forEach(option=>{option.setAttribute('dir','rtl');important(option,'font-family',"'B Nazanin',BNazanin,serif");important(option,'direction','rtl');important(option,'text-align','right')});
+  important(select,'font-family',"'BamcoTablePersian','Times New Roman',Times,serif");important(select,'direction','rtl');important(select,'text-align','right');important(select,'text-align-last','right');important(select,'padding-right','10px');important(select,'padding-left','28px');
+  [...select.options].forEach(option=>{option.setAttribute('dir','rtl');important(option,'font-family',"'BamcoTablePersian','Times New Roman',Times,serif");important(option,'direction','rtl');important(option,'text-align','right')});
  });
 }
 function mixedFontCell(cell){
  if(!cell)return;const text=cell.textContent||'';if(cell.dataset.bamcoMixedSource===text)return;
- const hasFa=/[\u0600-\u06ff]/.test(text),hasEn=/[A-Za-z]/.test(text);cell.dataset.bamcoMixedSource=text;
+ const hasFa=/[\u0600-\u06ff]/.test(text);cell.dataset.bamcoMixedSource=text;
  important(cell,'text-align','justify');important(cell,'text-align-last',hasFa?'right':'left');important(cell,'direction',hasFa?'rtl':'ltr');important(cell,'unicode-bidi','plaintext');
- if(hasEn&&!hasFa)important(cell,'font-family',"'Times New Roman',Times,serif");else important(cell,'font-family',"'B Nazanin',BNazanin,serif");
- if(!hasEn)return;
- const re=/[A-Za-z][A-Za-z0-9@._%+\-/:;#&()'"]*/g,frag=document.createDocumentFragment();let last=0,match;
- while((match=re.exec(text))){if(match.index>last)frag.append(document.createTextNode(text.slice(last,match.index)));const span=document.createElement('span');span.className='latin-run';span.lang='en';span.dir='ltr';span.textContent=match[0];important(span,'font-family',"'Times New Roman',Times,serif");important(span,'direction','ltr');important(span,'unicode-bidi','isolate');frag.append(span);last=re.lastIndex}
- if(last<text.length)frag.append(document.createTextNode(text.slice(last)));cell.replaceChildren(frag)
+ // Character-scoped CSS handles mixed text without replacing children/listeners.
+ important(cell,'font-family',"'BamcoTablePersian','Times New Roman',Times,serif");
 }
 function polishTaskText(){document.querySelectorAll('#kanbanBody tr[data-task-id],#archiveBody tr[data-task-id]').forEach(row=>{mixedFontCell(row.cells?.[1]);mixedFontCell(row.cells?.[2])})}
 function widenTaskOptions(){

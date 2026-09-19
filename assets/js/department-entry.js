@@ -6,8 +6,9 @@ async function prepareEntry(view){
  let fontOk=false;
  try{
   if(document.fonts?.load){
-   await wait(document.fonts.load('22px "BamcoEntry"','سامانه مدیریت، پایش و پیگیری امور مهندسی توسعه و تکوین محصول'),2200);
-   fontOk=document.fonts.check('22px "BamcoEntry"');
+   const sample='سامانه مدیریت، پایش و پیگیری امور مهندسی توسعه و تکوین محصول';
+   await wait(Promise.all([400,700].map(weight=>document.fonts.load(`${weight} 22px "BamcoEntry"`,sample))),2200);
+   fontOk=[400,700].every(weight=>document.fonts.check(`${weight} 22px "BamcoEntry"`,sample));
   }
  }catch{}
  if(!fontOk)body.classList.add('department-entry-font-fallback');

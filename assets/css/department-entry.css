@@ -1,6 +1,8 @@
 @import url('./mobile-compat-20260911.css?v=1');
 /* Management selector: authoritative, first-paint-stable layout. */
 @font-face{font-family:BamcoEntry;src:url('../fonts/BNazanin.woff2') format('woff2');font-style:normal;font-weight:400;font-display:block}
+@font-face{font-family:BamcoEntry;src:url('../fonts/BNaznnBd.woff2') format('woff2');font-style:normal;font-weight:700;font-display:block}
+html body.department-pending #departmentEntry :is(header,h1,p,strong,span,button){font-family:inherit!important}
 body.department-pending #loginView,body.department-pending #appView{display:none!important}
 /* Keep the selector laid out but invisible until its exact font/logo are decoded. Revealing visibility never changes geometry. */
 html body.department-pending #departmentEntry{visibility:hidden!important;opacity:0!important}
