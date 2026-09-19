@@ -45,6 +45,7 @@ test('nine cards including petty cash under reports follow the approved RTL refe
  f.sync();assert.deepEqual(f.nav.children.map(x=>x.dataset.group),['people','messages','reports','configuration','tasks','vehicle','conversations','resources','guide']);
  for(const [key,ids] of f.order)assert.deepEqual(f.boxes[key].children.map(x=>x.dataset.view),Array.from(ids));
  assert.deepEqual(f.boxes.reports.children.map(x=>x.dataset.view),['dashboard','performanceReport','responseReport','pettyCash','requestReport']);
+ assert.deepEqual(f.boxes.configuration.children.map(x=>x.dataset.view),['systemOptions','settings','alertSettings','emailSettings']);
 });
 
 test('only duplicate shortcuts disappear; bound actions and unique routes survive',()=>{
@@ -82,6 +83,8 @@ test('home styles have one owner, loaded last; phase modules load once',()=>{
  assert.match(home,/card-navigation\.card-home-active #appView #homeView #nav \.nav-group-items>\[data-view\]\.hidden\{display:flex!important;visibility:hidden!important;pointer-events:none!important\}/);
  assert.match(home,/\[data-view="responseReport"\]\{grid-column:1!important;grid-row:2!important\}/);
  assert.match(home,/\[data-view="pettyCash"\]\{grid-column:2!important;grid-row:2!important\}/);
+ assert.match(home,/\[data-view="systemOptions"\]\{grid-column:1!important;grid-row:1!important\}/);
+ assert.match(home,/\[data-view="settings"\]\{grid-column:2!important;grid-row:1!important\}/);
  assert.match(home,/card-home-active:not\(\.home-layout-ready\)[^\n]+#homeView #nav\{visibility:hidden!important\}/);
  assert.match(source,/prepareHomeLayout\(\)[\s\S]*document\.fonts\?\.ready[\s\S]*logo\?\.decode[\s\S]*home-layout-ready/);
  for(const module of ['phase1-workflow','phase2-message-engine','phase3-response-tracking'])assert.equal(bundle.split('source: assets/js/'+module+'.js').length-1,1);
