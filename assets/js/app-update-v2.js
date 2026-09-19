@@ -6,6 +6,7 @@ window.__bamcoAppUpdateV2=true;
 const current=document.querySelector('meta[name="bamco-app-version"]')?.content||'';
 const installedKey='bamco.app.installed-version';
 const announcedKey='bamco.app.announced-update';
+const installTargetKey='bamco.app.install-target-v2';
 const legacyKeys=['bamco.app.pending-version','bamco.app.update-attempts','bamco.app.dismissed-version'];
 const updateParams=['bamco_update','bamco_reload','bamco_probe','bamco_v'];
 let checking=false,lastCheck=0;
@@ -70,6 +71,7 @@ function navigate(version){
  const now=Date.now(),last=Number(read(sessionStorage,key)||0);
  if(last&&now-last<60000)return false;
  write(sessionStorage,key,String(now));
+ write(sessionStorage,installTargetKey,version);
  const url=new URL(location.href);
  for(const keyName of updateParams)url.searchParams.delete(keyName);
  url.searchParams.set('bamco_v',version);
@@ -79,10 +81,11 @@ function navigate(version){
  return true;
 }
 function confirmInstalledVersion(){
- const previous=read(localStorage,installedKey);
- if(previous&&current&&previous!==current){
+ const previous=read(localStorage,installedKey),target=read(sessionStorage,installTargetKey);
+ if(current&&(target===current||(previous&&previous!==current))){
   notify('سامانه به‌روزرسانی شد',{title:'سامانه به‌روزرسانی شد',duration:8000,icon:'✓'});
  }
+ if(target===current)write(sessionStorage,installTargetKey,'');
  if(current)write(localStorage,installedKey,current);
 }
 async function check(force=false){
@@ -110,6 +113,7 @@ async function check(force=false){
 }
 
 clearLegacyState();
+confirmInstalledVersion();
 document.addEventListener('DOMContentLoaded',()=>void check(true),{once:true});
 window.addEventListener('pageshow',()=>void check(true));
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)void check(true)});
