@@ -4,7 +4,6 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/profile-approval-entry-regression.yml'
-      - 'scripts/profile-approval-entry/**'
       - 'assets/**'
       - 'index.html'
       - 'version.json'
@@ -14,7 +13,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: request-font-publication-v2-${{ github.ref }}
+  group: profile-request-table-regression-${{ github.ref }}
   cancel-in-progress: true
 env:
   PYTHONIOENCODING: utf-8
@@ -25,7 +24,7 @@ defaults:
 jobs:
   regression:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -33,36 +32,13 @@ jobs:
           node-version: '24'
           cache: npm
       - run: npm ci
-      - name: Apply canonical refinement
-        run: |
-          if [ -f scripts/profile-approval-entry/refinement.py ]; then
-            python scripts/profile-approval-entry/refinement.py
-            cp scripts/profile-approval-entry/refinement-tests.cjs tests/request-font-refinement.test.cjs
-            cp scripts/profile-approval-entry/check_table_typography.py tests/browser/check_table_typography.py
-          fi
-          npm run build:assets
-          npm run check:assets
-      - name: Focused behavioral checks
+      - name: Verify reproducible production assets
+        run: npm run check:assets
+      - name: Profile request typography and update-notice regressions
         run: |
           mkdir -p test-results/refinement
           set -o pipefail
           node --test --test-force-exit tests/request-font-refinement.test.cjs tests/profile-approval-entry-root.test.cjs tests/startup-stability-20260915.test.cjs tests/profile-report-mobile-regression.test.cjs tests/request-workflow-visibility.test.cjs tests/app-update.test.cjs 2>&1 | tee test-results/refinement/focused.log
-      - name: Existing full regression gate
-        timeout-minutes: 8
-        run: |
-          set -euo pipefail
-          cp scripts/test-regression-budget.mjs /tmp/regression-budget-original.mjs
-          trap 'cp /tmp/regression-budget-original.mjs scripts/test-regression-budget.mjs' EXIT
-          python - <<'PY'
-          from pathlib import Path
-          p=Path('scripts/test-regression-budget.mjs')
-          text=p.read_text()
-          old="['--test','--test-force-exit','--test-reporter=tap','tests/*.test.cjs']"
-          assert old in text
-          text=text.replace(old,"['--test','--test-force-exit','--test-concurrency=4','--test-timeout=120000','--test-reporter=tap','tests/*.test.cjs']")
-          p.write_text(text)
-          PY
-          npm run test:regression 2>&1 | tee test-results/refinement/regression.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -71,23 +47,14 @@ jobs:
           retention-days: 7
   browser:
     runs-on: windows-latest
-    timeout-minutes: 10
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24'
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Apply canonical refinement
+      - name: Install pinned browser tools
         run: |
-          if [ -f scripts/profile-approval-entry/refinement.py ]; then
-            python scripts/profile-approval-entry/refinement.py
-            cp scripts/profile-approval-entry/refinement-tests.cjs tests/request-font-refinement.test.cjs
-            cp scripts/profile-approval-entry/check_table_typography.py tests/browser/check_table_typography.py
-          fi
-          npm run build:assets
           python -m pip install playwright==1.57.0
           python -m playwright install chromium
       - name: Actual Windows glyphs, entry stability and post-login regression
@@ -103,42 +70,48 @@ jobs:
             test-results/table-typography/
             test-results/post-welcome/
           retention-days: 7
-  publish:
-    needs: [regression, browser]
+  deployed-release:
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.event.head_commit.message, 'ci: verify tested release')
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
+    timeout-minutes: 4
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-      - name: Publish exactly the validated source with update message
+      - name: Verify Pages serves the tested document and asset bytes
         run: |
-          set -euo pipefail
-          if [ ! -f scripts/profile-approval-entry/refinement.py ]; then exit 0; fi
-          python scripts/profile-approval-entry/refinement.py
-          cp scripts/profile-approval-entry/refinement-tests.cjs tests/request-font-refinement.test.cjs
-          cp scripts/profile-approval-entry/check_table_typography.py tests/browser/check_table_typography.py
-          npm run build:assets
-          python scripts/profile-approval-entry/refinement.py --release
-          npm run check:assets
-          git fetch origin main
-          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)"
-          git config user.name 'BAMCO Release Bot'
-          git config user.email 'actions@users.noreply.github.com'
-          rm -rf scripts/profile-approval-entry
-          git add -u
-          git add tests/request-font-refinement.test.cjs tests/browser/check_table_typography.py
-          git commit -m 'fix: descending request row labels and Times New Roman across all tables'
-          git push origin HEAD:main
-          mkdir -p test-results/publication
-          git rev-parse HEAD > test-results/publication/commit.txt
-          cp version.json test-results/publication/version.json
+          python - <<'PY'
+          import hashlib,json,os,re,time,urllib.request
+          from pathlib import Path
+          base='https://nazanin-ghaemizadeh.github.io/BAMCO-TASK-MANAGEMENT/'
+          expected=json.loads(Path('version.json').read_text(encoding='utf-8'))['version']
+          out=Path('test-results/deployment');out.mkdir(parents=True,exist_ok=True)
+          def get(path,attempt):
+              url=base+path+('?' if '?' not in path else '&')+'verify='+os.environ['GITHUB_SHA'][:12]+'-'+str(attempt)
+              req=urllib.request.Request(url,headers={'Cache-Control':'no-cache','User-Agent':'BAMCO-release-verification'})
+              with urllib.request.urlopen(req,timeout=8) as response:return response.read()
+          last='Deployment not yet ready'
+          for attempt in range(12):
+              try:
+                  version=json.loads(get('version.json',attempt))['version']
+                  html=get('index.html',attempt).decode('utf-8')
+                  match=re.search(r'<meta name="bamco-app-version" content="([^"]+)"',html)
+                  assert version==expected and match and match[1]==expected,(version,match[1] if match else None,expected)
+                  paths=['assets/js/bamco.bundle.js','assets/css/bamco.bundle.css','assets/js/department-entry.js','assets/js/root-sync-hotfix-20260917.js']
+                  digests={}
+                  for path in paths:
+                      actual=hashlib.sha256(get(path+'?v='+expected,attempt)).hexdigest()
+                      assert actual==hashlib.sha256(Path(path).read_bytes()).hexdigest(),'Stale deployed asset: '+path
+                      digests[path]=actual
+                  result={'version':expected,'commit':os.environ['GITHUB_SHA'],'document_version_matches':True,'deployed_assets_match_tested_source':digests}
+                  (out/'verified.json').write_text(json.dumps(result,indent=2),encoding='utf-8')
+                  print(json.dumps(result,indent=2));break
+              except Exception as exc:
+                  last=str(exc);print('Waiting for Pages:',last,flush=True)
+                  if attempt<11:time.sleep(5)
+          else:raise SystemExit('Unable to verify deployed release: '+last)
+          PY
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: request-font-publication
-          path: test-results/publication/
+          name: verified-deployed-release
+          path: test-results/deployment/
           retention-days: 7
