@@ -48,7 +48,7 @@ test('legacy failed-update state is removed immediately and never renders the ol
 test('a newer fully published deployment announces and triggers one cache-busted navigation',async()=>{
  const {dom,navigations,toasts}=page({current:'2026.09.17.74',latest:'2026.09.17.75',published:'2026.09.17.75',url:'https://bamco.test/'});await pause(25);
  assert.equal(navigations.length,1);
- assert.equal(toasts.length,1);assert.match(toasts[0][0],/2026\.09\.17\.75/);assert.equal(toasts[0][1].title,'به‌روزرسانی سامانه');
+ assert.equal(toasts.length,1);assert.equal(toasts[0][0],'سامانه در حال به‌روزرسانی است.');assert.equal(toasts[0][1].title,'به‌روزرسانی سامانه');
  assert.match(navigations[0],/bamco_v=2026\.09\.17\.75/);
  assert.match(navigations[0],/bamco_reload=/);
  assert.equal(dom.window.document.querySelector('.bamco-update-notice'),null);
@@ -58,7 +58,7 @@ test('a newer fully published deployment announces and triggers one cache-busted
 test('every installed version change produces a visible success notice',async()=>{
  const {dom,navigations,toasts}=page({current:'2026.09.17.76',latest:'2026.09.17.76',stored:{'bamco.app.installed-version':'2026.09.17.75'},url:'https://bamco.test/?bamco_v=2026.09.17.76'});await pause(25);
  assert.equal(navigations.length,0);assert.equal(toasts.length,1);
- assert.match(toasts[0][0],/2026\.09\.17\.76/);assert.equal(toasts[0][1].title,'سامانه به‌روزرسانی شد');
+ assert.equal(toasts[0][0],'سامانه به‌روزرسانی شد');assert.equal(toasts[0][1].title,'سامانه به‌روزرسانی شد');
  assert.equal(dom.window.localStorage.getItem('bamco.app.installed-version'),'2026.09.17.76');dom.window.close();
 });
 
@@ -75,4 +75,11 @@ test('the same target version cannot enter a reload loop within the session',asy
  await dom.window.bamcoAppUpdate.check();await pause(10);
  assert.equal(navigations.length,1);
  dom.window.close();
+});
+
+
+test('update notice never exposes version details or release notes',()=>{
+ assert.doesNotMatch(source,/releaseNotes|release-notes-version/);
+ assert.doesNotMatch(source,/نسخه \$\{current\}|نسخه \$\{latest\}/);
+ assert.match(source,/notify\('سامانه به‌روزرسانی شد'/);
 });
