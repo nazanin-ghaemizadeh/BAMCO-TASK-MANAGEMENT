@@ -1,0 +1,42 @@
+name: Home grid browser regression
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'assets/js/card-home.js'
+      - 'assets/css/home-stable.css'
+      - 'tests/browser/check_post_welcome.py'
+      - '.github/workflows/home-grid-browser.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'assets/js/card-home.js'
+      - 'assets/css/home-stable.css'
+      - 'tests/browser/check_post_welcome.py'
+      - '.github/workflows/home-grid-browser.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  chromium:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Build canonical assets
+        run: npm run build:assets
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Chromium
+        run: |
+          python -m pip install playwright==1.57.0
+          python -m playwright install --with-deps chromium
+      - name: Verify immutable home grid
+        run: python tests/browser/check_post_welcome.py

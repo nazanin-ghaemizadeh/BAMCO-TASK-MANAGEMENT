@@ -15,7 +15,7 @@ function install(){
  const groups=[
   ['people',['people','loginActivity','activeSessions']],
   ['messages',['messages','messageCenter','sentMessages','responseTracking','stickers']],
-  ['reports',['dashboard','performanceReport','responseReport','requestReport','pettyCash']],
+  ['reports',['dashboard','performanceReport','responseReport','pettyCash','requestReport']],
   ['configuration',['systemOptions','alertSettings','emailSettings','settings']],
   ['tasks',['kanban','archive','taskTimeline','approvals','requestHistory','approvalChains']],
   ['vehicle',['vehiclePermanent','vehicleTemporary']],
@@ -90,7 +90,22 @@ function install(){
  function stickers(force=false){if(!force&&welcomeStickerReadyUser&&welcomeStickerReadyUser===state.user?.id)return Promise.resolve();if(welcomeStickerPromise&&!force)return welcomeStickerPromise;const generation=++welcomeStickerGeneration,job=loadWelcomeStickers(generation,force);welcomeStickerPromise=job;return job.finally(()=>{if(welcomeStickerPromise===job)welcomeStickerPromise=null})}
  q('#welcomeView')?.remove();
  window.bamcoPrepareWelcomeStickers=()=>stickers();window.addEventListener('bamco-stickers-ready',()=>stickers(true));document.addEventListener('bamco:stickers-changed',()=>stickers(true));
- let homeExpected=false,repairFrame=0,homeEpoch=0;
+ let homeExpected=false,repairFrame=0,homeEpoch=0,homeLayoutReady=false,homeReadyGeneration=0;
+ const twoPaints=()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+ async function prepareHomeLayout(){
+  if(homeLayoutReady||app.classList.contains('hidden'))return;
+  const generation=++homeReadyGeneration;
+  document.body.classList.remove('home-layout-ready');
+  syncGroups();
+  const waits=[];
+  if(document.fonts?.ready)waits.push(Promise.race([document.fonts.ready,new Promise(resolve=>setTimeout(resolve,1200))]));
+  const logo=top.querySelector('img');if(logo?.decode)waits.push(Promise.race([logo.decode().catch(()=>{}),new Promise(resolve=>setTimeout(resolve,1200))]));
+  if(waits.length)await Promise.allSettled(waits);
+  if(generation!==homeReadyGeneration||app.classList.contains('hidden'))return;
+  syncGroups();await twoPaints();
+  if(generation!==homeReadyGeneration||app.classList.contains('hidden'))return;
+  homeLayoutReady=true;document.body.classList.add('home-layout-ready');
+ }
  function leaveHome(){
   homeExpected=false;homeEpoch++;document.body.classList.remove('home-access-settled');
   if(repairFrame){cancelAnimationFrame(repairFrame);repairFrame=0}
@@ -117,7 +132,7 @@ function install(){
   if(sync)syncGroups();
   if(reset)resetHomeScroll();
  }
- function showHome(){repairHome({reset:true,sync:true})}
+ function showHome(){repairHome({reset:true,sync:true});void prepareHomeLayout()}
  function homeBroken(){
   if(!homeExpected||dialog.open||app.classList.contains('hidden'))return false;
   return !home.isConnected||home.classList.contains('hidden')||nav.parentElement!==home||!top.isConnected||top.classList.contains('hidden')||document.body.classList.contains('content-only')||!document.body.classList.contains('card-home-active');
@@ -152,7 +167,7 @@ function install(){
  });
  dialog.addEventListener('cancel',()=>{if(homeExpected)requestAnimationFrame(settleHome)});
  top.querySelector('.home-return').addEventListener('click',()=>{settleHome();home.focus({preventScroll:true})});
- new MutationObserver(()=>{if(app.classList.contains('hidden')){leaveHome();welcomed=false;welcomeStickerGeneration++;welcomeStickerPromise=null;welcomeStickerReadyUser=null;dialog.querySelectorAll('.home-sticker').forEach(img=>{img.removeAttribute('src');img.style.visibility='hidden'});if(dialog.open)dialog.close();document.body.classList.remove('card-home-active','content-only','home-welcome-open')}else if(homeExpected&&!dialog.open)scheduleHomeRepair()}).observe(app,{attributes:true,attributeFilter:['class']});
+ new MutationObserver(()=>{if(app.classList.contains('hidden')){leaveHome();homeLayoutReady=false;homeReadyGeneration++;welcomed=false;welcomeStickerGeneration++;welcomeStickerPromise=null;welcomeStickerReadyUser=null;dialog.querySelectorAll('.home-sticker').forEach(img=>{img.removeAttribute('src');img.style.visibility='hidden'});if(dialog.open)dialog.close();document.body.classList.remove('card-home-active','content-only','home-welcome-open','home-layout-ready')}else if(homeExpected&&!dialog.open)scheduleHomeRepair()}).observe(app,{attributes:true,attributeFilter:['class']});
  addEventListener('pageshow',()=>{if(homeExpected&&!dialog.open&&!app.classList.contains('hidden'))settleHome()});
  if(!app.classList.contains('hidden'))window.bamcoOpenHomeWelcome();
 }
