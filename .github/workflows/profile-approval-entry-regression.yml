@@ -71,7 +71,8 @@ jobs:
             test-results/post-welcome/
           retention-days: 7
   deployed-release:
-    if: github.event_name == 'workflow_dispatch' || startsWith(github.event.head_commit.message, 'ci: verify tested release')
+    if: >-
+      github.event_name == 'workflow_dispatch' || startsWith(github.event.head_commit.message, 'ci: verify tested release')
     runs-on: ubuntu-latest
     timeout-minutes: 4
     steps:
