@@ -14,7 +14,7 @@ permissions:
   contents: read
 concurrency:
   group: profile-approval-entry-regression-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 env:
   PYTHONIOENCODING: utf-8
   PYTHONUTF8: '1'
