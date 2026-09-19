@@ -99,6 +99,7 @@ html[lang="fa"] [dir="ltr"],
 html[lang="fa"] input[type="email"],
 html[lang="fa"] input[type="url"],
 html[lang="fa"] input[type="password"]{font-family:"Times New Roman",Times,serif!important}
+html[lang="fa"] .latin-run,html[lang="fa"] table .suite-english,html[lang="fa"] table .english-ui,html[lang="fa"] table [lang="en"]{font-family:"Times New Roman",Times,serif!important}
 #loginView .brand-lockup img{display:block!important}
 /* manager-only controls access; hidden controls the active page. */
 .view.manager-only:not(.hidden){display:block!important}
