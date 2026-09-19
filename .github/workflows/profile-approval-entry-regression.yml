@@ -4,6 +4,7 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/profile-approval-entry-regression.yml'
+      - 'scripts/profile-approval-entry/**'
       - 'assets/**'
       - 'index.html'
       - 'version.json'
@@ -89,9 +90,10 @@ jobs:
           npm run build:assets
           python -m pip install playwright==1.57.0
           python -m playwright install chromium
-      - name: Actual Windows table glyphs and post-login regression
+      - name: Actual Windows glyphs, entry stability and post-login regression
         run: |
           python tests/browser/check_table_typography.py
+          python tests/browser/check_department_entry_stability.py
           python tests/browser/check_post_welcome.py
       - uses: actions/upload-artifact@v4
         if: always()
