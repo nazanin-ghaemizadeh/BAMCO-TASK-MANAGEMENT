@@ -25,9 +25,17 @@ async def one_case(browser,base,width,role):
     assert layout_before==layout_after,{'width':width,'role':role,'before':layout_before,'after':layout_after}
     assert layout_after['ready'],{'width':width,'role':role,'layout':layout_after}
     if width>=1000 and role=='manager':
-        assert layout_after['response'] and layout_after['petty'],layout_after
-        assert layout_after['response']['y']==layout_after['petty']['y'],layout_after
-        assert layout_after['response']['x']!=layout_after['petty']['x'],layout_after
+        groups_before=layout_after['groups']
+        await page.evaluate('''()=>{
+          const petty=document.querySelector('#homeView #nav [data-view="pettyCash"]');
+          if(petty)petty.classList.remove('hidden');
+        }''')
+        await page.evaluate('()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))')
+        revealed=await home_layout()
+        assert revealed['response'] and revealed['petty'],revealed
+        assert revealed['response']['y']==revealed['petty']['y'],revealed
+        assert revealed['response']['x']!=revealed['petty']['x'],revealed
+        assert revealed['groups']==groups_before,{'before':groups_before,'after':revealed['groups']}
     diag=await page.evaluate('''()=>{
       const box=s=>{const n=document.querySelector(s);if(!n)return null;const r=n.getBoundingClientRect(),c=getComputedStyle(n);return {top:Math.round(r.top),left:Math.round(r.left),width:Math.round(r.width),height:Math.round(r.height),display:c.display,visibility:c.visibility,opacity:c.opacity}};
       const groups=[...document.querySelectorAll('#homeView #nav>.nav-group')].filter(n=>{const c=getComputedStyle(n),r=n.getBoundingClientRect();return c.display!=='none'&&c.visibility!=='hidden'&&r.width>0&&r.height>0});
