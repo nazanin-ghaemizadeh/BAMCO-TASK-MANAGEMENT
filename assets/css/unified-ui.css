@@ -612,6 +612,12 @@ html body #appView#appView #dashboardView.bamco-interior .dashboard-chart-card:h
   font-family:BamcoTablePersian,'Times New Roman',Times,serif!important;
  }
 }
+/* Keep the shared table face authoritative inside dialogs too; dialog-wide
+   typography must not replace the character-scoped table stack. */
+html body.table-suite dialog.bamco-dialog table.suite-table,
+html body.table-suite dialog.bamco-dialog table.suite-table :where(caption,thead,tbody,tfoot,tr,th,td,a,span,bdi,b,em,i,strong,small,p,div,label,button,input,textarea,select,optgroup,option,summary,code,pre,time){
+ font-family:BamcoTablePersian,'Times New Roman',Times,serif!important;
+}
 /* Conversation text direction is owned by the shared conversation system. */
 .chat-body[dir="rtl"]{direction:rtl;text-align:right;unicode-bidi:plaintext;white-space:pre-wrap}
 .chat-body[dir="ltr"]{direction:ltr;text-align:left;unicode-bidi:plaintext;white-space:pre-wrap}
