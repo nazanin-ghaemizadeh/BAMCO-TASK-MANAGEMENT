@@ -29,7 +29,7 @@ html body #appView :is(.vehicle-import,#importBtn,#archiveImportBtn):hover{backg
 #dashboardView canvas{display:block!important;width:100%!important;max-width:100%!important}
 #dashboardView .dashboard-filter-grid{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:8px!important}
 #dashboardView .dashboard-performance-range>div{display:flex!important;align-items:end!important;gap:8px!important;flex-wrap:wrap!important}
-@media(max-width:850px){#dashboardView .desktop-dashboard-exact{grid-template-columns:1fr!important}#dashboardView .dashboard-filters,#dashboardView .dashboard-cards,#dashboardView .dashboard-performance-range{grid-column:1!important}#dashboardView .dashboard-cards{grid-template-columns:repeat(3,minmax(0,1fr))!important}#dashboardView .dashboard-filter-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+@media(max-width:850px){#dashboardView .desktop-dashboard-exact{grid-template-columns:1fr!important}#dashboardView .dashboard-filters,#dashboardView .dashboard-cards,#dashboardView .dashboard-performance-range{grid-column:1!important}#dashboardView .dashboard-cards{grid-template-columns:1fr!important}#dashboardView .dashboard-filter-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
 
 /* Sticker library: paired preview and uniform controls. */
 #stickersView{height:100%!important;overflow:auto!important;padding:0!important}
