@@ -612,3 +612,9 @@ html body #appView#appView #dashboardView.bamco-interior .dashboard-chart-card:h
   font-family:BamcoTablePersian,'Times New Roman',Times,serif!important;
  }
 }
+/* Conversation text direction is owned by the shared conversation system. */
+.chat-body[dir="rtl"]{direction:rtl;text-align:right;unicode-bidi:plaintext;white-space:pre-wrap}
+.chat-body[dir="ltr"]{direction:ltr;text-align:left;unicode-bidi:plaintext;white-space:pre-wrap}
+.chat-body .bamco-emoji,.chat-body .bamco-emoji-fallback,.chat-body .chat-emoji-glyph,.chat-bubble .bamco-emoji,.chat-bubble .bamco-emoji-fallback{display:inline-block;direction:ltr;unicode-bidi:isolate;vertical-align:-.25em}
+.chat-body .chat-sticker{display:block;direction:ltr;unicode-bidi:isolate;margin-inline:auto}
+.chat-bubble blockquote{unicode-bidi:plaintext}

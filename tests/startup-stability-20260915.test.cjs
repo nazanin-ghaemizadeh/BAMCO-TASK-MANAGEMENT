@@ -14,8 +14,8 @@ test('home settles in one paint instead of multi-second repair timers',()=>{
 });
 
 test('avatar runtime has one canonical loader and no polling storm',()=>{
- const topbar=read('assets/js/login-avatar-workload-fix-20260911.js');
- const finalRuntime=read('assets/js/final-production-fixes-20260911.js');
+ const topbar=read('assets/js/profile-runtime.js');
+ const finalRuntime=read('assets/js/profile-runtime.js');
  assert.doesNotMatch(topbar,/\[0,100,350,900,1800\]/);
  assert.doesNotMatch(topbar,/observe\(document\.body/);
  assert.match(topbar,/bamcoMedia\.bindAvatar\(el,state\.profile\)/);
@@ -62,9 +62,9 @@ test('resource views and People avatars warm after first paint while observers s
 
 test('canonical bundle input directly includes late runtime modules',()=>{
  const build=read('scripts/build-static-bundles.mjs');
- assert.match(build,/task-bulk-delete-20260912\.js/);
- assert.match(build,/task-toolbar-actions-20260912\.js/);
- assert.match(build,/final-production-fixes-20260911\.js/);
+ assert.match(build,/task-actions\.js/);
+ assert.match(build,/task-toolbar\.js/);
+ assert.doesNotMatch(build,/final-production-fixes|root-sync-hotfix/);
  assert.match(build,/feature-prefetch\.js/);
  assert.doesNotMatch(build,/avatar-final-20260911\.js/);
 });

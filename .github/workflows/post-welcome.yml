@@ -6,8 +6,8 @@ on:
     paths:
       - 'index.html'
       - 'assets/js/card-home.js'
-      - 'assets/js/login-avatar-workload-fix-20260911.js'
-      - 'assets/css/home-post-welcome-fix-20260911.css'
+      - 'assets/js/profile-runtime.js'
+      - 'assets/css/home-welcome.css'
       - 'assets/css/home-stable.css'
       - 'tests/browser/check_post_welcome.py'
       - '.github/workflows/post-welcome.yml'

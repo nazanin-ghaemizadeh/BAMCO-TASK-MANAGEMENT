@@ -1,7 +1,7 @@
 /* One in-memory authentication session for all application requests. */
 (()=>{
  'use strict';
- const transport=window.fetch.bind(window);let refreshToken='',expiresAt=0,refreshing=null,timer=null,ending=false,generation=0;
+ const network=window.BamcoNetwork,transport=network?.raw?.bind(network)||window.fetch.bind(window);let refreshToken='',expiresAt=0,refreshing=null,timer=null,ending=false,generation=0;
  function accept(data){
   if(!data?.access_token)throw Error('پاسخ ورود معتبر نیست.');
   state.token=data.access_token;if(data.user)state.user=data.user;
@@ -23,15 +23,17 @@
   })();
   return refreshing;
  }
- window.fetch=async(input,init={})=>{
+ const request=async(input,init={},next)=>{
   const url=typeof input==='string'?input:input.url,headers=new Headers(init.headers||(input instanceof Request?input.headers:undefined));
-  if(typeof SB_URL==='undefined'||!url.startsWith(SB_URL+'/')||!state.token||headers.get('Authorization')!=='Bearer '+state.token)return transport(input,init);
+  if(typeof SB_URL==='undefined'||!url.startsWith(SB_URL+'/')||!state.token)return next(input,init);
+  if(headers.get('Authorization')&&headers.get('Authorization')!=='Bearer '+state.token)return next(input,init);
   const session=snapshot();await ensureFresh();if(!isCurrent(session))throw Error('حساب ورود تغییر کرده است.');if(!state.token)throw Error('دوباره وارد شوید.');headers.set('Authorization','Bearer '+state.token);const sentToken=state.token;
-  let response=await transport(input,{...init,headers});
+  let response=await next(input,{...init,headers});
   if(!isCurrent(session))throw Error('حساب ورود تغییر کرده است.');
-  if(response.status===401&&refreshToken&&!ending){if(state.token===sentToken)await ensureFresh(true);if(!isCurrent(session))throw Error('حساب ورود تغییر کرده است.');if(!state.token)throw Error('دوباره وارد شوید.');headers.set('Authorization','Bearer '+state.token);response=await transport(input,{...init,headers})}
+  if(response.status===401&&refreshToken&&!ending){if(state.token===sentToken)await ensureFresh(true);if(!isCurrent(session))throw Error('حساب ورود تغییر کرده است.');if(!state.token)throw Error('دوباره وارد شوید.');headers.set('Authorization','Bearer '+state.token);response=await next(input,{...init,headers})}
   return response;
  };
+ if(network?.use)network.use('auth-session',request);
  async function signOut(){
   if(ending)return;ending=true;
   let auditError=null,logoutError=null;

@@ -96,7 +96,7 @@ jobs:
                   html=get('index.html',attempt).decode('utf-8')
                   match=re.search(r'<meta name="bamco-app-version" content="([^"]+)"',html)
                   assert version==expected and match and match[1]==expected,(version,match[1] if match else None,expected)
-                  paths=['assets/js/bamco.bundle.js','assets/css/bamco.bundle.css','assets/js/department-entry.js','assets/js/root-sync-hotfix-20260917.js']
+                  paths=['assets/js/bamco.bundle.js','assets/css/bamco.bundle.css','assets/js/department-entry.js','assets/js/app-update.js']
                   digests={}
                   for path in paths:
                       actual=hashlib.sha256(get(path+'?v='+expected,attempt)).hexdigest()

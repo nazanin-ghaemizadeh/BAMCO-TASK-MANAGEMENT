@@ -1,4 +1,4 @@
-/* Root fix: release-fixes.css gives #loginView.login-shell a high-specificity
+/* Shared stability.css gives #loginView.login-shell a high-specificity
    display:grid!important. After sign-in the .hidden rule must win completely,
    otherwise the invisible login shell still reserves exactly one viewport and
    pushes the home workspace below the fold. */

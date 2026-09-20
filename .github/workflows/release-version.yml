@@ -59,10 +59,10 @@ jobs:
           if n!=1: raise SystemExit('app version meta not found')
           text,n=re.subn(r'(manifest\.webmanifest\?v=)[^"&]+',rf'\g<1>{release}',text,count=1)
           if n!=1: raise SystemExit('manifest version query not found')
-          text,n=re.subn(r'(assets/js/app-update-v2\.js\?v=)[^"&]+',rf'\g<1>{release}',text,count=1)
+          text,n=re.subn(r'(assets/js/app-update\.js\?v=)[^"&]+',rf'\g<1>{release}',text,count=1)
           if n!=1: raise SystemExit('app updater V2 cache key not found')
 
-          for asset in ('assets/css/bamco.bundle.css', 'assets/js/bamco.bundle.js', 'assets/js/root-sync-hotfix-20260917.js', 'assets/js/department-entry.js'):
+          for asset in ('assets/css/bamco.bundle.css', 'assets/js/bamco.bundle.js', 'assets/js/department-entry.js', 'assets/js/app-update.js'):
               pattern=rf'({re.escape(asset)}\?v=)[^"&]+'
               text,n=re.subn(pattern,rf'\g<1>{release}',text,count=1)
               if n!=1: raise SystemExit(f'cache key not found: {asset}')

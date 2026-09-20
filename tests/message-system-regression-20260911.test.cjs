@@ -16,7 +16,7 @@ test('workflow message renderer is compact, centered and warning/overdue colored
 });
 
 test('system message UI blocks generic table-suite controls and preserves inbox cards',()=>{
-  const root=read('assets/js/messaging-history-root-20260911.js');
+  const root=read('assets/js/message-history.js');
   assert.match(root,/\.workflow-message \.suite-filters/);
   assert.match(root,/\.workflow-message table\{margin-left:auto!important;margin-right:auto!important;min-width:0!important\}/);
   assert.doesNotMatch(root,/qa\('\[data-mid\]',list\)\.forEach\(x=>x\.remove\(\)\)/);
@@ -38,7 +38,7 @@ test('sent history contains only daily reports and reminders',()=>{
   const sql=read('supabase/migrations/20260914065000_limit_sent_log_to_reports_and_reminders.sql');
   assert.match(sql,/where b\.kind in \('daily', 'reminder'\)/);
   assert.doesNotMatch(sql,/system_chat|portal_event|union all/i);
-  const ui=read('assets/js/admin-root-fixes-20260911.js');
+  const ui=read('assets/js/messages-admin.js');
   assert.match(ui,/فقط گزارش وضعیت امور و یادآوری‌ها/);
   assert.match(ui,/sent-command-row\+\.table-wrap\{margin-top:0;border-top:0/);
 });

@@ -4,8 +4,8 @@ Baseline: 3cd79ba404519bdcf1bc7cc6259e497bcc089406 (the deployed Pages artifact 
 
 ## Reproduced causes
 
-- `admin-root-fixes-20260911.js`: the observer on `templatesView` called `removeTemplateHelp`, which unconditionally assigned `textContent` on `openDesktopTemplateEditor`. Assigning even the same text replaces the text node, schedules another mutation, and starves the browser event loop. The unmodified page did not reach `load` within the six-second Chromium test limit. A separate diagnostic instrument counted 251 callbacks before deliberately disconnecting the observer. The request export label had the same self-triggering pattern.
-- `runtime-fixes-20260911.js`: mobile sidebar normalization unconditionally removed classes while observing the sidebar's own class/style attributes. Mobile startup also timed out until these writes were made conditional.
+- `messages-admin.js`: the former observer on `templatesView` called `removeTemplateHelp`, which unconditionally assigned `textContent` on `openDesktopTemplateEditor`. Assigning even the same text replaces the text node, schedules another mutation, and starves the browser event loop. The unmodified page did not reach `load` within the six-second Chromium test limit. A separate diagnostic instrument counted 251 callbacks before deliberately disconnecting the observer. The request export label had the same self-triggering pattern.
+- `runtime.js`: mobile sidebar normalization unconditionally removed classes while observing the sidebar's own class/style attributes. Mobile startup also timed out until these writes were made conditional.
 - `report-root-fixes-20260911.js`: the response delete label was rewritten on every observer pass, scheduling continuous 30 ms reconciliations. Its independent row-click listener was also blocked by the application's earlier capture-phase table-selection handler. Thus the delete action did not become enabled.
 
 ## Changes

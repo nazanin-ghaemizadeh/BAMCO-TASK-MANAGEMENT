@@ -16,7 +16,7 @@ const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const fa=n=>String(n??'').replace(/\d/g,d=>'۰۱۲۳۴۵۶۷۸۹'[d]);
 const en=n=>String(n??'').replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d));
 const norm=s=>String(s??'').replace(/ي/g,'ی').replace(/ك/g,'ک').replace(/\u200c/g,' ').replace(/\s+/g,' ').trim();
-const state={token:'',user:null,profile:null,profiles:[],tasks:[],requests:[],requestHistory:[],definitionRequests:[],requestRoutes:[],dashboardMonitoringStart:window.bamcoDashboardMetrics?.DEFAULT_MONITORING_START||'2026-09-14T00:00:00Z',view:'dashboard',editing:null,reviewing:null,reviewEdit:null,resubmitting:null,dateInput:null,selected:{kanban:null,archive:null}};
+const state=globalThis.Bamco.state=Object.assign(globalThis.Bamco.state||{}, {token:'',user:null,profile:null,profiles:[],tasks:[],requests:[],requestHistory:[],definitionRequests:[],requestRoutes:[],dashboardMonitoringStart:window.bamcoDashboardMetrics?.DEFAULT_MONITORING_START||'2026-09-14T00:00:00Z',view:'dashboard',editing:null,reviewing:null,reviewEdit:null,resubmitting:null,dateInput:null,selected:{kanban:null,archive:null}});
 
 function loginEmail(value){const login=String(value||'').trim().toLowerCase();return login.includes('@')?login:login+'@no-email.invalid'}
 
@@ -223,8 +223,8 @@ function renderRequests(){const names=Object.fromEntries(state.profiles.map(p=>[
 }
 $('#approvalBody').addEventListener('click',e=>{const revise=e.target.closest('[data-revise-request]'),review=e.target.closest('[data-review-request]');if(revise)reviseRequest(revise.dataset.reviseRequest);if(review)openReview(review.dataset.reviewRequest)});
 function renderRequestHistory(){const names=Object.fromEntries(state.profiles.map(p=>[p.id,p.full_name||p.email])),types={create:'تعریف فعالیت جدید',update:'ویرایش وظیفه',status:'تغییر وضعیت',priority:'تغییر اولویت',description:'تغییر توضیحات',complete:'اعلام انجام',delete:'درخواست حذف',due_date:'تغییر تاریخ پایان'},statuses={approved:'تأیید',rejected:'رد',cancelled:'لغوشده'},terminal=new Set(Object.keys(statuses)),rows=newestRequestRows(state.requestHistory).filter(r=>terminal.has(r.request_status));$('#requestHistoryBody').innerHTML=rows.length?rows.map((r,index)=>`<tr data-request-id="${r.id}"><td>${fa(rows.length-index)}</td><td>${safe(names[r.requested_by]||r.requester_name_snapshot||'—')}</td><td>${types[r.request_type]||r.request_type}</td><td>${safe(r.proposed_data?.title||state.tasks.find(t=>String(t.id)===String(r.task_id))?.title||'—')}</td><td>${jalaliDateTime(r.reviewed_at||r.created_at)}</td><td>${statuses[r.request_status]}</td><td>${safe(r.manager_note||'—')} <button class="ghost request-timeline-btn" data-request="${r.id}">خط زمانی</button></td></tr>`).join(''):'<tr><td colspan="7" class="empty">سابقه‌ای وجود ندارد.</td></tr>'}
-const titles={dashboard:'داشبورد',kanban:'کانبان وظایف',archive:'آرشیو وظایف',approvals:'تأیید درخواست‌ها',requestHistory:'سوابق درخواست‌ها'};
-function showView(view){const target=typeof view==='string'&&/^[A-Za-z][A-Za-z0-9]*$/.test(view)?document.getElementById(view+'View'):null;if(!target)return;/* Centralize leaving the card home so delayed home-repair timers cannot hide a tab after navigation. */globalThis.bamcoLeaveHome?.();state.view=view;$$('.view').forEach(x=>x.classList.add('hidden'));target.classList.remove('hidden');$$('#nav button').forEach(x=>x.classList.toggle('active',x.dataset.view===view));$('#viewTitle').textContent=titles[view]||'';$('#addTaskBtn').classList.toggle('hidden',view!=='kanban')}
+const titles={dashboard:'داشبورد',kanban:'کانبان وظایف',archive:'آرشیو وظایف',approvals:'تأیید درخواست‌ها',requestHistory:'سوابق درخواست‌ها'};globalThis.BamcoNavigation?.configure?.({state,titles});
+function showView(view){if(typeof BamcoNavigation!=='undefined'&&typeof BamcoNavigation.navigate==='function')return BamcoNavigation.navigate(view);const target=typeof view==='string'&&/^[A-Za-z][A-Za-z0-9]*$/.test(view)?document.getElementById(view+'View'):null;if(!target)return false;globalThis.bamcoLeaveHome?.();state.view=view;$$('.view').forEach(x=>x.classList.add('hidden'));target.classList.remove('hidden');$$('#nav button').forEach(x=>x.classList.toggle('active',x.dataset.view===view));$('#viewTitle').textContent=titles[view]||'';$('#addTaskBtn').classList.toggle('hidden',view!=='kanban');return true}
 $('#nav').addEventListener('click',e=>{const button=e.target.closest('button[data-view]');if(button&&!button.disabled)showView(button.dataset.view)});$$('[data-go]').forEach(b=>b.addEventListener('click',()=>showView(b.dataset.go)));
 $('#kanbanSearch').addEventListener('input',()=>renderTasks(false));$('#archiveSearch').addEventListener('input',()=>renderTasks(true));$('#collapseBtn').addEventListener('click',()=>$('#sidebar').classList.toggle('collapsed'));
 $('#nav').addEventListener('click',e=>{if(window.matchMedia('(max-width:760px)').matches&&e.target.closest('button[data-view]'))$('#sidebar').classList.add('collapsed')});
@@ -341,8 +341,8 @@ showLogin();
 (()=>{
   'use strict';
   if(window.__bamcoSecureStorageBridge)return;
-  window.__bamcoSecureStorageBridge='edge-with-direct-fallback-v2';
-  const nativeFetch=window.fetch.bind(window);
+  window.__bamcoSecureStorageBridge='edge-with-direct-fallback-v3';
+  const network=window.BamcoNetwork;if(!network)return;
   const storagePattern=/\/storage\/v1\/object\/(avatars|vehicle-forms)\/(.+?)(?:\?.*)?$/;
 
   const mimeFor=(bucket,path,body)=>{
@@ -367,7 +367,7 @@ showLogin();
       fd.append('file',file,file.name);
     }
     try{
-      const res=await nativeFetch(`${SB_URL}/functions/v1/secure-storage-upload`,{
+      const res=await network.raw(`${SB_URL}/functions/v1/secure-storage-upload`,{
         method:'POST',headers:{apikey:SB_KEY,Authorization:`Bearer ${state.token}`},body:fd,cache:'no-store'
       });
       const text=await res.text();let payload={};try{payload=text?JSON.parse(text):{}}catch{}
@@ -378,30 +378,30 @@ showLogin();
     }
   }
 
-  async function directFallback(input,init,edgeRes){
+  async function directFallback(input,init,edgeRes,next){
     try{
-      const direct=await nativeFetch(input,init);
+      const direct=await next(input,init);
       if(direct.ok)return direct;
       return direct.status!==0?direct:edgeRes;
     }catch{return edgeRes}
   }
 
-  window.fetch=async function(input,init={}){
+  network.use('secure-storage',async(input,init={},next)=>{
     const url=typeof input==='string'?input:(input instanceof Request?input.url:String(input));
     const method=String(init.method||(input instanceof Request?input.method:'GET')).toUpperCase();
     const match=url.match(storagePattern);
     if(match&&(method==='POST'||method==='PUT')&&init.body instanceof Blob){
       const edgeRes=await edgeRequest(match[1],match[2],'upload',init.body);
       if(edgeRes.ok)return edgeRes;
-      return directFallback(input,init,edgeRes);
+      return directFallback(input,init,edgeRes,next);
     }
     if(match&&method==='DELETE'){
       const edgeRes=await edgeRequest(match[1],match[2],'delete');
       if(edgeRes.ok)return edgeRes;
-      return directFallback(input,init,edgeRes);
+      return directFallback(input,init,edgeRes,next);
     }
-    return nativeFetch(input,init);
-  };
+    return next(input,init);
+  });
 })();
 
 

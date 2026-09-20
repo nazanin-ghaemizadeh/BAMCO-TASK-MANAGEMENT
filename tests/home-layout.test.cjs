@@ -77,8 +77,8 @@ test('home styles have one owner, loaded last; phase modules load once',()=>{
  const release=JSON.parse(read('version.json')).version;
  const sheets=[...html.matchAll(/<link[^>]+rel="stylesheet"[^>]+href="([^"]+)"/g)].map(x=>x[1]);
  assert.deepEqual(sheets,[`assets/css/bamco.bundle.css?v=${release}`]);
- assert.ok(cssBundle.indexOf('source: assets/css/home-stable.css')<cssBundle.indexOf('source: assets/css/home-post-welcome-fix-20260911.css'));
- for(const file of ['card-home','interface-refinement','visual-polish','release-fixes'])assert.doesNotMatch(read('assets/css/'+file+'.css'),/#homeView|\.card-topbar|\.card-home-active/);
+ assert.ok(cssBundle.indexOf('source: assets/css/home-stable.css')<cssBundle.indexOf('source: assets/css/home-welcome.css'));
+ for(const file of ['card-home','interface-refinement','visual-system','stability'])assert.doesNotMatch(read('assets/css/'+file+'.css'),/#homeView|\.card-topbar|\.card-home-active/);
  const home=read('assets/css/home-stable.css');assert.match(home,/grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);assert.match(home,/grid-auto-rows:var\(--home-row-height/);
  assert.match(home,/card-navigation\.card-home-active #appView #homeView #nav \.nav-group-items>\[data-view\]\.hidden\{display:flex!important;visibility:hidden!important;pointer-events:none!important\}/);
  assert.match(home,/\[data-view="responseReport"\]\{grid-column:1!important;grid-row:2!important\}/);

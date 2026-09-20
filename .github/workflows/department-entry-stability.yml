@@ -6,7 +6,7 @@ on:
     paths:
       - 'assets/css/department-entry.css'
       - 'assets/js/department-entry.js'
-      - 'assets/js/runtime-fixes-20260911.js'
+      - 'assets/js/runtime.js'
       - 'index.html'
       - 'tests/browser/check_department_entry_stability.py'
       - '.github/workflows/department-entry-stability.yml'

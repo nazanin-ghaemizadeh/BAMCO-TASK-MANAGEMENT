@@ -5,7 +5,7 @@ on:
     branches: [main]
     paths:
       - 'assets/js/message-renderer.js'
-      - 'assets/js/messaging-history-root-20260911.js'
+      - 'assets/js/message-history.js'
       - 'supabase/migrations/20260911131500_unified_system_chain_and_chat_alerts.sql'
       - 'tests/message-system-regression-20260911.test.cjs'
       - '.github/workflows/message-system-regression.yml'
@@ -26,6 +26,6 @@ jobs:
       - name: JavaScript syntax
         run: |
           node --check assets/js/message-renderer.js
-          node --check assets/js/messaging-history-root-20260911.js
+          node --check assets/js/message-history.js
       - name: Focused system message tests
         run: node --test tests/message-system-regression-20260911.test.cjs

@@ -1,4 +1,4 @@
-@import url('./mobile-compat-20260911.css?v=1');
+@import url('./responsive.css');
 /* Management selector: authoritative, first-paint-stable layout. */
 @font-face{font-family:BamcoEntry;src:url('../fonts/BNazanin.woff2') format('woff2');font-style:normal;font-weight:400;font-display:block}
 @font-face{font-family:BamcoEntry;src:url('../fonts/BNaznnBd.woff2') format('woff2');font-style:normal;font-weight:700;font-display:block}

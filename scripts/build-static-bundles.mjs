@@ -6,6 +6,7 @@ const root = new URL('../', import.meta.url);
 const checkOnly = process.argv.includes('--check');
 
 const javascript = [
+  'assets/js/core/application.js',
   'assets/js/message-renderer.js',
   'assets/js/media-cache.js',
   'assets/js/notices.js',
@@ -42,22 +43,21 @@ const javascript = [
   'assets/js/interior-ui.js',
   'assets/js/table-pages.js',
   'assets/js/table-suite.js',
-  'assets/js/visual-polish.js',
+  'assets/js/visual-system.js',
   'assets/js/usability.js',
   'assets/js/styled-excel.js',
-  'assets/js/excel-io-fixes.js',
+  'assets/js/excel-export.js',
   'assets/js/chat-emoji-renderer.js',
   'assets/js/chat-ui.js',
-  'assets/js/runtime-fixes-20260911.js',
-  'assets/js/dashboard-response-fixes-20260911.js',
-  'assets/js/login-avatar-workload-fix-20260911.js',
-  'assets/js/workload-segment-labels-20260911.js',
-  'assets/js/admin-root-fixes-20260911.js',
-  'assets/js/report-stability-fixes-20260911.js',
-  'assets/js/messaging-history-root-20260911.js',
-  'assets/js/task-bulk-delete-20260912.js',
-  'assets/js/task-toolbar-actions-20260912.js',
-  'assets/js/final-production-fixes-20260911.js',
+  'assets/js/runtime.js',
+  'assets/js/reports-dashboard.js',
+  'assets/js/profile-runtime.js',
+  'assets/js/dashboard-workload.js',
+  'assets/js/messages-admin.js',
+  'assets/js/reports.js',
+  'assets/js/message-history.js',
+  'assets/js/task-actions.js',
+  'assets/js/task-toolbar.js',
   'assets/js/documents-sites.js',
   'assets/js/feature-structure.js',
   'assets/js/feature-prefetch.js',
@@ -76,13 +76,13 @@ const stylesheets = [
   'assets/css/navigation-completeness.css',
   'assets/css/card-home.css',
   'assets/css/interface-refinement.css',
-  'assets/css/visual-polish.css',
+  'assets/css/visual-system.css',
   'assets/css/usability.css',
   'assets/css/tab-workspace.css',
-  'assets/css/release-fixes.css',
+  'assets/css/stability.css',
   'assets/css/unified-ui.css',
   'assets/css/home-stable.css',
-  'assets/css/home-post-welcome-fix-20260911.css'
+  'assets/css/home-welcome.css'
 ];
 
 const digest = value => createHash('sha256').update(value).digest('hex').slice(0, 16);
@@ -97,11 +97,11 @@ async function buildJavascript() {
 }
 
 async function buildCss() {
-  const mobile = await read('assets/css/mobile-compat-20260911.css');
+  const mobile = await read('assets/css/responsive.css');
   const sources = await Promise.all(stylesheets.map(async path => {
     let source = await read(path);
     if (path.endsWith('/department-entry.css')) {
-      source = source.replace(/@import\s+url\([^)]*mobile-compat-20260911\.css[^)]*\);?\s*/, `/* source: assets/css/mobile-compat-20260911.css */\n${mobile.trim()}\n`);
+      source = source.replace(/@import\s+url\([^)]*responsive\.css[^)]*\);?\s*/, `/* source: assets/css/responsive.css */\n${mobile.trim()}\n`);
     }
     return `/* source: ${path} */\n${source.trim()}`;
   }));

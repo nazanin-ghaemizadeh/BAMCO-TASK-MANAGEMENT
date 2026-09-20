@@ -59,13 +59,13 @@ test('default request ordering is newest first, deterministic for ties and non-m
  const input=[{id:1,created_at:'2026-09-17T00:00:00Z'},{id:2,created_at:'2026-09-19T00:00:00Z'},{id:9,created_at:'2026-09-19T00:00:00Z'},{id:99,created_at:'invalid'}];
  assert.deepEqual(Array.from(ctx.newestRequestRows(input),x=>x.id),[9,2,1,99]);assert.equal(input[0].id,1);
  assert.ok(source.includes('newestRequestRows(state.requests).map((r,index)=>'));assert.ok(source.includes('newestRequestRows(state.requestHistory)'));
- assert.ok(!read('assets/js/root-sync-hotfix-20260917.js').includes('MutationObserver'));
+ assert.doesNotMatch(read('assets/js/app.js'),/MutationObserver/);
 });
 test('entry first-paint styles are generated from the canonical layout, and home buttons reserve slots',()=>{
  const css=read('assets/css/department-entry.css').split('/* Other small forms')[0].replace(/@import[^;]+;\s*/,'').replaceAll('../fonts/','assets/fonts/').trim();
  assert.ok(read('index.html').includes(css));
  assert.ok(read('assets/css/home-stable.css').includes('grid-auto-rows:max(164px,calc(3 * var(--home-row-height,34px) + 68px))'));
- assert.ok(!read('assets/js/runtime-fixes-20260911.js').includes('html body #departmentEntry'));
+ assert.ok(!read('assets/js/runtime.js').includes('html body #departmentEntry'));
  assert.ok(read('.github/workflows/release-version.yml').includes("'assets/js/department-entry.js'"));
 });
 test('directory profile metadata keeps a newer local save when an older refresh finishes',async t=>{

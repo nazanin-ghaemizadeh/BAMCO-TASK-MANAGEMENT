@@ -47,7 +47,7 @@ test('buttons use regular labels, semantic action colors and evenly wrapped mobi
  const f=await fixture({styles:true});t.after(()=>f.dispose());const {d,w}=f;await f.open('dashboard');
  const regular=d.querySelector('#clearPerf'),add=d.querySelector('#addTaskBtn'),remove=d.querySelector('#kanbanDeleteBtn'),tab=d.querySelector('#nav [data-view="dashboard"]');
  for(const button of [regular,add,remove,tab])assert.equal(w.getComputedStyle(button).fontWeight,'400');
- const root=path.join(__dirname,'..'),mobile=fs.readFileSync(path.join(root,'assets/css/mobile-compat-20260911.css'),'utf8'),ui=fs.readFileSync(path.join(root,'assets/css/unified-ui.css'),'utf8');
+ const root=path.join(__dirname,'..'),mobile=fs.readFileSync(path.join(root,'assets/css/responsive.css'),'utf8'),ui=fs.readFileSync(path.join(root,'assets/css/unified-ui.css'),'utf8');
  assert.match(mobile,/justify-content:stretch!important;overflow-x:hidden!important/);
  assert.match(mobile,/flex:1 1 116px!important/);
  assert.match(mobile,/dashboard-chart-card\.dashboard-chart-scroll\{overflow-x:auto!important.*direction:rtl!important/s);

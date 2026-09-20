@@ -3,10 +3,11 @@ const assert=require('node:assert/strict');
 const vm=require('node:vm');
 const fs=require('node:fs');
 const source=fs.readFileSync(require('node:path').join(__dirname,'../assets/js/auth-session.js'),'utf8');
+const kernel=fs.readFileSync(require('node:path').join(__dirname,'../assets/js/core/application.js'),'utf8');
 function session(fetch){
  const state={token:'',user:{id:'test'},profile:{id:'test',must_change_password:true}};
- const context={state,window:{fetch},SB_URL:'https://fixture.test',SB_KEY:'public',Headers,Request,AbortController,setTimeout,clearTimeout,Date,api:async()=>{},update:async()=>{},showLogin(){state.token='';state.user=null}};
- vm.runInNewContext(source,context);return {...context,auth:context.window.bamcoAuth};
+ const context={state,fetch,SB_URL:'https://fixture.test',SB_KEY:'public',Headers,Request,AbortController,setTimeout,clearTimeout,Date,api:async()=>{},update:async()=>{},showLogin(){state.token='';state.user=null}};
+ context.window=context;vm.runInNewContext(kernel+'\n'+source,context);return {...context,auth:context.window.bamcoAuth};
 }
 test('concurrent requests refresh once, replace the bearer token, and retry 401 once',async t=>{
  let refreshes=0;const calls=[];

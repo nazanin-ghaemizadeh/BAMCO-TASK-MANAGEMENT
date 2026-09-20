@@ -11,7 +11,7 @@ test('entry is lightweight and management gate precedes login',()=>{
   assert.ok(html.indexOf('id="departmentEntry"')<html.indexOf('id="loginView"'));
   assert.doesNotMatch(html,/data:image\//);
   assert.match(html,/bamco\.bundle\.css/);
-  assert.match(read('assets/css/bamco.bundle.css'),/source: assets\/css\/release-fixes\.css/);
+  assert.match(read('assets/css/bamco.bundle.css'),/source: assets\/css\/stability\.css/);
 });
 
 test('permanent vehicle template upload is enabled without embedding the PDF',()=>{

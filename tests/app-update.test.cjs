@@ -4,7 +4,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 const {JSDOM}=require('jsdom');
 const root=path.join(__dirname,'..');
-const source=fs.readFileSync(path.join(root,'assets/js/app-update-v2.js'),'utf8');
+const source=fs.readFileSync(path.join(root,'assets/js/app-update.js'),'utf8');
 const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
 const release=JSON.parse(fs.readFileSync(path.join(root,'version.json'),'utf8'));
 const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
@@ -25,9 +25,9 @@ function page({current=release.version,latest=release.version,published=latest,s
  return {dom,navigations,toasts};
 }
 
-test('release file, document version and V2 updater cache key stay aligned',()=>{
+test('release file, document version and updater cache key stay aligned',()=>{
  assert.match(html,new RegExp(`<meta name="bamco-app-version" content="${release.version.replaceAll('.','\\.')}"`));
- assert.match(html,new RegExp(`assets/js/app-update-v2\\.js\\?v=${release.version.replaceAll('.','\\.')}`));
+ assert.match(html,new RegExp(`assets/js/app-update\\.js\\?v=${release.version.replaceAll('.','\\.')}`));
  assert.match(html,/id="bamcoUpdateRecoveryBootstrap"/);
 });
 
