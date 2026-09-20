@@ -4,6 +4,12 @@ const fs=require('node:fs');
 const {JSDOM}=require('jsdom');
 const read=file=>fs.readFileSync(file,'utf8');
 
+test('home exits at the document navigation boundary before delegated route handlers',()=>{
+ const src=read('assets/js/card-home.js');
+ assert.match(src,/document\.addEventListener\('click',[^\n]*#nav button\[data-view\][^\n]*leaveHome\(\)[^\n]*,true\)/);
+ assert.doesNotMatch(src,/nav\.addEventListener\('click',[^\n]*leaveHome\(\)[^\n]*,true\)/);
+});
+
 test('home settles in one paint instead of multi-second repair timers',()=>{
  const src=read('assets/js/card-home.js');
  assert.doesNotMatch(src,/\[0,40,120,300,700,1400\]/);
