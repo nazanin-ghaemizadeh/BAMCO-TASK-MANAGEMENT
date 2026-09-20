@@ -117,7 +117,8 @@ function enhanceResponseShell(){
   const date=q('.report-date-controls',tools);if(date){const labels=qa(':scope>label',date);setDateLabel(labels[0],'از تاریخ');setDateLabel(labels[1],'تا تاریخ');let danger=q('.response-danger-actions',date);if(!danger){danger=document.createElement('div');danger.className='response-danger-actions';const clear=q('[data-response-clear-dates]',date);if(clear)danger.append(clear);const del=document.createElement('button');del.type='button';del.className='ghost';del.dataset.responseDeleteSelected='1';del.textContent='حذف رکورد';del.disabled=true;danger.append(del);date.append(danger)}}
   let primary=q('.response-primary-actions',tools);if(!primary){primary=document.createElement('div');primary.className='response-primary-actions';const refresh=q('[data-response-refresh]',view),exp=q('[data-report-export]',tools);if(refresh)primary.append(refresh);if(exp){exp.textContent='خروجی اکسل';primary.append(exp)}tools.insertBefore(primary,tools.firstChild)}
   tools.dataset.responseLayoutV2='1';
-  reloadResponseRows().catch(()=>{});
+  // Response data and rendering belong to reports.js; this module only owns
+  // dashboard visuals and must not start a second report refresh.
  }finally{responseEnhanceBusy=false}
 }
 async function softDeleteSelected(){
