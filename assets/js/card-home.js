@@ -115,9 +115,9 @@ function install(){
   try{window.scrollTo({top:0,left:0,behavior:'auto'})}catch{window.scrollTo(0,0)}
   for(const node of [document.documentElement,document.body,app,workspace,home])if(node&&node.scrollTop)node.scrollTop=0;
  }
+ function ownsHomeRoute(){return typeof state==='undefined'||!state.view||state.view==='home'}
  function repairHome({reset=false,sync=false}={}){
-  if(app.classList.contains('hidden'))return;
-  homeExpected=true;
+  if(app.classList.contains('hidden')||!homeExpected||!ownsHomeRoute())return;
   if(!home.isConnected)workspace.append(home);
   if(nav.parentElement!==home)home.append(nav);
   if(!top.isConnected||top.parentElement!==app)app.prepend(top);else if(app.firstElementChild!==top)app.prepend(top);
@@ -128,14 +128,13 @@ function install(){
   }
   document.body.classList.add('card-navigation','card-home-active');
   document.body.classList.remove('welcome-active','content-only');
-  if(typeof state!=='undefined')state.view='home';
   const title=q('#viewTitle');if(title)title.textContent='میز کار';q('#addTaskBtn')?.classList.add('hidden');
   if(sync)syncGroups();
   if(reset)resetHomeScroll();
  }
- function showHome(){repairHome({reset:true,sync:true});void prepareHomeLayout()}
+ function showHome(){homeExpected=true;if(typeof state!=='undefined')state.view='home';repairHome({reset:true,sync:true});void prepareHomeLayout()}
  function homeBroken(){
-  if(!homeExpected||dialog.open||app.classList.contains('hidden'))return false;
+  if(!homeExpected||!ownsHomeRoute()||dialog.open||app.classList.contains('hidden'))return false;
   return !home.isConnected||home.classList.contains('hidden')||nav.parentElement!==home||!top.isConnected||top.classList.contains('hidden')||document.body.classList.contains('content-only')||!document.body.classList.contains('card-home-active');
  }
  function scheduleHomeRepair(){
@@ -156,7 +155,6 @@ function install(){
  repairObserver.observe(home,{attributes:true,attributeFilter:['class','style','hidden']});
  repairObserver.observe(top,{attributes:true,attributeFilter:['class','style','hidden']});
  new MutationObserver(syncMode).observe(home,{attributes:true,attributeFilter:['class']});
- document.addEventListener('click',e=>{if(e.target.closest('#nav button[data-view]'))leaveHome()},true);
  window.bamcoLeaveHome=leaveHome;
  window.bamcoShowHome=settleHome;
  let welcomed=false;
