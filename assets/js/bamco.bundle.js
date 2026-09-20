@@ -3402,7 +3402,94 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
       const offset=cells[0]?.classList.contains('unified-select-cell')?1:0;
       if(cells[offset]){const text=(cells[offset].textContent||'').replace(/^\s*#\s*/,'').trim();if(cells[offset].textContent!==text)cells[offset].textContent=text;}
       if(cells[offset+11]){
-        const text=(cells�4o+^����םete:'حذف'};
+        const text=(cells[offset+11].textContent||'').trim();
+        if(cells[offset+11].textContent!==text)cells[offset+11].textContent=text;
+      }
+    });
+  }
+
+  function installTableCleaning(){
+    ['kanbanView','archiveView'].forEach(id=>{
+      const view=q(`#${id}`);if(!view||view.dataset.uxTableClean==='1')return;
+      view.dataset.uxTableClean='1';
+      cleanTaskTable(id);
+      const body=view.querySelector('tbody');
+      if(body)new MutationObserver(()=>requestAnimationFrame(()=>cleanTaskTable(id))).observe(body,{childList:true,subtree:true});
+    });
+  }
+
+  function ensureSidebarLogo(){
+    const brand=q('#sidebar .side-brand'),img=brand?.querySelector('img');
+    if(!brand||!img)return;
+    brand.querySelectorAll('strong').forEach(x=>{x.style.setProperty('display','none','important');x.style.setProperty('visibility','hidden','important')});
+    img.style.setProperty('display','block','important');
+    img.style.setProperty('visibility','visible','important');
+    img.style.setProperty('opacity','1','important');
+  }
+
+  function refreshAll(){
+    decorateWelcome();
+    refreshWelcomeStickers();
+    polishSearchButtons();
+    installTableCleaning();
+    ensureSidebarLogo();
+  }
+
+  function boot(){
+    installEntryCollapse();
+    refreshAll();
+    let queued=false;
+    new MutationObserver(()=>{
+      if(queued)return;queued=true;
+      requestAnimationFrame(()=>{queued=false;refreshAll()});
+    }).observe(document.body,{childList:true,subtree:true});
+    window.addEventListener('bamco-stickers-ready',()=>setTimeout(refreshWelcomeStickers,30));
+    refreshAll();requestAnimationFrame(refreshAll);
+  }
+
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+})();
+;
+
+/* source: assets/js/unified-ui.js */
+(()=>{
+  'use strict';
+  const q=(s,r=document)=>r.querySelector(s),qa=(s,r=document)=>[...r.querySelectorAll(s)];
+  const picked={kanban:new Set(),archive:new Set()};let taskActionBusy=false;
+
+  function scopeInfo(scope){return {view:q(`#${scope}View`),body:q(`#${scope}Body`),archived:scope==='archive'}}
+  function cleanup(scope){
+    const {view}=scopeInfo(scope);if(!view)return;
+    q('.unified-select-head',view)?.remove();q('.unified-select-filter',view)?.remove();
+    qa('.unified-select-cell',view).forEach(x=>x.remove());
+  }
+  function syncToolbar(scope){
+    const count=picked[scope].size,single=count===1;
+    q(`#${scope}EditBtn`)?.toggleAttribute('disabled',taskActionBusy||!count);
+    q(`#${scope}DeleteBtn`)?.toggleAttribute('disabled',taskActionBusy||!count);
+    q(scope==='kanban'?'#kanbanArchiveBtn':'#archiveRestoreBtn')?.toggleAttribute('disabled',taskActionBusy||!count);
+  }
+  function decorate(scope){
+    const {view,body}=scopeInfo(scope);if(!view||!body)return;
+    const header=q('thead tr:first-child',view),filters=q('thead .column-filters',view);if(!header||!filters)return;
+    const rows=qa('tr[data-task-id]',body),visible=new Set(rows.map(r=>String(r.dataset.taskId)));
+    picked[scope]=new Set([...picked[scope]].filter(id=>visible.has(id)||state.tasks.some(t=>String(t.id)===id)));
+    rows.forEach(row=>{const selected=picked[scope].has(String(row.dataset.taskId));row.classList.toggle('task-selected',selected);row.setAttribute('aria-selected',String(selected));row.tabIndex=0});
+    syncToolbar(scope);
+  }
+  function installTaskSelection(){
+    if(typeof renderTasks!=='function'||typeof tableFilters==='undefined')return;
+    const base=renderTasks;
+    renderTasks=function(archived){const scope=archived?'archive':'kanban';cleanup(scope);const out=base(archived);decorate(scope);return out};
+    document.addEventListener('bamco-selection-change',e=>{const scope=e.target.closest('#archiveView')?'archive':e.target.closest('#kanbanView')?'kanban':null;if(!scope)return;picked[scope]=new Set(e.detail.ids);state.selected[scope]=picked[scope].size===1?Number([...picked[scope]][0]):null;decorate(scope)});
+    window.bamcoClearTaskSelection=()=>{for(const scope of ['kanban','archive'])window.bamcoSelection?.clear('#'+scope+'Body')};
+    renderTasks(false);renderTasks(true);
+  }
+  async function bulkAction(scope,kind){
+    const ids=[...picked[scope]];if(!ids.length||taskActionBusy)return;
+    if(kind==='edit'){if(ids.length!==1){toast('برای ویرایش فقط یک ردیف را انتخاب کنید.',true);return}const task=state.tasks.find(t=>String(t.id)===ids[0]);if(task)openTask(task);return}
+    if(kind==='restore'&&ids.some(id=>{const t=state.tasks.find(x=>String(x.id)===id);return !t?.owner_id||!t.start_date||!t.due_date})){if(ids.length===1){await restoreTask(Number(ids[0]));return}toast('برای بازگردانی گروهی، متولی و تاریخ شروع و پایان همه وظایف باید کامل باشد. موارد ناقص را تکی بازگردانید.',true);return}
+    const labels={archive:'تکمیل و آرشیو',restore:'بازگردانی به کانبان',delete:'حذف'};
     if(!await window.bamcoConfirm(`${labels[kind]} برای ${fa(ids.length)} وظیفه انتخاب‌شده انجام شود؟`))return;
     taskActionBusy=true;syncToolbar(scope);
     try{
