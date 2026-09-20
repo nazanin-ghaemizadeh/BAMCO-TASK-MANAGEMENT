@@ -45,18 +45,6 @@
       lifecycle.get(view)?.activate?.();emit('navigation-after',{from:previous,to:view});return true;
     }
   };
-  // Navigation is a kernel concern. Bind the stable shell once so feature
-  // modules cannot accidentally become the owner of view switching.
-  function bindShellNavigation(){
-    const nav=root.document?.querySelector?.('#nav');
-    if(!nav||nav.dataset.bamcoNavigationBound==='1')return;
-    nav.dataset.bamcoNavigationBound='1';
-    nav.addEventListener('click',event=>{
-      const button=event.target.closest?.('button[data-view]');
-      if(button&&!button.disabled)navigation.navigate(button.dataset.view);
-    });
-  }
   Bamco.state=state;Bamco.lifecycle={registerView,disposeView,on};Bamco.network=network;Bamco.navigation=navigation;
   root.BamcoNetwork=network;root.BamcoNavigation=navigation;
-  bindShellNavigation();
 })();
