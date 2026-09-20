@@ -4,10 +4,14 @@ const fs=require('node:fs');
 const {JSDOM}=require('jsdom');
 const read=file=>fs.readFileSync(file,'utf8');
 
-test('home exits at the document navigation boundary before delegated route handlers',()=>{
+test('home repair cannot take route ownership from canonical navigation',()=>{
  const src=read('assets/js/card-home.js');
- assert.match(src,/document\.addEventListener\('click',[^\n]*#nav button\[data-view\][^\n]*leaveHome\(\)[^\n]*,true\)/);
- assert.doesNotMatch(src,/nav\.addEventListener\('click',[^\n]*leaveHome\(\)[^\n]*,true\)/);
+ assert.match(src,/function ownsHomeRoute\(\)\{return typeof state==='undefined'\|\|!state\.view\|\|state\.view==='home'\}/);
+ assert.match(src,/if\(app\.classList\.contains\('hidden'\)\|\|!homeExpected\|\|!ownsHomeRoute\(\)\)return/);
+ assert.match(src,/function showHome\(\)\{homeExpected=true;if\(typeof state!=='undefined'\)state\.view='home';repairHome/);
+ const repair=src.slice(src.indexOf('function repairHome'),src.indexOf('function showHome'));
+ assert.doesNotMatch(repair,/state\.view\s*=\s*['"]home['"]/);
+ assert.doesNotMatch(src,/document\.addEventListener\('click',[^\n]*#nav button\[data-view\][^\n]*leaveHome/);
 });
 
 test('home settles in one paint instead of multi-second repair timers',()=>{
