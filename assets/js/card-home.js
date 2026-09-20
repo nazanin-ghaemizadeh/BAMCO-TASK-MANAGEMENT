@@ -90,7 +90,7 @@ function install(){
  function stickers(force=false){if(!force&&welcomeStickerReadyUser&&welcomeStickerReadyUser===state.user?.id)return Promise.resolve();if(welcomeStickerPromise&&!force)return welcomeStickerPromise;const generation=++welcomeStickerGeneration,job=loadWelcomeStickers(generation,force);welcomeStickerPromise=job;return job.finally(()=>{if(welcomeStickerPromise===job)welcomeStickerPromise=null})}
  q('#welcomeView')?.remove();
  window.bamcoPrepareWelcomeStickers=()=>stickers();window.addEventListener('bamco-stickers-ready',()=>stickers(true));document.addEventListener('bamco:stickers-changed',()=>stickers(true));
- let homeExpected=false,repairFrame=0,homeEpoch=0,homeLayoutReady=false,homeReadyGeneration=0;
+ let homeExpected=false,repairFrame=0,homeSettleFrame=0,homeEpoch=0,homeLayoutReady=false,homeReadyGeneration=0;
  const twoPaints=()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
  async function prepareHomeLayout(){
   if(homeLayoutReady||app.classList.contains('hidden'))return;
@@ -109,6 +109,7 @@ function install(){
  function leaveHome(){
   homeExpected=false;homeEpoch++;document.body.classList.remove('home-access-settled');
   if(repairFrame){cancelAnimationFrame(repairFrame);repairFrame=0}
+  if(homeSettleFrame){cancelAnimationFrame(homeSettleFrame);homeSettleFrame=0}
  }
  function resetHomeScroll(){
   try{window.scrollTo({top:0,left:0,behavior:'auto'})}catch{window.scrollTo(0,0)}
@@ -144,8 +145,9 @@ function install(){
  }
  function settleHome(){
   homeExpected=true;const epoch=++homeEpoch;
+  if(homeSettleFrame){cancelAnimationFrame(homeSettleFrame);homeSettleFrame=0}
   showHome();document.body.classList.add('home-access-settled');
-  requestAnimationFrame(()=>{if(epoch===homeEpoch&&homeBroken())repairHome()});
+  homeSettleFrame=requestAnimationFrame(()=>{homeSettleFrame=0;if(epoch===homeEpoch&&homeBroken())repairHome()});
  }
  function syncMode(){const loggedIn=!app.classList.contains('hidden'),atHome=!home.classList.contains('hidden');document.body.classList.toggle('card-home-active',loggedIn&&atHome);document.body.classList.toggle('content-only',loggedIn&&!atHome);if(homeExpected&&!dialog.open)scheduleHomeRepair()}
  const repairObserver=new MutationObserver(scheduleHomeRepair);
