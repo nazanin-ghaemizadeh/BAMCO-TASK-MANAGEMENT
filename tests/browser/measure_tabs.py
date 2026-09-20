@@ -81,7 +81,10 @@ async def assert_dashboard_mobile(page):
         ) for x in detailed
     ), data
     assert all(x['w'] <= data['innerWidth'] + 1 and x['overflow']=='hidden' and not x['scroll'] for x in compact), data
-    assert len(data['columns'].split()) == 1, f"dashboard is not one column: {data}"
+    # Computed CSS keeps spaces inside minmax(), so whitespace splitting
+    # counts function arguments rather than grid tracks.
+    tracks=[part for part in data['columns'].split(')') if part.strip()]
+    assert len(tracks) == 1, f"dashboard is not one column: {data}"
 
 async def assert_automated_message_route(page):
     await home(page);await page.locator('#nav button[data-view="directMessages"]').click();await settled(page,'directMessages')
