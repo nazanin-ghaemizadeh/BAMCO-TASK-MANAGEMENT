@@ -156,7 +156,7 @@ function install(){
  repairObserver.observe(home,{attributes:true,attributeFilter:['class','style','hidden']});
  repairObserver.observe(top,{attributes:true,attributeFilter:['class','style','hidden']});
  new MutationObserver(syncMode).observe(home,{attributes:true,attributeFilter:['class']});
- nav.addEventListener('click',e=>{if(e.target.closest('button[data-view]'))leaveHome()},true);
+ document.addEventListener('click',e=>{if(e.target.closest('#nav button[data-view]'))leaveHome()},true);
  window.bamcoLeaveHome=leaveHome;
  window.bamcoShowHome=settleHome;
  let welcomed=false;
