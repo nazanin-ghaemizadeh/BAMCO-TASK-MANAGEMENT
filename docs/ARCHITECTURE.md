@@ -35,6 +35,11 @@ Responsibility-based names are intentional. Files formerly named as dated fixes 
 - Messages and conversations own message rendering, conversation state, notifications, stickers, and message history.
 - Reports consume normalized task/request/message data and do not redefine task status semantics.
 - Vehicles, documents/sites, stickers, Excel, and settings own their own domain workflows.
+- `organization-structure.js` owns the organization tree, position assignment and policy presentation.
+- `approval-center.js` owns the central workbench; its server source is `organization_workflows`, not a user-defined chain.
+- `project-management.js` owns projects and WBS presentation while reusing the canonical `tasks` table through `project_items.task_id`.
+- `part-catalog.js` owns the part master, engineering JSON specifications, BOM and cross-domain links.
+- `financial-obligations.js` owns invoices and staged payments; notification and audit delivery remain shared server concerns.
 - Shared table, dialog, toast, form, date, formatting, and media behavior belongs in the shared modules and is consumed by domains.
 
 When a concern spans domains, the shared owner is extended first. A second renderer or a post-render repair script is not an acceptable boundary.
@@ -114,3 +119,17 @@ Behavioral tests protect existing product workflows. Startup tests protect the s
 7. Update the build manifest only if a new source module is required, then rebuild and check generated assets.
 
 Do not add a file whose purpose is to fix, override, repair, or rebind another feature after it renders. Move the behavior into the module that owns it and delete the superseded implementation after the tests pass.
+
+## Platform foundation (2026-09-20)
+
+`supabase/migrations/20260920120000_organizational_platform.sql` adds the next source of truth without copying users or roles into feature modules:
+
+- `organization_units`, `organization_positions`, `organization_position_assignments`, and `organization_position_acting` model the tree, people, roles and future acting assignments.
+- `permission_catalog` and `organization_role_permissions` combine permission with organizational scope through `organization_scope_user_ids` and `organization_has_permission`.
+- `approval_policies`, `organization_workflows`, and `organization_workflow_steps` route new and active requests from the real hierarchy. The old `approval_chain*` rows remain only as historical storage; the retired compatibility marker has no UI or write path.
+- `projects`, `project_items`, and `project_dependencies` provide WBS, the four dependency types, lag/lead, cycle prevention, and weighted progress calculation. A project item can reference the canonical task engine through `task_id`.
+- `parts` plus BOM, vehicle, project, test and history tables provide the part master without changing vehicle or test ownership.
+- `invoices` and `invoice_payments` provide staged obligations and auditable payment records.
+- `audit_trail` and the existing central notification path are used by the new tables and workflow transitions.
+
+The migration deliberately does not physically delete legacy request history. It clears the legacy chain reference for newly routed requests and keeps historical rows queryable, so old approvals remain explainable while all new routing has one active engine.

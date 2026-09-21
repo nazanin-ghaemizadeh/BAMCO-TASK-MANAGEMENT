@@ -17,7 +17,7 @@ function install(){
   ['messages',['messages','messageCenter','sentMessages','responseTracking','stickers']],
   ['reports',['dashboard','performanceReport','responseReport','pettyCash','requestReport']],
   ['configuration',['systemOptions','settings','alertSettings','emailSettings']],
-  ['tasks',['kanban','archive','taskTimeline','approvals','requestHistory','approvalChains']],
+  ['tasks',['kanban','archive','taskTimeline','approvals','requestHistory']],
   ['vehicle',['vehiclePermanent','vehicleTemporary']],
   ['conversations',['groupChat','directMessages','taskChats']],
   ['resources',['documents','letters','sitesAccess']],

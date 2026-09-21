@@ -11,7 +11,7 @@ test('every navigation destination has one consistent toolbar return and release
  const f=await fixture({styles:true,tables:{tasks:[task]}}),{w,d}=f;t.after(()=>f.dispose());
  const routes=[...new Set([...d.querySelectorAll('#nav [data-view]')].map(b=>b.dataset.view))];assert(routes.length>=20);
  assert(!routes.includes('emailSettings'));assert(!routes.includes('alertSettings'));
- for(const route of routes){
+ for(const route of routes.filter(route=>!['projects','parts','invoices','organization'].includes(route))){
   await t.test(route,async()=>{
    await f.open(route);await pause(100);const view=d.querySelector('#'+route+'View');
    const backs=view.querySelectorAll('.content-back,[data-empty-home]');assert.equal(backs.length,1,route+' duplicate return');const back=backs[0];
@@ -23,6 +23,7 @@ test('every navigation destination has one consistent toolbar return and release
    back.click();await pause(20);assert.equal(w.getComputedStyle(view).display,'none');assert(!d.querySelector('#homeView').classList.contains('hidden'));assert.equal(d.querySelector('#nav button.active'),null);
   });
  }
+ for(const route of ['projects','parts','invoices','organization']){await f.open(route);const view=d.querySelector('#'+route+'View');assert(view);assert.equal(view.querySelectorAll('.content-back,[data-empty-home]').length,0,route+' must not add a redundant back control');}
  assert.deepEqual(f.errors,[]);
 });
 
@@ -43,12 +44,8 @@ test('dashboard date controls, templates, sticker picker, chain form and Gantt a
   await f.open('stickers');d.querySelector('#stickerNew').click();assert(d.querySelector('#stickerPackDialog').open);assert.equal(d.querySelectorAll('.sticker-pick').length,10);
   let fileClicks=0;d.querySelector('#stickerFile').addEventListener('click',()=>fileClicks++);for(const button of d.querySelectorAll('.sticker-pick'))button.click();assert.equal(fileClicks,10);d.querySelector('[data-sticker-close]').click();assert(!d.querySelector('#stickerPackDialog').open);
  });
- await t.test('chain creation submits member and both approval stages, then toggles its status',async()=>{
-  await f.open('approvalChains');await until(()=>d.querySelector('#approvalChainForm select[name=members]').options.length);
-  const form=d.querySelector('#approvalChainForm');form.elements.name.value='زنجیرهٔ آزمایشی';
-  for(const key of ['members','stage1_approvers','stage2_approvers'])form.elements[key].options[key==='members'?1:0].selected=true;
-  form.requestSubmit();await until(()=>f.tables.approval_stage_approvers.length===2);await until(()=>d.querySelector('.chain-toggle'));assert.equal(f.tables.approval_chain_stages.length,2);
-  d.querySelector('.chain-toggle').click();await until(()=>f.tables.approval_chains[0].active===false);
+ await t.test('organization tree is the only approval configuration surface',async()=>{
+  await f.open('organization');assert(d.querySelector('#organizationFeatureRoot'));assert(d.querySelector('[data-org-action="position"]'));assert.equal(d.querySelector('#approvalChainForm'),null);
  });
  await t.test('calendar/Gantt, month navigation and unscheduled panel remain bound after toolbar movement',async()=>{
   await f.open('taskTimeline');d.querySelector('[data-mode=gantt]').click();assert(d.querySelector('.tt-gantt'));assert(d.querySelector('.tt-gantt').style.getPropertyValue('--day-count'));assert.match(d.querySelector('.tt-bar').style.width,/%/);assert.equal(d.querySelector('.tt-track').style.width,'');
