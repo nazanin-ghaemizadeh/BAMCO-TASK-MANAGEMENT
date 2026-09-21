@@ -97,7 +97,7 @@
   function install(){
     // One return handler, independent of stale navigation state or page loaders.
     document.addEventListener('click',e=>{
-      if(!e.target.closest('.content-back,[data-empty-home]'))return;
+      if(!e.target.closest('.content-back,[data-empty-home],[data-home-action]'))return;
       e.preventDefault();e.stopImmediatePropagation();
       document.querySelectorAll('#nav button.active').forEach(b=>b.classList.remove('active'));
       window.bamcoConversations?.close();window.bamcoChat?.close();window.bamcoShowHome?.();

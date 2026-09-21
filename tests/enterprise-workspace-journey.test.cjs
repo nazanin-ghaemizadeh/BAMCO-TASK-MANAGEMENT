@@ -7,6 +7,7 @@ const field = (form, name, value) => { form.elements[name].value = value; };
 
 test('enterprise pages keep a stable shared shell and persist the project, part and invoice journeys', async t => {
   const f = await fixture({
+    realNotices: true,
     fetchResult: async ({ endpoint, method, tables }) => {
       if (endpoint === 'organization_positions' && method === 'POST') tables.organization_positions.at(-1).active = true;
       if (endpoint === 'organization_positions' && method === 'DELETE') {
@@ -31,7 +32,10 @@ test('enterprise pages keep a stable shared shell and persist the project, part 
     assert(view, `${route} view exists statically`);
     assert.equal(view.classList.contains('bamco-interior'), false, `${route} keeps its own page layout`);
     assert.ok(view.querySelector('.enterprise-feature-root > .enterprise-toolbar'), `${route} uses the shared static enterprise header`);
-    if (route === 'organization') assert.equal(view.querySelectorAll('.content-back').length, 1, 'organization has one explicit return-to-home control');
+    if (route === 'organization') {
+      assert.equal(view.querySelectorAll('.content-back').length, 0, 'organization does not inherit legacy return-to-home listeners');
+      assert.equal(view.querySelectorAll('[data-home-action]').length, 1, 'organization has one explicit return-to-home control');
+    }
     else assert.equal(view.querySelector('.content-back'), null, `${route} has no implicit return-to-home control`);
   }
 
@@ -71,9 +75,12 @@ test('enterprise pages keep a stable shared shell and persist the project, part 
   assertActiveRoute('organization');
   d.querySelector('[data-org-edit="1000"]').click();
   d.querySelector('[data-org-delete]').click();
+  await until(() => d.querySelector('#bamcoNoticeDialog')?.open);
+  assertActiveRoute('organization');
+  d.querySelector('[data-notice-ok]').click();
   await until(() => tables.organization_positions.length === 0);
   assertActiveRoute('organization');
-  d.querySelector('[data-org-home]').click();
+  d.querySelector('[data-home-action]').click();
   assert.equal(d.querySelector('#homeView').classList.contains('hidden'), false, 'organization return control returns to home');
 
   await f.open('projects');
