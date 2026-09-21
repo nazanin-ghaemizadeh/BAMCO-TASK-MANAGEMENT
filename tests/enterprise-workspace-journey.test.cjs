@@ -9,6 +9,11 @@ test('enterprise pages keep a stable shared shell and persist the project, part 
   const f = await fixture({
     fetchResult: async ({ endpoint, method, tables }) => {
       if (endpoint === 'organization_positions' && method === 'POST') tables.organization_positions.at(-1).active = true;
+      if (endpoint === 'organization_positions' && method === 'DELETE') {
+        tables.organization_positions.splice(0, tables.organization_positions.length);
+        tables.organization_position_assignments.splice(0, tables.organization_position_assignments.length);
+        return [];
+      }
     },
     tables: {
     projects: [], project_items: [], project_dependencies: [],
@@ -26,7 +31,8 @@ test('enterprise pages keep a stable shared shell and persist the project, part 
     assert(view, `${route} view exists statically`);
     assert.equal(view.classList.contains('bamco-interior'), false, `${route} keeps its own page layout`);
     assert.ok(view.querySelector('.enterprise-feature-root > .enterprise-toolbar'), `${route} uses the shared static enterprise header`);
-    assert.equal(view.querySelector('.content-back'), null, `${route} has no implicit return-to-home control`);
+    if (route === 'organization') assert.equal(view.querySelectorAll('.content-back').length, 1, 'organization has one explicit return-to-home control');
+    else assert.equal(view.querySelector('.content-back'), null, `${route} has no implicit return-to-home control`);
   }
 
   const assertActiveRoute = route => {
@@ -35,19 +41,40 @@ test('enterprise pages keep a stable shared shell and persist the project, part 
   };
 
   await f.open('organization');
+  assert.deepEqual([...d.querySelectorAll('#organizationFeatureRoot .enterprise-toolbar button')].map(button => button.textContent.trim()), ['بازگشت به خانه', '＋ جایگاه جدید']);
+  assert.equal(d.querySelector('[data-org-action="unit"]'), null);
+  assert.equal(d.querySelector('[data-org-action="refresh"]'), null);
   d.querySelector('[data-org-action="position"]').click();
   const positionForm = d.querySelector('#organizationPositionForm');
+  assert.equal(positionForm.elements.code, undefined);
+  assert.equal(positionForm.elements.unit_id, undefined);
   field(positionForm, 'title', 'مدیر برنامه‌ریزی');
-  field(positionForm, 'code', 'PLAN-MGR');
   field(positionForm, 'role_id', '1');
   field(positionForm, 'user_id', 'test-owner');
   positionForm.elements.title.dispatchEvent(new w.Event('input', { bubbles: true }));
   assertActiveRoute('organization');
   submit(w, positionForm);
   await until(() => tables.organization_positions.length === 1 && tables.organization_position_assignments.length === 1);
+  assert.match(tables.organization_positions[0].code, /^ORG-/);
   assert.equal(tables.organization_position_assignments[0].user_id, 'test-owner');
   await until(() => /مدیر برنامه‌ریزی/.test(d.querySelector('#organizationFeatureRoot').textContent));
   assert.match(d.querySelector('#organizationFeatureRoot').textContent, /مدیر برنامه‌ریزی/);
+  d.querySelector('[data-org-edit="1000"]').click();
+  const editPositionForm = d.querySelector('#organizationPositionForm');
+  assert.equal(d.querySelector('#organizationPositionDialog').open, true);
+  assert.equal(editPositionForm.elements.title.value, 'مدیر برنامه‌ریزی');
+  assert.equal(editPositionForm.elements.user_id.value, 'test-owner');
+  assert.equal(d.querySelector('[data-org-delete]').classList.contains('hidden'), false);
+  field(editPositionForm, 'title', 'مدیر برنامه‌ریزی و کنترل');
+  submit(w, editPositionForm);
+  await until(() => tables.organization_positions[0].title === 'مدیر برنامه‌ریزی و کنترل');
+  assertActiveRoute('organization');
+  d.querySelector('[data-org-edit="1000"]').click();
+  d.querySelector('[data-org-delete]').click();
+  await until(() => tables.organization_positions.length === 0);
+  assertActiveRoute('organization');
+  d.querySelector('[data-org-home]').click();
+  assert.equal(d.querySelector('#homeView').classList.contains('hidden'), false, 'organization return control returns to home');
 
   await f.open('projects');
   d.querySelector('[data-project-action="new"]').click();

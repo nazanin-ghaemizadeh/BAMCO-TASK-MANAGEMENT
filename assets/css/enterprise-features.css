@@ -53,7 +53,7 @@
 .part-related-grid>section{border-top:1px solid var(--line);padding-top:8px}
 .part-related-grid h4{margin:0 0 7px}
 
-.organization-grid{grid-template-columns:minmax(0,1.45fr) minmax(260px,.75fr)}
+.organization-grid{grid-template-columns:minmax(0,1fr)}
 .organization-chart-panel{min-height:420px}
 .organization-chart{min-height:330px;overflow:auto;padding:18px 12px 10px;background:linear-gradient(180deg,#f8fbf9 0%,#fff 100%);border:1px solid #e4ece8;border-radius:12px}
 .organization-chart-tree,.organization-chart-tree ul{display:flex;justify-content:center;list-style:none;margin:0;padding:20px 0 0;position:relative;min-width:max-content}
@@ -73,11 +73,6 @@
 .org-chart-copy b{font-size:14px}
 .org-chart-copy small{color:var(--muted);font-size:12px}
 .org-chart-copy em{justify-self:center;padding:2px 8px;border-radius:999px;background:var(--green-50);color:var(--green-900);font-size:11px;font-style:normal}
-.org-chart-add{margin-top:7px;padding:3px 7px;font-size:11px}
-.organization-role-list{display:grid;gap:6px;margin-bottom:16px}
-.organization-role-list>div{display:flex;justify-content:space-between;gap:8px;padding:8px 10px;border-bottom:1px solid #e3ebe7}
-.organization-role-list span{color:var(--muted);font-size:12px}
-.organization-directory-note{padding:10px;border-radius:9px;background:var(--green-50);color:var(--muted);font-size:12px;line-height:1.8}
 .enterprise-modal{width:min(860px,calc(100vw - 24px))}
 .enterprise-modal .form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 

@@ -58,9 +58,18 @@ test('enterprise navigation places new modules in the approved groups', () => {
 test('organization view is a visual position tree and preserves one primary assignment source', () => {
   const organization = read('assets/js/organization-structure.js');
   const people = read('assets/js/shell.js');
+  const catalog = read('assets/js/navigation-registry.js');
   const migration = read('supabase/migrations/20260921103000_organization_people_root_refactor.sql');
   assert.match(organization, /org-chart-circle/);
   assert.match(organization, /فرد شاغل در این جایگاه/);
+  assert.match(organization, /data-org-home/);
+  assert.match(organization, /data-org-delete/);
+  assert.match(organization, /سمت — فرد شاغل/);
+  assert.doesNotMatch(organization, /data-org-action="unit"/);
+  assert.doesNotMatch(organization, /data-org-action="refresh"/);
+  assert.doesNotMatch(organization, /name="code"/);
+  assert.doesNotMatch(organization, /name="unit_id"/);
+  assert.match(catalog, /noHomeReturnRoutes = new Set\(\['projects', 'parts', 'invoices', 'tools'\]\)/);
   assert.match(organization, /userOrganization/);
   assert.match(people, /نقش سازمانی/);
   assert.doesNotMatch(people, /name="role"><option value="owner">متولی/);

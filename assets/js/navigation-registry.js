@@ -18,6 +18,6 @@
   const byKey = Object.freeze(Object.fromEntries(groups.map(group => [group.key, group])));
   const routeGroup = Object.freeze(Object.fromEntries(groups.flatMap(group => group.routes.map(route => [route, group.key]))));
   const standaloneLayoutRoutes = Object.freeze(new Set(['projects', 'parts', 'invoices', 'organization', 'tools']));
-  const noHomeReturnRoutes = standaloneLayoutRoutes;
+  const noHomeReturnRoutes = new Set(['projects', 'parts', 'invoices', 'tools']);
   window.BamcoNavigationCatalog = Object.freeze({ groups, byKey, routeGroup, standaloneLayoutRoutes, noHomeReturnRoutes });
 })();
