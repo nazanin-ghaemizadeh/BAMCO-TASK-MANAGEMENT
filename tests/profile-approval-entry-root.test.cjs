@@ -58,7 +58,7 @@ test('default request ordering is newest first, deterministic for ties and non-m
  const source=read('assets/js/app.js'),start=source.indexOf('function newestRequestRows('),end=source.indexOf('function renderRequests()',start),ctx={};vm.createContext(ctx);vm.runInContext(source.slice(start,end),ctx);
  const input=[{id:1,created_at:'2026-09-17T00:00:00Z'},{id:2,created_at:'2026-09-19T00:00:00Z'},{id:9,created_at:'2026-09-19T00:00:00Z'},{id:99,created_at:'invalid'}];
  assert.deepEqual(Array.from(ctx.newestRequestRows(input),x=>x.id),[9,2,1,99]);assert.equal(input[0].id,1);
- assert.ok(source.includes('newestRequestRows(state.requests).map((r,index)=>'));assert.ok(source.includes('newestRequestRows(state.requestHistory)'));
+ assert.ok(source.includes('rows=newestRequestRows(workbenchRequestRows())'));assert.ok(source.includes('newestRequestRows(state.requestHistory)'));
  assert.doesNotMatch(read('assets/js/app.js'),/MutationObserver/);
 });
 test('entry first-paint styles are generated from the canonical layout, and home buttons reserve slots',()=>{
