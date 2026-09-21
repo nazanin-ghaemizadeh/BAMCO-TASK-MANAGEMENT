@@ -4,11 +4,10 @@
   'use strict';
   const E = window.bamcoEnterprise;
   if (!E) return;
-  const { q, esc, fa, fetchRows, insert, update, removeRows, setBusy, notify } = E;
+  const { q, esc, fa, fetchRows, rpc, removeRows, setBusy, notify } = E;
   const model = { roles: [], positions: [], assignments: [], loaded: false };
   let loading = null;
   const root = () => q('#organizationFeatureRoot');
-  const today = () => new Date().toISOString().slice(0, 10);
   const role = id => model.roles.find(item => String(item.id) === String(id));
   const position = id => model.positions.find(item => String(item.id) === String(id));
   const activeAssignment = positionId => model.assignments.find(item => String(item.position_id) === String(positionId) && item.is_primary && !item.valid_to);
@@ -19,7 +18,6 @@
   };
   const initial = item => esc(String(personLabel(activeAssignment(item.id)?.user_id) || item.title || 'س').trim().charAt(0) || 'س');
   const currentSession = (userId, snapshot) => state.user?.id === userId && !!state.token && (!snapshot || window.bamcoAuth?.isCurrent?.(snapshot) !== false);
-  const generatedCode = () => `ORG-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
 
   function userOrganization(userId) {
     const assignment = model.assignments.find(item => String(item.user_id) === String(userId) && item.is_primary && !item.valid_to);
@@ -53,7 +51,7 @@
     host.innerHTML = `<div class="feature-toolbar enterprise-toolbar"><div><h3>ساختار سازمانی</h3><p>روی هر دایره بزنید تا عنوان سمت، نقش، بالادست و فرد شاغل آن را ویرایش کنید.</p></div><div class="feature-toolbar-actions"><button type="button" class="ghost" data-org-home data-home-action>بازگشت به خانه</button><button type="button" class="primary" data-org-action="position">＋ جایگاه جدید</button></div></div>
       <div class="enterprise-grid organization-grid"><section class="panel organization-chart-panel"><div class="panel-head"><div><h3>نمودار سازمانی</h3><small>نقش و شخص از جایگاه جدا هستند؛ رابطهٔ بالادست فقط در همین درخت نگهداری می‌شود.</small></div><span class="enterprise-count">${fa(model.positions.length)} جایگاه</span></div><div class="organization-chart" aria-label="نمودار سازمانی">${model.positions.length ? `<ul class="organization-chart-tree">${chart()}</ul>` : '<div class="empty">برای شروع، «جایگاه جدید» را بزنید.</div>'}</div></section></div>
       <dialog id="organizationPositionDialog" class="modal enterprise-modal"><form id="organizationPositionForm"><div class="modal-head"><div><h3 id="organizationPositionDialogTitle">جایگاه سازمانی جدید</h3><p>این چهار داده مستقیماً نمودار، محدودهٔ سازمانی و گردش تأیید را به‌روزرسانی می‌کنند.</p></div><button type="button" data-org-close>×</button></div><input type="hidden" name="id"><div class="form-grid"><label class="span-2">عنوان سمت<input name="title" required placeholder="مثلاً رئیس برنامه‌ریزی"></label><label>نقش سازمانی<select name="role_id" required></select></label><label>بالادست سازمانی<select name="parent_position_id"><option value="">بدون بالادست</option></select><small>فهرست به‌صورت «سمت — فرد شاغل» نمایش داده می‌شود.</small></label><label class="span-2">فرد شاغل در این جایگاه<select name="user_id"><option value="">جایگاه خالی</option></select><small>فهرست از «افراد و نقش‌ها» خوانده می‌شود.</small></label></div><div class="modal-actions"><button type="button" class="danger hidden" data-org-delete>حذف جایگاه</button><span class="modal-actions-spacer"></span><button type="button" class="ghost" data-org-close>انصراف</button><button type="submit" class="primary">ذخیره جایگاه</button></div></form></dialog>`;
-    bind();
+    bindPositionForm(); bind();
   }
 
   function fillPositionForm(current = null) {
@@ -88,33 +86,25 @@
     return false;
   }
 
-  async function setAssignment(positionId, userId, actorId) {
-    const current = activeAssignment(positionId);
-    if (String(current?.user_id || '') === String(userId || '')) return;
-    const occupied = userId && model.assignments.find(item => String(item.user_id) === String(userId) && item.is_primary && !item.valid_to && String(item.position_id) !== String(positionId));
-    if (occupied) await update('organization_position_assignments', `id=eq.${encodeURIComponent(occupied.id)}`, { is_primary: false, valid_to: today() });
-    if (current) await update('organization_position_assignments', `id=eq.${encodeURIComponent(current.id)}`, { is_primary: false, valid_to: today() });
-    if (userId) await insert('organization_position_assignments', { position_id: positionId, user_id: userId, assigned_by: actorId, is_primary: true, valid_from: today() });
-  }
-
   async function savePosition(event) {
     event.preventDefault(); event.stopPropagation();
-    const form = event.target, button = q('[type=submit]', form), id = form.elements.id.value, actorId = state.user?.id, snapshot = window.bamcoAuth?.snapshot?.();
+    const form = event.currentTarget?.id === 'organizationPositionForm' ? event.currentTarget : q('#organizationPositionForm');
+    if (!form) return;
+    const button = q('[type=submit]', form), id = form.elements.id.value, actorId = state.user?.id, snapshot = window.bamcoAuth?.snapshot?.();
     if (!actorId) return notify('نشست کاربری معتبر نیست؛ صفحه را دوباره باز کنید.', true);
     const parentId = form.elements.parent_position_id.value ? Number(form.elements.parent_position_id.value) : null;
     if (id && createsCycle(id, parentId)) return notify('نمی‌توان یک جایگاه را زیرمجموعهٔ خودش یا یکی از زیرمجموعه‌هایش قرار داد.', true);
-    const payload = { title: form.elements.title.value.trim(), role_id: Number(form.elements.role_id.value), parent_position_id: parentId };
-    if (!payload.title || !payload.role_id) return notify('عنوان سمت و نقش سازمانی الزامی است.', true);
+    const payload = { p_title: form.elements.title.value.trim(), p_role_id: Number(form.elements.role_id.value), p_parent_position_id: parentId, p_user_id: form.elements.user_id.value || null, p_position_id: id ? Number(id) : null };
+    if (!payload.p_title || !payload.p_role_id) return notify('عنوان سمت و نقش سازمانی الزامی است.', true);
     setBusy(button, true);
     try {
-      const rows = id
-        ? await update('organization_positions', `id=eq.${encodeURIComponent(id)}`, payload)
-        : await insert('organization_positions', { ...payload, code: generatedCode(), created_by: actorId });
+      const saved = await rpc('save_organization_position', payload);
       if (!currentSession(actorId, snapshot)) return;
-      const positionId = Number(id || rows?.[0]?.id); if (!positionId) throw new Error('ذخیره جایگاه تأیید نشد.');
-      await setAssignment(positionId, form.elements.user_id.value || null, actorId);
+      if (!saved?.position_id) throw new Error('ذخیره جایگاه تأیید نشد.');
+      q('#organizationPositionDialog')?.close();
+      await load({ ensureProfiles: false, force: true });
       if (!currentSession(actorId, snapshot)) return;
-      q('#organizationPositionDialog')?.close(); await load({ ensureProfiles: false, force: true }); notify('جایگاه سازمانی ذخیره شد.');
+      notify('جایگاه سازمانی ذخیره شد.');
     } catch (error) { notify(error?.message || 'ذخیره جایگاه انجام نشد.', true); } finally { setBusy(button, false); }
   }
 
@@ -129,6 +119,16 @@
     } catch (error) { notify(error?.message || 'حذف جایگاه انجام نشد.', true); } finally { setBusy(button, false); }
   }
 
+  function bindPositionForm() {
+    const form = q('#organizationPositionForm');
+    if (!form || form.dataset.orgSubmitBound === '1') return;
+    // A missed delegated listener must never fall back to navigation: this app
+    // intentionally keeps its authenticated session only in memory.
+    form.dataset.orgSubmitBound = '1';
+    form.setAttribute('method', 'dialog');
+    form.addEventListener('submit', event => { void savePosition(event); });
+  }
+
   function bind() {
     const host = root(); if (!host || host.dataset.bound === '1') return;
     host.dataset.bound = '1';
@@ -139,7 +139,6 @@
       const remove = event.target.closest('[data-org-delete]'); if (remove?.dataset.orgDelete) { event.preventDefault(); void deletePosition(remove.dataset.orgDelete, remove); return; }
       if (event.target.closest('[data-org-close]')) event.target.closest('dialog')?.close();
     });
-    host.addEventListener('submit', event => { if (event.target.id === 'organizationPositionForm') void savePosition(event); });
   }
 
   async function load({ ensureProfiles = true, force = false } = {}) {

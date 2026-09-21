@@ -52,6 +52,19 @@ async function fixture(options={}){
     tables.approval_chains.push({id,name:body.p_name,is_default:body.p_is_default,active:true,superseded_by:null});body.p_member_ids.forEach(user_id=>tables.approval_chain_members.push({chain_id:id,user_id}));
     body.p_stages.forEach((s,i)=>{const sid=1000+tables.approval_chain_stages.length;tables.approval_chain_stages.push({id:sid,chain_id:id,stage_no:i+1,title:s.title,approval_rule:s.rule});s.approvers.forEach(approver_id=>tables.approval_stage_approvers.push({stage_id:sid,approver_id}))});data=id;
    }
+   if(endpoint==='save_organization_position'){
+    let position=body.p_position_id==null?null:tables.organization_positions.find(row=>String(row.id)===String(body.p_position_id));
+    if(position)Object.assign(position,{title:body.p_title,role_id:body.p_role_id,parent_position_id:body.p_parent_position_id,updated_at:new Date().toISOString()});
+    else{position={id:1000+tables.organization_positions.length,code:'ORG-TEST-'+(1000+tables.organization_positions.length),title:body.p_title,role_id:body.p_role_id,parent_position_id:body.p_parent_position_id,created_by:actor.id,active:true};tables.organization_positions.push(position)}
+    const primary=tables.organization_position_assignments.filter(row=>row.is_primary&&!row.valid_to);
+    const current=primary.find(row=>String(row.position_id)===String(position.id));
+    if(String(current?.user_id||'')!==String(body.p_user_id||'')){
+     primary.filter(row=>String(row.position_id)===String(position.id)||(body.p_user_id&&String(row.user_id)===String(body.p_user_id))).forEach(row=>{row.is_primary=false;row.valid_to=new Date().toISOString().slice(0,10)});
+     if(body.p_user_id)tables.organization_position_assignments.push({id:1000+tables.organization_position_assignments.length,position_id:position.id,user_id:body.p_user_id,assigned_by:actor.id,is_primary:true,valid_from:new Date().toISOString().slice(0,10)});
+    }
+    const assignment=tables.organization_position_assignments.find(row=>String(row.position_id)===String(position.id)&&row.is_primary&&!row.valid_to);
+    data={position_id:position.id,assignment_id:assignment?.id||null,title:position.title};
+   }
    if(endpoint==='task_status_view')data=actor.role==='manager'?(tables.tasks||[]):(tables.tasks||[]).filter(t=>t.owner_id===actor.id);
    if(endpoint==='sent_message_dataset_version')data='sent-fixture-v1';
    if(endpoint==='dismiss_my_inbox'){

@@ -29,9 +29,10 @@
   const fetchRows = (table, query) => requireOperation('selectAll')(table, query || 'select=*');
   const insert = requireOperation('insert');
   const update = requireOperation('update');
+  const rpc = requireOperation('rpc');
   const removeRows = (table, filter) => api(`/rest/v1/${table}?${filter}`, { method: 'DELETE', prefer: 'return=minimal' });
   const refresh = () => { if (typeof window.refresh === 'function') return window.refresh(); return Promise.resolve(); };
   const notify = (message, error = false) => typeof toast === 'function' ? toast(message, error) : undefined;
   const viewActive = view => !q(`#${view}View`)?.classList.contains('hidden');
-  root.bamcoEnterprise = Object.freeze({ q, qa, esc, fa, money, date, dateTime, progress, statusText, personName, setBusy, fetchRows, insert, update, removeRows, refresh, notify, viewActive });
+  root.bamcoEnterprise = Object.freeze({ q, qa, esc, fa, money, date, dateTime, progress, statusText, personName, setBusy, fetchRows, insert, update, rpc, removeRows, refresh, notify, viewActive });
 })();

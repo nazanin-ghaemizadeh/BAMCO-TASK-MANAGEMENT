@@ -77,3 +77,19 @@ test('organization view is a visual position tree and preserves one primary assi
   assert.match(migration, /organization_position_parent_is_acyclic/);
   assert.match(migration, /sync_profile_primary_position/);
 });
+
+test('organization position save owns the submit event and commits through one guarded RPC', () => {
+  const organization = read('assets/js/organization-structure.js');
+  const enterprise = read('assets/js/enterprise-core.js');
+  const migration = read('supabase/migrations/20260921160000_organization_position_atomic_save.sql');
+  assert.match(organization, /form\.setAttribute\('method', 'dialog'\)/);
+  assert.match(organization, /form\.addEventListener\('submit', event => \{ void savePosition\(event\); \}\)/);
+  assert.match(organization, /rpc\('save_organization_position', payload\)/);
+  assert.doesNotMatch(organization, /setAssignment|generatedCode/);
+  assert.match(enterprise, /const rpc = requireOperation\('rpc'\)/);
+  assert.match(migration, /create or replace function public\.save_organization_position/);
+  assert.match(migration, /security invoker/);
+  assert.match(migration, /pg_catalog\.pg_advisory_xact_lock/);
+  assert.match(migration, /revoke all on function public\.save_organization_position/);
+  assert.match(migration, /grant execute on function public\.save_organization_position[\s\S]*to authenticated/);
+});

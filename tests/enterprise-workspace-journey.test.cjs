@@ -23,7 +23,7 @@ test('enterprise pages keep a stable shared shell and persist the project, part 
     organization_roles: [{ id: 1, title: 'مدیر', level_no: 4, active: true }],
     organization_units: [], organization_positions: [], organization_position_assignments: [], approval_policies: []
   } });
-  const { w, d, tables } = f;
+  const { w, d, tables, calls } = f;
   t.after(() => f.dispose());
 
   for (const route of ['projects', 'parts', 'invoices', 'organization', 'tools']) {
@@ -52,15 +52,22 @@ test('enterprise pages keep a stable shared shell and persist the project, part 
   const positionForm = d.querySelector('#organizationPositionForm');
   assert.equal(positionForm.elements.code, undefined);
   assert.equal(positionForm.elements.unit_id, undefined);
+  assert.equal(positionForm.getAttribute('method'), 'dialog', 'the position form cannot fall back to a page navigation');
+  let positionSubmitWasPrevented = false;
+  positionForm.addEventListener('submit', event => { positionSubmitWasPrevented = event.defaultPrevented; });
   field(positionForm, 'title', 'مدیر برنامه‌ریزی');
   field(positionForm, 'role_id', '1');
   field(positionForm, 'user_id', 'test-owner');
   positionForm.elements.title.dispatchEvent(new w.Event('input', { bubbles: true }));
   assertActiveRoute('organization');
   submit(w, positionForm);
+  assert.equal(positionSubmitWasPrevented, true, 'the form owns its submit event before any delegated handler');
   await until(() => tables.organization_positions.length === 1 && tables.organization_position_assignments.length === 1);
   assert.match(tables.organization_positions[0].code, /^ORG-/);
   assert.equal(tables.organization_position_assignments[0].user_id, 'test-owner');
+  assert.equal(calls.filter(call => call.endpoint === 'save_organization_position' && call.method === 'POST').length, 1);
+  assert.deepEqual(calls.filter(call => ['organization_positions', 'organization_position_assignments'].includes(call.endpoint) && ['POST', 'PATCH'].includes(call.method)), [], 'position and assignment persistence is one atomic RPC');
+  assert.equal(d.querySelector('#appView').classList.contains('hidden'), false, 'saving a position keeps the authenticated app visible');
   await until(() => /مدیر برنامه‌ریزی/.test(d.querySelector('#organizationFeatureRoot').textContent));
   assert.match(d.querySelector('#organizationFeatureRoot').textContent, /مدیر برنامه‌ریزی/);
   d.querySelector('[data-org-edit="1000"]').click();
