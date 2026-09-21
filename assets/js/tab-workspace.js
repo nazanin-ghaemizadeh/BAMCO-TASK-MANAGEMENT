@@ -38,8 +38,7 @@ window.bamcoExportTable=async(table)=>{const view=table.closest('.view'),id=view
  if(view.classList.contains('vehicle-view')&&window.bamcoExportVehicle)return window.bamcoExportVehicle(id);
  if(datasets.has(id.replace(/View$/,'')))return exportReport(id.replace(/View$/,''));
  const chosen=new Set(window.bamcoSelection.ids(table)),headers=[...table.tHead.rows[0].cells].map(th=>th.textContent.trim());let rows;
- if(id==='peopleView')rows=(state.profiles||[]).filter(p=>!chosen.size||chosen.has(p.id)).map(p=>[p.full_name||'',p.role==='manager'?'مدیر':'متولی',p.gender||'—',p.email||'—',p.login_name||'—',p.must_change_password?'رمز موقت؛ نیازمند تغییر':'تنظیم‌شده؛ غیرقابل نمایش',p.salutation||'—',p.active!==false?'بله':'خیر']);
- else if(window.bamcoTableData?.[id])rows=window.bamcoTableData[id]().filter(r=>!chosen.size||chosen.has(r.id)).map(r=>r.values);
+ if(window.bamcoTableData?.[id])rows=window.bamcoTableData[id]().filter(r=>!chosen.size||chosen.has(r.id)).map(r=>r.values);
  else rows=[...(table.tBodies[0]?.rows||[])].filter(r=>!(r.cells.length===1&&r.cells[0].colSpan>1)&&(!chosen.size||chosen.has(window.bamcoSelection.key(r)))).map(r=>[...r.cells].map(c=>c.querySelector('select')?.selectedOptions[0]?.textContent||c.textContent.trim()));
  const X=await window.ensureBamcoXLSX(),ws=X.utils.aoa_to_sheet([headers,...rows]),wb=X.utils.book_new();wb.__bamcoPeopleBorders=['peopleView','loginActivityView','activeSessionsView'].includes(id);X.utils.book_append_sheet(wb,ws,'خروجی');X.writeFile(wb,(view.querySelector('h3')?.textContent||'جدول')+'.xlsx')};
 function bind(){
