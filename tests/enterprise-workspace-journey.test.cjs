@@ -5,7 +5,7 @@ const { fixture, until } = require('./helpers/app-fixture.cjs');
 const submit = (window, form) => form.dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true }));
 const field = (form, name, value) => { form.elements[name].value = value; };
 
-test('enterprise pages keep their own layout and persist the project, part and invoice journeys', async t => {
+test('enterprise pages keep a stable shared shell and persist the project, part and invoice journeys', async t => {
   const f = await fixture({
     fetchResult: async ({ endpoint, method, tables }) => {
       if (endpoint === 'organization_positions' && method === 'POST') tables.organization_positions.at(-1).active = true;
@@ -25,8 +25,14 @@ test('enterprise pages keep their own layout and persist the project, part and i
     const view = d.querySelector(`#${route}View`);
     assert(view, `${route} view exists statically`);
     assert.equal(view.classList.contains('bamco-interior'), false, `${route} keeps its own page layout`);
-    assert.equal(view.querySelector('.bamco-page-heading'), null, `${route} is not rewritten by the generic interior shell`);
+    assert.ok(view.querySelector('.enterprise-feature-root > .enterprise-toolbar'), `${route} uses the shared static enterprise header`);
+    assert.equal(view.querySelector('.content-back'), null, `${route} has no implicit return-to-home control`);
   }
+
+  const assertActiveRoute = route => {
+    assert.equal(d.querySelector(`#${route}View`).classList.contains('hidden'), false, `${route} remains active`);
+    assert.equal(d.querySelector('#homeView').classList.contains('hidden'), true, 'editing cannot reactivate home');
+  };
 
   await f.open('organization');
   d.querySelector('[data-org-action="position"]').click();
@@ -35,6 +41,8 @@ test('enterprise pages keep their own layout and persist the project, part and i
   field(positionForm, 'code', 'PLAN-MGR');
   field(positionForm, 'role_id', '1');
   field(positionForm, 'user_id', 'test-owner');
+  positionForm.elements.title.dispatchEvent(new w.Event('input', { bubbles: true }));
+  assertActiveRoute('organization');
   submit(w, positionForm);
   await until(() => tables.organization_positions.length === 1 && tables.organization_position_assignments.length === 1);
   assert.equal(tables.organization_position_assignments[0].user_id, 'test-owner');
@@ -49,8 +57,11 @@ test('enterprise pages keep their own layout and persist the project, part and i
   field(projectForm, 'title', 'پروژه آزمایشی');
   field(projectForm, 'planned_start', '2026-09-21');
   field(projectForm, 'planned_end', '2026-10-21');
+  projectForm.elements.title.dispatchEvent(new w.Event('input', { bubbles: true }));
+  assertActiveRoute('projects');
   submit(w, projectForm);
   await until(() => tables.projects.length === 1);
+  assertActiveRoute('projects');
   assert.equal(tables.projects[0].created_by, 'test-manager');
   assert.match(d.querySelector('#projectFeatureRoot').textContent, /پروژه آزمایشی/);
 
@@ -61,8 +72,11 @@ test('enterprise pages keep their own layout and persist the project, part and i
   field(partForm, 'code', 'BRAKE-01');
   field(partForm, 'fa_name', 'کالیپر ترمز');
   field(partForm, 'specifications', '{"وزن":12.5,"جنس":"آلومینیوم"}');
+  partForm.elements.fa_name.dispatchEvent(new w.Event('input', { bubbles: true }));
+  assertActiveRoute('parts');
   submit(w, partForm);
   await until(() => tables.parts.length === 1);
+  assertActiveRoute('parts');
   assert.equal(tables.parts[0].part_number, 'PN-101');
   assert.deepEqual(tables.parts[0].specifications, { وزن: 12.5, جنس: 'آلومینیوم' });
 
@@ -73,8 +87,11 @@ test('enterprise pages keep their own layout and persist the project, part and i
   field(invoiceForm, 'title', 'آزمون بیرون از شرکت');
   field(invoiceForm, 'account_party', 'آزمایشگاه نمونه');
   field(invoiceForm, 'total_amount', '500000000');
+  invoiceForm.elements.title.dispatchEvent(new w.Event('input', { bubbles: true }));
+  assertActiveRoute('invoices');
   submit(w, invoiceForm);
   await until(() => tables.invoices.length === 1);
+  assertActiveRoute('invoices');
   assert.equal(tables.invoices[0].total_amount, 500000000);
 
   for (const [sequence, amount] of [[1, 100000000], [2, 200000000], [3, 200000000]]) {
@@ -83,8 +100,11 @@ test('enterprise pages keep their own layout and persist the project, part and i
     field(paymentForm, 'sequence_no', String(sequence));
     field(paymentForm, 'amount', String(amount));
     field(paymentForm, 'status', 'paid');
+    paymentForm.elements.amount.dispatchEvent(new w.Event('input', { bubbles: true }));
+    assertActiveRoute('invoices');
     submit(w, paymentForm);
     await until(() => tables.invoice_payments.length === sequence);
+    assertActiveRoute('invoices');
   }
   assert.equal(tables.invoice_payments.reduce((sum, item) => sum + item.amount, 0), 500000000);
   assert.match(d.querySelector('#invoiceFeatureRoot').textContent, /۱۰۰٪/);

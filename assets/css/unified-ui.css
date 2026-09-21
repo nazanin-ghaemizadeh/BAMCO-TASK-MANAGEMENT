@@ -87,12 +87,25 @@ html body #appView#appView :is(#kanbanView,#archiveView,.bamco-interior).bamco-i
 }
 html body #appView#appView :is(#kanbanView,#archiveView,.bamco-interior).bamco-interior:not(.hidden){display:flex!important;flex-direction:column!important;min-height:100dvh!important;height:auto!important;overflow:visible!important}
 html body #appView#appView :is(#kanbanView,#archiveView,.bamco-interior).bamco-interior.focus-table-view:not(.hidden){height:100dvh!important;min-height:0!important;max-height:100dvh!important;overflow:hidden!important}
-html body #appView#appView :is(#kanbanView,#archiveView,.bamco-interior).bamco-interior .bamco-page-heading{
+/* Enterprise routes use this same two-row workspace shell. They stay outside
+   the legacy interior DOM reconciler, so their form state is never rewritten
+   while a user is editing it. */
+html body #appView#appView .enterprise-feature-root{
+ --ui-brand:#145741;--ui-ink:#17362d;--ui-muted:#62766f;--ui-line:#c5d5cc;--ui-head:#e8f1ed;
+ --ui-surface:#fff;--ui-canvas:#f8faf9;--ui-radius:10px;--ui-control:36px;
+ box-sizing:border-box!important;min-height:100%!important;background:var(--ui-canvas)!important;
+ font-family:var(--fa-font,'B Nazanin',BamcoPersian,Tahoma,serif)!important;font-size:16px!important;line-height:1.65!important;
+}
+html body #appView#appView .enterprise-feature-root>.enterprise-toolbar{display:block!important;width:100%!important;margin:0!important;padding:0!important;background:var(--ui-canvas)!important;border:0!important;border-radius:0!important;box-shadow:none!important}
+html body #appView#appView :is(#kanbanView,#archiveView,.bamco-interior).bamco-interior .bamco-page-heading,
+html body #appView#appView .enterprise-feature-root>.enterprise-toolbar>div:first-child{
  display:flex!important;align-items:center!important;flex:none!important;gap:14px!important;min-height:56px!important;
  order:-1!important;margin:0!important;padding:9px 12px!important;border:0!important;border-bottom:1px solid var(--ui-line)!important;
  background:#fff!important;position:relative!important;width:100%!important;box-sizing:border-box!important;
 }
-html body #appView#appView :is(#kanbanView,#archiveView,.bamco-interior).bamco-interior .bamco-page-heading h3{margin:0!important;padding:0!important;font-size:20px!important;line-height:1.6!important;font-weight:700!important;color:var(--ui-brand)!important;text-align:right!important;text-align-last:right!important}
+html body #appView#appView :is(#kanbanView,#archiveView,.bamco-interior).bamco-interior .bamco-page-heading h3,
+html body #appView#appView .enterprise-feature-root>.enterprise-toolbar>div:first-child h3{margin:0!important;padding:0!important;font-size:20px!important;line-height:1.6!important;font-weight:700!important;color:var(--ui-brand)!important;text-align:right!important;text-align-last:right!important}
+html body #appView#appView .enterprise-feature-root>.enterprise-toolbar>div:first-child p{display:none!important}
 html body #appView#appView :is(#kanbanView,#archiveView,.bamco-interior).bamco-interior .bamco-source-title,html body #appView#appView :is(#kanbanView,#archiveView,.bamco-interior).bamco-interior .bamco-empty-heading{display:none!important}
 html body #appView#appView :is(#kanbanView,#archiveView,.bamco-interior).bamco-interior>.bamco-page-body{
  min-width:0!important;min-height:0!important;height:auto!important;max-height:none!important;box-sizing:border-box!important;
@@ -104,13 +117,15 @@ html body #appView#appView :is(#kanbanView,#archiveView,.bamco-interior).bamco-i
  min-height:0!important;padding:8px 12px!important;margin:0!important;border:0!important;border-bottom:1px solid var(--ui-line)!important;background:#f5f8f6!important;
 }
 html body #appView#appView :is(#kanbanView,#archiveView,.bamco-interior).bamco-interior .bamco-control-row>div:has(>.bamco-source-title):not(:has(button,input,select,textarea)){display:none!important}
-html body #appView#appView :is(#kanbanView,#archiveView,.bamco-interior).bamco-interior .bamco-command-bar{
+html body #appView#appView :is(#kanbanView,#archiveView,.bamco-interior).bamco-interior .bamco-command-bar,
+html body #appView#appView .enterprise-feature-root>.enterprise-toolbar>.feature-toolbar-actions{
  display:flex!important;flex:0 0 auto!important;flex-wrap:wrap!important;align-items:center!important;justify-content:flex-start!important;
  gap:7px!important;min-height:48px!important;width:100%!important;box-sizing:border-box!important;overflow:visible!important;
  margin:0!important;padding:6px 10px!important;order:0!important;border:0!important;border-bottom:1px solid var(--ui-line)!important;
  border-radius:0!important;background:#f5f8f6!important;direction:rtl!important;
 }
-html body #appView#appView :is(#kanbanView,#archiveView,.bamco-interior).bamco-interior :where(button.primary,button.ghost,button.danger,.bamco-command-bar>button,.bamco-page-heading>button,.workspace-report-tools button,.response-quick button,.tt-mode,.workspace-settings-form button,.option-editor button,.option-create button,.desktop-template-fieldset button){
+html body #appView#appView :is(#kanbanView,#archiveView,.bamco-interior).bamco-interior :where(button.primary,button.ghost,button.danger,.bamco-command-bar>button,.bamco-page-heading>button,.workspace-report-tools button,.response-quick button,.tt-mode,.workspace-settings-form button,.option-editor button,.option-create button,.desktop-template-fieldset button),
+html body #appView#appView .enterprise-feature-root :where(button.primary,button.ghost,button.danger,.feature-toolbar-actions>button){
  display:inline-flex!important;align-items:center!important;justify-content:center!important;gap:6px!important;
  width:auto!important;min-width:0!important;height:var(--ui-control)!important;min-height:var(--ui-control)!important;
  max-height:none!important;flex-shrink:0!important;padding:5px 12px!important;margin:0!important;
@@ -118,14 +133,16 @@ html body #appView#appView :is(#kanbanView,#archiveView,.bamco-interior).bamco-i
  color:#214b36!important;font-family:inherit!important;font-size:16px!important;line-height:1.4!important;
  white-space:nowrap!important;text-align:center!important;text-align-last:center!important;cursor:pointer!important;
 }
-html body #appView#appView :is(#kanbanView,#archiveView,.bamco-interior).bamco-interior button.primary{background:#146b4d!important;color:#fff!important;border-color:#146b4d!important}
+html body #appView#appView :is(#kanbanView,#archiveView,.bamco-interior).bamco-interior button.primary,
+html body #appView#appView .enterprise-feature-root button.primary{background:#146b4d!important;color:#fff!important;border-color:#146b4d!important}
 html body #appView#appView :is(#kanbanView,#archiveView,.bamco-interior).bamco-interior :where(button.danger,.vehicle-delete,#kanbanDeleteBtn,#archiveDeleteBtn,#deletePersonBtn){background:#fff8f7!important;color:#a23535!important;border-color:#e0bfbb!important}
 html body #appView#appView :is(#kanbanView,#archiveView,.bamco-interior).bamco-interior :where(.vehicle-import,#importBtn,#archiveImportBtn){background:#e9eef4!important;color:#334b62!important;border-color:#bac7d4!important}
 html body #appView#appView :is(#kanbanView,#archiveView,.bamco-interior).bamco-interior :is(.response-quick,.tt-switch) button.active{background:#146b4d!important;color:#fff!important;border-color:#146b4d!important}
 html body #appView#appView :is(#kanbanView,#archiveView,.bamco-interior).bamco-interior :is(button,input,select,textarea,a):focus-visible{outline:2px solid #327c5c!important;outline-offset:2px!important}
 html body #appView#appView :is(#kanbanView,#archiveView,.bamco-interior).bamco-interior button:disabled{opacity:.4!important;cursor:default!important;box-shadow:none!important}
 html body #appView#appView :is(#kanbanView,#archiveView,.bamco-interior).bamco-interior :is(.bamco-command-bar>button,.content-back):not(:disabled):hover{filter:brightness(.96)}
-html body #appView#appView :is(#kanbanView,#archiveView,.bamco-interior).bamco-interior :where(input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=hidden]):not([type=color]):not([type=range]),select,textarea){
+html body #appView#appView :is(#kanbanView,#archiveView,.bamco-interior).bamco-interior :where(input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=hidden]):not([type=color]):not([type=range]),select,textarea),
+html body #appView#appView .enterprise-feature-root>.enterprise-toolbar>.feature-toolbar-actions :where(input,select){
  box-sizing:border-box!important;max-width:100%!important;min-width:0!important;border:1px solid #bcd0c3!important;border-radius:7px!important;
  background:#fff!important;color:var(--ui-ink)!important;box-shadow:none!important;padding:5px 10px!important;font:inherit!important;
  text-align:right!important;text-align-last:right!important;line-height:1.5!important;
@@ -143,7 +160,8 @@ html body #appView#appView :is(#kanbanView,#archiveView,.bamco-interior).bamco-i
  padding:10px 12px!important;margin:0!important;background:#fff!important;border:0!important;border-bottom:1px solid var(--ui-line)!important;
 }
 html body #appView#appView :is(#kanbanView,#archiveView,.bamco-interior).bamco-interior .bamco-filter-bar>:is(input,select){flex:1 1 160px!important;width:auto!important;max-width:300px!important}
-html body #appView#appView :is(#kanbanView,#archiveView,.bamco-interior).bamco-interior :is(.bamco-command-bar,.bamco-control-row) :is(input.search,input[type=search],.toolbar-search,.vehicle-search){
+html body #appView#appView :is(#kanbanView,#archiveView,.bamco-interior).bamco-interior :is(.bamco-command-bar,.bamco-control-row) :is(input.search,input[type=search],.toolbar-search,.vehicle-search),
+html body #appView#appView .enterprise-feature-root>.enterprise-toolbar>.feature-toolbar-actions input[type=search]{
  display:block!important;visibility:visible!important;opacity:1!important;position:static!important;
  order:100!important;flex:0 1 240px!important;width:240px!important;min-width:160px!important;max-width:100%!important;
  margin:0 auto 0 0!important;

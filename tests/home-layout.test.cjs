@@ -123,6 +123,13 @@ test('welcome card contains no waiting-work UI or logic',()=>{
   assert.doesNotMatch(css,/welcome-waiting/);
 });
 
+test('a stale home repair cannot close an active enterprise route',()=>{
+ const js=read('assets/js/card-home.js'),css=read('assets/css/unified-ui.css');
+ assert.match(js,/state\.view!=='home'/);
+ assert.match(css,/enterprise-feature-root>\.enterprise-toolbar>div:first-child/);
+ assert.match(css,/enterprise-feature-root>\.enterprise-toolbar>\.feature-toolbar-actions/);
+});
+
 test('instant welcome isolates the dialog from the mutating home dashboard',()=>{
  const js=read('assets/js/card-home.js'),css=read('assets/css/home-stable.css');
  assert.match(js,/classList\.add\([^)]*'home-welcome-open'[^)]*\)[\s\S]*dialog\.showModal\(\)/);
