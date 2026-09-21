@@ -84,6 +84,7 @@ body:has(#loginView:not(.hidden)){overflow:hidden}
 
 
 /* Login logo removal and Persian typography */
+.people-avatar-cell{text-align:center!important;vertical-align:middle!important}.people-avatar{display:inline-grid;place-items:center;width:38px;height:38px;border-radius:50%;overflow:hidden;background:#e5f1eb;border:1px solid #b8d1c3;color:#176b4d;font-weight:700;font-size:18px}.people-avatar img{display:block;width:100%;height:100%;object-fit:cover;border-radius:50%}
 @font-face{font-family:"Bamco Nazanin";src:local("B Nazanin"),local("BNazanin"),local("B Nazanin Regular"),local("B Zar"),local("BZar");font-display:swap}
 html[lang="fa"] body,
 html[lang="fa"] button,

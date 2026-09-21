@@ -5,7 +5,18 @@ const path=require('node:path');
 const vm=require('node:vm');
 const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
 const source=read('assets/js/card-home.js');
-const reconciliation=source.slice(source.indexOf(' const groups=['),source.indexOf('\n syncGroups();'));
+const reconciliation=source.slice(source.indexOf(' const catalog=window.BamcoNavigationCatalog;'),source.indexOf('\n syncGroups();')).replace(' if(!catalog)return;','');
+const catalogGroups=[
+ ['people',['people','organization','activeSessions','loginActivity']],
+ ['messages',['messages','messageCenter','sentMessages','responseTracking','templates','stickers']],
+ ['reports',['dashboard','performanceReport','responseReport','pettyCash','invoices']],
+ ['configuration',['systemOptions','settings','alertSettings','emailSettings']],
+ ['tasks',['kanban','archive','taskTimeline','approvals','requestHistory']],
+ ['delivery',['projects']],
+ ['vehicle',['vehiclePermanent','vehicleTemporary','parts']],
+ ['conversations',['groupChat','directMessages','taskChats']],
+ ['resources',['documents','letters','sitesAccess','userGuide']]
+].map(([key,routes])=>({key,routes}));
 
 // A deliberately small navigation model: no browser, network, session or real data.
 function fixture(){
@@ -30,21 +41,22 @@ function fixture(){
   querySelector(s){return this.querySelectorAll(s)[0]||null}
  }
  const nav=new Element('nav'),boxes={};
- for(const key of ['conversations','vehicle','organization','delivery','tasks','configuration','reports','messages','people','resources']){
+ for(const key of ['conversations','vehicle','delivery','tasks','configuration','reports','messages','people','resources']){
   const group=new Element('div',['nav-group'],{group:key}),box=new Element('div',['nav-group-items']);
   group.insertBefore(new Element('h3',['nav-group-toggle']),null);group.insertBefore(box,null);nav.insertBefore(group,null);boxes[key]=box;
  }
  const button=(route,group='tasks',classes=[])=>{const b=new Element('button',classes,{view:route});boxes[group].insertBefore(b,null);return b};
- const context={nav,MutationObserver:class{disconnect(){}observe(){}}};vm.createContext(context);
+ const context={nav,window:{BamcoNavigationCatalog:{groups:catalogGroups}},MutationObserver:class{disconnect(){}observe(){}}};vm.createContext(context);
  vm.runInContext(reconciliation+'\nglobalThis.sync=syncGroups;globalThis.order=groups;',context);
  return{nav,boxes,button,sync:context.sync,order:context.order,reset:()=>{writes=0},writes:()=>writes};
 }
 
-test('home cards keep projects, resources and invoices in their approved groups',()=>{
+test('home cards keep people structure and enterprise modules in their approved groups',()=>{
  const f=fixture();for(const [,ids] of f.order)for(const id of [...ids].reverse())f.button(id);
- f.sync();assert.deepEqual(f.nav.children.map(x=>x.dataset.group),['people','messages','reports','configuration','tasks','delivery','organization','vehicle','conversations','resources']);
+ f.sync();assert.deepEqual(f.nav.children.map(x=>x.dataset.group),['people','messages','reports','configuration','tasks','delivery','vehicle','conversations','resources']);
  for(const [key,ids] of f.order)assert.deepEqual(f.boxes[key].children.map(x=>x.dataset.view),Array.from(ids));
- assert.deepEqual(f.boxes.reports.children.map(x=>x.dataset.view),['dashboard','performanceReport','responseReport','pettyCash','invoices','requestReport']);
+ assert.deepEqual(f.boxes.people.children.map(x=>x.dataset.view),['people','organization','activeSessions','loginActivity']);
+ assert.deepEqual(f.boxes.reports.children.map(x=>x.dataset.view),['dashboard','performanceReport','responseReport','pettyCash','invoices']);
  assert.deepEqual(f.boxes.configuration.children.map(x=>x.dataset.view),['systemOptions','settings','alertSettings','emailSettings']);
 });
 

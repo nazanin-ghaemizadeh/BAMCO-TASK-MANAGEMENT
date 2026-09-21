@@ -11,9 +11,10 @@ test('an active manager view is not hidden by its access marker',()=>{
 });
 
 test('runtime can create a late navigation group before adding its route',()=>{
-  assert.match(runtime,/function groupFor\(key\)\{const labels=/);
-  assert.match(runtime,/configuration:\['تنظیمات','⚙'\]/);
-  assert.match(runtime,/return labels\[key\]\?ensureGroup\(key,\.\.\.labels\[key\]\):null/);
+  const catalog=fs.readFileSync(path.join(__dirname,'../assets/js/navigation-registry.js'),'utf8');
+  assert.match(runtime,/const catalog=window\.BamcoNavigationCatalog/);
+  assert.match(runtime,/function groupFor\(key\)\{const group=catalog\.byKey\[key\]/);
+  assert.match(catalog,/key: 'configuration', title: 'تنظیمات', icon: '⚙'/);
 });
 test('removed alert and email settings have no route registrations',()=>{assert.doesNotMatch(runtime,/\['(?:alertSettings|emailSettings)'/)});
 test('request report route is removed from production navigation',()=>{

@@ -84,17 +84,10 @@
     nav.append(permanent,temporary,userGuide);
     qa('#nav>.nav-group[data-group="guide"]').filter(g=>!g.querySelector('[data-view="userGuide"]')).forEach(g=>g.remove());
     qa('#nav>.nav-divider').forEach(x=>x.remove());
-    const task=makeGroup('مدیریت وظایف','tasks',['kanban','archive','taskTimeline','approvals','requestHistory'],'☑');
-    const delivery=makeGroup('مدیریت پروژه‌ها','delivery',['projects'],'▰');
-    const organization=makeGroup('حکمرانی سازمانی','organization',['organization'],'⌘');
-    const people=makeGroup('مدیریت افراد','people',['people'],'♙');
-    const email=makeGroup('مدیریت پیام','messages',['messageCenter','sentMessages','messages','templates','stickers'],'✉');
-    const vehicle=makeGroup('مدیریت منابع','vehicle',['vehiclePermanent','vehicleTemporary','parts'],'◇');
-    const reports=makeGroup('گزارش‌ها','reports',['dashboard','pettyCash','invoices'],'▦');
-    const configuration=makeGroup('تنظیمات','configuration',['systemOptions'],'⚙');
-    const resources=makeGroup('منابع و دسترسی‌ها','resources',['documents','letters','sitesAccess','userGuide'],'▧');
+    const catalog=window.BamcoNavigationCatalog;
+    if(!catalog)return;
+    const groups=catalog.groups.map(item=>makeGroup(item.title,item.key,item.routes,item.icon));
     if(settings)nav.appendChild(settings);
-    const groups=[task,delivery,organization,email,people,vehicle,reports,configuration,resources];
     const refreshVisibility=()=>groups.forEach(g=>{
       if(!g)return;
       const visible=[...g.querySelectorAll('.nav-group-items>button')].some(b=>!b.classList.contains('hidden'));

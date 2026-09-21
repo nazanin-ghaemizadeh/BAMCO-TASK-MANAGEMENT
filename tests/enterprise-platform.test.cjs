@@ -40,13 +40,30 @@ test('project dependency and financial invariants are represented server-side', 
 
 test('enterprise navigation places new modules in the approved groups', () => {
   const sidebar = read('assets/js/sidebar.js');
+  const catalog = read('assets/js/navigation-registry.js');
   const runtime = read('assets/js/production-runtime.js');
   const documents = read('assets/js/documents-sites.js');
-  assert.match(sidebar, /makeGroup\('مدیریت منابع','vehicle',[^;]*'parts'/);
-  assert.match(sidebar, /makeGroup\('گزارش‌ها','reports',[^;]*'invoices'/);
-  assert.match(sidebar, /makeGroup\('منابع و دسترسی‌ها','resources',[^;]*'userGuide'/);
-  assert.match(runtime, /delivery:\['projects'\]/);
-  assert.match(runtime, /reports:\[[^\]]*'invoices'/);
+  assert.match(catalog, /key: 'people'[\s\S]*routes: \['people', 'organization', 'activeSessions', 'loginActivity'\]/);
+  assert.match(catalog, /key: 'vehicle'[\s\S]*'parts'/);
+  assert.match(catalog, /key: 'reports'[\s\S]*'invoices'/);
+  assert.match(catalog, /key: 'resources'[\s\S]*'userGuide'/);
+  assert.match(sidebar, /BamcoNavigationCatalog/);
+  assert.match(runtime, /const ORDER=Object\.fromEntries\(catalog\.groups/);
+  assert.doesNotMatch(catalog, /key: 'organization'/);
   assert.match(documents, /#nav \.nav-group\[data-group="resources"\]/);
   assert.doesNotMatch(sidebar, /makeGroup\('مرکز راهنما'/);
+});
+
+test('organization view is a visual position tree and preserves one primary assignment source', () => {
+  const organization = read('assets/js/organization-structure.js');
+  const people = read('assets/js/shell.js');
+  const migration = read('supabase/migrations/20260921103000_organization_people_root_refactor.sql');
+  assert.match(organization, /org-chart-circle/);
+  assert.match(organization, /فرد شاغل در این جایگاه/);
+  assert.match(organization, /userOrganization/);
+  assert.match(people, /نقش سازمانی/);
+  assert.doesNotMatch(people, /name="role"><option value="owner">متولی/);
+  assert.match(migration, /organization_one_active_primary_position_per_user_idx/);
+  assert.match(migration, /organization_position_parent_is_acyclic/);
+  assert.match(migration, /sync_profile_primary_position/);
 });

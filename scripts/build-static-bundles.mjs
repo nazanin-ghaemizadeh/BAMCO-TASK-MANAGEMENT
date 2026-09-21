@@ -34,6 +34,7 @@ const javascript = [
   'assets/js/tables.js',
   'assets/js/ui-helpers.js',
   'assets/js/sticker-assets.js',
+  'assets/js/navigation-registry.js',
   'assets/js/sidebar.js',
   'assets/js/phase2-message-engine.js',
   'assets/js/phase3-response-tracking.js',

@@ -18,7 +18,7 @@ test('people Excel writes explicit borders for every cell for selected and compl
   const bytes=Buffer.from(await f.downloads.at(-1).blob.arrayBuffer()),files=unzipStored(bytes),parser=new w.DOMParser(),style=parser.parseFromString(files.get('xl/styles.xml'),'text/xml'),sheet=parser.parseFromString(files.get('xl/worksheets/sheet1.xml'),'text/xml');
   assert.equal(style.querySelector('parsererror'),null);const border=style.querySelectorAll('borders>border')[1];for(const side of ['left','right','top','bottom']){assert.equal(border.querySelector(side).getAttribute('style'),'thin');assert.equal(border.querySelector(side+' color').getAttribute('rgb'),'FF718477')}
   const formats=style.querySelectorAll('cellXfs>xf');for(const cell of sheet.querySelectorAll('sheetData c')){const format=formats[Number(cell.getAttribute('s'))];assert.equal(format.getAttribute('borderId'),'1');assert.equal(format.getAttribute('applyBorder'),'1')}
-  assert.equal(sheet.querySelectorAll('sheetData c').length,(selected?2:3)*8);const book=w.XLSX.read(new Uint8Array(bytes),{type:'array'}),rows=w.XLSX.utils.sheet_to_json(book.Sheets[book.SheetNames[0]],{header:1});assert.equal(rows.length,selected?2:3);
+  assert.equal(sheet.querySelectorAll('sheetData c').length,(selected?2:3)*10);const book=w.XLSX.read(new Uint8Array(bytes),{type:'array'}),rows=w.XLSX.utils.sheet_to_json(book.Sheets[book.SheetNames[0]],{header:1});assert.equal(rows.length,selected?2:3);
  }
  assert.deepEqual(f.errors,[]);
 });

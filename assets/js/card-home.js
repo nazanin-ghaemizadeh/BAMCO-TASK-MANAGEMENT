@@ -12,18 +12,8 @@ function install(){
  workspace.append(home);home.append(nav);
  nav.querySelector('.nav-login-root')?.remove();
  const footer=document.createElement('footer');footer.id='homeFixedFooter';footer.innerHTML='<a href="https://www.linkedin.com/company/bam-automotive-company/" target="_blank" rel="noopener noreferrer">شرکت خودروسازان بم</a> | واحد توسعه و تکوین محصول | <a href="https://www.linkedin.com/in/shahab-tanhaiyan-b1156a10a/" target="_blank" rel="noopener noreferrer">شهاب‌الدین تنهائیان</a> و <a href="https://www.linkedin.com/in/nazanin-ghaemizadeh/" target="_blank" rel="noopener noreferrer">نازنین قائمی</a>';app.append(footer);
- const groups=[
-  ['people',['people','loginActivity','activeSessions']],
-  ['messages',['messages','messageCenter','sentMessages','responseTracking','stickers']],
-  ['reports',['dashboard','performanceReport','responseReport','pettyCash','invoices','requestReport']],
-  ['configuration',['systemOptions','settings','alertSettings','emailSettings']],
-  ['tasks',['kanban','archive','taskTimeline','approvals','requestHistory']],
-  ['delivery',['projects']],
-  ['organization',['organization']],
-  ['vehicle',['vehiclePermanent','vehicleTemporary','parts']],
-  ['conversations',['groupChat','directMessages','taskChats']],
-  ['resources',['documents','letters','sitesAccess','userGuide']]
- ];
+ const catalog=window.BamcoNavigationCatalog;
+ const groups=(catalog?.groups||[]).map(group=>[group.key,group.routes]);
  const aliases={loginReport:'loginActivity',messageReport:'sentMessages'};
  const groupObserver=new MutationObserver(()=>syncGroups());
  function syncGroups(){
