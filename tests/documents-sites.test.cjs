@@ -86,7 +86,7 @@ test('index wires both feature views and source files after integration',()=>{
 });
 
 test('feature runtime boots without console error and exposes both views for a normal user',async()=>{
-  const dom=new JSDOM('<!doctype html><body><nav id="nav"></nav><div class="workspace"></div></body>',{url:'https://example.test/',runScripts:'outside-only'});
+  const dom=new JSDOM(fs.readFileSync(path.join(ROOT,'index.html'),'utf8'),{url:'https://example.test/',runScripts:'outside-only'});
   const ctx=dom.getInternalVMContext();
   Object.assign(ctx,{
     state:{token:'token',user:{id:'user-a'},profile:{id:'user-a',role:'owner',active:true},profiles:[]},
@@ -136,7 +136,7 @@ test('documents and sites join the standard home card and interior command bar',
   const interior=fs.readFileSync(path.join(ROOT,'assets/js/interior-ui.js'),'utf8');
   const css=fs.readFileSync(path.join(ROOT,'assets/css/documents-sites.css'),'utf8');
   assert.match(sidebar,/BamcoNavigationCatalog/);
-  assert.match(catalog,/key: 'resources'[\s\S]*'documents', 'letters', 'sitesAccess', 'userGuide'/);
+  assert.match(catalog,/key: 'resources'[\s\S]*'documents', 'sitesAccess', 'letters', 'userGuide'/);
   assert.match(home,/catalog\?\.groups/);
   assert.match(interior,/feature-toolbar-actions/);
   assert.match(css,/#documentsView,#sitesAccessView/);
@@ -177,7 +177,7 @@ test('DOCX viewer is excluded from login and loads JSZip before docx-preview on 
 });
 
 test('PDF opens a synchronous standalone Chrome tab, receives authenticated bytes and rejects invalid files',async()=>{
- const dom=new JSDOM('<nav id="nav"></nav><div class="workspace"></div>',{url:'https://example.test/',runScripts:'outside-only'}),w=dom.window,calls=[],blobs=[];
+ const dom=new JSDOM(fs.readFileSync(path.join(ROOT,'index.html'),'utf8'),{url:'https://example.test/',runScripts:'outside-only'}),w=dom.window,calls=[],blobs=[];
  let payload='%PDF-1.7\nfixture';const opened=[],notices=[];
  w.open=()=>{const v={document:{body:{}},location:{},closed:false,close(){this.closed=true}};opened.push(v);return v};
  Object.assign(w,{Blob,TextDecoder,state:{token:'test-token',profile:{role:'manager',active:true}},SB_URL:'https://example.supabase.co',SB_KEY:'test',titles:{},toast:(v)=>notices.push(v),selectAll:async t=>t==='document_categories'?[{id:1,title:'Forms'}]:[{id:1,category_id:1,title:'PDF',original_file_name:'form.pdf',storage_path:'private/form.pdf',mime_type:'application/pdf',file_size:100,version:1}],fetch:async(url,options)=>{calls.push({url,options});return{ok:true,blob:async()=>new Blob([payload],{type:'application/octet-stream'})}}});

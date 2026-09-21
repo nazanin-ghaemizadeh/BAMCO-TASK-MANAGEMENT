@@ -5,7 +5,7 @@
   'use strict';
   const E = window.bamcoEnterprise;
   if (!E) return;
-  const { q, esc, fa, fetchRows, setBusy, notify } = E;
+  const { q, esc, fa, fetchRows, insert, update, setBusy, notify } = E;
   const model = { roles: [], units: [], positions: [], assignments: [], policies: [], loaded: false };
   let loading = null;
   const root = () => q('#organizationFeatureRoot');
@@ -94,7 +94,7 @@
   }
 
   async function savePosition(event) {
-    event.preventDefault(); const form = event.currentTarget, button = q('[type=submit]', form), id = form.elements.id.value;
+    event.preventDefault(); const form = event.target, button = q('[type=submit]', form), id = form.elements.id.value;
     const parentId = form.elements.parent_position_id.value ? Number(form.elements.parent_position_id.value) : null;
     if (id && createsCycle(id, parentId)) return notify('نمی‌توان یک جایگاه را زیرمجموعهٔ خودش یا یکی از زیرمجموعه‌هایش قرار داد.', true);
     const payload = { title: form.elements.title.value.trim(), code: form.elements.code.value.trim(), role_id: Number(form.elements.role_id.value), unit_id: form.elements.unit_id.value ? Number(form.elements.unit_id.value) : null, parent_position_id: parentId };
@@ -104,15 +104,15 @@
       const rows = id ? await update('organization_positions', `id=eq.${encodeURIComponent(id)}`, payload) : await insert('organization_positions', { ...payload, created_by: state.user.id });
       const positionId = Number(id || rows?.[0]?.id); if (!positionId) throw new Error('ذخیره جایگاه تأیید نشد.');
       await setAssignment(positionId, form.elements.user_id.value || null);
-      q('#organizationPositionDialog').close(); notify('جایگاه و انتساب آن ذخیره شد.'); await load({ ensureProfiles: false });
+      q('#organizationPositionDialog').close(); notify('جایگاه و انتساب آن ذخیره شد.'); await load({ ensureProfiles: false, force: true });
     } catch (error) { notify(error.message, true); } finally { setBusy(button, false); }
   }
 
   async function saveUnit(event) {
-    event.preventDefault(); const form = event.currentTarget, button = q('[type=submit]', form); setBusy(button, true);
+    event.preventDefault(); const form = event.target, button = q('[type=submit]', form); setBusy(button, true);
     try {
       await insert('organization_units', { title: form.elements.title.value.trim(), code: form.elements.code.value.trim(), parent_unit_id: form.elements.parent_unit_id.value ? Number(form.elements.parent_unit_id.value) : null, created_by: state.user.id });
-      q('#organizationUnitDialog').close(); notify('واحد سازمانی ذخیره شد.'); await load({ ensureProfiles: false });
+      q('#organizationUnitDialog').close(); notify('واحد سازمانی ذخیره شد.'); await load({ ensureProfiles: false, force: true });
     } catch (error) { notify(error.message, true); } finally { setBusy(button, false); }
   }
 
@@ -134,9 +134,12 @@
     });
   }
 
-  async function load({ ensureProfiles = true } = {}) {
+  async function load({ ensureProfiles = true, force = false } = {}) {
     if (!root() || !state.profile || !isManager()) return;
-    if (loading) return loading;
+    if (loading) {
+      await loading;
+      if (!force) return;
+    }
     const job = (async () => {
       try {
         if (ensureProfiles) await window.bamcoPeople?.refresh?.({ refreshOrganization: false });
@@ -155,8 +158,9 @@
   }
 
   function boot() {
-    if (!root()) return; render();
-    document.addEventListener('click', event => { if (event.target.closest('#nav [data-view="organization"]')) void load(); });
+    if (!root()) return;
+    render();
+    window.BamcoNavigation?.registerView?.('organization', { activate: load });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true }); else boot();
   window.bamcoOrganization = Object.freeze({ load, model, userOrganization });

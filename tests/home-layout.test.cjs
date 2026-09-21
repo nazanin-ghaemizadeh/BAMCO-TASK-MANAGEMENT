@@ -13,9 +13,9 @@ const catalogGroups=[
  ['configuration',['systemOptions','settings','alertSettings','emailSettings']],
  ['tasks',['kanban','archive','taskTimeline','approvals','requestHistory']],
  ['delivery',['projects']],
- ['vehicle',['vehiclePermanent','vehicleTemporary','parts']],
+ ['vehicle',['vehiclePermanent','vehicleTemporary','parts','tools']],
  ['conversations',['groupChat','directMessages','taskChats']],
- ['resources',['documents','letters','sitesAccess','userGuide']]
+ ['resources',['documents','sitesAccess','letters','userGuide']]
 ].map(([key,routes])=>({key,routes}));
 
 // A deliberately small navigation model: no browser, network, session or real data.

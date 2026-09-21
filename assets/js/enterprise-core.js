@@ -20,10 +20,18 @@
   const person = id => (state.profiles || []).find(profile => String(profile.id) === String(id));
   const personName = id => person(id)?.display_name || person(id)?.full_name || person(id)?.email || '—';
   const setBusy = (button, busy, label) => { if (!button) return; button.disabled = !!busy; if (busy) { button.dataset.previousLabel = button.textContent; button.textContent = label || 'در حال ذخیره…'; } else if (button.dataset.previousLabel) { button.textContent = button.dataset.previousLabel; delete button.dataset.previousLabel; } };
-  const fetchRows = (table, query) => selectAll(table, query || 'select=*');
+  const data = () => root.BamcoData;
+  const requireOperation = name => (...args) => {
+    const operation = data()?.[name];
+    if (typeof operation !== 'function') return Promise.reject(new Error('سرویس دادهٔ سامانه آماده نیست؛ صفحه را دوباره باز کنید.'));
+    return operation(...args);
+  };
+  const fetchRows = (table, query) => requireOperation('selectAll')(table, query || 'select=*');
+  const insert = requireOperation('insert');
+  const update = requireOperation('update');
   const removeRows = (table, filter) => api(`/rest/v1/${table}?${filter}`, { method: 'DELETE', prefer: 'return=minimal' });
   const refresh = () => { if (typeof window.refresh === 'function') return window.refresh(); return Promise.resolve(); };
   const notify = (message, error = false) => typeof toast === 'function' ? toast(message, error) : undefined;
   const viewActive = view => !q(`#${view}View`)?.classList.contains('hidden');
-  root.bamcoEnterprise = Object.freeze({ q, qa, esc, fa, money, date, dateTime, progress, statusText, personName, setBusy, fetchRows, removeRows, refresh, notify, viewActive });
+  root.bamcoEnterprise = Object.freeze({ q, qa, esc, fa, money, date, dateTime, progress, statusText, personName, setBusy, fetchRows, insert, update, removeRows, refresh, notify, viewActive });
 })();

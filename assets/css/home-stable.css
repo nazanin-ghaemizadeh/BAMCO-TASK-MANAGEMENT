@@ -97,20 +97,20 @@ html body.card-home-active #homeView #nav>.nav-group[data-group="messages"]{grid
 html body.card-home-active #homeView #nav>.nav-group[data-group="reports"]{grid-column:3!important;grid-row:1!important}
 html body.card-home-active #homeView #nav>.nav-group[data-group="configuration"]{grid-column:1!important;grid-row:2!important}
 html body.card-home-active #homeView #nav>.nav-group[data-group="tasks"]{grid-column:2!important;grid-row:2!important}
-html body.card-home-active #homeView #nav>.nav-group[data-group="vehicle"]{grid-column:3!important;grid-row:2!important}
-html body.card-home-active #homeView #nav>.nav-group[data-group="conversations"]{grid-column:1!important;grid-row:3!important}
-html body.card-home-active #homeView #nav>.nav-group[data-group="resources"]{grid-column:2!important;grid-row:3!important}
-html body.card-home-active #homeView #nav>.nav-group[data-group="guide"]{grid-column:3!important;grid-row:3!important}
+html body.card-home-active #homeView #nav>.nav-group[data-group="delivery"]{grid-column:3!important;grid-row:2!important}
+html body.card-home-active #homeView #nav>.nav-group[data-group="vehicle"]{grid-column:1!important;grid-row:3!important}
+html body.card-home-active #homeView #nav>.nav-group[data-group="conversations"]{grid-column:2!important;grid-row:3!important}
+html body.card-home-active #homeView #nav>.nav-group[data-group="resources"]{grid-column:3!important;grid-row:3!important}
 @media(max-width:1000px){
  html body.card-home-active #homeView #nav>.nav-group[data-group="people"]{grid-column:1!important;grid-row:1!important}
  html body.card-home-active #homeView #nav>.nav-group[data-group="messages"]{grid-column:2!important;grid-row:1!important}
  html body.card-home-active #homeView #nav>.nav-group[data-group="reports"]{grid-column:1!important;grid-row:2!important}
  html body.card-home-active #homeView #nav>.nav-group[data-group="configuration"]{grid-column:2!important;grid-row:2!important}
  html body.card-home-active #homeView #nav>.nav-group[data-group="tasks"]{grid-column:1!important;grid-row:3!important}
- html body.card-home-active #homeView #nav>.nav-group[data-group="vehicle"]{grid-column:2!important;grid-row:3!important}
- html body.card-home-active #homeView #nav>.nav-group[data-group="conversations"]{grid-column:1!important;grid-row:4!important}
- html body.card-home-active #homeView #nav>.nav-group[data-group="resources"]{grid-column:2!important;grid-row:4!important}
- html body.card-home-active #homeView #nav>.nav-group[data-group="guide"]{grid-column:1!important;grid-row:5!important}
+ html body.card-home-active #homeView #nav>.nav-group[data-group="delivery"]{grid-column:2!important;grid-row:3!important}
+ html body.card-home-active #homeView #nav>.nav-group[data-group="vehicle"]{grid-column:1!important;grid-row:4!important}
+ html body.card-home-active #homeView #nav>.nav-group[data-group="conversations"]{grid-column:2!important;grid-row:4!important}
+ html body.card-home-active #homeView #nav>.nav-group[data-group="resources"]{grid-column:1!important;grid-row:5!important}
 }
 @media(max-width:620px){
  html body.card-home-active #homeView #nav>.nav-group[data-group]{grid-column:1!important}
@@ -119,16 +119,17 @@ html body.card-home-active #homeView #nav>.nav-group[data-group="guide"]{grid-co
  html body.card-home-active #homeView #nav>.nav-group[data-group="reports"]{grid-row:3!important}
  html body.card-home-active #homeView #nav>.nav-group[data-group="configuration"]{grid-row:4!important}
  html body.card-home-active #homeView #nav>.nav-group[data-group="tasks"]{grid-row:5!important}
- html body.card-home-active #homeView #nav>.nav-group[data-group="vehicle"]{grid-row:6!important}
- html body.card-home-active #homeView #nav>.nav-group[data-group="conversations"]{grid-row:7!important}
- html body.card-home-active #homeView #nav>.nav-group[data-group="resources"]{grid-row:8!important}
- html body.card-home-active #homeView #nav>.nav-group[data-group="guide"]{grid-row:9!important}
+ html body.card-home-active #homeView #nav>.nav-group[data-group="delivery"]{grid-row:6!important}
+ html body.card-home-active #homeView #nav>.nav-group[data-group="vehicle"]{grid-row:7!important}
+ html body.card-home-active #homeView #nav>.nav-group[data-group="conversations"]{grid-row:8!important}
+ html body.card-home-active #homeView #nav>.nav-group[data-group="resources"]{grid-row:9!important}
 }
 
 /* A late permission result may reveal a button, but cannot move another button. */
 html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="people"]{grid-column:1!important;grid-row:1!important}
-html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="loginActivity"]{grid-column:2!important;grid-row:1!important}
+html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="organization"]{grid-column:2!important;grid-row:1!important}
 html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="activeSessions"]{grid-column:1!important;grid-row:2!important}
+html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="loginActivity"]{grid-column:2!important;grid-row:2!important}
 html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="messages"]{grid-column:1!important;grid-row:1!important}
 html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="messageCenter"]{grid-column:2!important;grid-row:1!important}
 html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="sentMessages"]{grid-column:1!important;grid-row:2!important}
@@ -138,7 +139,7 @@ html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="d
 html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="performanceReport"]{grid-column:2!important;grid-row:1!important}
 html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="responseReport"]{grid-column:1!important;grid-row:2!important}
 html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="pettyCash"]{grid-column:2!important;grid-row:2!important}
-html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="requestReport"]{grid-column:1!important;grid-row:3!important}
+html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="invoices"]{grid-column:1!important;grid-row:3!important}
 html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="systemOptions"]{grid-column:1!important;grid-row:1!important}
 html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="settings"]{grid-column:2!important;grid-row:1!important}
 html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="alertSettings"]{grid-column:1!important;grid-row:2!important}
@@ -151,10 +152,13 @@ html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="r
 html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="approvalChains"]{grid-column:2!important;grid-row:3!important}
 html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="vehiclePermanent"]{grid-column:1!important;grid-row:1!important}
 html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="vehicleTemporary"]{grid-column:2!important;grid-row:1!important}
+html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="parts"]{grid-column:1!important;grid-row:2!important}
+html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="tools"]{grid-column:2!important;grid-row:2!important}
+html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="projects"]{grid-column:1!important;grid-row:1!important}
 html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="groupChat"]{grid-column:1!important;grid-row:1!important}
 html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="directMessages"]{grid-column:2!important;grid-row:1!important}
 html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="taskChats"]{grid-column:1!important;grid-row:2!important}
 html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="documents"]{grid-column:1!important;grid-row:1!important}
-html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="letters"]{grid-column:2!important;grid-row:1!important}
-html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="sitesAccess"]{grid-column:1!important;grid-row:2!important}
-html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="userGuide"]{grid-column:1!important;grid-row:1!important}
+html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="sitesAccess"]{grid-column:2!important;grid-row:1!important}
+html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="letters"]{grid-column:1!important;grid-row:2!important}
+html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="userGuide"]{grid-column:2!important;grid-row:2!important}

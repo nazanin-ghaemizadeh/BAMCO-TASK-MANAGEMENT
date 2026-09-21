@@ -4,7 +4,7 @@
   <link rel="preload" href="assets/fonts/BNazanin.woff2" as="font" type="font/woff2" crossorigin>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <meta name="bamco-app-version" content="2026.09.21.4" />
+  <meta name="bamco-app-version" content="2026.09.21.5" />
   <meta name="application-name" content="BAMCO" />
   <meta name="apple-mobile-web-app-title" content="BAMCO" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -14,7 +14,7 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.supabase.co https://cdn.jsdelivr.net/gh/jdecked/twemoji@v17.0.3/assets/svg/; font-src 'self' data:; connect-src 'self' https://zhhongjhhbvpmoquvkhl.supabase.co https://lsfqjjynrajthxnhmjyj.supabase.co; frame-src 'self' blob: https://*.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
   <title>BAMCO Task Management</title>
   <meta name="description" content="سامانه آنلاین مدیریت، پایش و پیگیری امور خودروسازان بم" />
-  <link rel="manifest" href="manifest.webmanifest?v=2026.09.21.4" />
+  <link rel="manifest" href="manifest.webmanifest?v=2026.09.21.5" />
   <link rel="icon" type="image/png" sizes="192x192" href="assets/images/bamco-icon-192.png" />
   <link rel="apple-touch-icon" sizes="180x180" href="assets/images/bamco-apple-touch-icon.png" />
   <script id="bamcoUpdateRecoveryBootstrap">
@@ -26,9 +26,9 @@
     if(changed)history.replaceState(history.state,'',url.pathname+(url.search?url.search:'')+url.hash);
   }catch{}})();
   </script>
-  <script defer src="assets/js/app-update.js?v=2026.09.21.4"></script>
-<link rel="stylesheet" href="assets/css/bamco.bundle.css?v=2026.09.21.4">
-<script defer src="assets/js/department-entry.js?v=2026.09.21.4"></script>
+  <script defer src="assets/js/app-update.js?v=2026.09.21.5"></script>
+<link rel="stylesheet" href="assets/css/bamco.bundle.css?v=2026.09.21.5">
+<script defer src="assets/js/department-entry.js?v=2026.09.21.5"></script>
 <style id="entryCritical">html,body{margin:0;min-height:100%;background:#f4f8f5}
 /* Management selector: authoritative, first-paint-stable layout. */
 @font-face{font-family:BamcoEntry;src:url('assets/fonts/BNazanin.woff2') format('woff2');font-style:normal;font-weight:400;font-display:block}
@@ -111,13 +111,17 @@ html body.department-pending #departmentEntry .department-state{font-size:16px!i
         <button data-view="approvals" id="approvalsNav" class="hidden"><b>✓</b><span>تأیید درخواست‌ها</span><i id="approvalBadge"></i></button>
         <button data-view="requestHistory" id="requestHistoryNav"><b>◷</b><span>سوابق درخواست‌ها</span></button>
         <button data-view="documents" id="documentsNav"><b>▧</b><span>فرم‌ها و مستندات</span></button>
+        <button data-view="sitesAccess" id="sitesAccessNav"><b>⌁</b><span>سایت‌ها و دسترسی‌ها</span></button>
         <button data-view="letters" id="lettersNav" class="hidden"><b>✉</b><span>نامه‌ها</span></button>
+        <button data-view="userGuide" id="userGuideNav"><b>▤</b><span>راهنمای استفاده سامانه</span></button>
         <button data-view="pettyCash" id="pettyCashNav" class="hidden"><b>▥</b><span>گزارش تنخواه</span></button>
         <button data-view="projects"><b>▰</b><span>مدیریت پروژه‌ها</span></button>
         <button data-view="parts"><b>◈</b><span>مدیریت قطعات</span></button>
         <button data-view="invoices"><b>▤</b><span>صورتحساب‌ها و تعهدات مالی</span></button>
         <button data-view="organization" class="manager-only"><b>⌘</b><span>ساختار سازمانی</span></button>
-        <button data-view="sitesAccess" id="sitesAccessNav"><b>⌁</b><span>سایت‌ها و دسترسی‌ها</span></button>
+        <button data-view="vehiclePermanent" class="manager-only vehicle-access-nav"><b>▣</b><span>تحویل دائم خودرو</span></button>
+        <button data-view="vehicleTemporary" class="manager-only vehicle-access-nav"><b>▤</b><span>تحویل موقت خودرو</span></button>
+        <button data-view="tools" class="manager-only"><b>⌁</b><span>مدیریت ابزار</span></button>
       </nav>
       <div class="account">
         <div class="avatar" id="avatar">ب</div>
@@ -171,23 +175,26 @@ html body.department-pending #departmentEntry .department-state{font-size:16px!i
         <div class="feature-toolbar"><div><h3>فرم‌ها و مستندات</h3><p>کتابخانه امن فایل‌های سازمانی</p></div><div class="feature-toolbar-actions"><input id="documentsSearch" type="search" placeholder="جست‌وجو در مستندات…"><button id="documentsRefresh" class="ghost">تازه‌سازی</button><button id="addDocumentCategory" class="primary hidden">دسته‌بندی جدید</button></div></div>
         <div id="documentsFeatureBody"></div>
       </section>
-      <section id="lettersView" class="view hidden"></section>
-      <section id="pettyCashView" class="view hidden"></section>
       <section id="sitesAccessView" class="view hidden">
         <div class="feature-toolbar"><div><h3>سایت‌ها و دسترسی‌ها</h3><p>دسترسی امن به سامانه‌ها و سایت‌های کاری</p></div><div class="feature-toolbar-actions"><input id="sitesSearch" type="search" placeholder="جست‌وجو در سایت‌ها…"><select id="sitesFilter"><option value="all">همه</option><option value="organization">سایت‌های سازمانی</option><option value="personal">سایت‌های شخصی</option></select><button id="sitesRefresh" class="ghost">تازه‌سازی</button><button id="addPersonalSite" class="primary">سایت شخصی جدید</button><button id="addOrganizationSite" class="primary hidden">سایت سازمانی جدید</button><button id="sitesExcel" class="ghost">خروجی اکسل</button><button id="sitesManagerExcel" class="danger hidden">خروجی محرمانه دسترسی‌ها</button></div></div>
         <div id="sitesFeatureBody"></div>
       </section>
+      <section id="lettersView" class="view hidden"></section>
+      <section id="userGuideView" class="view hidden"></section>
+      <section id="pettyCashView" class="view hidden"></section>
 
       <section id="projectsView" class="view hidden"><div id="projectFeatureRoot" class="enterprise-feature-root"></div></section>
       <section id="partsView" class="view hidden"><div id="partFeatureRoot" class="enterprise-feature-root"></div></section>
       <section id="invoicesView" class="view hidden"><div id="invoiceFeatureRoot" class="enterprise-feature-root"></div></section>
       <section id="organizationView" class="view hidden manager-only"><div id="organizationFeatureRoot" class="enterprise-feature-root"></div></section>
 
+      <section id="toolsView" class="view hidden manager-only"><div class="enterprise-feature-root"><div class="feature-toolbar enterprise-toolbar"><div><h3>مدیریت ابزار</h3><p>این بخش برای مدیریت ابزارهای سازمانی در نظر گرفته شده است.</p></div></div><div class="panel enterprise-empty"><b>فعلاً اطلاعاتی ثبت نشده است.</b><span>این بخش هنوز فاقد رکورد عملیاتی است.</span></div></div></section>
+
       <section id="vehiclePermanentView" class="view hidden manager-only vehicle-view">
-        <div class="panel"><div class="panel-head"><h3>تحویل و تحول دائم</h3></div></div>
+        <div class="panel"><div class="panel-head"><h3>تحویل دائم خودرو</h3></div></div>
       </section>
       <section id="vehicleTemporaryView" class="view hidden manager-only vehicle-view">
-        <div class="panel"><div class="panel-head"><h3>تحویل و تحول موقت</h3></div></div>
+        <div class="panel"><div class="panel-head"><h3>تحویل موقت خودرو</h3></div></div>
       </section>
     </section>
   </div>
@@ -238,6 +245,6 @@ html body .chat-bubble.bamco-system-message .system-message-open-chips{grid-area
 html body .chat-bubble.bamco-system-message .system-message-open-cta{grid-area:cta!important;direction:rtl!important}
 @media(max-width:600px){html body .chat-bubble.bamco-system-message .system-message-open{grid-template-areas:"title title" "sender sender" "date date" "chips chips" "cta cta"!important}.system-message-open-date{white-space:normal!important}}
 </style>
-<script defer src="assets/js/bamco.bundle.js?v=2026.09.21.4"></script>
+<script defer src="assets/js/bamco.bundle.js?v=2026.09.21.5"></script>
 </body>
 </html>

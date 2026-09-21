@@ -31,14 +31,6 @@
     remove();new MutationObserver(remove).observe(document.documentElement,{childList:true,subtree:true});
   }
 
-  function addVehicleViews(){
-    const workspace=q('.workspace');
-    if(!workspace||q('#vehiclePermanentView'))return;
-    workspace.insertAdjacentHTML('beforeend',`
-      <section id="vehiclePermanentView" class="view hidden vehicle-view"><div class="panel"><div class="panel-head"><div><h3>تحویل دائم</h3><small>مدیریت اطلاعات خودروهای تحویل دائم</small></div></div><div class="empty vehicle-empty">این بخش برای ثبت و مدیریت اطلاعات تحویل دائم آماده است.</div></div></section>
-      <section id="vehicleTemporaryView" class="view hidden vehicle-view"><div class="panel"><div class="panel-head"><div><h3>تحویل موقت</h3><small>مدیریت اطلاعات خودروهای تحویل موقت</small></div></div><div class="empty vehicle-empty">این بخش برای ثبت و مدیریت اطلاعات تحویل موقت آماده است.</div></div></section>`);
-  }
-
   function closeAllGroups(except=null){
     qa('#nav .nav-group.open').forEach(g=>{if(g!==except){g.classList.remove('open');g.querySelector('.nav-group-toggle')?.setAttribute('aria-expanded','false')}});
   }
@@ -72,17 +64,17 @@
 
   function installGroupedNav(){
     const nav=q('#nav');if(!nav||nav.dataset.grouped==='1')return;
-    nav.dataset.grouped='1';addVehicleViews();
+    nav.dataset.grouped='1';
     const sidebar=q('#sidebar'),brand=q('.side-brand'),systemTitle=brand?.querySelector('strong');
     if(sidebar&&systemTitle&&!systemTitle.classList.contains('header-system-title')){systemTitle.classList.add('header-system-title');sidebar.appendChild(systemTitle)}
     const settings=q('#nav button[data-view="settings"]');
     if(settings){settings.classList.add('nav-settings-root');settings.title='تنظیمات';if(!settings.querySelector('b'))settings.insertAdjacentHTML('afterbegin','<b>⚙</b>')}
-    const permanent=document.createElement('button');permanent.dataset.view='vehiclePermanent';permanent.className='hidden vehicle-access-nav';permanent.innerHTML='<b>▣</b><span>تحویل دائم</span>';
-    const temporary=document.createElement('button');temporary.dataset.view='vehicleTemporary';temporary.className='hidden vehicle-access-nav';temporary.innerHTML='<b>▤</b><span>تحویل موقت</span>';
-    const userGuide=q('#nav button[data-view="userGuide"]')||document.createElement('button');
-    if(!userGuide.dataset.view){userGuide.type='button';userGuide.dataset.view='userGuide';userGuide.innerHTML='<b>▤</b><span>راهنمای استفاده سامانه</span>'}
-    nav.append(permanent,temporary,userGuide);
-    qa('#nav>.nav-group[data-group="guide"]').filter(g=>!g.querySelector('[data-view="userGuide"]')).forEach(g=>g.remove());
+    const permanent=q('#nav button[data-view="vehiclePermanent"]');
+    const temporary=q('#nav button[data-view="vehicleTemporary"]');
+    const userGuide=q('#nav button[data-view="userGuide"]');
+    if(permanent)permanent.innerHTML='<b>▣</b><span>تحویل دائم خودرو</span>';
+    if(temporary)temporary.innerHTML='<b>▤</b><span>تحویل موقت خودرو</span>';
+    if(userGuide)userGuide.innerHTML='<b>▤</b><span>راهنمای استفاده سامانه</span>';
     qa('#nav>.nav-divider').forEach(x=>x.remove());
     const catalog=window.BamcoNavigationCatalog;
     if(!catalog)return;
@@ -96,11 +88,11 @@
     refreshVisibility();
     new MutationObserver(refreshVisibility).observe(nav,{subtree:true,attributes:true,attributeFilter:['class']});
 
-    [permanent,temporary].forEach(b=>b.addEventListener('click',()=>{
+    [permanent,temporary].filter(Boolean).forEach(b=>b.addEventListener('click',()=>{
       closeAllGroups();
       document.body.classList.remove('welcome-active');q('#welcomeView')?.classList.add('hidden');
       if(typeof showView==='function')showView(b.dataset.view);
-      const h=q('#viewTitle');if(h)h.textContent=b.dataset.view==='vehiclePermanent'?'تحویل دائم':'تحویل موقت';
+      const h=q('#viewTitle');if(h)h.textContent=b.dataset.view==='vehiclePermanent'?'تحویل دائم خودرو':'تحویل موقت خودرو';
     }));
     document.addEventListener('click',e=>{if(!e.target.closest('#nav .nav-group'))closeAllGroups()});
     document.addEventListener('keydown',e=>{if(e.key==='Escape')closeAllGroups()});

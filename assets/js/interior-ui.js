@@ -7,7 +7,11 @@
   const toolbarSelector='.task-toolbar,.vehicle-toolbar,.people-actions,.manager-toolbar,.workspace-actions,.workspace-report-tools,.suite-toolbar,.sticker-toolbar,.message-center-actions,.response-quick,.tt-switch,.desktop-template-fieldset,.feature-toolbar-actions,.letter-toolbar,.cash-toolbar,.bamco-management-toolbar';
   const ownedCommandSelector='.message-command-row button,.sent-command-row button,.response-command-row button';
   let pending=false,observer;
-  const eligible=view=>view?.matches('.workspace > .view')&&!excluded.has(view.id);
+  const eligible=view=>{
+    if(!view?.matches('.workspace > .view')||excluded.has(view.id))return false;
+    const route=view.id.replace(/View$/,'');
+    return !window.BamcoNavigationCatalog?.standaloneLayoutRoutes?.has(route);
+  };
   const ownedBack=view=>[...view.querySelectorAll(ownedCommandSelector)].find(button=>button.textContent.replace(/\s+/g,' ').trim()==='بازگشت به خانه')||null;
   function decorateView(view){
     if(!eligible(view))return;

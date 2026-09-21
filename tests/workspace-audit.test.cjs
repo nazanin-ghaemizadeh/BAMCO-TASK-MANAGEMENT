@@ -11,7 +11,7 @@ test('every navigation destination has one consistent toolbar return and release
  const f=await fixture({styles:true,tables:{tasks:[task]}}),{w,d}=f;t.after(()=>f.dispose());
  const routes=[...new Set([...d.querySelectorAll('#nav [data-view]')].map(b=>b.dataset.view))];assert(routes.length>=20);
  assert(!routes.includes('emailSettings'));assert(!routes.includes('alertSettings'));
- for(const route of routes.filter(route=>!['projects','parts','invoices','organization'].includes(route))){
+ for(const route of routes.filter(route=>!['projects','parts','invoices','organization','tools'].includes(route))){
   await t.test(route,async()=>{
    await f.open(route);await pause(100);const view=d.querySelector('#'+route+'View');
    const backs=view.querySelectorAll('.content-back,[data-empty-home]');assert.equal(backs.length,1,route+' duplicate return');const back=backs[0];
@@ -23,7 +23,7 @@ test('every navigation destination has one consistent toolbar return and release
    back.click();await pause(20);assert.equal(w.getComputedStyle(view).display,'none');assert(!d.querySelector('#homeView').classList.contains('hidden'));assert.equal(d.querySelector('#nav button.active'),null);
   });
  }
- for(const route of ['projects','parts','invoices','organization']){await f.open(route);const view=d.querySelector('#'+route+'View');assert(view);assert.equal(view.querySelectorAll('.content-back,[data-empty-home]').length,0,route+' must not add a redundant back control');}
+ for(const route of ['projects','parts','invoices','organization','tools']){await f.open(route);const view=d.querySelector('#'+route+'View');assert(view);assert.equal(view.querySelectorAll('.content-back,[data-empty-home]').length,0,route+' must not add a redundant back control');}
  assert.deepEqual(f.errors,[]);
 });
 

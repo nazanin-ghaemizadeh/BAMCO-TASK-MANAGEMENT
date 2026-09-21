@@ -44,13 +44,14 @@ test('enterprise navigation places new modules in the approved groups', () => {
   const runtime = read('assets/js/production-runtime.js');
   const documents = read('assets/js/documents-sites.js');
   assert.match(catalog, /key: 'people'[\s\S]*routes: \['people', 'organization', 'activeSessions', 'loginActivity'\]/);
-  assert.match(catalog, /key: 'vehicle'[\s\S]*'parts'/);
+  assert.match(catalog, /key: 'vehicle'[\s\S]*'parts', 'tools'/);
   assert.match(catalog, /key: 'reports'[\s\S]*'invoices'/);
-  assert.match(catalog, /key: 'resources'[\s\S]*'userGuide'/);
+  assert.match(catalog, /key: 'resources'[\s\S]*'documents', 'sitesAccess', 'letters', 'userGuide'/);
   assert.match(sidebar, /BamcoNavigationCatalog/);
   assert.match(runtime, /const ORDER=Object\.fromEntries\(catalog\.groups/);
   assert.doesNotMatch(catalog, /key: 'organization'/);
-  assert.match(documents, /#nav \.nav-group\[data-group="resources"\]/);
+  assert.match(read('index.html'), /id="userGuideView"/);
+  assert.doesNotMatch(documents, /if\(!q\('#userGuideView'\)\)\{const view=document\.createElement/);
   assert.doesNotMatch(sidebar, /makeGroup\('مرکز راهنما'/);
 });
 
