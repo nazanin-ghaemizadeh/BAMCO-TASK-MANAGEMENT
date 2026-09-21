@@ -15,13 +15,14 @@ function install(){
  const groups=[
   ['people',['people','loginActivity','activeSessions']],
   ['messages',['messages','messageCenter','sentMessages','responseTracking','stickers']],
-  ['reports',['dashboard','performanceReport','responseReport','pettyCash','requestReport']],
+  ['reports',['dashboard','performanceReport','responseReport','pettyCash','invoices','requestReport']],
   ['configuration',['systemOptions','settings','alertSettings','emailSettings']],
   ['tasks',['kanban','archive','taskTimeline','approvals','requestHistory']],
-  ['vehicle',['vehiclePermanent','vehicleTemporary']],
+  ['delivery',['projects']],
+  ['organization',['organization']],
+  ['vehicle',['vehiclePermanent','vehicleTemporary','parts']],
   ['conversations',['groupChat','directMessages','taskChats']],
-  ['resources',['documents','letters','sitesAccess']],
-  ['guide',['userGuide']]
+  ['resources',['documents','letters','sitesAccess','userGuide']]
  ];
  const aliases={loginReport:'loginActivity',messageReport:'sentMessages'};
  const groupObserver=new MutationObserver(()=>syncGroups());

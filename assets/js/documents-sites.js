@@ -113,7 +113,7 @@ async function uploadGuide(button){if(!isMgr())return;setBusy(button,true);try{i
 function installGuide(){
  const nav=q('#nav'),workspace=q('.workspace');if(!nav||!workspace)return;
  if(!q('#userGuideView')){const view=document.createElement('section');view.id='userGuideView';view.className='view hidden';workspace.append(view)}
- if(!q('#nav [data-view="userGuide"]')){const group=document.createElement('div');group.className='nav-group';group.dataset.group='guide';group.dataset.navIcon='help';group.innerHTML='<h3 class="nav-group-toggle"><b class="nav-group-icon">?</b><span>مرکز راهنما</span></h3><div class="nav-group-items"><button type="button" data-view="userGuide"><b>▤</b><span>راهنمای استفاده سامانه</span></button></div>';nav.append(group)}
+ if(!q('#nav [data-view="userGuide"]')){const button=document.createElement('button');button.type='button';button.dataset.view='userGuide';button.innerHTML='<b>▤</b><span>راهنمای استفاده سامانه</span>';const resources=q('#nav .nav-group[data-group="resources"] .nav-group-items');(resources||nav).append(button)}
  if(typeof titles!=='undefined')titles.userGuide='راهنمای استفاده سامانه';
  q('#userGuideView').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.hasAttribute('data-guide-home'))window.bamcoShowHome?.();else if(b.hasAttribute('data-guide-upload'))void uploadGuide(b);else if(b.hasAttribute('data-guide-refresh'))void loadDocuments().catch(error=>notice(error.message,true));else if(b.dataset.guidePreview)void previewDocument(b.dataset.guidePreview,b);else if(b.dataset.guideDownload)void downloadDocument(b.dataset.guideDownload,b,true)});
  renderGuide();
