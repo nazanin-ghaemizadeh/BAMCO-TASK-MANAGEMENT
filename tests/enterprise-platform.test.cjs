@@ -37,3 +37,16 @@ test('project dependency and financial invariants are represented server-side', 
   assert.match(migration, /create or replace function public\.invoice_remaining_amount/);
   assert.match(migration, /create table if not exists public\.audit_trail/);
 });
+
+test('enterprise navigation places new modules in the approved groups', () => {
+  const sidebar = read('assets/js/sidebar.js');
+  const runtime = read('assets/js/production-runtime.js');
+  const documents = read('assets/js/documents-sites.js');
+  assert.match(sidebar, /makeGroup\('مدیریت منابع','vehicle',[^;]*'parts'/);
+  assert.match(sidebar, /makeGroup\('گزارش‌ها','reports',[^;]*'invoices'/);
+  assert.match(sidebar, /makeGroup\('منابع و دسترسی‌ها','resources',[^;]*'userGuide'/);
+  assert.match(runtime, /delivery:\['projects'\]/);
+  assert.match(runtime, /reports:\[[^\]]*'invoices'/);
+  assert.match(documents, /#nav \.nav-group\[data-group="resources"\]/);
+  assert.doesNotMatch(sidebar, /makeGroup\('مرکز راهنما'/);
+});
