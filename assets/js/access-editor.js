@@ -73,7 +73,7 @@
           return `<label class="permission-action"><input type="checkbox" data-permission="${key}" ${checked ? 'checked' : ''} ${disabled ? 'disabled' : ''}><span>${title}</span></label>`;
         }).join('');
         return `<article class="permission-person" data-user-id="${esc(user.id)}" data-protected="${protectedGrant ? 'true' : 'false'}" data-touched="false" data-initial-permissions="${initial}">
-          <label class="permission-person-identity"><input type="checkbox" value="${esc(user.id)}" data-permission="can_view" ${enabled ? 'checked' : ''} ${protectedGrant ? 'disabled' : ''}><span>${esc(label(user))}</span>${user.email ? `<small dir="ltr">${esc(user.email)}</small>` : ''}</label>
+          <label class="permission-person-identity"><input type="checkbox" value="${esc(user.id)}" data-permission="can_view" ${enabled ? 'checked' : ''} ${protectedGrant ? 'disabled' : ''}><span>${esc(label(user))}</span></label>
           <div class="permission-actions" aria-label="سطح دسترسی">${actions}</div>
         </article>`;
       });
@@ -133,7 +133,6 @@
     const title = options.title || `مدیریت دسترسی ${access?.featureTitle?.(featureKey) || featureKey}`;
     dialog.innerHTML = `<form method="dialog">
       <header><h3>${esc(title)}</h3><button type="button" class="ghost" data-close aria-label="بستن">×</button></header>
-      <p>دسترسی این بخش برای هر شخص از همین سامانهٔ واحد تعیین می‌شود. برداشتن مشاهده، یک منع صریح ایجاد می‌کند و دسترسی‌های موروثی را نیز متوقف می‌سازد.</p>
       <input type="search" data-search placeholder="جست‌وجوی نام یا ایمیل…" aria-label="جست‌وجوی افراد">
       <div class="permission-list" role="group" aria-label="افراد و سطح دسترسی"><p role="status">در حال دریافت دسترسی‌ها…</p></div>
       <p class="permission-error" role="alert"></p>

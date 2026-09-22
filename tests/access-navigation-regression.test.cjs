@@ -49,3 +49,30 @@ test('authorization has a dedicated denial state and cannot own renderer hidden 
   const css=fs.readFileSync(path.join(__dirname,'../assets/css/app.css'),'utf8');
   assert.match(css,/\[data-bamco-access-denied="true"\]\{display:none!important\}/);
 });
+
+test('people usernames use organizational email and the access editor shows names only', async t => {
+  const f = await fixture({ fetchResult: ({ endpoint }) => {
+    if (endpoint === 'feature_access_manage_snapshot') return {
+      schema: 'bamco.feature-access.v1', feature: { feature_key: 'letters' },
+      users: [
+        { id: 'test-manager', display_name: 'مدیر آزمایشی', email: 'manager@example.test', active: true },
+        { id: 'test-owner', display_name: 'متولی آزمایشی', email: 'owner@example.test', active: true }
+      ], grants: [], effective_grants: []
+    };
+  }});
+  t.after(() => f.dispose());
+
+  await f.open('people');
+  await until(() => f.d.querySelector('#peopleBody [data-id="test-owner"]'));
+  const owner = f.d.querySelector('#peopleBody [data-id="test-owner"]');
+  assert.equal(owner.cells[6].textContent.trim(), 'owner@example.test');
+  assert.equal(owner.cells[7].textContent.trim(), 'owner@example.test');
+
+  await f.open('letters');
+  f.d.querySelector('#lettersAccess').click();
+  await until(() => f.d.querySelector('#letterAccessDialog .permission-person'));
+  const dialog = f.d.querySelector('#letterAccessDialog');
+  assert.equal(dialog.querySelector('.permission-person-identity small'), null);
+  assert(!dialog.textContent.includes('برداشتن مشاهده، یک منع صریح ایجاد می‌کند'));
+  assert.deepEqual(f.errors, []);
+});
