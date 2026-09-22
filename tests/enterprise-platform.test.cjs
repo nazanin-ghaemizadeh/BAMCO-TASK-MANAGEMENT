@@ -64,7 +64,8 @@ test('organization view is a visual position tree and preserves one primary assi
   assert.match(organization, /فرد شاغل در این جایگاه/);
   assert.match(organization, /data-org-home/);
   assert.match(organization, /data-org-delete/);
-  assert.match(organization, /سمت — فرد شاغل/);
+  assert.match(organization, /positionLabel/);
+  assert.match(organization, /بدون فرد شاغل/);
   assert.doesNotMatch(organization, /data-org-action="unit"/);
   assert.doesNotMatch(organization, /data-org-action="refresh"/);
   assert.doesNotMatch(organization, /name="code"/);
@@ -99,6 +100,7 @@ test('organization hierarchy has one company root and task authority follows the
   const app = read('assets/js/app.js');
   const html = read('index.html');
   const hierarchyMigration = read('supabase/migrations/20260922090000_organization_hierarchy_task_scope.sql');
+  const avatarDirectoryMigration = read('supabase/migrations/20260922093000_organization_directory_avatar_scope.sql');
 
   assert.match(organization, /org-chart-company/);
   assert.match(organization, /function node\(item, rendered/);
@@ -107,6 +109,7 @@ test('organization hierarchy has one company root and task authority follows the
   assert.doesNotMatch(organization, /رابطهٔ بالادست فقط در همین درخت نگهداری می‌شود/);
   assert.doesNotMatch(organization, /modal-actions-spacer/);
   assert.match(app, /organization_scope_directory/);
+  assert.match(app, /organization_scope_directory_with_avatars/);
   assert.match(app, /canManageOrganizationTasks/);
   assert.match(html, /<button data-view="organization"><b>⌘<\/b><span>ساختار سازمانی<\/span><\/button>/);
   assert.match(html, /hierarchy-authority-action/);
@@ -114,4 +117,8 @@ test('organization hierarchy has one company root and task authority follows the
   assert.match(hierarchyMigration, /create policy tasks_hierarchy_read/);
   assert.match(hierarchyMigration, /private\.enforce_task_hierarchy_scope/);
   assert.match(hierarchyMigration, /delete_tasks_and_resequence/);
+  assert.match(avatarDirectoryMigration, /private\.organization_scope_directory_rows/);
+  assert.match(avatarDirectoryMigration, /occupant_avatar_path text/);
+  assert.match(avatarDirectoryMigration, /revoke all on function private\.organization_scope_directory_rows\(\) from public, anon, authenticated/);
+  assert.match(avatarDirectoryMigration, /grant execute on function public\.organization_scope_directory_with_avatars\(\) to authenticated/);
 });

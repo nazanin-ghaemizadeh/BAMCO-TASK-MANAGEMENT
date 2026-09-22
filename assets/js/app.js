@@ -104,7 +104,9 @@ async function refreshOrganizationScope({silent=false}={}){
   const userId=state.user?.id;
   if(!userId||!state.token){state.organizationScope=emptyOrganizationScope();return state.organizationScope}
   try{
-    const rows=await rpc('organization_scope_directory',{});
+    let rows;
+    try{rows=await rpc('organization_scope_directory_with_avatars',{})}
+    catch{rows=await rpc('organization_scope_directory',{})}
     if(state.user?.id!==userId||!state.token)return state.organizationScope;
     const directory=Array.isArray(rows)?rows:[];
     const ownPositions=new Set(directory.filter(row=>row.is_current_position).map(row=>String(row.position_id)));
@@ -119,7 +121,9 @@ async function refreshOrganizationScope({silent=false}={}){
         active:row.occupant_active!==false,
         organization_position_id:row.position_id,
         organization_position_title:row.position_title,
-        organization_role_title:row.role_title
+        organization_role_title:row.role_title,
+        avatar_path:row.occupant_avatar_path||null,
+        updated_at:row.occupant_updated_at||null
       });
     }
     const people=[...peopleById.values()];

@@ -4,7 +4,7 @@
   'use strict';
   const E = window.bamcoEnterprise;
   if (!E) return;
-  const { q, esc, fa, fetchRows, rpc, removeRows, setBusy, notify } = E;
+  const { q, esc, fetchRows, rpc, removeRows, setBusy, notify } = E;
   const model = { roles: [], positions: [], assignments: [], loaded: false, scoped: false };
   let loading = null;
   const root = () => q('#organizationFeatureRoot');
@@ -14,14 +14,25 @@
   const activeAssignment = positionId => model.assignments.find(item =>
     String(item.position_id) === String(positionId) && item.is_primary && !item.valid_to
   );
-  const personLabel = userId => E.personName(userId);
-  const currentPositionIds = () => new Set((window.bamcoOrganizationAccess?.directory?.() || [])
-    .filter(row => row.is_current_position).map(row => String(row.position_id)));
+  function organizationProfiles() {
+    const people = canManageStructure()
+      ? (state.profiles || [])
+      : (state.organizationScope?.people || window.bamcoOrganizationAccess?.people?.() || []);
+    const byId = new Map();
+    for (const person of [state.profile, ...people].filter(Boolean)) {
+      if (person.id) byId.set(String(person.id), person);
+    }
+    return byId;
+  }
+  const personLabel = (userId, profiles = organizationProfiles()) => {
+    const person = profiles.get(String(userId));
+    return person?.display_name || person?.full_name || person?.email || E.personName(userId);
+  };
   const positionLabel = item => {
     const assigned = activeAssignment(item.id);
-    return `${item.title} — ${assigned ? personLabel(assigned.user_id) : 'جایگاه خالی'}`;
+    return `${item.title} — ${assigned ? personLabel(assigned.user_id) : 'بدون فرد شاغل'}`;
   };
-  const initial = item => esc(String(personLabel(activeAssignment(item.id)?.user_id) || item.title || 'س').trim().charAt(0) || 'س');
+  const initial = (item, profiles) => esc(String(personLabel(activeAssignment(item.id)?.user_id, profiles) || item.title || 'س').trim().charAt(0) || 'س');
   const currentSession = (userId, snapshot) => state.user?.id === userId && !!state.token &&
     (!snapshot || window.bamcoAuth?.isCurrent?.(snapshot) !== false);
 
@@ -53,51 +64,97 @@
     return false;
   }
 
-  function node(item, rendered, lineage = new Set()) {
+  function node(item, rendered, depth = 1, lineage = new Set()) {
     const itemId = String(item.id);
-    if (lineage.has(itemId)) return '';
+    if (lineage.has(itemId) || rendered.has(itemId)) return null;
     rendered.add(itemId);
-    const assigned = activeAssignment(item.id);
-    const orgRole = role(item.role_id);
     const nextLineage = new Set(lineage);
     nextLineage.add(itemId);
-    const descendants = childrenOf(item.id).filter(child => !nextLineage.has(String(child.id)));
-    const viewer = !canManageStructure();
-    const current = currentPositionIds().has(itemId);
-    const nodeClass = `org-chart-node${current ? ' is-current-position' : ''}${viewer ? ' org-chart-node-readonly' : ''}`;
-    const copy = `<span class="org-chart-circle">${initial(item)}</span><span class="org-chart-copy"><b>${esc(item.title)}</b><small>${esc(assigned ? personLabel(assigned.user_id) : 'جایگاه خالی')}</small><em>${esc(orgRole?.title || 'بدون نقش')}</em></span>`;
-    const card = viewer
-      ? `<div class="${nodeClass}" role="treeitem" aria-label="${esc(positionLabel(item))}">${copy}</div>`
-      : `<button type="button" class="${nodeClass}" data-org-edit="${item.id}" aria-label="ویرایش ${esc(item.title)}">${copy}</button>`;
-    return `<li class="org-chart-branch">${card}${descendants.length ? `<ul>${descendants.map(child => node(child, rendered, nextLineage)).join('')}</ul>` : ''}</li>`;
+    const children = childrenOf(item.id)
+      .filter(child => !nextLineage.has(String(child.id)))
+      .map(child => node(child, rendered, depth + 1, nextLineage))
+      .filter(Boolean);
+    const x = children.length
+      ? children.reduce((sum, child) => sum + child.x, 0) / children.length
+      : rendered.leafIndex++;
+    rendered.maxDepth = Math.max(rendered.maxDepth, depth);
+    return { item, children, depth, x };
   }
 
-  function chart() {
+  function treeLayout() {
     const rendered = new Set();
+    rendered.leafIndex = 0;
+    rendered.maxDepth = 1;
     const roots = model.positions
       .filter(item => !item.parent_position_id || !position(item.parent_position_id))
       .sort(sortPositions);
-    const branches = roots.map(item => node(item, rendered));
+    const branches = roots.map(item => node(item, rendered)).filter(Boolean);
     // Invalid cyclic data must not make the rest of the hierarchy disappear.
     // Each unresolved component is attached once under the common company root.
     for (const item of model.positions.sort(sortPositions)) {
-      if (!rendered.has(String(item.id))) branches.push(node(item, rendered));
+      if (!rendered.has(String(item.id))) {
+        const branch = node(item, rendered);
+        if (branch) branches.push(branch);
+      }
     }
-    return `<ul class="organization-chart-tree" role="tree"><li class="org-chart-company"><div class="org-chart-company-node"><span class="org-chart-company-mark">ب</span><span><b>ساختار سازمانی</b><small>سطح بالا به پایین</small></span></div><ul class="org-chart-children">${branches.join('')}</ul></li></ul>`;
+    return { branches, leaves: Math.max(rendered.leafIndex, 1), maxDepth: rendered.maxDepth };
+  }
+
+  function chart() {
+    const layout = treeLayout();
+    const profiles = organizationProfiles();
+    const nodeGap = 190;
+    const margin = 120;
+    const usedWidth = Math.max(0, (layout.leaves - 1) * nodeGap);
+    const width = Math.max(640, usedWidth + margin * 2);
+    const firstX = (width - usedWidth) / 2;
+    const companyX = Math.round(width / 2);
+    const companyY = 68;
+    const firstY = 132;
+    const levelGap = 184;
+    const height = Math.max(360, firstY + (layout.maxDepth - 1) * levelGap + 142);
+    const point = entry => ({ x: Math.round(firstX + entry.x * nodeGap), y: firstY + (entry.depth - 1) * levelGap });
+    const links = [];
+    const cards = [];
+    const draw = (entry, parent = null) => {
+      const target = point(entry);
+      const source = parent ? point(parent) : { x: companyX, y: companyY };
+      const sourceY = parent ? source.y + 42 : source.y;
+      const targetY = target.y - 42;
+      const middle = Math.round((sourceY + targetY) / 2);
+      links.push(`<path class="org-chart-link" d="M ${source.x} ${sourceY} V ${middle} H ${target.x} V ${targetY}"/>`);
+      const assigned = activeAssignment(entry.item.id);
+      const orgRole = role(entry.item.role_id);
+      const person = assigned ? personLabel(assigned.user_id, profiles) : '';
+      const avatar = assigned
+        ? `<span class="org-chart-circle" data-profile-photo="${esc(assigned.user_id)}" aria-label="تصویر پروفایل ${esc(person)}">${initial(entry.item, profiles)}</span>`
+        : '<span class="org-chart-circle org-chart-circle-empty" aria-hidden="true"></span>';
+      const copy = `${avatar}<span class="org-chart-copy"><b>${esc(entry.item.title)}</b>${assigned ? `<small>${esc(person)}</small>` : ''}<em>${esc(orgRole?.title || 'بدون نقش')}</em></span>`;
+      const parentId = entry.item.parent_position_id == null ? '' : String(entry.item.parent_position_id);
+      const attributes = `data-org-parent="${esc(parentId)}" style="left:${target.x}px;top:${target.y - 42}px"`;
+      const label = assigned ? `${entry.item.title}، ${person}` : entry.item.title;
+      cards.push(canManageStructure()
+        ? `<button type="button" class="org-chart-node" data-org-edit="${entry.item.id}" ${attributes} aria-label="ویرایش ${esc(label)}">${copy}</button>`
+        : `<div class="org-chart-node org-chart-node-readonly" ${attributes} role="treeitem" aria-label="${esc(label)}">${copy}</div>`);
+      entry.children.forEach(child => draw(child, entry));
+    };
+    layout.branches.forEach(branch => draw(branch));
+    return `<div class="organization-chart-canvas" role="tree" style="width:${width}px;height:${height}px"><svg class="org-chart-links" viewBox="0 0 ${width} ${height}" aria-hidden="true">${links.join('')}</svg><div class="org-chart-company" style="left:${companyX}px;top:16px"><div class="org-chart-company-node"><span class="org-chart-company-mark">ب</span><b>شرکت خودروسازان بم</b></div></div>${cards.join('')}</div>`;
   }
 
   function positionDialog() {
     if (!canManageStructure()) return '';
-    return `<dialog id="organizationPositionDialog" class="modal enterprise-modal"><form id="organizationPositionForm"><div class="modal-head"><div><h3 id="organizationPositionDialogTitle">جایگاه سازمانی جدید</h3><p>این چهار داده مستقیماً نمودار، محدودهٔ سازمانی و گردش تأیید را به‌روزرسانی می‌کنند.</p></div><button type="button" data-org-close>×</button></div><input type="hidden" name="id"><div class="form-grid"><label class="span-2">عنوان سمت<input name="title" required placeholder="مثلاً رئیس برنامه‌ریزی"></label><label>نقش سازمانی<select name="role_id" required></select></label><label>بالادست سازمانی<select name="parent_position_id"><option value="">بدون بالادست</option></select><small>فهرست به‌صورت «سمت — فرد شاغل» نمایش داده می‌شود.</small></label><label class="span-2">فرد شاغل در این جایگاه<select name="user_id"><option value="">جایگاه خالی</option></select><small>فهرست از «افراد و نقش‌ها» خوانده می‌شود.</small></label></div><div class="modal-actions organization-position-actions"><button type="button" class="danger hidden" data-org-delete>حذف جایگاه</button><button type="button" class="ghost" data-org-close>انصراف</button><button type="submit" class="primary">ذخیره جایگاه</button></div></form></dialog>`;
+    return `<dialog id="organizationPositionDialog" class="modal enterprise-modal"><form id="organizationPositionForm"><div class="modal-head"><h3 id="organizationPositionDialogTitle">جایگاه سازمانی جدید</h3><button type="button" data-org-close>×</button></div><input type="hidden" name="id"><div class="form-grid"><label class="span-2">عنوان سمت<input name="title" required placeholder="مثلاً رئیس برنامه‌ریزی"></label><label>نقش سازمانی<select name="role_id" required></select></label><label>بالادست سازمانی<select name="parent_position_id"><option value="">بدون بالادست</option></select></label><label class="span-2">فرد شاغل در این جایگاه<select name="user_id"><option value="">بدون فرد شاغل</option></select></label></div><div class="modal-actions organization-position-actions"><button type="button" class="danger hidden" data-org-delete>حذف جایگاه</button><button type="button" class="ghost" data-org-close>انصراف</button><button type="submit" class="primary">ذخیره جایگاه</button></div></form></dialog>`;
   }
 
   function render() {
     const host = root();
     if (!host) return;
     const editor = canManageStructure();
-    host.innerHTML = `<div class="feature-toolbar enterprise-toolbar"><div><h3>ساختار سازمانی</h3><p>${editor ? 'برای ویرایش هر جایگاه، روی آن بزنید. بالادست و زیرمجموعه‌ها در یک درخت واحد نمایش داده می‌شوند.' : 'این شاخه، جایگاه شما و تمام رده‌های پایین‌ترِ قابل‌نظارت را نشان می‌دهد.'}</p></div><div class="feature-toolbar-actions"><button type="button" class="ghost" data-org-home data-home-action>بازگشت به خانه</button>${editor ? '<button type="button" class="primary" data-org-action="position">＋ جایگاه جدید</button>' : ''}</div></div>
-      <div class="enterprise-grid organization-grid"><section class="panel organization-chart-panel"><div class="panel-head"><div><h3>نمودار سازمانی</h3><small>${model.scoped ? 'محدودهٔ نظارت شما در درخت سازمانی' : 'نمای کامل جایگاه‌ها و مسیرهای نظارت'}</small></div><span class="enterprise-count">${fa(model.positions.length)} جایگاه</span></div><div class="organization-chart" aria-label="نمودار سازمانی">${model.positions.length ? chart() : `<div class="empty">${editor ? 'برای شروع، «جایگاه جدید» را بزنید.' : 'در حال حاضر جایگاهی در محدودهٔ نظارت شما ثبت نشده است.'}</div>`}</div></section></div>${positionDialog()}`;
+    host.innerHTML = `<div class="feature-toolbar enterprise-toolbar"><div><h3>ساختار سازمانی</h3></div><div class="feature-toolbar-actions"><button type="button" class="ghost" data-org-home data-home-action>بازگشت به خانه</button>${editor ? '<button type="button" class="primary" data-org-action="position">＋ جایگاه جدید</button>' : ''}</div></div>
+      <div class="enterprise-grid organization-grid"><section class="panel organization-chart-panel"><div class="panel-head"><h3>نمودار سازمانی</h3></div><div class="organization-chart" aria-label="نمودار سازمانی">${model.positions.length ? chart() : `<div class="empty">${editor ? 'برای شروع، «جایگاه جدید» را بزنید.' : 'در حال حاضر جایگاهی در محدودهٔ نظارت شما ثبت نشده است.'}</div>`}</div></section></div>${positionDialog()}`;
     if (editor) bindPositionForm();
+    void window.bamcoMedia?.avatars?.(host.querySelector('.organization-chart'), [...organizationProfiles().values()]);
     bind();
   }
 
@@ -110,7 +167,7 @@
       .filter(item => item.active && String(item.id) !== String(current?.id) && !isDescendant(item.id, current?.id))
       .sort(sortPositions)
       .map(item => `<option value="${item.id}">${esc(positionLabel(item))}</option>`).join('');
-    form.elements.user_id.innerHTML = '<option value="">جایگاه خالی</option>' + (state.profiles || [])
+    form.elements.user_id.innerHTML = '<option value="">بدون فرد شاغل</option>' + (state.profiles || [])
       .filter(item => item.active !== false)
       .map(item => `<option value="${item.id}">${esc(item.display_name || item.full_name || item.email)}</option>`).join('');
     form.elements.id.value = current?.id || '';
