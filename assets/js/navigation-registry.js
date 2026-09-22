@@ -73,7 +73,7 @@
     return map;
   }, {}));
   const standaloneLayoutRoutes = Object.freeze(new Set(['projects', 'parts', 'invoices', 'organization', 'tools']));
-  const noHomeReturnRoutes = new Set(['projects', 'parts', 'invoices', 'tools']);
+  const noHomeReturnRoutes = new Set(['projects', 'invoices']);
 
   const catalog = Object.freeze({
     groups, byKey, routeGroup, byRoute, featureRoutes, standaloneLayoutRoutes, noHomeReturnRoutes,
@@ -257,6 +257,8 @@
       if (!feature) return;
       const allowed = can(feature, 'view');
       button.classList.toggle('hidden', !allowed);
+      // Remove unavailable routes from layout instead of leaving blank cards.
+      button.hidden = !allowed;
       button.disabled = !allowed;
       button.setAttribute('aria-hidden', allowed ? 'false' : 'true');
       button.setAttribute('aria-disabled', allowed ? 'false' : 'true');

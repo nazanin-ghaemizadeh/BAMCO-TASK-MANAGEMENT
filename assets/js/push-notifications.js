@@ -1,6 +1,7 @@
 (()=>{
 'use strict';
-let registration=null,publicKey='',boundUser='',openedNotification=false;
+let registration=null,publicKey='',boundUser='',openedNotification=false,noticeIdentity='',noticeSeeded=false,lastNoticePoll=0;
+const seenNoticeIds=new Set();
 const timeoutMessage='پاسخ دریافت نشد؛ اتصال را بررسی و دوباره تلاش کنید.';
 function bounded(promise,ms=12000){let timer;return Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error(timeoutMessage)),ms)})]).finally(()=>clearTimeout(timer))}
 const supported=()=>('serviceWorker'in navigator)&&('PushManager'in window)&&('Notification'in window)&&window.isSecureContext;
@@ -37,7 +38,22 @@ function mount(){const view=document.querySelector('#settingsView');const host=v
  ready().then(async reg=>{if(!current())return;const sub=await subscription(reg,state.token);if(!current())return;await call('subscribe',{subscription:serializeSubscription(sub)},state.token);if(!current())return;button.dataset.enabled='true';button.textContent='غیرفعال‌سازی اعلان';status.textContent='اعلان این دستگاه فعال است.'}).catch(e=>{if(current())status.textContent='فعال‌سازی خودکار انجام نشد؛ فعال‌سازی اعلان را بزنید. '+e.message}).finally(finish);
 }
 async function unsubscribe(){if(!supported())return;const r=registration||await navigator.serviceWorker.getRegistration(new URL('./',document.baseURI).href);const s=await r?.pushManager.getSubscription();if(s){try{await call('unsubscribe',{endpoint:s.endpoint})}finally{await s.unsubscribe()}}}
+async function showForegroundAlerts(){
+ const user=state.profile?.id,api=window.BamcoData;if(!user||!state.token||!api?.selectAll||typeof Notification==='undefined'||Notification.permission!=='granted'||!supported())return;
+ const now=Date.now();if(now-lastNoticePoll<15000)return;lastNoticePoll=now;
+ if(noticeIdentity!==String(user)){noticeIdentity=String(user);noticeSeeded=false;seenNoticeIds.clear()}
+ try{
+  const rows=await api.selectAll('notifications',`user_id=eq.${encodeURIComponent(user)}&read_at=is.null&select=id,title,body,notification_type,created_at&order=id.desc&limit=20`);
+  if(!Array.isArray(rows)||noticeIdentity!==String(state.profile?.id))return;
+  const fresh=rows.filter(row=>!seenNoticeIds.has(String(row.id)));
+  const deliver=noticeSeeded?fresh:fresh.filter(row=>row.notification_type==='task_alert');
+  rows.forEach(row=>seenNoticeIds.add(String(row.id)));noticeSeeded=true;
+  if(!deliver.length)return;
+  const reg=await ready();
+  for(const row of deliver)await reg.showNotification(row.title||'BAMCO',{body:String(row.body||'اعلان جدید در سامانه').slice(0,700),icon:new URL('assets/images/bamco-icon-192.png',document.baseURI).href,badge:new URL('assets/images/bamco-icon-192.png',document.baseURI).href,tag:'bamco-'+row.id,dir:'rtl',lang:'fa',data:{url:new URL('./?notification='+encodeURIComponent(row.id),document.baseURI).href}});
+ }catch{}
+}
 window.bamcoPush={unsubscribe};
 document.addEventListener('click',event=>{if(event.target.closest('[data-view="settings"],#headerSettingsBtn')&&typeof state!=='undefined'&&state.profile)mount()});
-setInterval(()=>{if(typeof state==='undefined'||!state.profile)return;const identity=String(state.profile.id);if(boundUser!==identity){boundUser=identity;document.querySelector('#pushSettings')?.remove()}mount();if(!openedNotification&&new URL(location.href).searchParams.has('notification')){openedNotification=true;showView('messages');const url=new URL(location.href);url.searchParams.delete('notification');history.replaceState(null,'',url)}},1500);
+setInterval(()=>{if(typeof state==='undefined'||!state.profile)return;const identity=String(state.profile.id);if(boundUser!==identity){boundUser=identity;document.querySelector('#pushSettings')?.remove()}mount();void showForegroundAlerts();if(!openedNotification&&new URL(location.href).searchParams.has('notification')){openedNotification=true;showView('messages');const url=new URL(location.href);url.searchParams.delete('notification');history.replaceState(null,'',url)}},1500);
 })();

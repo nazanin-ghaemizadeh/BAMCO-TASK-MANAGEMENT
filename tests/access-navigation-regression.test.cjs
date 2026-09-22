@@ -73,6 +73,7 @@ test('people usernames use organizational email and the access editor shows name
   await until(() => f.d.querySelector('#letterAccessDialog .permission-person'));
   const dialog = f.d.querySelector('#letterAccessDialog');
   assert.equal(dialog.querySelector('.permission-person-identity small'), null);
+  assert.equal(dialog.querySelector('.permission-actions'), null);
   assert(!dialog.textContent.includes('برداشتن مشاهده، یک منع صریح ایجاد می‌کند'));
   assert.deepEqual(f.errors, []);
 });

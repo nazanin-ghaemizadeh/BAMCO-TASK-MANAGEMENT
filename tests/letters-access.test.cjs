@@ -28,7 +28,7 @@ test('manager grants letters access through the generic feature editor without c
  f.d.querySelector('#lettersAccess').click();await until(()=>f.d.querySelector('#letterAccessDialog input[type=checkbox]'));
  const box=f.d.querySelector('#letterAccessDialog input[value="test-owner"]');assert(box);box.click();
  f.d.querySelector('#letterAccessDialog form').requestSubmit();await until(()=>f.calls.some(c=>c.endpoint==='set_feature_access'));
- const save=f.calls.find(c=>c.endpoint==='set_feature_access');assert.equal(save.body.p_feature_key,'letters');assert.deepEqual(save.body.p_grants,[{user_id:'test-owner',effect:'allow',can_view:true,can_create:false,can_edit:false,can_delete:false,can_export:false}]);
+ const save=f.calls.find(c=>c.endpoint==='set_feature_access');assert.equal(save.body.p_feature_key,'letters');assert.deepEqual(save.body.p_grants,[{user_id:'test-owner',effect:'allow',can_view:true,can_create:true,can_edit:true,can_delete:true,can_export:true}]);
  assert(!f.calls.some(c=>c.endpoint==='profiles'&&c.method==='PATCH'));assert.deepEqual(f.errors,[]);
 });
 test('turning off effective letters access sends the explicit inherited-grant deny',async t=>{
@@ -39,7 +39,7 @@ test('turning off effective letters access sends the explicit inherited-grant de
  await f.open('letters');f.d.querySelector('#lettersAccess').click();await until(()=>f.d.querySelector('#letterAccessDialog [data-user-id="test-owner"]'));
  const owner=f.d.querySelector('#letterAccessDialog [data-user-id="test-owner"]'),view=owner.querySelector('[data-permission="can_view"]');assert.equal(view.checked,true);view.click();
  f.d.querySelector('#letterAccessDialog form').requestSubmit();await until(()=>f.calls.some(c=>c.endpoint==='set_feature_access'));
- const save=f.calls.find(c=>c.endpoint==='set_feature_access');assert.deepEqual(save.body.p_grants,[{user_id:'test-owner',effect:'deny',can_view:true,can_create:false,can_edit:false,can_delete:false,can_export:false}]);
+ const save=f.calls.find(c=>c.endpoint==='set_feature_access');assert.deepEqual(save.body.p_grants,[{user_id:'test-owner',effect:'deny',can_view:false,can_create:false,can_edit:false,can_delete:false,can_export:false}]);
  assert.deepEqual(f.errors,[]);
 });
 test('a failed canonical access refresh fails closed and blocks a direct route',async t=>{

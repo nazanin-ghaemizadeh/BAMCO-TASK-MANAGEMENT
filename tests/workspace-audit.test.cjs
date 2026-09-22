@@ -23,7 +23,8 @@ test('every navigation destination has one consistent toolbar return and release
    back.click();await pause(20);assert.equal(w.getComputedStyle(view).display,'none');assert(!d.querySelector('#homeView').classList.contains('hidden'));assert.equal(d.querySelector('#nav button.active'),null);
   });
  }
- for(const route of ['projects','parts','invoices','organization','tools']){await f.open(route);const view=d.querySelector('#'+route+'View');assert(view);assert.equal(view.querySelectorAll('.content-back,[data-empty-home]').length,0,route+' must not add a redundant back control');}
+ for(const route of ['projects','invoices','organization']){await f.open(route);const view=d.querySelector('#'+route+'View');assert(view);assert.equal(view.querySelectorAll('.content-back,[data-empty-home]').length,0,route+' must not add a redundant back control');}
+ for(const route of ['parts','tools']){await f.open(route);const view=d.querySelector('#'+route+'View');assert(view);assert.equal(view.querySelectorAll('[data-home-action]').length,1,route+' has one explicit return control');}
  assert.deepEqual(f.errors,[]);
 });
 

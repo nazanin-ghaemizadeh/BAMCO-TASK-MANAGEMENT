@@ -20,7 +20,11 @@ Deno.serve(async req=>{
      if(!endpointAllowed(job.subscription.endpoint))throw Error('Invalid push endpoint');
      await webpush.sendNotification(job.subscription,JSON.stringify({id:String(job.notification_id),title:job.title||'BAMCO',body:String(job.body||'اعلان جدید در سامانه').slice(0,700),url:'./?notification='+job.notification_id}),{TTL:86400,urgency:'normal',timeout:10000});
      await service('finish',{id:job.id,ok:true});accepted++;
-    }catch(error:any){await service('finish',{id:job.id,subscription_id:job.subscription_id,ok:false,expired:[404,410].includes(error.statusCode),error:'Push delivery status '+(error.statusCode||'network error')});failed++}
+    }catch(error:any){
+     const detail=[error?.statusCode,error?.code,error?.message,error?.cause?.message,typeof error==='string'?error:''].filter(Boolean).join(' · ').slice(0,280)||'network error';
+     console.error('web-push-delivery',detail);
+     await service('finish',{id:job.id,subscription_id:job.subscription_id,ok:false,expired:[404,410].includes(error.statusCode),error:'Push delivery status '+detail});failed++
+    }
    }));return reply({accepted,failed});
   }
   const token=(req.headers.get('authorization')||'').replace(/^Bearer /i,'');const {data:{user},error}=await db.auth.getUser(token);if(error||!user)return reply({error:'نشست معتبر نیست.'},401);

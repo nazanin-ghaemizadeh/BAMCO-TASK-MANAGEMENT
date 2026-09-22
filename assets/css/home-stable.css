@@ -87,7 +87,7 @@ html body.content-only #appView .card-topbar,html body.content-only #appView #ho
 @media(prefers-reduced-motion:reduce){html body.card-navigation #appView #homeView #nav [data-view]{transition:none!important}}
 /* Reserve every route slot while access is resolving. Hidden manager/permission
    routes keep their geometry, so revealing one can never move a sibling. */
-html body.card-navigation.card-home-active #appView #homeView #nav .nav-group-items>[data-view].hidden{display:flex!important;visibility:hidden!important;pointer-events:none!important}
+html body.card-navigation.card-home-active #appView #homeView #nav .nav-group-items>[data-view].hidden{display:none!important}
 /* Keep access-gated groups in their grid slot for the entire home session; access resolution must never reflow cards. */
 html body.card-home-active #homeView #nav>.nav-group.hidden{display:flex!important;visibility:hidden!important;pointer-events:none!important}
 html body.card-home-active #homeView,html body.card-home-active #homeView #nav,html body.card-home-active #homeView #nav>.nav-group{contain:layout!important;overflow-anchor:none!important}

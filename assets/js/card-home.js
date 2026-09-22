@@ -47,7 +47,7 @@ function install(){
     if(toggle){const heading=document.createElement('h3');heading.className='nav-group-toggle';heading.innerHTML=toggle.innerHTML;toggle.replaceWith(heading)}
    }
    nav.querySelectorAll('.nav-group').forEach(group=>{
-    const visible=[...group.querySelectorAll('[data-view]')].some(b=>!b.classList.contains('hidden'));
+    const visible=[...group.querySelectorAll('[data-view]')].some(b=>b.hidden!==true&&!b.classList.contains('hidden'));
     if(group.classList.contains('hidden')===visible)group.classList.toggle('hidden',!visible);
    });
    window.BamcoAccess?.applyNavigation?.();

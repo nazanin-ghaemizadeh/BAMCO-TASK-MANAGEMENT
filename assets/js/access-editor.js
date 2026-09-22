@@ -2,6 +2,8 @@
 (() => {
   'use strict';
   const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+  // Storage keeps individual capabilities, while the interface deliberately
+  // grants or revokes the whole feature with one checkbox per person.
   const ACTIONS = Object.freeze([
     ['can_view', 'مشاهده'], ['can_create', 'ثبت'], ['can_edit', 'ویرایش'],
     ['can_delete', 'حذف'], ['can_export', 'خروجی']
@@ -40,7 +42,8 @@
     try { return JSON.parse(row.dataset.initialPermissions || '{}'); } catch { return {}; }
   }
   function currentPermissions(row) {
-    return Object.fromEntries(ACTIONS.map(([key]) => [key, !!row.querySelector(`[data-permission="${key}"]`)?.checked]));
+    const enabled = !!row.querySelector('[data-permission="can_view"]')?.checked;
+    return Object.fromEntries(ACTIONS.map(([key]) => [key, enabled]));
   }
   function samePermissions(left, right) {
     return ACTIONS.every(([key]) => !!left?.[key] === !!right?.[key]);
@@ -67,28 +70,12 @@
         if (protectedGrant) ACTIONS.forEach(([key]) => { permissions[key] = true; });
         const enabled = permissions.can_view;
         const initial = esc(JSON.stringify(permissions));
-        const actions = ACTIONS.slice(1).map(([key, title]) => {
-          const checked = enabled && permissions[key];
-          const disabled = protectedGrant || !enabled;
-          return `<label class="permission-action"><input type="checkbox" data-permission="${key}" ${checked ? 'checked' : ''} ${disabled ? 'disabled' : ''}><span>${title}</span></label>`;
-        }).join('');
         return `<article class="permission-person" data-user-id="${esc(user.id)}" data-protected="${protectedGrant ? 'true' : 'false'}" data-touched="false" data-initial-permissions="${initial}">
           <label class="permission-person-identity"><input type="checkbox" value="${esc(user.id)}" data-permission="can_view" ${enabled ? 'checked' : ''} ${protectedGrant ? 'disabled' : ''}><span>${esc(label(user))}</span></label>
-          <div class="permission-actions" aria-label="سطح دسترسی">${actions}</div>
         </article>`;
       });
     list.innerHTML = rows.join('') || '<p>کاربر فعالی برای مدیریت دسترسی وجود ندارد.</p>';
     list.querySelectorAll('[data-permission="can_view"]').forEach(input => {
-      input.addEventListener('change', () => {
-        const row = input.closest('[data-user-id]');
-        row?.querySelectorAll('.permission-actions input').forEach(control => {
-          control.disabled = !input.checked || row.dataset.protected === 'true';
-          if (!input.checked) control.checked = false;
-        });
-        if (row) refreshTouched(row);
-      });
-    });
-    list.querySelectorAll('.permission-actions input').forEach(input => {
       input.addEventListener('change', () => {
         const row = input.closest('[data-user-id]');
         if (row) refreshTouched(row);
@@ -101,8 +88,8 @@
       .map(row => {
       const read = selector => row.querySelector(selector);
       const view = !!read('[data-permission="can_view"]')?.checked;
-      const out = { user_id: row.dataset.userId, effect: view ? 'allow' : 'deny', can_view: true };
-      for (const [key] of ACTIONS.slice(1)) out[key] = view && !!read(`[data-permission="${key}"]`)?.checked;
+      const out = { user_id: row.dataset.userId, effect: view ? 'allow' : 'deny', can_view: view };
+      for (const [key] of ACTIONS.slice(1)) out[key] = view;
       // A deny is intentionally explicit. It overrides any inherited role or
       // baseline grant, so revocation is immediate and deterministic.
       if (!view) {

@@ -1,25 +1,119 @@
-/* Part master data: engineering specifications, BOM, vehicle/test/project links. */
+/* Operational part handover register. */
 (() => {
   'use strict';
   const E = window.bamcoEnterprise; if (!E) return;
-  const { q, esc, fa, date, fetchRows, insert, setBusy, notify } = E;
-  const model = { parts: [], bom: [], vehicles: [], projects: [], tests: [], history: [], selected: null, search: '' };
+  const { q, esc, date, fetchRows, insert, update, removeRows, setBusy, notify } = E;
+  const headers = [
+    'نام قطعه', 'شماره فنی', 'تحویل‌دهنده در زمان دریافت', 'تحویل‌گیرنده در زمان دریافت',
+    'تحویل‌دهنده در زمان عودت', 'تحویل‌گیرنده در زمان عودت', 'نوع تحویل (دائم یا موقت)',
+    'اگر موقت: تاریخ عودت', 'علت تحویل', 'تاریخ ثبت', 'توضیحات'
+  ];
+  const model = { rows: [], selected: new Set(), search: '' };
   let loadVersion = 0;
   const root = () => q('#partFeatureRoot');
-  const part = id => model.parts.find(item => String(item.id) === String(id));
+  const selectedRow = () => model.rows.find(row => model.selected.has(String(row.id))) || null;
+  const visibleRows = () => {
+    const term = model.search.trim().toLocaleLowerCase('fa');
+    if (!term) return model.rows;
+    return model.rows.filter(row => Object.values(row).some(value => String(value || '').toLocaleLowerCase('fa').includes(term)));
+  };
+  const value = item => esc(item || '—');
+  const delivery = type => type === 'temporary' ? 'موقت' : 'دائم';
+  const rowCells = row => [
+    value(row.part_name), value(row.technical_number), value(row.received_from), value(row.received_by),
+    value(row.returned_from), value(row.returned_by), delivery(row.delivery_type), date(row.return_due_date),
+    value(row.reason), date(row.registered_at), value(row.notes)
+  ].map(cell => `<td>${cell}</td>`).join('');
   function render() {
-    const host = root(); if (!host) return; const visible = model.parts.filter(item => !model.search || [item.part_number, item.fa_name, item.en_name, item.supplier, item.revision].some(value => String(value || '').toLowerCase().includes(model.search.toLowerCase()))); const current = part(model.selected);
-    host.innerHTML = `<div class="feature-toolbar enterprise-toolbar"><div><h3>مدیریت قطعات</h3><p>مرجع مرکزی Part Number، مشخصات مهندسی، BOM و ارتباط با خودرو و آزمون.</p></div><div class="feature-toolbar-actions"><input id="partSearch" type="search" value="${esc(model.search)}" placeholder="کد، نام یا تأمین‌کننده…"><button type="button" class="primary" data-part-action="new">قطعه جدید</button><button type="button" class="ghost" data-part-action="refresh">تازه‌سازی</button></div></div><div class="enterprise-grid part-grid"><section class="panel"><div class="panel-head"><h3>مرجع قطعات</h3><span class="enterprise-count">${fa(visible.length)} قطعه</span></div><div class="enterprise-card-list">${visible.length ? visible.map(item => `<button type="button" class="enterprise-list-card ${String(model.selected) === String(item.id) ? 'active' : ''}" data-part-select="${item.id}"><span><strong>${esc(item.fa_name)}</strong><small class="english">${esc(item.part_number)} · ${esc(item.en_name || '—')}</small></span><span><b>${esc(item.revision || 'بدون Revision')}</b><small>${esc(item.supplier || 'بدون تأمین‌کننده')}</small></span></button>`).join('') : '<div class="empty">قطعه‌ای ثبت نشده است.</div>'}</div></section><section class="panel part-detail">${current ? detailMarkup(current) : '<div class="enterprise-empty"><b>قطعه‌ای انتخاب نشده است.</b><span>برای شروع، قطعه جدید ثبت کنید.</span></div>'}</section></div><dialog id="partDialog" class="modal enterprise-modal"><form id="partForm"><div class="modal-head"><div><h3>شناسنامه قطعه</h3><p>مشخصات توسعه‌پذیر در فیلد JSON نیز نگهداری می‌شوند.</p></div><button type="button" data-part-close>×</button></div><div class="form-grid"><label>Part Number<input name="part_number" class="english" required></label><label>کد قطعه<input name="code" class="english"></label><label>نام فارسی<input name="fa_name" required></label><label>نام انگلیسی<input name="en_name" class="english"></label><label>گروه قطعه<input name="group_name"></label><label>زیرگروه<input name="subgroup_name"></label><label>سازنده<input name="manufacturer"></label><label>تأمین‌کننده<input name="supplier"></label><label>برند<input name="brand"></label><label>کشور سازنده<input name="country"></label><label>شماره نقشه<input name="drawing_number" class="english"></label><label>Revision<input name="revision" class="english"></label><label>آخرین Revision<input type="date" name="last_revision_date"></label><label>نوع قطعه<input name="part_type"></label><label class="span-2">مشخصات مهندسی JSON<textarea name="specifications" rows="4" placeholder='{"وزن":0,"جنس":""}'></textarea></label><label class="span-2">توضیحات<textarea name="description" rows="3"></textarea></label></div><div class="modal-actions"><button type="button" class="ghost" data-part-close>انصراف</button><button type="submit" class="primary">ثبت قطعه</button></div></form></dialog>`; bind();
+    const host = root(); if (!host) return;
+    const rows = visibleRows();
+    host.innerHTML = `<div class="feature-toolbar enterprise-toolbar"><div><h3>مدیریت قطعات</h3></div><div class="feature-toolbar-actions"><input id="partSearch" type="search" value="${esc(model.search)}" placeholder="جست‌وجو"><button type="button" class="ghost" data-home-action>بازگشت به خانه</button><button type="button" class="primary" data-part-action="new">ثبت تحویل قطعه</button><button type="button" class="ghost" data-part-action="edit">ویرایش</button><button type="button" class="ghost" data-part-action="delete">حذف</button><button type="button" class="ghost" data-part-action="export">خروجی اکسل</button><button type="button" class="ghost" data-part-action="refresh">تازه‌سازی</button></div></div><div class="panel table-panel part-handover-panel"><div class="table-wrap"><table class="workspace-table part-handover-table" aria-label="ثبت تحویل قطعات"><thead><tr>${headers.map(title => `<th>${title}</th>`).join('')}</tr></thead><tbody>${rows.length ? rows.map(row => `<tr data-part-handover-id="${esc(row.id)}" aria-selected="${model.selected.has(String(row.id)) ? 'true' : 'false'}" class="${model.selected.has(String(row.id)) ? 'task-selected' : ''}">${rowCells(row)}</tr>`).join('') : `<tr><td class="empty" colspan="${headers.length}">رکوردی ثبت نشده است.</td></tr>`}</tbody></table></div></div><dialog id="partDialog" class="modal enterprise-modal"><form id="partForm"><div class="modal-head"><h3 data-part-form-title>ثبت تحویل قطعه</h3><button type="button" data-part-close aria-label="بستن">×</button></div><div class="form-grid"><label>نام قطعه<input name="part_name" required></label><label>شماره فنی<input name="technical_number" required></label><label>تحویل‌دهنده در زمان دریافت<input name="received_from"></label><label>تحویل‌گیرنده در زمان دریافت<input name="received_by"></label><label>تحویل‌دهنده در زمان عودت<input name="returned_from"></label><label>تحویل‌گیرنده در زمان عودت<input name="returned_by"></label><label>نوع تحویل<select name="delivery_type"><option value="permanent">دائم</option><option value="temporary">موقت</option></select></label><label data-return-due>تاریخ عودت<input name="return_due_date" type="date"></label><label class="span-2">علت تحویل<input name="reason"></label><label class="span-2">توضیحات<textarea name="notes" rows="3"></textarea></label></div><div class="modal-actions"><button type="button" class="ghost" data-part-close>انصراف</button><button type="submit" class="primary">ذخیره</button></div></form></dialog>`;
+    bind();
   }
-  function detailMarkup(item) { const bom = model.bom.filter(row => String(row.parent_part_id) === String(item.id) || String(row.child_part_id) === String(item.id)); const vehicles = model.vehicles.filter(row => String(row.part_id) === String(item.id)); const tests = model.tests.filter(row => String(row.part_id) === String(item.id)); const history = model.history.filter(row => String(row.part_id) === String(item.id)); return `<div class="project-detail-head"><div><span class="enterprise-eyebrow english">${esc(item.part_number)}</span><h3>${esc(item.fa_name)}</h3><p class="english">${esc(item.en_name || '—')}</p></div><span class="status-badge">${esc(item.revision || 'بدون Revision')}</span></div><div class="part-spec-grid"><div><b>گروه</b><span>${esc(item.group_name || '—')}</span></div><div><b>تأمین‌کننده</b><span>${esc(item.supplier || '—')}</span></div><div><b>نقشه فنی</b><span class="english">${esc(item.drawing_number || '—')}</span></div><div><b>آخرین Revision</b><span>${date(item.last_revision_date)}</span></div></div><div class="part-json"><b>مشخصات مهندسی</b><pre>${esc(JSON.stringify(item.specifications || {}, null, 2))}</pre></div><div class="part-related-grid"><section><h4>BOM</h4>${bom.length ? bom.map(row => `<div class="related-row"><span>${String(row.parent_part_id) === String(item.id) ? 'زیرمجموعه' : 'والد'}</span><b>${esc(part(String(row.parent_part_id) === String(item.id) ? row.child_part_id : row.parent_part_id)?.fa_name || '—')}</b><small>${fa(row.quantity)}</small></div>`).join('') : '<div class="empty">رابطه BOM ثبت نشده است.</div>'}</section><section><h4>خودروها و Subsystem</h4>${vehicles.length ? vehicles.map(row => `<div class="related-row"><b class="english">${esc(row.vehicle_ref)}</b><span>${esc(row.trim_name || 'همه تیپ‌ها')}</span><small>${esc(row.subsystem || '—')}</small></div>`).join('') : '<div class="empty">رابطه خودرو ثبت نشده است.</div>'}</section><section><h4>آزمون‌ها</h4>${tests.length ? tests.map(row => `<div class="related-row"><b>${esc(row.test_title)}</b><span>${esc(row.result || 'در انتظار')}</span><small>${date(row.test_date)}</small></div>`).join('') : '<div class="empty">آزمونی ثبت نشده است.</div>'}</section><section><h4>تاریخچه Revision و تغییرات</h4>${history.length ? history.slice(0, 10).map(row => `<div class="related-row"><b>${esc(row.action)}</b><small>${date(row.created_at)}</small></div>`).join('') : '<div class="empty">تاریخچه‌ای وجود ندارد.</div>'}</section></div>`; }
-  async function savePart(event) { event.preventDefault(); const form = event.target, button = q('[type=submit]', form); let specifications = {}; try { specifications = form.elements.specifications.value.trim() ? JSON.parse(form.elements.specifications.value) : {}; } catch { return notify('مشخصات مهندسی باید JSON معتبر باشد.', true); } setBusy(button, true); try { await insert('parts', { part_number: form.elements.part_number.value.trim(), code: form.elements.code.value.trim() || null, fa_name: form.elements.fa_name.value.trim(), en_name: form.elements.en_name.value.trim() || null, group_name: form.elements.group_name.value.trim() || null, subgroup_name: form.elements.subgroup_name.value.trim() || null, manufacturer: form.elements.manufacturer.value.trim() || null, supplier: form.elements.supplier.value.trim() || null, brand: form.elements.brand.value.trim() || null, country: form.elements.country.value.trim() || null, drawing_number: form.elements.drawing_number.value.trim() || null, revision: form.elements.revision.value.trim() || null, last_revision_date: form.elements.last_revision_date.value || null, part_type: form.elements.part_type.value.trim() || null, specifications, description: form.elements.description.value.trim() || null, created_by: state.user.id }); q('#partDialog').close(); notify('قطعه در مرجع مرکزی ثبت شد.'); await load(); } catch (error) { notify(error.message, true); } finally { setBusy(button, false); } }
-  function bind() { const host = root(); if (!host || host.dataset.bound === '1') return; host.dataset.bound = '1'; host.addEventListener('input', event => { if (event.target.id === 'partSearch') { model.search = event.target.value; render(); q('#partSearch')?.focus(); } }); host.addEventListener('click', event => { const action = event.target.closest('[data-part-action]')?.dataset.partAction; if (action === 'new') q('#partDialog')?.showModal(); if (action === 'refresh') void load(); const select = event.target.closest('[data-part-select]'); if (select) { model.selected = select.dataset.partSelect; render(); } if (event.target.closest('[data-part-close]')) event.target.closest('dialog')?.close(); }); host.addEventListener('submit', event => { if (event.target.id === 'partForm') void savePart(event); }); }
-  async function load() { if (!root() || !state.profile) return; const request = ++loadVersion; try { const [parts, bom, vehicles, projects, tests, history] = await Promise.all([fetchRows('parts', 'select=*&order=updated_at.desc,id.desc'), fetchRows('part_bom', 'select=*'), fetchRows('part_vehicle_links', 'select=*'), fetchRows('part_project_links', 'select=*'), fetchRows('part_test_links', 'select=*'), fetchRows('part_history', 'select=*&order=created_at.desc')]); if (request !== loadVersion) return; Object.assign(model, { parts, bom, vehicles, projects, tests, history }); if (!model.selected && parts[0]) model.selected = parts[0].id; if (model.selected && !part(model.selected)) model.selected = parts[0]?.id || null; render(); } catch (error) { if (request === loadVersion && root()) root().innerHTML = `<div class="panel enterprise-error">${esc(error.message)}</div>`; } }
-  function boot() {
-    if (!root()) return;
-    render();
-    window.BamcoNavigation?.registerView?.('parts', { activate: load });
+  function optional(form, name) { return form.elements[name].value.trim() || null; }
+  function syncReturnDate(form) {
+    const temporary = form.elements.delivery_type.value === 'temporary';
+    form.querySelector('[data-return-due]').hidden = !temporary;
+    form.elements.return_due_date.required = temporary;
+    if (!temporary) form.elements.return_due_date.value = '';
   }
+  function openForm(row = null) {
+    const form = q('#partForm'); if (!form) return;
+    form.reset(); form.dataset.id = row?.id || '';
+    q('[data-part-form-title]', form).textContent = row ? 'ویرایش تحویل قطعه' : 'ثبت تحویل قطعه';
+    for (const name of ['part_name', 'technical_number', 'received_from', 'received_by', 'returned_from', 'returned_by', 'delivery_type', 'return_due_date', 'reason', 'notes']) {
+      if (row && form.elements[name]) form.elements[name].value = row[name] || '';
+    }
+    syncReturnDate(form); q('#partDialog')?.showModal();
+  }
+  async function save(event) {
+    event.preventDefault();
+    const form = event.target, button = q('[type="submit"]', form), id = form.dataset.id;
+    const deliveryType = form.elements.delivery_type.value;
+    const payload = {
+      part_name: form.elements.part_name.value.trim(), technical_number: form.elements.technical_number.value.trim(),
+      received_from: optional(form, 'received_from'), received_by: optional(form, 'received_by'),
+      returned_from: optional(form, 'returned_from'), returned_by: optional(form, 'returned_by'),
+      delivery_type: deliveryType, return_due_date: deliveryType === 'temporary' ? form.elements.return_due_date.value : null,
+      reason: optional(form, 'reason'), notes: optional(form, 'notes')
+    };
+    setBusy(button, true);
+    try {
+      if (id) await update('part_handovers', `id=eq.${encodeURIComponent(id)}`, payload);
+      else await insert('part_handovers', payload);
+      q('#partDialog')?.close(); await load(); notify('ثبت تحویل قطعه ذخیره شد.');
+    } catch (error) { notify(error?.message || 'ذخیره انجام نشد.', true); }
+    finally { setBusy(button, false); }
+  }
+  async function removeSelected() {
+    const ids = [...model.selected].map(Number).filter(Number.isSafeInteger);
+    if (!ids.length) return notify('ابتدا یک ردیف را انتخاب کنید.', true);
+    if (window.bamcoConfirm && !await window.bamcoConfirm('رکوردهای انتخاب‌شده حذف شوند؟')) return;
+    try { await removeRows('part_handovers', `id=in.(${ids.join(',')})`); model.selected.clear(); await load(); notify('رکورد انتخاب‌شده حذف شد.'); }
+    catch (error) { notify(error?.message || 'حذف انجام نشد.', true); }
+  }
+  async function exportRows(button) {
+    setBusy(button, true, 'در حال آماده‌سازی…');
+    try {
+      const XLSX = await window.ensureBamcoXLSX();
+      const records = visibleRows().map(row => [row.part_name, row.technical_number, row.received_from, row.received_by, row.returned_from, row.returned_by, delivery(row.delivery_type), row.return_due_date || '', row.reason, row.registered_at || '', row.notes]);
+      const ws = XLSX.utils.aoa_to_sheet([headers, ...records]), wb = XLSX.utils.book_new();
+      ws['!autofilter'] = { ref: XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: records.length, c: headers.length - 1 } }) };
+      wb.Workbook = { Views: [{ RTL: true }] }; XLSX.utils.book_append_sheet(wb, ws, 'تحویل قطعات');
+      XLSX.writeFile(wb, 'ثبت-تحویل-قطعات.xlsx', { compression: true }); notify('فایل اکسل آماده شد.');
+    } catch (error) { notify(error?.message || 'تهیه خروجی انجام نشد.', true); }
+    finally { setBusy(button, false); }
+  }
+  function bind() {
+    const host = root(); if (!host || host.dataset.bound === '1') return; host.dataset.bound = '1';
+    host.addEventListener('input', event => {
+      if (event.target.id !== 'partSearch') return;
+      model.search = event.target.value; render(); q('#partSearch')?.focus();
+    });
+    host.addEventListener('change', event => { if (event.target.name === 'delivery_type') syncReturnDate(event.target.form); });
+    host.addEventListener('click', event => {
+      const action = event.target.closest('[data-part-action]')?.dataset.partAction;
+      if (action === 'new') openForm();
+      if (action === 'edit') { const row = selectedRow(); if (row) openForm(row); else notify('ابتدا یک ردیف را انتخاب کنید.', true); }
+      if (action === 'delete') void removeSelected();
+      if (action === 'export') void exportRows(event.target.closest('button'));
+      if (action === 'refresh') void load();
+      const selected = event.target.closest('[data-part-handover-id]');
+      if (selected) { const id = selected.dataset.partHandoverId; if (!event.ctrlKey && !event.metaKey) model.selected.clear(); model.selected.has(id) ? model.selected.delete(id) : model.selected.add(id); render(); }
+      if (event.target.closest('[data-part-close]')) event.target.closest('dialog')?.close();
+    });
+    host.addEventListener('submit', event => { if (event.target.id === 'partForm') void save(event); });
+  }
+  async function load() {
+    if (!root() || !state.profile) return;
+    const request = ++loadVersion;
+    try {
+      const rows = await fetchRows('part_handovers', 'select=*&order=registered_at.desc,id.desc');
+      if (request !== loadVersion) return;
+      model.rows = rows; model.selected = new Set([...model.selected].filter(id => rows.some(row => String(row.id) === id))); render();
+    } catch (error) { if (request === loadVersion && root()) root().innerHTML = `<div class="panel enterprise-error">${esc(error?.message || 'دریافت اطلاعات انجام نشد.')}</div>`; }
+  }
+  function boot() { if (!root()) return; render(); window.BamcoNavigation?.registerView?.('parts', { activate: load }); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true }); else boot();
   window.bamcoParts = { load, model };
 })();

@@ -18,7 +18,7 @@ test('enterprise pages keep a stable shared shell and persist the project, part 
     },
     tables: {
     projects: [], project_items: [], project_dependencies: [],
-    parts: [], part_bom: [], part_vehicle_links: [], part_project_links: [], part_test_links: [], part_history: [],
+    part_handovers: [],
     invoices: [], invoice_payments: [],
     organization_roles: [{ id: 1, title: 'مدیر', level_no: 4, active: true }],
     organization_units: [], organization_positions: [], organization_position_assignments: [], approval_policies: []
@@ -109,17 +109,20 @@ test('enterprise pages keep a stable shared shell and persist the project, part 
   await f.open('parts');
   d.querySelector('[data-part-action="new"]').click();
   const partForm = d.querySelector('#partForm');
-  field(partForm, 'part_number', 'PN-101');
-  field(partForm, 'code', 'BRAKE-01');
-  field(partForm, 'fa_name', 'کالیپر ترمز');
-  field(partForm, 'specifications', '{"وزن":12.5,"جنس":"آلومینیوم"}');
-  partForm.elements.fa_name.dispatchEvent(new w.Event('input', { bubbles: true }));
+  assert.deepEqual([...d.querySelectorAll('.part-handover-table thead tr:first-child th')].map(cell => cell.textContent.trim()), ['نام قطعه', 'شماره فنی', 'تحویل‌دهنده در زمان دریافت', 'تحویل‌گیرنده در زمان دریافت', 'تحویل‌دهنده در زمان عودت', 'تحویل‌گیرنده در زمان عودت', 'نوع تحویل (دائم یا موقت)', 'اگر موقت: تاریخ عودت', 'علت تحویل', 'تاریخ ثبت', 'توضیحات']);
+  field(partForm, 'part_name', 'کالیپر ترمز');
+  field(partForm, 'technical_number', 'PN-101');
+  field(partForm, 'delivery_type', 'temporary');
+  partForm.elements.delivery_type.dispatchEvent(new w.Event('change', { bubbles: true }));
+  field(partForm, 'return_due_date', '2026-10-01');
+  field(partForm, 'reason', 'آزمون دوام');
+  partForm.elements.part_name.dispatchEvent(new w.Event('input', { bubbles: true }));
   assertActiveRoute('parts');
   submit(w, partForm);
-  await until(() => tables.parts.length === 1);
+  await until(() => tables.part_handovers.length === 1);
   assertActiveRoute('parts');
-  assert.equal(tables.parts[0].part_number, 'PN-101');
-  assert.deepEqual(tables.parts[0].specifications, { وزن: 12.5, جنس: 'آلومینیوم' });
+  assert.equal(tables.part_handovers[0].technical_number, 'PN-101');
+  assert.equal(tables.part_handovers[0].delivery_type, 'temporary');
 
   await f.open('invoices');
   d.querySelector('[data-invoice-action="new"]').click();

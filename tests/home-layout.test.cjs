@@ -92,7 +92,7 @@ test('home styles have one owner, loaded last; phase modules load once',()=>{
  assert.ok(cssBundle.indexOf('source: assets/css/home-stable.css')<cssBundle.indexOf('source: assets/css/home-welcome.css'));
  for(const file of ['card-home','interface-refinement','visual-system','stability'])assert.doesNotMatch(read('assets/css/'+file+'.css'),/#homeView|\.card-topbar|\.card-home-active/);
  const home=read('assets/css/home-stable.css');assert.match(home,/grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);assert.match(home,/grid-auto-rows:var\(--home-row-height/);
- assert.match(home,/card-navigation\.card-home-active #appView #homeView #nav \.nav-group-items>\[data-view\]\.hidden\{display:flex!important;visibility:hidden!important;pointer-events:none!important\}/);
+ assert.match(home,/card-navigation\.card-home-active #appView #homeView #nav \.nav-group-items>\[data-view\]\.hidden\{display:none!important\}/);
  assert.match(home,/\[data-view="responseReport"\]\{grid-column:1!important;grid-row:2!important\}/);
  assert.match(home,/\[data-view="pettyCash"\]\{grid-column:2!important;grid-row:2!important\}/);
  assert.match(home,/\[data-view="systemOptions"\]\{grid-column:1!important;grid-row:1!important\}/);

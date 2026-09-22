@@ -8,14 +8,13 @@ html body dialog.permission-dialog.permission-dialog .permission-list{overflow-y
 html body dialog.permission-dialog.permission-dialog .permission-person{display:grid!important;grid-template-columns:minmax(175px,1fr) minmax(300px,1.6fr)!important;align-items:center!important;gap:10px!important;min-height:50px!important;padding:9px!important;border-bottom:1px solid #e0e9e4!important;box-sizing:border-box!important}
 html body dialog.permission-dialog.permission-dialog .permission-person[hidden]{display:none!important}
 html body dialog.permission-dialog.permission-dialog .permission-person-identity{display:flex!important;align-items:center!important;gap:8px!important;min-width:0!important}html body dialog.permission-dialog.permission-dialog .permission-person-identity span{overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}html body dialog.permission-dialog.permission-dialog .permission-person-identity small{display:block!important;color:#6d7b75!important;font-size:11px!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}
-html body dialog.permission-dialog.permission-dialog .permission-actions{display:flex!important;align-items:center!important;justify-content:flex-start!important;gap:7px!important;flex-wrap:wrap!important}.permission-dialog .permission-action{display:inline-flex!important;align-items:center!important;gap:4px!important;font-size:12px!important;white-space:nowrap!important}
 html body dialog.permission-dialog.permission-dialog .permission-person input{width:18px!important;height:18px!important;min-width:18px!important;flex:0 0 18px!important;margin:0!important}
 html body dialog.permission-dialog.permission-dialog input[type=search]{width:100%!important;box-sizing:border-box!important;min-height:40px!important;flex:none!important}
 html body dialog.permission-dialog.permission-dialog button{font-weight:400!important;min-height:40px!important;cursor:pointer}
 html body dialog.permission-dialog.permission-dialog footer{border-top:1px solid #d5e1d9!important;padding-top:12px!important;background:#fff!important}
 html body dialog.permission-dialog.permission-dialog footer button{flex:1!important}
 html body dialog.permission-dialog.permission-dialog .permission-error{color:#a22!important;max-height:15dvh;overflow:auto}
-@media(max-width:640px){html body dialog.permission-dialog.permission-dialog .permission-person{grid-template-columns:1fr!important}.permission-dialog .permission-actions{padding-inline-start:26px!important}}
+@media(max-width:640px){html body dialog.permission-dialog.permission-dialog .permission-person{grid-template-columns:1fr!important}}
 /* Access management is a normal page action. It inherits the shared ghost
    button style and is placed inside the current page command bar. */
 .feature-access-control{white-space:nowrap;flex:0 0 auto}

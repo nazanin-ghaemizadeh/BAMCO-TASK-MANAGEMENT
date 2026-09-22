@@ -82,7 +82,7 @@
     if(settings)nav.appendChild(settings);
     const refreshVisibility=()=>groups.forEach(g=>{
       if(!g)return;
-      const visible=[...g.querySelectorAll('.nav-group-items>button')].some(b=>!b.classList.contains('hidden'));
+      const visible=[...g.querySelectorAll('.nav-group-items>button')].some(b=>b.hidden!==true&&!b.classList.contains('hidden'));
       if(g.classList.contains('hidden')===visible)g.classList.toggle('hidden',!visible);
     });
     // The catalog is authoritative for navigation placement and BamcoAccess

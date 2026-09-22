@@ -70,7 +70,7 @@ test('organization view is a visual position tree and preserves one primary assi
   assert.doesNotMatch(organization, /data-org-action="refresh"/);
   assert.doesNotMatch(organization, /name="code"/);
   assert.doesNotMatch(organization, /name="unit_id"/);
-  assert.match(catalog, /noHomeReturnRoutes = new Set\(\['projects', 'parts', 'invoices', 'tools'\]\)/);
+  assert.match(catalog, /noHomeReturnRoutes = new Set\(\['projects', 'invoices'\]\)/);
   assert.match(organization, /userOrganization/);
   assert.match(people, /نقش سازمانی/);
   assert.doesNotMatch(people, /name="role"><option value="owner">متولی/);

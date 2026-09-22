@@ -13,7 +13,17 @@
     return !window.BamcoNavigationCatalog?.standaloneLayoutRoutes?.has(route);
   };
   const ownedBack=view=>[...view.querySelectorAll(ownedCommandSelector)].find(button=>button.textContent.replace(/\s+/g,' ').trim()==='بازگشت به خانه')||null;
+  function removeToolbarGuidance(view){
+    // Short instructions in opened tabs duplicate the action labels and make
+    // compact operational pages unnecessarily tall.
+    view.querySelectorAll('.feature-toolbar,.enterprise-toolbar').forEach(toolbar=>{
+      if(toolbar.closest('form,dialog,details'))return;
+      const lead=toolbar.firstElementChild;
+      lead?.querySelectorAll(':scope > p').forEach(paragraph=>paragraph.remove());
+    });
+  }
   function decorateView(view){
+    removeToolbarGuidance(view);
     if(!eligible(view))return;
     view.classList.add('bamco-interior');
     let head=view.querySelector(':scope > .bamco-page-heading');
