@@ -60,7 +60,7 @@ test('organization view is a visual position tree and preserves one primary assi
   const people = read('assets/js/shell.js');
   const catalog = read('assets/js/navigation-registry.js');
   const migration = read('supabase/migrations/20260921103000_organization_people_root_refactor.sql');
-  assert.match(organization, /org-chart-circle/);
+  assert.match(organization, /org-chart-avatar/);
   assert.match(organization, /فرد شاغل در این جایگاه/);
   assert.match(organization, /data-org-home/);
   assert.match(organization, /data-org-delete/);
@@ -95,14 +95,15 @@ test('organization position save owns the submit event and commits through one g
   assert.match(migration, /grant execute on function public\.save_organization_position[\s\S]*to authenticated/);
 });
 
-test('organization hierarchy has one company root and task authority follows the descendant branch', () => {
+test('organization hierarchy uses person cards and task authority follows the descendant branch', () => {
   const organization = read('assets/js/organization-structure.js');
   const app = read('assets/js/app.js');
   const html = read('index.html');
   const hierarchyMigration = read('supabase/migrations/20260922090000_organization_hierarchy_task_scope.sql');
   const avatarDirectoryMigration = read('supabase/migrations/20260922093000_organization_directory_avatar_scope.sql');
 
-  assert.match(organization, /org-chart-company/);
+  assert.match(organization, /org-chart-card/);
+  assert.doesNotMatch(organization, /شرکت خودروسازان بم/);
   assert.match(organization, /function node\(item, rendered/);
   assert.match(organization, /rendered\.add\(itemId\)/);
   assert.match(organization, /organization-position-actions/);

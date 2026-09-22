@@ -103,43 +103,48 @@
   function chart() {
     const layout = treeLayout();
     const profiles = organizationProfiles();
-    const nodeGap = 190;
-    const margin = 120;
+    // A chart card owns both the person's information and its connection
+    // anchors.  Keeping these dimensions in the layout (rather than only in
+    // CSS) makes every connector terminate at a card edge, never in its text.
+    const cardWidth = 262;
+    const cardHeight = 136;
+    const nodeGap = 332;
+    const margin = Math.ceil(cardWidth / 2) + 53;
     const usedWidth = Math.max(0, (layout.leaves - 1) * nodeGap);
-    const width = Math.max(640, usedWidth + margin * 2);
+    const width = Math.max(700, usedWidth + margin * 2);
     const firstX = (width - usedWidth) / 2;
-    const companyX = Math.round(width / 2);
-    const companyY = 68;
-    const firstY = 132;
-    const levelGap = 184;
-    const height = Math.max(360, firstY + (layout.maxDepth - 1) * levelGap + 142);
+    const firstY = 30;
+    const levelGap = 230;
+    const height = Math.max(250, firstY + (layout.maxDepth - 1) * levelGap + cardHeight + 54);
     const point = entry => ({ x: Math.round(firstX + entry.x * nodeGap), y: firstY + (entry.depth - 1) * levelGap });
     const links = [];
     const cards = [];
     const draw = (entry, parent = null) => {
       const target = point(entry);
-      const source = parent ? point(parent) : { x: companyX, y: companyY };
-      const sourceY = parent ? source.y + 42 : source.y;
-      const targetY = target.y - 42;
-      const middle = Math.round((sourceY + targetY) / 2);
-      links.push(`<path class="org-chart-link" d="M ${source.x} ${sourceY} V ${middle} H ${target.x} V ${targetY}"/>`);
+      if (parent) {
+        const source = point(parent);
+        const sourceY = source.y + cardHeight;
+        const targetY = target.y;
+        const middle = Math.round((sourceY + targetY) / 2);
+        links.push(`<path class="org-chart-link" data-org-link-from="${parent.item.id}" data-org-link-to="${entry.item.id}" d="M ${source.x} ${sourceY} V ${middle} H ${target.x} V ${targetY}"/>`);
+      }
       const assigned = activeAssignment(entry.item.id);
       const orgRole = role(entry.item.role_id);
       const person = assigned ? personLabel(assigned.user_id, profiles) : '';
       const avatar = assigned
-        ? `<span class="org-chart-circle" data-profile-photo="${esc(assigned.user_id)}" aria-label="تصویر پروفایل ${esc(person)}">${initial(entry.item, profiles)}</span>`
-        : '<span class="org-chart-circle org-chart-circle-empty" aria-hidden="true"></span>';
+        ? `<span class="org-chart-avatar" data-profile-photo="${esc(assigned.user_id)}" aria-label="تصویر پروفایل ${esc(person)}">${initial(entry.item, profiles)}</span>`
+        : '<span class="org-chart-avatar org-chart-avatar-empty" aria-hidden="true"></span>';
       const copy = `${avatar}<span class="org-chart-copy"><b>${esc(entry.item.title)}</b>${assigned ? `<small>${esc(person)}</small>` : ''}<em>${esc(orgRole?.title || 'بدون نقش')}</em></span>`;
       const parentId = entry.item.parent_position_id == null ? '' : String(entry.item.parent_position_id);
-      const attributes = `data-org-parent="${esc(parentId)}" style="left:${target.x}px;top:${target.y - 42}px"`;
+      const attributes = `data-org-parent="${esc(parentId)}" style="left:${target.x}px;top:${target.y}px"`;
       const label = assigned ? `${entry.item.title}، ${person}` : entry.item.title;
       cards.push(canManageStructure()
-        ? `<button type="button" class="org-chart-node" data-org-edit="${entry.item.id}" ${attributes} aria-label="ویرایش ${esc(label)}">${copy}</button>`
-        : `<div class="org-chart-node org-chart-node-readonly" ${attributes} role="treeitem" aria-label="${esc(label)}">${copy}</div>`);
+        ? `<button type="button" class="org-chart-node org-chart-card" data-org-edit="${entry.item.id}" ${attributes} aria-label="ویرایش ${esc(label)}">${copy}</button>`
+        : `<div class="org-chart-node org-chart-card org-chart-node-readonly" ${attributes} role="treeitem" aria-label="${esc(label)}">${copy}</div>`);
       entry.children.forEach(child => draw(child, entry));
     };
     layout.branches.forEach(branch => draw(branch));
-    return `<div class="organization-chart-canvas" role="tree" style="width:${width}px;height:${height}px"><svg class="org-chart-links" viewBox="0 0 ${width} ${height}" aria-hidden="true">${links.join('')}</svg><div class="org-chart-company" style="left:${companyX}px;top:16px"><div class="org-chart-company-node"><span class="org-chart-company-mark">ب</span><b>شرکت خودروسازان بم</b></div></div>${cards.join('')}</div>`;
+    return `<div class="organization-chart-canvas" role="tree" style="width:${width}px;height:${height}px"><svg class="org-chart-links" viewBox="0 0 ${width} ${height}" aria-hidden="true">${links.join('')}</svg>${cards.join('')}</div>`;
   }
 
   function positionDialog() {
