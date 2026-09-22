@@ -181,6 +181,7 @@
   ].join(',');
   const LOCAL_MANAGE_CONTROL_SELECTOR = '.vehicle-access-button,#lettersAccess,[data-feature-access-control="local"]';
 
+  // Keep access management beside the feature's native command row; never float it over the app shell.
   function actionHostFor(route) {
     if (!route || route === 'home') return null;
     const view = document.getElementById(`${route}View`);
