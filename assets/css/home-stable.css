@@ -162,3 +162,8 @@ html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="d
 html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="sitesAccess"]{grid-column:2!important;grid-row:1!important}
 html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="letters"]{grid-column:1!important;grid-row:2!important}
 html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="userGuide"]{grid-column:2!important;grid-row:2!important}
+
+/* Permission-aware compact layout: unavailable routes leave no empty cells.
+   Catalog/DOM order remains canonical, while every visible route stays inside
+   its own group card. */
+html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view]{grid-column:auto!important;grid-row:auto!important}

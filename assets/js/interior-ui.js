@@ -12,6 +12,15 @@
     const route=view.id.replace(/View$/,'');
     return !window.BamcoNavigationCatalog?.standaloneLayoutRoutes?.has(route);
   };
+  function ensureStandaloneHome(view){
+    if(!view?.matches('.workspace > .view')||excluded.has(view.id))return;
+    const route=view.id.replace(/View$/,'');
+    if(!window.BamcoNavigationCatalog?.standaloneLayoutRoutes?.has(route))return;
+    const host=view.querySelector('.feature-toolbar-actions,.vehicle-toolbar,.bamco-command-bar');
+    if(!host||view.querySelector('.content-back,[data-home-action]'))return;
+    const back=document.createElement('button');back.type='button';back.className='ghost';
+    back.dataset.homeAction='';back.textContent='بازگشت به خانه';host.prepend(back);
+  }
   const ownedBack=view=>[...view.querySelectorAll(ownedCommandSelector)].find(button=>button.textContent.replace(/\s+/g,' ').trim()==='بازگشت به خانه')||null;
   function removeToolbarGuidance(view){
     // Short instructions in opened tabs duplicate the action labels and make
@@ -24,6 +33,7 @@
   }
   function decorateView(view){
     removeToolbarGuidance(view);
+    ensureStandaloneHome(view);
     if(!eligible(view))return;
     view.classList.add('bamco-interior');
     let head=view.querySelector(':scope > .bamco-page-heading');

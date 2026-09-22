@@ -73,6 +73,8 @@
     return map;
   }, {}));
   const standaloneLayoutRoutes = Object.freeze(new Set(['projects', 'parts', 'invoices', 'organization', 'tools']));
+  // Standalone layouts own their toolbar. The interior reconciler still
+  // guarantees a native return control inside those toolbars.
   const noHomeReturnRoutes = new Set(['projects', 'invoices']);
 
   const catalog = Object.freeze({
@@ -283,7 +285,14 @@
     });
     const current = state().view;
     const feature = catalog.featureForRoute(current);
-    if (feature && !can(feature, 'view')) denied(feature, 'view', { route: current, revoked: true });
+    if (feature && !can(feature, 'view')) {
+      // A background access refresh is not a user navigation attempt. Return
+      // to the card home silently so focus/realtime refreshes cannot spam the
+      // user with repeated "access is not active" notifications.
+      document.getElementById(`${current}View`)?.classList.add('hidden');
+      if (typeof window.bamcoShowHome === 'function') window.bamcoShowHome();
+      else if (current !== 'settings' && can('settings', 'view')) window.BamcoNavigation?.navigate?.('settings');
+    }
     syncManageControl();
   }
   function denied(featureKey, action = 'view', detail = {}) {
