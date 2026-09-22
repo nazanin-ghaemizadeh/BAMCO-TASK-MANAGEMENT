@@ -19,6 +19,9 @@ const picked={kanban:new Set(),archive:new Set()};
 const lastPicked={kanban:null,archive:null};
 const seeded={kanban:false,archive:false};
 let deleting=false;
+const canManageTaskScope=()=>typeof window.bamcoOrganizationAccess?.canManageTasks==='function'
+  ?window.bamcoOrganizationAccess.canManageTasks()
+  :(typeof isManager==='function'&&isManager());
 
 function ensureStyles(){
   if(q('#bamcoTaskBulkDeleteSelectionStyleV3'))return;
@@ -71,7 +74,7 @@ function removeLegacySelectAll(){qa('[data-bamco-task-select-all]').forEach(inpu
 function syncToolbar(scope){
   const list=ids(scope),count=list.length;
   if(typeof state!=='undefined'&&state?.selected)state.selected[scope]=count===1?Number(list[0]):null;
-  const del=q(config[scope].del);if(del){del.disabled=count===0;del.textContent=count>1?`حذف (${faDigits(count)})`:'حذف';del.dataset.selectionCount=String(count)}
+  const del=q(config[scope].del);if(del){del.disabled=count===0||!canManageTaskScope();del.textContent=count>1?`حذف (${faDigits(count)})`:'حذف';del.dataset.selectionCount=String(count)}
   for(const selector of config[scope].single){const button=q(selector);if(button)button.disabled=count!==1}
   removeLegacySelectAll();
 }
@@ -118,7 +121,7 @@ function renderBoth(){
 }
 async function deleteSelected(scope){
   if(deleting)return;
-  if(typeof isManager==='function'&&!isManager())return;
+  if(!canManageTaskScope()){typeof toast==='function'&&toast('حذف مستقیم فقط برای بالادستِ این شاخه سازمانی مجاز است.',true);return}
   let selected=ids(scope);
   if(!selected.length&&typeof state!=='undefined'&&state?.selected?.[scope]!=null)selected=[String(state.selected[scope])];
   if(!selected.length){typeof toast==='function'&&toast('ابتدا یک یا چند ردیف را انتخاب کنید.',true);return}

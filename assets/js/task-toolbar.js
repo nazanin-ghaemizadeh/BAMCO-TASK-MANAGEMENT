@@ -10,6 +10,9 @@ const config={
   archive:{body:'#archiveBody',edit:'#archiveEditBtn',secondary:'#archiveRestoreBtn'}
 };
 let busy=false;
+const canManageTaskScope=()=>typeof window.bamcoOrganizationAccess?.canManageTasks==='function'
+  ?window.bamcoOrganizationAccess.canManageTasks()
+  :(typeof isManager==='function'&&isManager());
 
 function selectedIds(scope){
   const api=window.bamcoTaskSelection;
@@ -45,7 +48,7 @@ async function archiveSelected(task){
 async function restoreSelected(task){
   const fn=window.restoreTask||(typeof restoreTask==='function'?restoreTask:null);
   if(fn){await fn(task.id);return}
-  if(typeof isManager==='function'&&!isManager())return;
+  if(!canManageTaskScope())return;
   if(typeof window.bamcoConfirm==='function'&&!await window.bamcoConfirm(`وظیفه «${task.title}» به کانبان بازگردانده شود؟`))return;
   if(!task.owner_id||!task.start_date||!task.due_date){
     openEditor({...task,status:window.bamcoOptions?.label?.('status','doing')||'در حال انجام',done_date:null,_restoring:true});

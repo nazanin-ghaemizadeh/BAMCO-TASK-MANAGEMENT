@@ -16,7 +16,7 @@ const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const fa=n=>String(n??'').replace(/\d/g,d=>'۰۱۲۳۴۵۶۷۸۹'[d]);
 const en=n=>String(n??'').replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d));
 const norm=s=>String(s??'').replace(/ي/g,'ی').replace(/ك/g,'ک').replace(/\u200c/g,' ').replace(/\s+/g,' ').trim();
-const state=globalThis.Bamco.state=Object.assign(globalThis.Bamco.state||{}, {token:'',user:null,profile:null,profiles:[],tasks:[],requests:[],requestHistory:[],definitionRequests:[],requestRoutes:[],dashboardMonitoringStart:window.bamcoDashboardMetrics?.DEFAULT_MONITORING_START||'2026-09-14T00:00:00Z',view:'dashboard',editing:null,reviewing:null,reviewEdit:null,resubmitting:null,dateInput:null,selected:{kanban:null,archive:null}});
+const state=globalThis.Bamco.state=Object.assign(globalThis.Bamco.state||{}, {token:'',user:null,profile:null,profiles:[],tasks:[],requests:[],requestHistory:[],definitionRequests:[],requestRoutes:[],organizationScope:{loaded:false,rows:[],people:[],positionIds:[],hasSubordinates:false},dashboardMonitoringStart:window.bamcoDashboardMetrics?.DEFAULT_MONITORING_START||'2026-09-14T00:00:00Z',view:'dashboard',editing:null,reviewing:null,reviewEdit:null,resubmitting:null,dateInput:null,selected:{kanban:null,archive:null}});
 
 function loginEmail(value){const login=String(value||'').trim().toLowerCase();return login.includes('@')?login:login+'@no-email.invalid'}
 
@@ -89,6 +89,65 @@ const rpc=(name,body)=>api(`/rest/v1/rpc/${name}`,{method:'POST',body});
 // helpers.  It keeps persistence, session handling and API errors consistent.
 globalThis.BamcoData=Object.freeze({select,selectAll,insert,update,rpc});
 const isManager=()=>state.profile?.role==='manager';
+
+function emptyOrganizationScope(){return{loaded:false,rows:[],people:state.profile?[state.profile]:[],positionIds:[],hasSubordinates:false}}
+function scopedTaskProfiles(){
+  if(isManager())return state.profiles||[];
+  const byId=new Map();
+  for(const person of [...(state.organizationScope?.people||[]),state.profile].filter(Boolean)){
+    if(person.id)byId.set(String(person.id),person);
+  }
+  return [...byId.values()];
+}
+function canManageOrganizationTasks(){return isManager()||!!state.organizationScope?.hasSubordinates}
+async function refreshOrganizationScope({silent=false}={}){
+  const userId=state.user?.id;
+  if(!userId||!state.token){state.organizationScope=emptyOrganizationScope();return state.organizationScope}
+  try{
+    const rows=await rpc('organization_scope_directory',{});
+    if(state.user?.id!==userId||!state.token)return state.organizationScope;
+    const directory=Array.isArray(rows)?rows:[];
+    const ownPositions=new Set(directory.filter(row=>row.is_current_position).map(row=>String(row.position_id)));
+    const peopleById=new Map();
+    for(const row of directory){
+      if(!row?.occupant_id)continue;
+      peopleById.set(String(row.occupant_id),{
+        id:row.occupant_id,
+        display_name:row.occupant_display_name||row.occupant_full_name||row.occupant_email||'—',
+        full_name:row.occupant_full_name||row.occupant_display_name||row.occupant_email||'—',
+        email:row.occupant_email||'',
+        active:row.occupant_active!==false,
+        organization_position_id:row.position_id,
+        organization_position_title:row.position_title,
+        organization_role_title:row.role_title
+      });
+    }
+    const people=[...peopleById.values()];
+    state.organizationScope={
+      loaded:true,
+      rows:directory,
+      people,
+      positionIds:[...new Set(directory.map(row=>String(row.position_id)).filter(Boolean))],
+      hasSubordinates:directory.some(row=>!ownPositions.has(String(row.position_id)))
+    };
+  }catch(error){
+    // A pre-migration client can still show the user's own work.  The server is
+    // the authority when the organizational-scope RPC is available.
+    state.organizationScope=emptyOrganizationScope();
+    if(!silent)console.warn('Organization scope could not be loaded.',error);
+  }
+  document.dispatchEvent(new CustomEvent('bamco:organization-scope-updated',{detail:state.organizationScope}));
+  return state.organizationScope;
+}
+window.bamcoOrganizationAccess=Object.freeze({
+  refresh:refreshOrganizationScope,
+  directory:()=>state.organizationScope?.rows||[],
+  people:scopedTaskProfiles,
+  positionIds:()=>state.organizationScope?.positionIds||[],
+  canManageTasks:canManageOrganizationTasks,
+  hasSubordinates:()=>!!state.organizationScope?.hasSubordinates,
+  canManagePerson:id=>isManager()||scopedTaskProfiles().some(person=>String(person.id)===String(id))
+});
 window.bamcoLoadRequestWorkflow=async function(){
   const newest=rows=>[...(rows||[])].sort((a,b)=>(Date.parse(b.created_at||0)||0)-(Date.parse(a.created_at||0)||0)||Number(b.id||0)-Number(a.id||0));
   const terminal=new Set(['approved','rejected','cancelled']);
@@ -154,7 +213,7 @@ function showLogin(){
   window.bamcoAuth?.clear();window.bamcoSession?.clear();
   window.bamcoConversations?.close();window.bamcoChat?.close();
   sessionStorage.removeItem('bamco_session');
-  Object.assign(state,{workspaceRefreshPromise:null,token:'',user:null,profile:null,profiles:[],tasks:[],requests:[],requestHistory:[],definitionRequests:[],requestRoutes:[],dashboardMonitoringStart:window.bamcoDashboardMetrics?.DEFAULT_MONITORING_START||'2026-09-14T00:00:00Z',view:'dashboard',editing:null,reviewing:null,reviewEdit:null,resubmitting:null,dateInput:null,selected:{kanban:null,archive:null}});
+  Object.assign(state,{workspaceRefreshPromise:null,token:'',user:null,profile:null,profiles:[],tasks:[],requests:[],requestHistory:[],definitionRequests:[],requestRoutes:[],organizationScope:{loaded:false,rows:[],people:[],positionIds:[],hasSubordinates:false},dashboardMonitoringStart:window.bamcoDashboardMetrics?.DEFAULT_MONITORING_START||'2026-09-14T00:00:00Z',view:'dashboard',editing:null,reviewing:null,reviewEdit:null,resubmitting:null,dateInput:null,selected:{kanban:null,archive:null}});
   $('#appView').classList.add('hidden');
   $('#loginView').classList.remove('hidden');
 }
@@ -172,10 +231,11 @@ async function enterApp(){
   if(failed){if(checks[1].status==='fulfilled')await window.bamcoSession?.end('logout');throw failed.reason}
   const profiles=checks[0].value;
   if(state.user?.id!==enteringUser)throw Error('نشست ورود تغییر کرده است.');if(!profiles.length||profiles[0].active===false){await window.bamcoSession?.end('logout');throw Error(profiles.length?'حساب کاربری غیرفعال است.':'پروفایل کاربر پیدا نشد.')}state.profile=profiles[0];
-  $('#userName').textContent=state.profile.display_name||state.profile.full_name||state.profile.email;$('#userRole').textContent=isManager()?'مدیر سامانه':'متولی';$('#avatar').textContent=(state.profile.display_name||state.profile.full_name||'ب').trim()[0];if(!state.profile.must_change_password)window.refreshProfileAvatar?.();
-  $('#approvalsNav').classList.remove('hidden');$$('.manager-only').forEach(x=>x.classList.toggle('hidden',!isManager()));
-  $('#viewSubtitle').textContent=isManager()?'نمای کلی وظایف و عملکرد همه متولیان':'فقط وظایف و عملکرد مربوط به شما';
-  $('#kanbanScope').textContent=isManager()?'نمای همه متولیان':'فقط وظایف شما';$('#archiveScope').textContent=isManager()?'نمای همه متولیان':'فقط آرشیو شما';
+  await refreshOrganizationScope({silent:true});
+  $('#userName').textContent=state.profile.display_name||state.profile.full_name||state.profile.email;$('#userRole').textContent=isManager()?'مدیر سامانه':canManageOrganizationTasks()?'سرپرست سازمانی':'متولی';$('#avatar').textContent=(state.profile.display_name||state.profile.full_name||'ب').trim()[0];if(!state.profile.must_change_password)window.refreshProfileAvatar?.();
+  $('#approvalsNav').classList.remove('hidden');$$('.manager-only').forEach(x=>x.classList.toggle('hidden',!isManager()));$$('.hierarchy-authority-action').forEach(x=>x.classList.toggle('hidden',!canManageOrganizationTasks()));
+  $('#viewSubtitle').textContent=isManager()?'نمای کلی وظایف و عملکرد همه متولیان':canManageOrganizationTasks()?'نمای وظایف خود و زیردستان سازمانی':'فقط وظایف و عملکرد مربوط به شما';
+  $('#kanbanScope').textContent=isManager()?'نمای همه متولیان':canManageOrganizationTasks()?'نمای خود و زیردستان سازمانی':'فقط وظایف شما';$('#archiveScope').textContent=isManager()?'نمای همه متولیان':canManageOrganizationTasks()?'آرشیو خود و زیردستان سازمانی':'فقط آرشیو شما';
   void window.bamcoInbox?.load();
   if(window.matchMedia('(max-width:760px)').matches)$('#sidebar').classList.add('collapsed');
   $('#loginView').classList.add('hidden');$('#appView').classList.remove('hidden');
@@ -187,7 +247,7 @@ async function enterApp(){
 }
 async function refresh(){
   try{
-    state.profiles=isManager()?await select('profiles','select=id,email,login_name,must_change_password,password_changed_at,full_name,display_name,gender,excel_name,role,active,default_message_channel,messaging_enabled,avatar_path,updated_at&order=full_name'):[state.profile];
+    state.profiles=isManager()?await select('profiles','select=id,email,login_name,must_change_password,password_changed_at,full_name,display_name,gender,excel_name,role,active,default_message_channel,messaging_enabled,avatar_path,updated_at&order=full_name'):scopedTaskProfiles();
     state.tasks=await selectAll('task_status_view','select=*&order=id.desc');
     const workflow=await window.bamcoLoadRequestWorkflow();
     state.requests=workflow.requests;state.requestHistory=workflow.history;state.requestRoutes=workflow.routes;
@@ -245,11 +305,11 @@ $('#nav').addEventListener('click',e=>{if(window.matchMedia('(max-width:760px)')
 document.addEventListener('pointerdown',e=>{if(!window.matchMedia('(max-width:760px)').matches)return;const sidebar=$('#sidebar');if(!sidebar.classList.contains('collapsed')&&!sidebar.contains(e.target))sidebar.classList.add('collapsed')});
 $('#logoutBtn').addEventListener('click',async()=>{await window.bamcoAuth.signOut();$('#loginForm').reset();$('#email').focus()});$$('[data-close]').forEach(b=>b.addEventListener('click',()=>document.getElementById(b.dataset.close).close()));
 
-function fillOwners(selected){const sel=$('#taskForm [name=owner_id]');const source=isManager()?state.profiles:[state.profile];sel.innerHTML='<option value="">بدون متولی</option>'+source.map(p=>`<option value="${p.id}" ${p.id===selected?'selected':''} ${p.active===false&&p.id!==selected?'disabled':''}>${safe(p.display_name||p.full_name||p.email)}${p.active===false?' (غیرفعال)':''}</option>`).join('');sel.value=selected||'';sel.disabled=!isManager()}
+function fillOwners(selected){const sel=$('#taskForm [name=owner_id]');const source=scopedTaskProfiles();sel.innerHTML='<option value="">بدون متولی</option>'+source.map(p=>`<option value="${p.id}" ${p.id===selected?'selected':''} ${p.active===false&&p.id!==selected?'disabled':''}>${safe(p.display_name||p.full_name||p.email)}${p.active===false?' (غیرفعال)':''}</option>`).join('');sel.value=selected||'';sel.disabled=!canManageOrganizationTasks()}
 function syncTaskState(){
   const f=$('#taskForm'),rule=window.bamcoOptions.status(f.elements.status.value);if(!rule)return;
-  if(rule.owner_mode==='none')f.elements.owner_id.value='';else if(!isManager())f.elements.owner_id.value=state.profile.id;
-  f.elements.owner_id.disabled=rule.owner_mode==='none'||!isManager()||!!(state.editing?.archived&&state.editing?.owner_deleted_at);f.elements.owner_id.required=rule.owner_mode==='required';
+  if(rule.owner_mode==='none')f.elements.owner_id.value='';else if(!canManageOrganizationTasks())f.elements.owner_id.value=state.profile.id;
+  f.elements.owner_id.disabled=rule.owner_mode==='none'||!canManageOrganizationTasks()||!!(state.editing?.archived&&state.editing?.owner_deleted_at);f.elements.owner_id.required=rule.owner_mode==='required';
   for(const [name,mode]of [['start_date',rule.start_mode],['due_date',rule.due_mode],['done_date',rule.kind==='completed'?'optional':'none']]){
     const disabled=mode==='none';if(disabled)setJalaliField(name+'_j','');f.elements[name+'_j'].disabled=disabled;f.elements[name+'_j'].required=mode==='required';f.querySelector(`[data-date-input="${name}_j"]`).disabled=disabled;
   }
@@ -259,10 +319,11 @@ function openTask(task=null){
   state.editing=task;
   const f=$('#taskForm');
   f.reset();window.bamcoOptions.fillForm(task);
-  fillOwners(task?.owner_id||(!isManager()?state.profile.id:null));
-  $('#taskDialogTitle').textContent=state.reviewEdit?'اصلاح درخواست مدیر':state.resubmitting?'اصلاح و ارسال مجدد':task?(isManager()?'ویرایش وظیفه':'درخواست تغییر وظیفه'):(isManager()?'افزودن وظیفه':'درخواست وظیفه جدید');
-  $('#taskDialogHint').textContent=state.reviewEdit?'اصلاحات همراه با تأیید درخواست اعمال می‌شود.':state.resubmitting?'موارد خواسته‌شده را اصلاح و دوباره ارسال کنید.':isManager()?'تغییرات مدیر بلافاصله اعمال می‌شود.':'درخواست شما پس از تأیید مدیر اعمال می‌شود.';
-  $('#saveTaskBtn').textContent=state.reviewEdit?'ثبت اصلاحات و تأیید':state.resubmitting?'ارسال مجدد':isManager()?(task?'ثبت تغییرات':'ثبت وظیفه'):'ارسال برای تأیید مدیر';
+  const directAuthority=canManageOrganizationTasks();
+  fillOwners(task?.owner_id||(!directAuthority?state.profile.id:null));
+  $('#taskDialogTitle').textContent=state.reviewEdit?'اصلاح درخواست مدیر':state.resubmitting?'اصلاح و ارسال مجدد':task?(directAuthority?'ویرایش وظیفه':'درخواست تغییر وظیفه'):(directAuthority?'افزودن وظیفه':'درخواست وظیفه جدید');
+  $('#taskDialogHint').textContent=state.reviewEdit?'اصلاحات همراه با تأیید درخواست اعمال می‌شود.':state.resubmitting?'موارد خواسته‌شده را اصلاح و دوباره ارسال کنید.':directAuthority?'تغییرات فقط برای خود شما و رده‌های زیرمجموعه در درخت سازمانی اعمال می‌شود.':'درخواست شما پس از تأیید بالادست در ساختار سازمانی اعمال می‌شود.';
+  $('#saveTaskBtn').textContent=state.reviewEdit?'ثبت اصلاحات و تأیید':state.resubmitting?'ارسال مجدد':directAuthority?(task?'ثبت تغییرات':'ثبت وظیفه'):'ارسال برای تأیید';
   if(task){
     for(const key of ['title','description','status','priority','reminder_days','manager_notes'])if(f.elements[key])f.elements[key].value=task[key]??'';
     setJalaliField('start_date_j',task.start_date);setJalaliField('due_date_j',task.due_date);setJalaliField('done_date_j',task.done_date);
@@ -296,7 +357,7 @@ $('#taskForm').addEventListener('submit',async e=>{
   delete data.start_date_j;delete data.done_date_j;delete data.due_date_j;
   for(const k of ['start_date','done_date','due_date'])if(!data[k])data[k]=null;
   data.reminder_days=Number(data.reminder_days||0);
-  if(!isManager())data.owner_id=state.profile.id;
+  if(!canManageOrganizationTasks())data.owner_id=state.profile.id;
   if(!data.owner_id)data.owner_id=null;
   if(state.editing?.archived&&state.editing?.owner_deleted_at)data.owner_id=state.editing.owner_id;
   try{window.bamcoOptions.normalizeTask(data,state.editing)}catch(error){toast(error.message,true);return}
@@ -314,7 +375,7 @@ $('#taskForm').addEventListener('submit',async e=>{
       await rpc('review_request_stage',{p_request_id:state.reviewEdit.id,p_decision:'approved',p_note:state.reviewEdit.managerNote||null,p_final_data:data});
     }else if(state.resubmitting){
       await rpc('resubmit_change_request',{p_request_id:state.resubmitting.id,p_proposed_data:data});
-    }else if(isManager()){
+    }else if(canManageOrganizationTasks()){
       if(completing){data.archived=true;data.archived_at=new Date().toISOString()}
       if(state.editing?._restoring){await update('tasks',`id=eq.${state.editing.id}`,{...data,archived:true,archived_at:state.editing.archived_at||new Date().toISOString()});await rpc('restore_tasks_to_kanban_and_resequence',{p_task_ids:[Number(state.editing.id)]})}
       else if(state.editing)await update('tasks',`id=eq.${state.editing.id}`,data);
@@ -327,15 +388,15 @@ $('#taskForm').addEventListener('submit',async e=>{
       }
     }
     $('#taskDialog').close();
-    toast(state.reviewEdit?'درخواست با اصلاحات مدیر تأیید شد.':state.resubmitting?'درخواست اصلاح‌شده دوباره ارسال شد.':isManager()?(completing?'وظیفه انجام شد و به آرشیو منتقل شد.':'تغییرات ثبت شد.'):(completing?'درخواست تکمیل برای مدیر ارسال شد.':'درخواست برای تأیید مدیر ارسال شد.'));
+    toast(state.reviewEdit?'درخواست با اصلاحات مدیر تأیید شد.':state.resubmitting?'درخواست اصلاح‌شده دوباره ارسال شد.':canManageOrganizationTasks()?(completing?'وظیفه انجام شد و به آرشیو منتقل شد.':'تغییرات ثبت شد.'):(completing?'درخواست تکمیل برای تأیید ارسال شد.':'درخواست برای تأیید بالادست ارسال شد.'));
     state.reviewEdit=null;state.resubmitting=null;
     await refresh();
   }catch(err){toast(err.message,true)}finally{$('#saveTaskBtn').disabled=false}
 });
-window.archiveTask=async id=>{const task=state.tasks.find(t=>String(t.id)===String(id));if(!task)return;const rule=window.bamcoOptions.status(task),preserve=!!rule?.archivable&&!window.bamcoOptions.completed(task),message=preserve?`وظیفه «${task.title}» با وضعیت «${task.status}» به آرشیو منتقل شود؟`:`وظیفه «${task.title}» تکمیل و آرشیو شود؟`;if(!await window.bamcoConfirm(message))return;try{const data={archived:true,archived_at:new Date().toISOString(),...(preserve?{}:{status:window.bamcoOptions.label('status','done'),done_date:task.done_date||new Date().toISOString().slice(0,10)})};if(isManager())await update('tasks',`id=eq.${id}`,data);else await rpc('submit_change_request',{p_request_type:preserve?'update':'complete',p_task_id:Number(id),p_proposed_data:preserve?{...data,status:task.status}:{done_date:data.done_date},p_note:null});toast(isManager()?'وظیفه به آرشیو منتقل شد.':'درخواست برای تأیید مدیر ارسال شد.');await refresh()}catch(error){toast(error.message,true)}};
+window.archiveTask=async id=>{const task=state.tasks.find(t=>String(t.id)===String(id));if(!task)return;const rule=window.bamcoOptions.status(task),preserve=!!rule?.archivable&&!window.bamcoOptions.completed(task),message=preserve?`وظیفه «${task.title}» با وضعیت «${task.status}» به آرشیو منتقل شود؟`:`وظیفه «${task.title}» تکمیل و آرشیو شود؟`;if(!await window.bamcoConfirm(message))return;try{const data={archived:true,archived_at:new Date().toISOString(),...(preserve?{}:{status:window.bamcoOptions.label('status','done'),done_date:task.done_date||new Date().toISOString().slice(0,10)})};if(canManageOrganizationTasks())await update('tasks',`id=eq.${id}`,data);else await rpc('submit_change_request',{p_request_type:preserve?'update':'complete',p_task_id:Number(id),p_proposed_data:preserve?{...data,status:task.status}:{done_date:data.done_date},p_note:null});toast(canManageOrganizationTasks()?'وظیفه به آرشیو منتقل شد.':'درخواست برای تأیید بالادست ارسال شد.');await refresh()}catch(error){toast(error.message,true)}};
 
-window.deleteTask=async id=>{const task=state.tasks.find(t=>String(t.id)===String(id));if(!task)return;const prompt=isManager()?`وظیفه «${task.title}» برای همیشه حذف شود؟`:`درخواست حذف وظیفه «${task.title}» برای مدیر ارسال شود؟`;if(!await window.bamcoConfirm(prompt))return;try{if(isManager()){await rpc('delete_tasks_and_resequence',{p_task_ids:[Number(id)]});toast('وظیفه حذف و شناسه‌های نمایشی بازشماری شد.')}else{await rpc('submit_change_request',{p_request_type:'delete',p_task_id:Number(id),p_proposed_data:{},p_note:null});toast('درخواست حذف برای مدیر ارسال شد.')}await refresh()}catch(err){toast(err.message,true)}};
-async function restoreTask(id){if(!isManager())return;const task=state.tasks.find(t=>String(t.id)===String(id));if(!task||!await window.bamcoConfirm(`وظیفه «${task.title}» به کانبان بازگردانده شود؟`))return;if(!task.owner_id||!task.start_date||!task.due_date){openTask({...task,status:window.bamcoOptions.label('status','doing'),done_date:null,_restoring:true});$('#taskDialogHint').textContent='برای بازگشت به کانبان، متولی و تاریخ شروع و پایان را کامل کنید.';return}try{await rpc('restore_tasks_to_kanban_and_resequence',{p_task_ids:[Number(id)]});state.selected.archive=null;toast('وظیفه به کانبان بازگردانده و شماره‌ها بازشماری شد.');await refresh()}catch(err){toast(err.message,true)}}
+window.deleteTask=async id=>{const task=state.tasks.find(t=>String(t.id)===String(id));if(!task)return;const prompt=canManageOrganizationTasks()?`وظیفه «${task.title}» برای همیشه حذف شود؟`:`درخواست حذف وظیفه «${task.title}» برای بالادست ارسال شود؟`;if(!await window.bamcoConfirm(prompt))return;try{if(canManageOrganizationTasks()){await rpc('delete_tasks_and_resequence',{p_task_ids:[Number(id)]});toast('وظیفه حذف و شناسه‌های نمایشی بازشماری شد.')}else{await rpc('submit_change_request',{p_request_type:'delete',p_task_id:Number(id),p_proposed_data:{},p_note:null});toast('درخواست حذف برای تأیید بالادست ارسال شد.')}await refresh()}catch(err){toast(err.message,true)}};
+async function restoreTask(id){if(!canManageOrganizationTasks())return;const task=state.tasks.find(t=>String(t.id)===String(id));if(!task||!await window.bamcoConfirm(`وظیفه «${task.title}» به کانبان بازگردانده شود؟`))return;if(!task.owner_id||!task.start_date||!task.due_date){openTask({...task,status:window.bamcoOptions.label('status','doing'),done_date:null,_restoring:true});$('#taskDialogHint').textContent='برای بازگشت به کانبان، متولی و تاریخ شروع و پایان را کامل کنید.';return}try{await rpc('restore_tasks_to_kanban_and_resequence',{p_task_ids:[Number(id)]});state.selected.archive=null;toast('وظیفه به کانبان بازگردانده و شماره‌ها بازشماری شد.');await refresh()}catch(err){toast(err.message,true)}}
 $('#kanbanEditBtn').addEventListener('click',()=>{const t=selectedTask('kanban');if(t)openTask(t)});$('#archiveEditBtn').addEventListener('click',()=>{const t=selectedTask('archive');if(t)openTask(t)});
 $('#kanbanArchiveBtn').addEventListener('click',()=>{const t=selectedTask('kanban');if(t)archiveTask(t.id)});$('#archiveRestoreBtn').addEventListener('click',()=>{const t=selectedTask('archive');if(t)restoreTask(t.id)});
 $('#kanbanDeleteBtn').addEventListener('click',()=>{const t=selectedTask('kanban');if(t)deleteTask(t.id)});$('#archiveDeleteBtn').addEventListener('click',()=>{const t=selectedTask('archive');if(t)deleteTask(t.id)});
@@ -925,7 +986,8 @@ showLogin();
     const loadingUser=state.user?.id,loadingSession=window.bamcoAuth?.snapshot?.(),taskRevision=state.taskRevision||0;
     try{
       const optionsPromise=window.bamcoOptions.load();
-      const profilesPromise=isManager()?select('profiles','select=id,email,login_name,must_change_password,password_changed_at,full_name,display_name,gender,excel_name,role,active,default_message_channel,messaging_enabled,avatar_path,updated_at&order=full_name'):Promise.resolve([state.profile]);
+      const scopePromise=refreshOrganizationScope({silent:true});
+      const profilesPromise=scopePromise.then(()=>isManager()?select('profiles','select=id,email,login_name,must_change_password,password_changed_at,full_name,display_name,gender,excel_name,role,active,default_message_channel,messaging_enabled,avatar_path,updated_at&order=full_name'):scopedTaskProfiles());
       const tasksPromise=selectAll('task_status_view','select=*&order=id.desc');
       const requestsPromise=selectAll('change_requests','select=*&request_status=in.(pending,in_review,needs_revision)&order=created_at.desc,id.desc');
       const historyPromise=selectAll('change_requests','select=*&request_status=in.(approved,rejected,cancelled)&order=created_at.desc');

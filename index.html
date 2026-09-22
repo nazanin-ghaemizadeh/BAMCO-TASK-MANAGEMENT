@@ -118,7 +118,7 @@ html body.department-pending #departmentEntry .department-state{font-size:16px!i
         <button data-view="projects"><b>▰</b><span>مدیریت پروژه‌ها</span></button>
         <button data-view="parts"><b>◈</b><span>مدیریت قطعات</span></button>
         <button data-view="invoices"><b>▤</b><span>صورتحساب‌ها و تعهدات مالی</span></button>
-        <button data-view="organization" class="manager-only"><b>⌘</b><span>ساختار سازمانی</span></button>
+        <button data-view="organization"><b>⌘</b><span>ساختار سازمانی</span></button>
         <button data-view="vehiclePermanent" class="manager-only vehicle-access-nav"><b>▣</b><span>تحویل دائم خودرو</span></button>
         <button data-view="vehicleTemporary" class="manager-only vehicle-access-nav"><b>▤</b><span>تحویل موقت خودرو</span></button>
         <button data-view="tools" class="manager-only"><b>⌁</b><span>مدیریت ابزار</span></button>
@@ -152,7 +152,7 @@ html body.department-pending #departmentEntry .department-state{font-size:16px!i
         <div class="panel table-panel">
           <div class="panel-head"><div><h3>وظایف جاری</h3><small id="kanbanScope"></small></div><input id="kanbanSearch" class="search" placeholder="جست‌وجو در وظایف…" /></div>
           <input id="importFile" type="file" accept=".xlsx,.xls,.csv" hidden>
-          <div class="task-toolbar"><button id="importBtn" class="ghost manager-only">ورود از اکسل</button><button id="kanbanExportBtn" class="ghost">خروجی اکسل</button><button id="kanbanEditBtn" class="ghost" disabled>ویرایش</button><button id="kanbanArchiveBtn" class="ghost" disabled>آرشیو فعالیت</button><button id="kanbanDeleteBtn" class="danger manager-only" disabled>حذف</button></div>
+          <div class="task-toolbar"><button id="importBtn" class="ghost manager-only">ورود از اکسل</button><button id="kanbanExportBtn" class="ghost">خروجی اکسل</button><button id="kanbanEditBtn" class="ghost" disabled>ویرایش</button><button id="kanbanArchiveBtn" class="ghost" disabled>آرشیو فعالیت</button><button id="kanbanDeleteBtn" class="danger hierarchy-authority-action" disabled>حذف</button></div>
           <div class="table-wrap"><table><thead><tr><th>شناسه</th><th>عنوان فعالیت</th><th>توضیحات</th><th>متولی</th><th>وضعیت</th><th>اولویت</th><th>تاریخ شروع</th><th>تاریخ انجام</th><th>تاریخ پایان</th><th>یادآور</th><th>آخرین به‌روزرسانی</th><th>وضعیت دیرکرد</th><th>توضیحات مدیر</th></tr><tr class="column-filters"></tr></thead><tbody id="kanbanBody"></tbody></table></div>
         </div>
       </section>
@@ -160,7 +160,7 @@ html body.department-pending #departmentEntry .department-state{font-size:16px!i
       <section id="archiveView" class="view hidden">
         <div class="panel table-panel">
           <div class="panel-head"><div><h3>وظایف آرشیو شده</h3><small id="archiveScope"></small></div><input id="archiveSearch" class="search" placeholder="جست‌وجو در آرشیو…" /></div>
-          <div class="task-toolbar"><button id="archiveImportBtn" class="ghost manager-only">ورود از اکسل</button><button id="archiveExportBtn" class="ghost">خروجی اکسل</button><button id="archiveEditBtn" class="ghost" disabled>ویرایش</button><button id="archiveRestoreBtn" class="ghost manager-only" disabled>بازگردانی به کانبان</button><button id="archiveDeleteBtn" class="danger manager-only" disabled>حذف</button></div>
+          <div class="task-toolbar"><button id="archiveImportBtn" class="ghost manager-only">ورود از اکسل</button><button id="archiveExportBtn" class="ghost">خروجی اکسل</button><button id="archiveEditBtn" class="ghost" disabled>ویرایش</button><button id="archiveRestoreBtn" class="ghost hierarchy-authority-action" disabled>بازگردانی به کانبان</button><button id="archiveDeleteBtn" class="danger hierarchy-authority-action" disabled>حذف</button></div>
           <div class="table-wrap"><table><thead><tr><th>شناسه</th><th>عنوان فعالیت</th><th>توضیحات</th><th>متولی</th><th>وضعیت</th><th>اولویت</th><th>تاریخ شروع</th><th>تاریخ انجام</th><th>تاریخ پایان</th><th>یادآور</th><th>آخرین به‌روزرسانی</th><th>وضعیت دیرکرد</th><th>توضیحات مدیر</th><th>تأخیر</th><th>تعجیل</th></tr><tr class="column-filters"></tr></thead><tbody id="archiveBody"></tbody></table></div>
           <div id="archivePager" class="archive-pager" aria-label="صفحه‌بندی آرشیو"></div>
         </div>
@@ -186,7 +186,7 @@ html body.department-pending #departmentEntry .department-state{font-size:16px!i
       <section id="projectsView" class="view hidden"><div id="projectFeatureRoot" class="enterprise-feature-root"></div></section>
       <section id="partsView" class="view hidden"><div id="partFeatureRoot" class="enterprise-feature-root"></div></section>
       <section id="invoicesView" class="view hidden"><div id="invoiceFeatureRoot" class="enterprise-feature-root"></div></section>
-      <section id="organizationView" class="view hidden manager-only"><div id="organizationFeatureRoot" class="enterprise-feature-root"></div></section>
+      <section id="organizationView" class="view hidden"><div id="organizationFeatureRoot" class="enterprise-feature-root"></div></section>
 
       <section id="toolsView" class="view hidden manager-only"><div class="enterprise-feature-root"><div class="feature-toolbar enterprise-toolbar"><div><h3>مدیریت ابزار</h3><p>این بخش برای مدیریت ابزارهای سازمانی در نظر گرفته شده است.</p></div></div><div class="panel enterprise-empty"><b>فعلاً اطلاعاتی ثبت نشده است.</b><span>این بخش هنوز فاقد رکورد عملیاتی است.</span></div></div></section>
 
