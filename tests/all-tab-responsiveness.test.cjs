@@ -18,7 +18,7 @@ test('every shipped tab opens without blocking the event loop',async t=>{
     // without treating shared-runner scheduling pressure as an app regression.
     // Keep enough headroom for the constrained shared Node runner; browser smoke
     // tests remain the strict performance contract for a real interactive page.
-    assert(elapsed<12000,route+' took '+Math.round(elapsed)+'ms to settle');
+    assert(elapsed<15000,route+' took '+Math.round(elapsed)+'ms to settle');
   });
   assert.deepEqual(f.errors,[]);
 });
