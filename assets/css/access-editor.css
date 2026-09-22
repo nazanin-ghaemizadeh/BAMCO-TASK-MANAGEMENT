@@ -16,13 +16,9 @@ html body dialog.permission-dialog.permission-dialog footer{border-top:1px solid
 html body dialog.permission-dialog.permission-dialog footer button{flex:1!important}
 html body dialog.permission-dialog.permission-dialog .permission-error{color:#a22!important;max-height:15dvh;overflow:auto}
 @media(max-width:640px){html body dialog.permission-dialog.permission-dialog .permission-person{grid-template-columns:1fr!important}.permission-dialog .permission-actions{padding-inline-start:26px!important}}
-/* One access-management entry point follows every functional route. The card
-   workspace hides its legacy header while a route is open, so the same button
-   moves to a compact fixed position rather than vanishing. */
-#featureAccessControl.feature-access-control{white-space:nowrap}
-html body.content-only #appView>#featureAccessControl.feature-access-control{position:fixed!important;z-index:10020!important;top:12px!important;left:12px!important;display:inline-flex!important;align-items:center!important;min-height:36px!important;padding:6px 11px!important;border:1px solid #8ab59f!important;border-radius:9px!important;background:#f8fcf9!important;color:#14533d!important;box-shadow:0 5px 18px #123f3324!important}
-html body.content-only #appView>#featureAccessControl.feature-access-control.hidden{display:none!important}
-@media(max-width:640px){html body.content-only #appView>#featureAccessControl.feature-access-control{top:8px!important;left:8px!important;min-height:34px!important;padding:5px 9px!important;font-size:12px!important}}
+/* Access management is a normal page action. It inherits the shared ghost
+   button style and is placed inside the current page command bar. */
+.feature-access-control{white-space:nowrap;flex:0 0 auto}
 .owner-preview-routes{display:flex;flex-wrap:wrap;gap:8px;padding:8px 0}.owner-preview-routes span{padding:5px 10px;background:#edf5ef;border:1px solid #c7d4ce;border-radius:8px}.owner-preview-switch{display:flex;gap:8px;margin:12px 0}.owner-preview-switch button{font-weight:400!important}.owner-preview-switch [aria-pressed=true]{background:#176b4d!important;color:#fff!important}
 html body #appView#appView #ownerPreviewView:not(.hidden){display:flex!important;flex-direction:column!important;height:100dvh!important;min-height:0!important;overflow:hidden!important}
 html body #appView#appView #ownerPreviewView>.panel,html body #appView#appView #ownerPreviewView #ownerPreviewBody{display:flex!important;flex-direction:column!important;flex:1 1 0!important;min-height:0!important;overflow:hidden!important}
