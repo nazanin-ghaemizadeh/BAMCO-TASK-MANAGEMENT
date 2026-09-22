@@ -32,11 +32,8 @@ test('enterprise pages keep a stable shared shell and persist the project, part 
     assert(view, `${route} view exists statically`);
     assert.equal(view.classList.contains('bamco-interior'), false, `${route} keeps its own page layout`);
     assert.ok(view.querySelector('.enterprise-feature-root > .enterprise-toolbar'), `${route} uses the shared static enterprise header`);
-    if (route === 'organization') {
-      assert.equal(view.querySelectorAll('.content-back').length, 0, 'organization does not inherit legacy return-to-home listeners');
-      assert.equal(view.querySelectorAll('[data-home-action]').length, 1, 'organization has one explicit return-to-home control');
-    }
-    else assert.equal(view.querySelector('.content-back'), null, `${route} has no implicit return-to-home control`);
+    assert.equal(view.querySelectorAll('.content-back').length, 0, `${route} does not inherit legacy return-to-home listeners`);
+    assert.equal(view.querySelectorAll('[data-home-action]').length, 1, `${route} has one explicit return-to-home control`);
   }
 
   const assertActiveRoute = route => {
