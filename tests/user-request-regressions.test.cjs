@@ -15,8 +15,15 @@ test('task deletion and archive restore use one atomic batch resequence',()=>{
   const app=read('assets/js/app.js'),ui=read('assets/js/unified-ui.js'),sql=read('supabase/migrations/20260911050000_optimize_task_lifecycle_resequence.sql');
   assert.match(app,/delete_tasks_and_resequence/);
   assert.match(app,/restore_tasks_to_kanban_and_resequence/);
-  assert.match(ui,/delete_tasks_and_resequence.*p_task_ids:ids\.map\(Number\)/s);
-  assert.match(ui,/restore_tasks_to_kanban_and_resequence.*p_task_ids:ids\.map\(Number\)/s);
+  // A mixed selection is split by the canonical organisation-scope guard:
+  // direct descendants use one atomic resequence RPC, while all other rows
+  // become approval requests.  Sending all selected IDs to the destructive
+  // RPC would bypass the hierarchy (or make a whole mixed batch fail).
+  assert.match(ui,/const direct=tasks\.filter\(task=>canDirectTaskAction\(task,'delete'\)\),approval=tasks\.filter\(task=>!canDirectTaskAction\(task,'delete'\)\)/);
+  assert.match(ui,/delete_tasks_and_resequence.*p_task_ids:direct\.map\(task=>Number\(task\.id\)\)/s);
+  assert.match(ui,/const direct=tasks\.filter\(task=>canDirectTaskAction\(task,'edit'\)\),approval=tasks\.filter\(task=>!canDirectTaskAction\(task,'edit'\)\)/);
+  assert.match(ui,/restore_tasks_to_kanban_and_resequence.*p_task_ids:direct\.map\(task=>Number\(task\.id\)\)/s);
+  assert.match(ui,/for\(const task of approval\)await rpc\('submit_change_request'/);
   assert.doesNotMatch(ui,/for\(const id of ids\)[\s\S]{0,500}delete_task_and_resequence/);
   assert.match(sql,/create or replace function public\.delete_tasks_and_resequence\(p_task_ids bigint\[\]\)/);
   assert.match(sql,/create or replace function public\.restore_tasks_to_kanban_and_resequence\(p_task_ids bigint\[\]\)/);
@@ -29,7 +36,11 @@ test('task filter dropdowns are populated before interaction and runtime tabs re
   const app=read('assets/js/app.js'),runtime=read('assets/js/production-runtime.js'),sidebar=read('assets/js/sidebar.js');
   assert.match(app,/populateFilter\(selectEl,scope,index\);/);
   assert.doesNotMatch(app,/bamcoLazyBound|scheduleCommonFilterWarmup/);
-  assert.match(runtime,/addEventListener\('click',\(\)=>\{void render\(id\)\}\)/);
+  // Rendering begins in the click turn, but only after the generic feature
+  // guard grants the route.  The former no-argument listener predates the
+  // canonical access service and would let an unauthorised control invoke its
+  // renderer before the denial handler ran.
+  assert.match(runtime,/addEventListener\('click',event=>\{if\(can\(id,'view'\)\)\{void render\(id\);return\}/);
   assert.doesNotMatch(runtime,/setTimeout\(\(\)=>render\(id\),0\)/);
   assert.match(sidebar,/if\(willOpen\)positionDropdown\(group\)/);
 });

@@ -38,10 +38,10 @@ test('logout discards an in-flight private avatar response',async t=>{
  h.w.bamcoMedia.clear();h.w.state.user={id:'different'};finish();assert.equal(await job,false);assert.equal(h.d.querySelector('#a img'),null);
 });
 function saveHarness({rowsFail=false}={}){
- const dom=new JSDOM('<button id="saveProfileBtn"></button><input id="profileLoginName" value="manager"><input id="profileDisplayName" value="new"><div id="profileAvatarPreview" data-avatar-draft="true"></div><div id="peopleView" class="hidden"></div><div id="userName"></div>',{url:'https://bamco.test',runScripts:'outside-only'}),w=dom.window;
+ const dom=new JSDOM('<button id="saveProfileBtn"></button><input id="profileLoginName" value="manager"><input id="profileDisplayName" value="new"><input id="profileEmail" value=""><div id="profileAvatarPreview" data-avatar-draft="true"></div><div id="peopleView" class="hidden"></div><div id="userName"></div>',{url:'https://bamco.test',runScripts:'outside-only'}),w=dom.window;
  const calls=[],errors=[],synced=[];w.state={user:{id:'manager'},token:'test',profile:{id:'manager',login_name:'manager',full_name:'Manager',avatar_path:'manager/avatar.png'}};
  Object.assign(w,{SB_URL:'https://example.supabase.co',SB_KEY:'public-test',pendingBlob:new w.Blob(['photo']),pendingUrl:'blob:draft',profileChannel:null,q:s=>w.document.querySelector(s),syncProfiles:rows=>{synced.push(...rows);w.state.profile=rows[0]},renderPeople:()=>{},toast:(m,e)=>errors.push({m,e})});
- w.URL.revokeObjectURL=()=>{};w.fetch=async(url,opts)=>{calls.push({url,opts});return new Response('{}')};w.update=async(_table,_filter,data)=>rowsFail?[]:[{id:'manager',...data}];w.refreshProfileAvatar=async()=>{};
+ w.URL.revokeObjectURL=()=>{};w.fetch=async(url,opts)=>{calls.push({url,opts});return new Response('{}')};w.rpc=async(_name,data)=>rowsFail?[]:{id:'manager',full_name:'Manager',display_name:data.p_display_name,email:data.p_organizational_email,avatar_path:data.p_avatar_path};w.update=async(_table,_filter,data)=>rowsFail?[]:[{id:'manager',...data}];w.refreshProfileAvatar=async()=>{};
  const src=read('assets/js/shell.js'),start=src.indexOf('  async function saveProfile(){'),end=src.indexOf('  function loadSettings()',start);w.eval(src.slice(start,end));
  return {w,calls,errors,synced,close:()=>w.close()};
 }

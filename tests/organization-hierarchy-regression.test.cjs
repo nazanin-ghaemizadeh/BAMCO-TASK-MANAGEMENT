@@ -96,3 +96,63 @@ test('a supervisor sees only the descendant branch and can choose only its occup
   const ownerIds = [...d.querySelector('#taskForm [name="owner_id"]').options].map(option => option.value);
   assert.deepEqual(ownerIds, ['', 'test-owner', 'test-subordinate']);
 });
+
+test('a supervisor routes a task for themself to the direct parent, but creates directly for a strict descendant', async t => {
+  const directory = [
+    {
+      position_id: 20, parent_position_id: 10, position_title: 'سرپرست محصول',
+      role_id: 2, role_title: 'سرپرست', role_level_no: 4,
+      occupant_id: 'test-owner', occupant_display_name: 'سرپرست آزمایشی',
+      occupant_full_name: 'سرپرست آزمایشی', occupant_email: 'owner@example.test',
+      occupant_active: true, is_current_position: true
+    },
+    {
+      position_id: 30, parent_position_id: 20, position_title: 'کارشناس کنترل',
+      role_id: 3, role_title: 'کارشناس', role_level_no: 3,
+      occupant_id: 'test-subordinate', occupant_display_name: 'زیرمجموعه آزمایشی',
+      occupant_full_name: 'زیرمجموعه آزمایشی', occupant_email: 'subordinate@example.test',
+      occupant_active: true, is_current_position: false
+    }
+  ];
+  const f = await fixture({
+    role: 'owner',
+    fetchResult: async ({ endpoint }) => (
+      endpoint === 'organization_scope_directory_with_avatars' || endpoint === 'organization_scope_directory'
+    ) ? directory : undefined
+  });
+  t.after(() => f.dispose());
+
+  const { w, d } = f;
+  await f.open('kanban');
+  await until(() => w.bamcoOrganizationAccess.canManageTasks());
+  d.querySelector('#addTaskBtn').click();
+  const form = d.querySelector('#taskForm');
+  form.elements.status.value = 'در حال انجام';
+  form.elements.status.dispatchEvent(new w.Event('change', { bubbles: true }));
+  form.elements.owner_id.value = 'test-owner';
+  form.elements.owner_id.dispatchEvent(new w.Event('change', { bubbles: true }));
+  assert.equal(form.elements.owner_id.value, 'test-owner');
+  assert.equal(d.querySelector('#taskDialogTitle').textContent, 'درخواست وظیفه جدید');
+  assert.equal(d.querySelector('#saveTaskBtn').textContent, 'ارسال برای تأیید');
+  form.elements.title.value = 'وظیفه شخصی سرپرست';
+  for (const name of ['start_date_j', 'due_date_j']) {
+    d.querySelector(`[data-date-input="${name}"]`).click();
+    d.querySelector('#calDay').value = '10';
+    d.querySelector('#setDateBtn').click();
+  }
+  form.requestSubmit();
+  await until(() => f.calls.some(call => call.endpoint === 'submit_change_request'));
+  const ownRequest = f.calls.filter(call => call.endpoint === 'submit_change_request').at(-1);
+  assert.equal(ownRequest.body.p_request_type, 'create');
+  assert.equal(ownRequest.body.p_proposed_data.owner_id, 'test-owner');
+  assert.equal(f.calls.some(call => call.endpoint === 'tasks' && call.method === 'POST'), false);
+  await until(() => !d.querySelector('#taskDialog').open);
+
+  d.querySelector('#addTaskBtn').click();
+  form.elements.status.value = 'در حال انجام';
+  form.elements.status.dispatchEvent(new w.Event('change', { bubbles: true }));
+  form.elements.owner_id.value = 'test-subordinate';
+  form.elements.owner_id.dispatchEvent(new w.Event('change', { bubbles: true }));
+  assert.equal(d.querySelector('#taskDialogTitle').textContent, 'افزودن وظیفه');
+  assert.equal(d.querySelector('#saveTaskBtn').textContent, 'ثبت وظیفه');
+});

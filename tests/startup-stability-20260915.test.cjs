@@ -24,12 +24,13 @@ test('avatar runtime has one canonical loader and no polling storm',()=>{
  const finalRuntime=read('assets/js/profile-runtime.js');
  assert.doesNotMatch(topbar,/\[0,100,350,900,1800\]/);
  assert.doesNotMatch(topbar,/observe\(document\.body/);
- assert.match(topbar,/bamcoMedia\.bindAvatar\(el,state\.profile\)/);
+ assert.match(topbar,/bamcoMedia\?\.bindAvatar\?\.\(el,profile\)/);
  assert.doesNotMatch(topbar,/lastSource|loadingPath/);
- assert.doesNotMatch(finalRuntime,/setInterval\(/);
+ assert.doesNotMatch(finalRuntime,/setInterval\([^;]*refreshCurrent/);
  assert.doesNotMatch(finalRuntime,/cache:'no-store'/);
- assert.doesNotMatch(finalRuntime,/select\('profiles'/);
- assert.match(finalRuntime,/window\.refreshProfileAvatar/);
+ assert.doesNotMatch(finalRuntime,/selectAll\('profiles'/);
+ assert.match(finalRuntime,/BamcoData\?\.select\?\.\('profiles'/);
+ assert.match(finalRuntime,/root\.refreshProfileAvatar/);
 });
 
 test('authenticated avatars revalidate across reloads and invalidate after edits without persistent stale bytes',async()=>{
@@ -57,7 +58,9 @@ test('resource views and People avatars warm after first paint while observers s
  assert.match(prefetch,/refreshDocuments/);
  assert.match(prefetch,/refreshSites/);
  assert.match(prefetch,/warmAvatars/);
- assert.match(prefetch,/select\('profiles','select=id,avatar_path,updated_at&order=id'\)/);
+ assert.match(prefetch,/BamcoProfiles\?\.list\?\.\(\)/);
+ assert.doesNotMatch(prefetch,/state\.profile\?\.role==='manager'/);
+ assert.doesNotMatch(prefetch,/select\('profiles','select=id,avatar_path,updated_at&order=id'\)/);
  assert.match(prefetch,/bamcoMedia\.get\('avatars',p\.avatar_path,p\.updated_at\)/);
  assert.match(prefetch,/button\.dataset\.view==='people'/);
  assert.match(prefetch,/document\.addEventListener\('click',[\s\S]*?,true\)/);

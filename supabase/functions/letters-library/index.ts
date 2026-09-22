@@ -1,22 +1,35 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.57.4';
-const URL=Deno.env.get('SUPABASE_URL')!,KEY=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const URL=Deno.env.get('SUPABASE_URL')!,KEY=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,ANON_KEY=Deno.env.get('SUPABASE_ANON_KEY')||Deno.env.get('SUPABASE_PUBLISHABLE_KEY')||'';
 const db=createClient(URL,KEY,{auth:{persistSession:false}}),bucket='letters-private';
 const headers={'Access-Control-Allow-Origin':'https://nazanin-ghaemizadeh.github.io','Access-Control-Allow-Headers':'authorization,apikey,content-type','Access-Control-Allow-Methods':'POST,OPTIONS','Content-Type':'application/json','Cache-Control':'no-store'};
 const reply=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers});
 const fail=(message:string,status=400)=>{throw Object.assign(new Error(message),{status})};
 const clean=(v:unknown)=>String(v??'').trim();
 const digits=(v:unknown)=>clean(v).replace(/[۰-۹٠-٩]/g,c=>String('۰۱۲۳۴۵۶۷۸۹'.includes(c)?'۰۱۲۳۴۵۶۷۸۹'.indexOf(c):'٠١٢٣٤٥٦٧٨٩'.indexOf(c)));
+// The service client is deliberately limited to authenticated identity lookup
+// and the already-authorized storage/database operation.  Feature permission
+// is evaluated with the caller's JWT, so a service-role key can never turn a
+// legacy role or letter_access row into authority.
+async function requireLettersAccess(token:string,action:'view'|'create'|'edit'|'delete'|'export'){
+ if(!ANON_KEY)fail('پیکربندی مجوز نامه‌ها کامل نیست.',500);
+ const actor=createClient(URL,ANON_KEY,{auth:{persistSession:false,autoRefreshToken:false},global:{headers:{Authorization:`Bearer ${token}`}}});
+ const {data,error}=await actor.rpc('can_access_feature',{p_feature_key:'letters',p_action:action});
+ if(error||data!==true)fail('اجازهٔ انجام این عملیات در نامه‌ها را ندارید.',403);
+}
 Deno.serve(async req=>{
  if(req.method==='OPTIONS')return new Response(null,{headers});if(req.method!=='POST')return reply({error:'روش درخواست مجاز نیست.'},405);
  let newPath:string|null=null,committed=false;
  try{
   const token=(req.headers.get('authorization')||'').replace(/^Bearer /i,'');const {data:{user},error:authError}=await db.auth.getUser(token);if(authError||!user)fail('نشست معتبر نیست؛ دوباره وارد شوید.',401);
-  const {data:profile}=await db.from('profiles').select('active,role').eq('id',user!.id).single();if(!profile?.active)fail('دسترسی به نامه‌ها مجاز نیست.',403);
-  if(profile.role!=='manager'){const {data:grant,error}=await db.from('letter_access').select('user_id').eq('user_id',user!.id).single();if(error||!grant)fail('دسترسی به نامه‌ها برای شما فعال نشده است.',403);}
   const form=req.headers.get('content-type')?.includes('multipart/form-data')?await req.formData():null;
   const data:Record<string,unknown>=form?Object.fromEntries(form.entries()):await req.json();
+  const action=data.action==='delete'?'delete':data.action==='download'?'export':data.action==='save'?(clean(data.id)?'edit':'create'):null;
+  if(!action)fail('عملیات مجاز نیست.');
+  // A feature must first be visible; a second, explicit action grant is
+  // required for every mutation or export.  `view` alone never writes.
+  await requireLettersAccess(token,'view');
+  await requireLettersAccess(token,action);
   if(data.action==='delete'){
-   if(profile.role!=='manager')fail('فقط مدیر می‌تواند نامه را حذف کند.',403);
    const {data:row,error}=await db.from('letters').select('id,storage_path,version').eq('id',data.id).single();if(error||!row)fail('نامه پیدا نشد.',404);
    if(row.version!==Number(data.version))fail('نامه توسط فرد دیگری تغییر کرده؛ تازه‌سازی کنید.',409);
    const {data:deleted,error:deleteError}=await db.from('letters').delete().eq('id',row.id).eq('version',row.version).select('id').single();if(deleteError||!deleted)fail('حذف نامه تأیید نشد؛ تازه‌سازی کنید.',409);
@@ -27,7 +40,6 @@ Deno.serve(async req=>{
    const {data:row,error}=await db.from('letters').select('storage_path,file_name').eq('id',data.id).single();if(error||!row)fail('نامه پیدا نشد.',404);if(!row!.storage_path)fail('فایل این نامه هنوز بارگذاری نشده است.',404);
    const {data:signed,error:signError}=await db.storage.from(bucket).createSignedUrl(row!.storage_path,60,{download:row!.file_name});if(signError)throw signError;return reply({url:signed!.signedUrl});
   }
-  if(data.action!=='save')fail('عملیات مجاز نیست.');
   const id=clean(data.id)||crypto.randomUUID(),expected=Number(data.version),isEdit=!!clean(data.id);
   const direction=clean(data.direction)||'outgoing';if(!['incoming','outgoing'].includes(direction))fail('نوع نامه معتبر نیست.');
   const fields={letter_number:digits(data.letter_number),letter_date:digits(data.letter_date),recipient:clean(data.recipient),subject:clean(data.subject),direction};

@@ -38,7 +38,10 @@ test('archive computes display cells only for the visible page when no filter is
  const f=await fixture({tables:{tasks},fetchResult:({endpoint,url,data})=>endpoint==='task_status_view'?data.slice(Number(url.searchParams.get('offset')||0),Number(url.searchParams.get('offset')||0)+Number(url.searchParams.get('limit')||1000)):undefined});t.after(()=>f.dispose());f.w.__formatted=new Set();f.w.eval('const originalColumns=taskColumnValues;taskColumnValues=function(t,a){if(a)window.__formatted.add(t.id);return originalColumns(t,a)}');await f.open('archive');assert.equal(f.d.querySelectorAll('#archiveBody tr[data-task-id]').length,50);assert.equal(f.w.__formatted.size,50);assert.equal(f.d.querySelector('#welcomeView'),null);assert.deepEqual(f.errors,[]);
 });
 test('slow workflow/history responses do not hold back task data',async t=>{
- const releases=[];const f=await fixture({tables:{tasks:[{id:1,title:'Ready',archived:false,status:'doing',owner_id:'test-owner'}]},fetchResult:({endpoint,data})=>endpoint==='change_requests'?new Promise(resolve=>releases.push(()=>resolve(data))):undefined});t.after(()=>f.dispose());
+ // The workbench is now deliberately sourced from the one protected workflow
+ // snapshot RPC, rather than permissive `change_requests` REST reads.  Hold
+ // that RPC open and prove the independent task branch still renders.
+ const releases=[];const f=await fixture({tables:{tasks:[{id:1,title:'Ready',archived:false,status:'doing',owner_id:'test-owner'}]},fetchResult:({endpoint,data})=>endpoint==='request_workflow_snapshot'?new Promise(resolve=>releases.push(()=>resolve(data))):undefined});t.after(()=>f.dispose());
  try{assert.equal(f.w.eval('state.tasks.length'),1);assert(releases.length>0)}finally{releases.forEach(release=>release())}
 });
 test('on-demand DOCX loader shares work and starts the renderer only after ZIP is ready',async()=>{

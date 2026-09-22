@@ -41,7 +41,7 @@ test('dashboard date controls, templates, sticker picker, chain form and Gantt a
   await f.open('messageCenter');assert.equal(d.querySelector('#nav [data-view="templates"]'),null);assert.equal(d.querySelector('#templatesView'),null);assert.equal(d.querySelector('#desktopTemplateEditor'),null);
  });
  await t.test('sticker controls open the upload form and preserve each selectable image slot',async()=>{
-  await f.open('stickers');d.querySelector('#stickerNew').click();assert(d.querySelector('#stickerPackDialog').open);assert.equal(d.querySelectorAll('.sticker-pick').length,10);
+  await f.open('stickers');d.querySelector('#stickerNew').click();await until(()=>d.querySelector('#stickerPackDialog').open);assert.equal(d.querySelectorAll('.sticker-pick').length,10);
   let fileClicks=0;d.querySelector('#stickerFile').addEventListener('click',()=>fileClicks++);for(const button of d.querySelectorAll('.sticker-pick'))button.click();assert.equal(fileClicks,10);d.querySelector('[data-sticker-close]').click();assert(!d.querySelector('#stickerPackDialog').open);
  });
  await t.test('organization tree is the only approval configuration surface',async()=>{

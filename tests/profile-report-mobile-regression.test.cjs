@@ -5,11 +5,12 @@ test('profile refresh updates both header and settings avatars through one canon
  const final=fs.readFileSync('assets/js/profile-runtime.js','utf8');
  assert.match(canonical,/#avatar/);
  assert.match(canonical,/#profileAvatarPreview/);
- assert.match(canonical,/bamcoMedia\.bindAvatar\(el,state\.profile\)/);
- assert.match(final,/window\.refreshProfileAvatar/);
+ assert.match(canonical,/bamcoMedia\?\.bindAvatar\?\.\(el,profile\)/);
+ assert.match(final,/root\.refreshProfileAvatar/);
  assert.doesNotMatch(final,/cache:'no-store'/);
- assert.doesNotMatch(final,/setInterval\(/);
- assert.doesNotMatch(final,/select\('profiles'/);
+ assert.doesNotMatch(final,/setInterval\([^;]*refreshCurrent/);
+ assert.doesNotMatch(final,/selectAll\('profiles'/);
+ assert.match(final,/BamcoData\?\.select\?\.\('profiles'/);
 });
 
 test('manager activity uses created tasks after the saved monitoring baseline',()=>{

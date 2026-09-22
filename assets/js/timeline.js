@@ -13,7 +13,7 @@
   function appState(){try{return typeof state!=='undefined'?state:null}catch{return null}}
   function currentMonth(){const p=typeof currentJalali==='function'?currentJalali():null;return p||{y:1405,m:6,d:1}}
   function activeTasks(){const s=appState();return (s?.tasks||[]).filter(t=>!t.archived)}
-  function ownerNameLocal(t){try{return typeof ownerName==='function'?ownerName(t):(appState()?.profiles||[]).find(p=>p.id===t.owner_id)?.full_name||'—'}catch{return'—'}}
+  function ownerNameLocal(t){try{return typeof ownerName==='function'?ownerName(t):window.BamcoProfiles?.label?.(t?.owner_id)||(appState()?.profiles||[]).find(p=>p.id===t.owner_id)?.display_name||(appState()?.profiles||[]).find(p=>p.id===t.owner_id)?.full_name||'—'}catch{return'—'}}
   function taskId(t){try{return typeof displayId==='function'?displayId(t):(t.legacy_id||t.id)}catch{return t.legacy_id||t.id}}
   function isWaiting(t){return window.bamcoOptions.kind(t)==='waiting'}
   function temporalState(t){if(window.bamcoTaskPresentation)return window.bamcoTaskPresentation(t).temporal;if(isWaiting(t)||!t.due_date||t.status==='انجام شده')return 'فاقد شرایط دیرکرد';const now=new Date().toISOString().slice(0,10);if(t.due_date<now)return 'دیرکرد';const limit=new Date();limit.setDate(limit.getDate()+Math.max(0,Number(t.reminder_days)||0));return t.due_date<=limit.toISOString().slice(0,10)?'هشدار':'عادی'}
@@ -61,7 +61,7 @@
     const s=appState(),tasks=activeTasks();
     const owners=(s?.profiles||[]).filter(p=>tasks.some(t=>t.owner_id===p.id));
     const owner=q('#ttOwner'),status=q('#ttStatus'),priority=q('#ttPriority');
-    owner.innerHTML='<option value="">همه متولیان</option>'+owners.map(p=>`<option value="${esc(p.id)}">${esc(p.full_name||p.email)}</option>`).join('');owner.value=filters.owner;owner.classList.toggle('hidden',!(typeof isManager==='function'&&isManager()));
+    owner.innerHTML='<option value="">همه متولیان</option>'+owners.map(p=>`<option value="${esc(p.id)}">${esc(window.BamcoProfiles?.label?.(p.id)||p.display_name||p.full_name||p.email)}</option>`).join('');owner.value=filters.owner;owner.classList.toggle('hidden',owners.length<2);
     const statuses=window.bamcoOptions.ordered('status',tasks.map(t=>t.status));status.innerHTML='<option value="">همه وضعیت‌ها</option>'+statuses.map(v=>`<option>${esc(v)}</option>`).join('');status.value=filters.status;
     const priorities=window.bamcoOptions.ordered('priority',tasks.map(t=>t.priority));priority.innerHTML='<option value="">همه اولویت‌ها</option>'+priorities.map(v=>`<option>${esc(v)}</option>`).join('');priority.value=filters.priority;
   }
@@ -100,6 +100,6 @@
     html+='</div></div>';body.innerHTML=html;qa('.tt-bar',body).forEach(b=>b.onclick=()=>{const t=activeTasks().find(x=>String(x.id)===b.dataset.task);if(t)openKanban(t)});
   }
   window.bamcoTimelineRefresh=()=>{if(q('#taskTimelineView')&&!q('#taskTimelineView').classList.contains('hidden')){fillFilters();render()}};
-  function boot(){ensure();month=currentMonth()}
+  function boot(){ensure();month=currentMonth();document.addEventListener('bamco:profiles-updated',()=>window.bamcoTimelineRefresh())}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();

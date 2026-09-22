@@ -75,10 +75,11 @@ async def manager_checks(page,result):
     await page.wait_for_timeout(200)
     assert await page.evaluate("document.querySelector('#lettersTable')===window.__stableLetters")
     assert await page.evaluate("Math.abs(__stableLetters.parentElement.scrollTop-window.__lettersScroll)<2")
-    await page.evaluate("__testApi.fail.push('can_access_letters');window.dispatchEvent(new Event('focus'))")
-    await expect(page.locator('#lettersError')).to_contain_text('بررسی دسترسی')
-    await expect(page.locator('#lettersView')).to_be_visible()
-    await page.evaluate("__testApi.fail=__testApi.fail.filter(x=>x!=='can_access_letters')")
+    # Feature checks are centralized; opening or focusing this module must not
+    # call a legacy letters-specific permission RPC.
+    await page.evaluate("window.dispatchEvent(new Event('focus'))")
+    await page.wait_for_timeout(120)
+    assert not await page.evaluate("__testApi.calls.some(c=>c.endpoint==='can_access_letters')")
 
     await expect(page.locator('#lettersSearch')).to_have_attribute('placeholder','جست‌وجوی نامه…')
     assert await page.locator('#lettersSearch').evaluate('e=>e.clientHeight')>=32
@@ -88,7 +89,7 @@ async def manager_checks(page,result):
     await expect(page.locator('#lettersTable tbody tr')).to_have_count(53)
     await page.evaluate("window.__accessPeople=__testApi.profiles.slice();__testApi.profiles.push(...Array.from({length:25},(_,i)=>({id:'access-person-'+i,full_name:'متولی آزمایشی '+i,role:'owner',active:true})))")
     await page.locator('#lettersAccess').click()
-    await expect(page.locator('#letterAccessDialog input[type=checkbox]')).to_have_count(26)
+    await expect(page.locator('#letterAccessDialog input[type=checkbox]')).to_have_count(27)
     box=await page.locator('#letterAccessDialog').evaluate('e=>({w:e.getBoundingClientRect().width,h:e.getBoundingClientRect().height,screen:innerWidth,screenH:innerHeight})')
     assert box['w']<=box['screen']-16 and box['h']<=box['screenH']-16,box
     listing=page.locator('#letterAccessDialog .permission-list')

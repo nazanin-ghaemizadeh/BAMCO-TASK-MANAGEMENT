@@ -1,7 +1,9 @@
 const {test}=require('node:test');const assert=require('node:assert/strict');const {JSDOM}=require('jsdom');const fs=require('node:fs');
 function fixture(channel='portal'){
  const dom=new JSDOM('<div id="nav"><button data-view="templates"></button></div><div class="workspace"></div>',{runScripts:'outside-only',url:'https://example.test'}),w=dom.window,calls=[];
- w.isManager=()=>true;w.jalaliDateTime=x=>x;w.toast=(...v)=>calls.push(['toast',...v]);w.fa=String;w.showView=()=>{};
+ w.state={token:'fixture-token',user:{id:'test-manager'},profile:{id:'test-manager',role:'manager',active:true}};
+ w.BamcoAccess={can:()=>true,isReady:()=>true,refresh:async()=>{},denied:()=>false,applyNavigation:()=>{}};
+ w.jalaliDateTime=x=>x;w.toast=(...v)=>calls.push(['toast',...v]);w.fa=String;w.showView=()=>{};
  w.HTMLDialogElement.prototype.showModal=function(){this.open=true};w.HTMLDialogElement.prototype.close=function(){this.open=false};
  const rows=[{delivery_id:1,recipient_id:'a',recipient_name:'A',recipient_email:'a@example.test',response_status:'awaiting',delivery_status:'sent',subject:'Message A'},{delivery_id:2,recipient_id:'a',recipient_name:'A',response_status:'replied',delivery_status:'sent',subject:'Message B'}];
  w.selectAll=async(table)=>table==='message_response_tracking'?rows:table==='message_snapshots'?[{recipient_name:'A',final_text:'Message A'}]:[{recipient_id:'a',channel,status:'sent'}];

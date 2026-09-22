@@ -8,6 +8,46 @@ const labels={replied:'پاسخ داده',awaiting:'بدون پاسخ',failed:'�
 const channels={portal:'داخل سامانه',email:'ایمیل',both:'هر دو'};
 let rows=[],selected=new Set(),sending=false,loading=false,dateTarget=null,preparedReminder=null;
 const eligible=r=>r&&r.response_status!=='replied'&&!r.replied_at&&r.delivery_status!=='cancelled';
+const responseFeature=()=>window.BamcoNavigationCatalog?.featureForRoute?.('responseTracking')||'responseTracking';
+const responseCan=(action='view')=>window.BamcoAccess?.can?.(responseFeature(),action)===true;
+const responseSession=()=>typeof state!=='undefined'&&!!state?.token;
+function recipientFallback(row,fallback='—'){return row?.display_name||row?.recipient_display_name||row?.recipient_name||row?.full_name||row?.recipient_full_name||row?.email||row?.recipient_email||fallback}
+function recipientName(row,fallback='—'){return window.BamcoProfiles?.label?.(row?.recipient_id,recipientFallback(row,fallback))||recipientFallback(row,fallback)}
+function recipientProfiles(source){
+  const store=window.BamcoProfiles,profiles=[];
+  for(const row of source||[]){
+    const id=row?.recipient_id;if(!id)continue;
+    const profile={id};
+    const add=(key,value)=>{if(value!==undefined&&value!==null&&value!=='')profile[key]=value};
+    add('display_name',row.display_name??row.recipient_display_name);
+    add('full_name',row.full_name??row.recipient_full_name);
+    add('email',row.email??row.recipient_email);
+    add('avatar_path',row.avatar_path);
+    add('updated_at',row.profile_updated_at??row.updated_at);
+    add('active',row.active);
+    // A response-tracking row may be a historical projection. Do not let one
+    // without a profile revision erase a fresher canonical profile.
+    if(store?.get?.(id)&&!profile.updated_at)continue;
+    profiles.push(profile);
+  }
+  if(profiles.length)store?.upsert?.(profiles,{source:'response-tracking-directory'});
+  return profiles;
+}
+function denyResponse(action='view'){window.BamcoAccess?.denied?.(responseFeature(),action,{route:'responseTracking'});return false}
+async function ensureResponseAccess(action='view'){
+  const access=window.BamcoAccess;
+  if(!responseSession()||typeof access?.can!=='function')return false;
+  if(!access.isReady?.())await access.refresh?.();
+  return responseCan(action)||denyResponse(action);
+}
+function syncResponseAccess(){
+  const button=q('#nav button[data-view="responseTracking"]'),view=q('#responseTrackingView'),canView=responseCan('view'),canCreate=responseCan('create'),canExport=responseCan('export');
+  if(button){button.dataset.featureKey=responseFeature();button.classList.toggle('hidden',!canView);button.disabled=!canView;button.setAttribute('aria-hidden',canView?'false':'true');button.setAttribute('aria-disabled',canView?'false':'true')}
+  if(view)view.dataset.featureKey=responseFeature();
+  q('#sendResponseReminder')?.toggleAttribute('disabled',!canCreate||sending||![...selected].some(id=>eligible(rows.find(x=>String(x.delivery_id)===id))));
+  q('[data-response-export]')?.toggleAttribute('disabled',!canExport);
+  if(responseSession()&&!canView&&typeof state!=='undefined'&&state.view==='responseTracking')window.bamcoShowHome?.();
+}
 
 function currentMonthRange(){
   try{
@@ -48,39 +88,50 @@ function ensureStyles(){
     #responseTrackingView table th,#responseTrackingView table td{border:1px solid #cbd9d3}
     #responseTrackingView tbody tr[data-delivery]{cursor:pointer}
     #responseTrackingView tbody tr.suite-selected>td{background:#e9f4ef!important}
+    #responseTrackingView .response-recipient{display:inline-flex;align-items:center;gap:7px;min-width:0}
+    #responseTrackingView .response-recipient-avatar{width:28px;height:28px;flex:0 0 28px;border-radius:50%;overflow:hidden;display:grid;place-items:center;background:#edf6f1;border:1px solid #c8ddd2;color:#176d52;font-weight:700}
+    #responseTrackingView .response-recipient-avatar img{width:100%;height:100%;object-fit:cover}
     @media(max-width:760px){#responseTrackingView .response-date-controls{width:100%}.response-command-row{align-items:stretch!important}}
   `;document.head.append(s);
 }
 function install(){
-  if(q('#responseTrackingView'))return;
+  if(q('#responseTrackingView')){syncResponseAccess();window.BamcoAccess?.applyNavigation?.();return}
   const workspace=q('.workspace'),anchor=q('#nav button[data-view="templates"]');if(!workspace)return;
   ensureStyles();
-  const btn=document.createElement('button');btn.dataset.view='responseTracking';btn.className='manager-only';btn.innerHTML='<b>↩</b><span>پیگیری پاسخ</span>';(anchor?.parentElement||q('#nav'))?.insertBefore(btn,anchor||null);
+  const btn=document.createElement('button');btn.dataset.view='responseTracking';btn.dataset.featureKey=responseFeature();btn.innerHTML='<b>↩</b><span>پیگیری پاسخ</span>';(anchor?.parentElement||q('#nav'))?.insertBefore(btn,anchor||null);
   const range=currentMonthRange();
-  workspace.insertAdjacentHTML('beforeend',`<section id="responseTrackingView" class="view hidden manager-only"><div class="panel table-panel response-tracking"><div class="panel-head"><div><h3>پیگیری پاسخ‌ها</h3><small>پاسخ هر فرد در کنار همان پیام ارسالی نمایش داده می‌شود.</small></div></div><div class="response-command-row"><button type="button" class="ghost" data-response-home>بازگشت به خانه</button><div class="response-date-controls"><label><span>از تاریخ</span><span class="response-date-field"><input id="responseFrom" class="jalali-input" readonly value="${esc(range.fromText)}"><button type="button" class="ghost" data-response-tracking-date="from" aria-label="انتخاب تاریخ شروع">▦</button></span></label><label><span>تا تاریخ</span><span class="response-date-field"><input id="responseTo" class="jalali-input" readonly value="${esc(range.toText)}"><button type="button" class="ghost" data-response-tracking-date="to" aria-label="انتخاب تاریخ پایان">▦</button></span></label></div><button type="button" class="ghost" data-response-refresh>تازه‌سازی</button><button type="button" class="ghost" data-response-export>خروجی اکسل</button><select id="reminderSendChannel" aria-label="کانال یادآوری"><option value="portal">داخل سامانه</option><option value="email">ایمیل</option><option value="both">هر دو</option></select><button id="sendResponseReminder" type="button" class="primary">ارسال یادآوری</button></div><div class="table-wrap"><table class="workspace-table"><thead><tr><th>شناسه</th><th>فرد</th><th>تاریخ ارسال</th><th>کانال</th><th>موضوع</th><th>پاسخ</th><th>تاریخ پاسخ</th><th>تعداد یادآوری</th><th>آخرین یادآوری</th></tr></thead><tbody id="responseTrackingBody"></tbody></table></div></div></section>`);
-  btn.onclick=()=>{if(typeof showView==='function')showView('responseTracking');setTimeout(()=>void load(),0)};
+  workspace.insertAdjacentHTML('beforeend',`<section id="responseTrackingView" class="view hidden" data-feature-key="${esc(responseFeature())}" data-feature-action="view"><div class="panel table-panel response-tracking"><div class="panel-head"><div><h3>پیگیری پاسخ‌ها</h3><small>پاسخ هر فرد در کنار همان پیام ارسالی نمایش داده می‌شود.</small></div></div><div class="response-command-row"><button type="button" class="ghost" data-response-home>بازگشت به خانه</button><div class="response-date-controls"><label><span>از تاریخ</span><span class="response-date-field"><input id="responseFrom" class="jalali-input" readonly value="${esc(range.fromText)}"><button type="button" class="ghost" data-response-tracking-date="from" aria-label="انتخاب تاریخ شروع">▦</button></span></label><label><span>تا تاریخ</span><span class="response-date-field"><input id="responseTo" class="jalali-input" readonly value="${esc(range.toText)}"><button type="button" class="ghost" data-response-tracking-date="to" aria-label="انتخاب تاریخ پایان">▦</button></span></label></div><button type="button" class="ghost" data-response-refresh>تازه‌سازی</button><button type="button" class="ghost" data-response-export data-feature-key="${esc(responseFeature())}" data-feature-action="export">خروجی اکسل</button><select id="reminderSendChannel" aria-label="کانال یادآوری" data-feature-key="${esc(responseFeature())}" data-feature-action="create"><option value="portal">داخل سامانه</option><option value="email">ایمیل</option><option value="both">هر دو</option></select><button id="sendResponseReminder" type="button" class="primary" data-feature-key="${esc(responseFeature())}" data-feature-action="create">ارسال یادآوری</button></div><div class="table-wrap"><table class="workspace-table"><thead><tr><th>شناسه</th><th>فرد</th><th>تاریخ ارسال</th><th>کانال</th><th>موضوع</th><th>پاسخ</th><th>تاریخ پاسخ</th><th>تعداد یادآوری</th><th>آخرین یادآوری</th></tr></thead><tbody id="responseTrackingBody"></tbody></table></div></div></section>`);
+  btn.onclick=()=>void openResponseTracking();
   qa('#responseFrom,#responseTo').forEach(x=>x.addEventListener('input',()=>{selected.clear();render()}));
   q('#sendResponseReminder').onclick=sendReminder;
   q('[data-response-home]').onclick=()=>window.bamcoShowHome?.();
   q('[data-response-refresh]').onclick=()=>void load(true);
   q('[data-response-export]').onclick=exportVisible;
-  q('#responseTrackingBody').onclick=e=>{if(e.target.closest('button,input,select'))return;const tr=e.target.closest('[data-delivery]');if(!tr||sending||!eligible(rows.find(x=>String(x.delivery_id)===tr.dataset.delivery)))return;selected.has(tr.dataset.delivery)?selected.delete(tr.dataset.delivery):selected.add(tr.dataset.delivery);render()};
+  q('#responseTrackingBody').onclick=e=>{if(e.target.closest('button,input,select'))return;if(!responseCan('create'))return denyResponse('create');const tr=e.target.closest('[data-delivery]');if(!tr||sending||!eligible(rows.find(x=>String(x.delivery_id)===tr.dataset.delivery)))return;selected.has(tr.dataset.delivery)?selected.delete(tr.dataset.delivery):selected.add(tr.dataset.delivery);render()};
   qa('[data-response-tracking-date]').forEach(b=>b.onclick=e=>{e.preventDefault();openDate(b.dataset.responseTrackingDate)});
+  window.addEventListener('bamco:feature-access-changed',syncResponseAccess);
+  syncResponseAccess();
+  window.BamcoAccess?.applyNavigation?.();
 }
 function render(){
   const list=filtered(),body=q('#responseTrackingBody');if(!body)return;
   const valid=new Set(list.filter(eligible).map(x=>String(x.delivery_id)));selected=new Set([...selected].filter(id=>valid.has(id)));
-  body.innerHTML=list.map(x=>`<tr data-delivery="${esc(x.delivery_id)}" class="${selected.has(String(x.delivery_id))?'suite-selected':''}" aria-selected="${selected.has(String(x.delivery_id))}"><td>${digits(x.delivery_id)}</td><td>${esc(x.recipient_name||x.recipient_email||'—')}</td><td>${esc(x.sent_at?jalaliDateTime(x.sent_at):'—')}</td><td>${esc(channels[x.channel]||x.channel||'—')}</td><td>${esc(x.subject||'—')}</td><td class="response-${esc(x.response_status||'')}">${esc(labels[x.response_status]||x.response_status||'—')}</td><td>${esc(x.replied_at?jalaliDateTime(x.replied_at):'—')}</td><td>${digits(x.reminder_count||0)}</td><td>${esc(x.last_reminded_at?jalaliDateTime(x.last_reminded_at):'—')}</td></tr>`).join('')||'<tr><td colspan="9" class="empty">ارسالی مطابق فیلترها وجود ندارد.</td></tr>';
-  const send=q('#sendResponseReminder');if(send)send.disabled=sending||![...selected].some(id=>{const r=rows.find(x=>String(x.delivery_id)===id);return eligible(r)});
+  body.innerHTML=list.map(x=>{const name=recipientName(x),avatar=x.recipient_id?`<span class="response-recipient-avatar" data-profile-photo="${esc(x.recipient_id)}" aria-label="تصویر ${esc(name)}">${esc(name.trim()[0]||'—')}</span>`:'';return `<tr data-delivery="${esc(x.delivery_id)}" class="${selected.has(String(x.delivery_id))?'suite-selected':''}" aria-selected="${selected.has(String(x.delivery_id))}"><td>${digits(x.delivery_id)}</td><td><span class="response-recipient">${avatar}<span>${esc(name)}</span></span></td><td>${esc(x.sent_at?jalaliDateTime(x.sent_at):'—')}</td><td>${esc(channels[x.channel]||x.channel||'—')}</td><td>${esc(x.subject||'—')}</td><td class="response-${esc(x.response_status||'')}">${esc(labels[x.response_status]||x.response_status||'—')}</td><td>${esc(x.replied_at?jalaliDateTime(x.replied_at):'—')}</td><td>${digits(x.reminder_count||0)}</td><td>${esc(x.last_reminded_at?jalaliDateTime(x.last_reminded_at):'—')}</td></tr>`}).join('')||'<tr><td colspan="9" class="empty">ارسالی مطابق فیلترها وجود ندارد.</td></tr>';
+  const profiles=list.map(row=>window.BamcoProfiles?.get?.(row.recipient_id)).filter(Boolean);if(profiles.length)void window.bamcoMedia?.avatars?.(body,profiles);
+  const send=q('#sendResponseReminder');if(send)send.disabled=!responseCan('create')||sending||![...selected].some(id=>{const r=rows.find(x=>String(x.delivery_id)===id);return eligible(r)});
+  syncResponseAccess();
 }
+async function openResponseTracking(){if(!await ensureResponseAccess())return false;if(typeof showView==='function')showView('responseTracking');setTimeout(()=>void load(),0);return true}
 async function load(force=false){
-  if(!isManager()||loading&&!force)return;loading=true;const refresh=q('[data-response-refresh]');if(refresh)refresh.disabled=true;
+  if(!await ensureResponseAccess()||loading&&!force)return;loading=true;const refresh=q('[data-response-refresh]');if(refresh)refresh.disabled=true;
   try{
     rows=await selectAll('message_response_tracking','select=*&order=sent_at.desc');
+    recipientProfiles(rows);
     render();
   }catch(err){toast(err.message,true)}finally{loading=false;if(refresh)refresh.disabled=false}
 }
 async function exportVisible(){
+  if(!await ensureResponseAccess('export'))return;
   const button=q('[data-response-export]');if(button)button.disabled=true;
   try{
     const table=q('#responseTrackingView table');if(!table)return;
@@ -89,13 +140,13 @@ async function exportVisible(){
   }catch(err){toast(err.message,true)}finally{if(button)button.disabled=false}
 }
 async function sendReminder(){
-  if(sending)return;
+  if(!await ensureResponseAccess('create')||sending)return;
   const items=rows.filter(x=>selected.has(String(x.delivery_id))&&eligible(x));
   if(!items.length)return toast('حداقل یک ارسال بدون پاسخ را انتخاب کنید.',true);
   const channel=q('#reminderSendChannel').value;
   if(channel!=='portal'){
     const missing=items.filter(x=>!String(x.recipient_email||'').trim());
-    if(missing.length)return toast(`برای ${[...new Set(missing.map(x=>x.recipient_name))].join('، ')} ایمیل ثبت نشده است.`,true);
+    if(missing.length)return toast(`برای ${[...new Set(missing.map(x=>recipientName(x)))].join('، ')} ایمیل ثبت نشده است.`,true);
   }
   sending=true;render();
   try{
@@ -117,7 +168,7 @@ async function sendReminder(){
   }catch(err){toast(err.message,true)}finally{sending=false;render()}
 }
 async function confirmReminder(){
-  if(sending||!preparedReminder?.id)return;
+  if(!await ensureResponseAccess('create')||sending||!preparedReminder?.id)return;
   sending=true;render();q('#confirmReminderSend').disabled=true;
   const pending=preparedReminder;let error='';
   try{
@@ -130,7 +181,7 @@ async function confirmReminder(){
   try{
     const deliveries=await selectAll('message_deliveries',`select=id,recipient_id,channel,status,error_message&batch_id=eq.${pending.id}&order=id`);
     const ok=deliveries.filter(d=>['sent','delivered'].includes(d.status)),failed=deliveries.filter(d=>d.status==='failed'),waiting=deliveries.filter(d=>!['sent','delivered','failed','cancelled'].includes(d.status));
-    q('#reminderResult').textContent=`${digits(ok.length)} ارسال موفق؛ ${digits(failed.length)} ناموفق؛ ${digits(waiting.length)} در انتظار تکمیل\n`+deliveries.map(d=>`${rows.find(r=>r.recipient_id===d.recipient_id)?.recipient_name||d.recipient_id} — ${channels[d.channel]}: ${['sent','delivered'].includes(d.status)?'موفق':d.error_message||d.status}`).join('\n')+(error?'\n'+error:'');
+    q('#reminderResult').textContent=`${digits(ok.length)} ارسال موفق؛ ${digits(failed.length)} ناموفق؛ ${digits(waiting.length)} در انتظار تکمیل\n`+deliveries.map(d=>`${recipientName(rows.find(r=>r.recipient_id===d.recipient_id),d.recipient_id)} — ${channels[d.channel]}: ${['sent','delivered'].includes(d.status)?'موفق':d.error_message||d.status}`).join('\n')+(error?'\n'+error:'');
     if(deliveries.length&&ok.length===deliveries.length){selected.clear();preparedReminder=null;}
     // Retry reuses the same batch: successful channels are never resent.
     q('#confirmReminderSend').textContent='بررسی / تلاش مجدد همین ارسال';
@@ -148,6 +199,7 @@ function commitDate(clear=false){
   if(!dateTarget)return false;const input=dateTarget.input;input.value=clear?'':digits(`${q('#calYear').value}/${String(q('#calMonth').value).padStart(2,'0')}/${String(q('#calDay').value).padStart(2,'0')}`);dateTarget=null;q('#calendarDialog')?.close();selected.clear();render();return true;
 }
 document.addEventListener('click',e=>{if(!dateTarget)return;if(e.target.closest?.('#setDateBtn')){e.preventDefault();e.stopImmediatePropagation();commitDate(false)}else if(e.target.closest?.('#clearDateBtn')){e.preventDefault();e.stopImmediatePropagation();commitDate(true)}},true);
-window.bamcoTableData=window.bamcoTableData||{};window.bamcoTableData.responseTrackingView=()=>filtered().map(x=>({id:String(x.delivery_id),values:[x.delivery_id,x.recipient_name||x.recipient_email,x.sent_at?jalaliDateTime(x.sent_at):'—',channels[x.channel]||x.channel,x.subject,labels[x.response_status]||x.response_status,x.replied_at?jalaliDateTime(x.replied_at):'—',x.reminder_count||0]}));
+window.bamcoTableData=window.bamcoTableData||{};window.bamcoTableData.responseTrackingView=()=>filtered().map(x=>({id:String(x.delivery_id),values:[x.delivery_id,recipientName(x),x.sent_at?jalaliDateTime(x.sent_at):'—',channels[x.channel]||x.channel,x.subject,labels[x.response_status]||x.response_status,x.replied_at?jalaliDateTime(x.replied_at):'—',x.reminder_count||0]}));
+document.addEventListener('bamco:profiles-updated',()=>{if(rows.length&&q('#responseTrackingBody'))render()});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();setTimeout(install,600);
 })();

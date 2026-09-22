@@ -15,9 +15,9 @@ async function warmAvatars(force=false){
   const job=(async()=>{
     let profiles=[];
     try{
-      profiles=state.profile?.role==='manager'
-        ?await select('profiles','select=id,avatar_path,updated_at&order=id')
-        :[state.profile];
+      // The canonical store is already the current user's authorised directory
+      // slice.  Avatar warming must not make an extra role-gated profile query.
+      profiles=window.BamcoProfiles?.list?.()||[state.profile];
     }catch{return}
     if(!sessionCurrent(user,session))return;
     const paths=(profiles||[]).filter(p=>p?.avatar_path);

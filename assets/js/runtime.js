@@ -132,7 +132,9 @@ function dashboardBucket(task){
 }
 function dashboardFilters(){return{owner:q('#dashOwner')?.value||'همه',priority:q('#dashPriority')?.value||'همه',status:q('#dashStatus')?.value||'همه',bucket:q('#dashBucket')?.value||'همه'}}
 function taskMatchesDashboard(task,filters=dashboardFilters()){
-  if(filters.owner!=='همه'&&typeof ownerName==='function'&&norm(ownerName(task))!==norm(filters.owner))return false;
+  // The filter value is the immutable user id, never a current name.  Labels
+  // can change without changing which task is selected.
+  if(filters.owner!=='همه'&&String(task?.owner_id||task?.created_by||'')!==String(filters.owner))return false;
   if(filters.priority!=='همه'&&norm(task?.priority)!==norm(filters.priority))return false;
   if(filters.status!=='همه'&&norm(task?.status)!==norm(filters.status))return false;
   if(filters.bucket!=='همه'&&norm(dashboardBucket(task))!==norm(filters.bucket))return false;
@@ -142,11 +144,7 @@ function requestMatchesDashboard(request,filters){
   const base=(state.tasks||[]).find(t=>String(t.id)===String(request.task_id))||{};
   const candidate={...base,...(request.proposed_data||{})};
   if(!candidate.owner_id&&request.request_type==='create')candidate.owner_id=request.requested_by;
-  if(filters.owner!=='همه'){
-    const profile=(state.profiles||[]).find(p=>String(p.id)===String(candidate.owner_id));
-    const name=profile?.full_name||profile?.display_name||profile?.excel_name||profile?.email||'';
-    if(norm(name)!==norm(filters.owner))return false;
-  }
+  if(filters.owner!=='همه'&&String(candidate.owner_id||candidate.created_by||'')!==String(filters.owner))return false;
   if(filters.priority!=='همه'&&norm(candidate.priority)!==norm(filters.priority))return false;
   if(filters.status!=='همه'&&norm(candidate.status)!==norm(filters.status))return false;
   if(filters.bucket!=='همه'&&norm(dashboardBucket(candidate))!==norm(filters.bucket))return false;
@@ -158,7 +156,7 @@ function postprocessDashboard(){
   const managementKeys=['pending_requests','create_requests','unscheduled'];
   managementKeys.forEach(key=>{const card=q(`article[data-key="${key}"]`,cards);if(card)card.style.display=manager?'':'none'});
   if(manager){
-    const profile=(state.profiles||[]).find(p=>norm(p.full_name||p.excel_name||p.display_name||p.email)===norm(filters.owner)),ownerId=filters.owner==='همه'?null:profile?.id||null,metrics=window.bamcoDashboardMetrics,requests=metrics?.uniqueRequests?.([...(state.definitionRequests||[]),...(state.requests||[]),...(state.requestHistory||[])])||[...(state.definitionRequests||[]),...(state.requests||[]),...(state.requestHistory||[])];
+    const ownerId=filters.owner==='همه'?null:String(filters.owner),metrics=window.bamcoDashboardMetrics,requests=metrics?.uniqueRequests?.([...(state.definitionRequests||[]),...(state.requests||[]),...(state.requestHistory||[])])||[...(state.definitionRequests||[]),...(state.requests||[]),...(state.requestHistory||[])];
     const pending=metrics?.pendingReviewCount?metrics.pendingReviewCount({ownerId,requests}):(state.requests||[]).filter(r=>['pending','in_review'].includes(r.request_status)&&requestMatchesDashboard(r,filters)).length;
     const created=metrics?.definitionCountForSelection?metrics.definitionCountForSelection({ownerId,profiles:state.profiles,tasks:state.tasks,requests,baseline:state.dashboardMonitoringStart}):requests.filter(r=>r.request_type==='create'&&requestMatchesDashboard(r,filters)).length;
     const active=(state.tasks||[]).filter(t=>!t.archived&&!window.bamcoOptions?.terminal(t)&&taskMatchesDashboard(t,filters));
@@ -181,7 +179,8 @@ function currentMonthRange(){
   const from=jalaliToISO(p.y,p.m,1),to=p.m===12?jalaliToISO(p.y+1,1,1):jalaliToISO(p.y,p.m+1,1);return{from,to,p};
 }
 function enhancePerformanceReport(){
-  const view=q('#performanceReportView'),table=q('table',view);if(!table||q('th[data-month-assigned]',table))return;
+  const view=q('#performanceReportView');if(!view)return;
+  const table=q('table',view);if(!table||q('th[data-month-assigned]',table))return;
   const head=table.tHead?.rows?.[0];if(!head||head.cells.length<8)return;
   if([...head.cells].some(cell=>/^محول‌شده در (این ماه|بازه)$/.test(cell.textContent.trim())))return;
   const marker=document.createElement('th');marker.dataset.monthAssigned='1';marker.textContent='محول‌شده در این ماه';head.insertBefore(marker,head.cells[6]);
@@ -212,6 +211,8 @@ function enhanceRequestReport(){
 let responseRows=[],responseBusy=false,responseDateTarget=null;
 const responseLabels={replied:'پاسخ داده',awaiting:'بدون پاسخ',failed:'خطای ارسال',reminder_needed:'نیازمند یادآوری'};
 const channelLabel=v=>v==='email'?'ایمیل':v==='portal'?'داخل سامانه':v==='both'?'هر دو':v||'—';
+const canResponseReport=(action='view')=>window.BamcoAccess?.can?.('responseReport',action)===true;
+const deniedResponseReport=(action='view')=>window.BamcoAccess?.denied?.('responseReport',action,{route:'responseReport'})||false;
 function reportDateIso(value,end=false){const bits=en(value||'').match(/\d+/g)?.map(Number);if(!bits||bits.length!==3)return'';const iso=jalaliToISO(bits[0],bits[1],bits[2]);return iso?(iso+(end?'T23:59:59':'T00:00:00')):''}
 function responseFilteredRows(){
   const view=q('#responseReportView'),from=reportDateIso(q('[data-response-from]',view)?.value),to=reportDateIso(q('[data-response-to]',view)?.value,true),term=(q('[data-response-search]',view)?.value||'').trim().toLocaleLowerCase();
@@ -221,26 +222,26 @@ function renderResponseRows(){
   const body=q('#responseReportBody');if(!body)return;const rows=responseFilteredRows();body.innerHTML=rows.map(x=>`<tr><td>${fa(x.delivery_id)}</td><td>${escHtml(x.recipient_name||x.recipient_email||'—')}</td><td>${channelLabel(x.channel)}</td><td>${escHtml(x.subject||'—')}</td><td>${x.sent_at?jalaliDateTime(x.sent_at):'—'}</td><td class="response-${escHtml(x.response_status)}">${responseLabels[x.response_status]||escHtml(x.response_status||'—')}</td><td class="response-text">${escHtml(x.reply_text||'—')}</td><td>${channelLabel(x.reply_channel)}</td><td>${x.replied_at?jalaliDateTime(x.replied_at):'—'}</td><td>${fa(x.reminder_count||0)}</td></tr>`).join('')||'<tr><td colspan="10" class="empty">رکوردی مطابق بازه و فیلتر انتخاب‌شده وجود ندارد.</td></tr>';
 }
 function renderResponseShell(){
-  const view=q('#responseReportView');if(!view)return;view.innerHTML=`<div class="panel workspace-panel response-report-custom" data-response-custom="1"><div class="panel-head"><h3>گزارش پاسخ‌ها</h3><div class="workspace-actions"><button class="ghost" data-response-refresh="1">تازه‌سازی</button></div></div><div class="workspace-report-tools"><div class="report-date-controls"><label>از تاریخ ارسال<span class="report-date-field"><input data-response-from class="jalali-input" readonly placeholder="۱۴۰۵/۰۶/۰۱"><button type="button" class="ghost report-date-button" data-response-date="from" aria-label="انتخاب تاریخ شروع">▦</button></span></label><label>تا تاریخ ارسال<span class="report-date-field"><input data-response-to class="jalali-input" readonly placeholder="۱۴۰۵/۰۶/۳۱"><button type="button" class="ghost report-date-button" data-response-date="to" aria-label="انتخاب تاریخ پایان">▦</button></span></label><button type="button" class="ghost" data-response-clear-dates>حذف بازه</button></div><input type="search" data-response-search placeholder="جست‌وجو در گزارش…" aria-label="جست‌وجو در گزارش"><button type="button" class="ghost" data-report-export="response-custom">خروجی اکسل فیلترشده</button></div><div class="table-wrap"><table class="workspace-table"><thead><tr><th>شناسه</th><th>فرد</th><th>کانال ارسال</th><th>موضوع</th><th>ارسال</th><th>وضعیت پاسخ</th><th>پاسخ</th><th>کانال پاسخ</th><th>تاریخ پاسخ</th><th>تعداد یادآوری</th></tr></thead><tbody id="responseReportBody"></tbody></table></div></div>`;renderResponseRows();
+  const view=q('#responseReportView');if(!view)return;view.innerHTML=`<div class="panel workspace-panel response-report-custom" data-response-custom="1"><div class="panel-head"><h3>گزارش پاسخ‌ها</h3><div class="workspace-actions"><button class="ghost" data-response-refresh="1">تازه‌سازی</button></div></div><div class="workspace-report-tools"><div class="report-date-controls"><label>از تاریخ ارسال<span class="report-date-field"><input data-response-from class="jalali-input" readonly placeholder="۱۴۰۵/۰۶/۰۱"><button type="button" class="ghost report-date-button" data-response-date="from" aria-label="انتخاب تاریخ شروع">▦</button></span></label><label>تا تاریخ ارسال<span class="report-date-field"><input data-response-to class="jalali-input" readonly placeholder="۱۴۰۵/۰۶/۳۱"><button type="button" class="ghost report-date-button" data-response-date="to" aria-label="انتخاب تاریخ پایان">▦</button></span></label><button type="button" class="ghost" data-response-clear-dates>حذف بازه</button></div><input type="search" data-response-search placeholder="جست‌وجو در گزارش…" aria-label="جست‌وجو در گزارش"><button type="button" class="ghost" data-report-export="response-custom" data-feature-key="responseReport" data-feature-action="export">خروجی اکسل فیلترشده</button></div><div class="table-wrap"><table class="workspace-table"><thead><tr><th>شناسه</th><th>فرد</th><th>کانال ارسال</th><th>موضوع</th><th>ارسال</th><th>وضعیت پاسخ</th><th>پاسخ</th><th>کانال پاسخ</th><th>تاریخ پاسخ</th><th>تعداد یادآوری</th></tr></thead><tbody id="responseReportBody"></tbody></table></div></div>`;renderResponseRows();window.BamcoAccess?.applyNavigation?.();
 }
 async function loadResponseReport(){
-  const view=q('#responseReportView');if(!view||responseBusy||!(typeof isManager==='function'&&isManager()))return;responseBusy=true;try{responseRows=await selectAll('message_response_tracking','select=*&order=sent_at.desc');renderResponseShell()}catch(err){view.innerHTML=`<div class="panel workspace-panel"><div class="workspace-error" role="alert"><b>گزارش پاسخ دریافت نشد.</b><p>${escHtml(err.message)}</p></div></div>`}finally{responseBusy=false}
+  const view=q('#responseReportView');if(!view||responseBusy)return;if(!canResponseReport('view'))return deniedResponseReport('view');responseBusy=true;try{responseRows=await selectAll('message_response_tracking','select=*&order=sent_at.desc');renderResponseShell()}catch(err){view.innerHTML=`<div class="panel workspace-panel"><div class="workspace-error" role="alert"><b>گزارش پاسخ دریافت نشد.</b><p>${escHtml(err.message)}</p></div></div>`}finally{responseBusy=false}
 }
 function openResponseCalendar(target){
   const input=q(target==='from'?'[data-response-from]':'[data-response-to]',q('#responseReportView'));if(!input)return;responseDateTarget=input;const bits=en(input.value||'').match(/\d+/g)?.map(Number),now=currentJalali(),p=bits?.length===3?{y:bits[0],m:bits[1],d:bits[2]}:now;q('#calendarLabel').textContent=target==='from'?'از تاریخ ارسال':'تا تاریخ ارسال';q('#calYear').innerHTML=Array.from({length:16},(_,i)=>now.y-5+i).map(y=>`<option value="${y}">${fa(y)}</option>`).join('');q('#calMonth').innerHTML=['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'].map((n,i)=>`<option value="${i+1}">${n}</option>`).join('');q('#calYear').value=String(p.y);q('#calMonth').value=String(p.m);fillCalendarDays();q('#calDay').value=String(p.d);q('#calendarDialog').showModal();
 }
 function installReportInteractions(){
   document.addEventListener('click',e=>{
-    if(e.target.closest('#responseReportView'))return;
     const date=e.target.closest('#responseReportView [data-response-date]');if(date){e.preventDefault();e.stopImmediatePropagation();return openResponseCalendar(date.dataset.responseDate)}
     const clear=e.target.closest('#responseReportView [data-response-clear-dates]');if(clear){q('[data-response-from]',q('#responseReportView')).value='';q('[data-response-to]',q('#responseReportView')).value='';renderResponseRows();return}
     const refresh=e.target.closest('#responseReportView [data-response-refresh]');if(refresh){e.preventDefault();e.stopImmediatePropagation();return loadResponseReport()}
-    const exportBtn=e.target.closest('#requestReportView [data-report-export],#responseReportView [data-report-export]');if(exportBtn){e.preventDefault();e.stopImmediatePropagation();const view=exportBtn.closest('.view');exportFilteredReport(view,view.id==='requestReportView'?'گزارش درخواست‌ها - فیلترشده':'گزارش پاسخ‌ها - فیلترشده').catch(err=>toast(err.message,true));return}
+    const exportBtn=e.target.closest('#requestReportView [data-report-export],#responseReportView [data-report-export]');if(exportBtn){e.preventDefault();e.stopImmediatePropagation();const view=exportBtn.closest('.view');if(view?.id==='responseReportView'&&!canResponseReport('export'))return deniedResponseReport('export');exportFilteredReport(view,view.id==='requestReportView'?'گزارش درخواست‌ها - فیلترشده':'گزارش پاسخ‌ها - فیلترشده').catch(err=>toast(err.message,true));return}
     if(responseDateTarget&&e.target.closest('#setDateBtn')){e.preventDefault();e.stopImmediatePropagation();responseDateTarget.value=fa(`${q('#calYear').value}/${String(q('#calMonth').value).padStart(2,'0')}/${String(q('#calDay').value).padStart(2,'0')}`);responseDateTarget=null;q('#calendarDialog').close();renderResponseRows();return}
     if(responseDateTarget&&e.target.closest('#clearDateBtn')){e.preventDefault();e.stopImmediatePropagation();responseDateTarget.value='';responseDateTarget=null;q('#calendarDialog').close();renderResponseRows();return}
     const nav=e.target.closest('#nav [data-view]');if(nav){const id=nav.dataset.view;if(id==='performanceReport')setTimeout(enhancePerformanceReport,180);else if(id==='requestReport')setTimeout(enhanceRequestReport,180)}
   },true);
   q('#calendarDialog')?.addEventListener('close',()=>{responseDateTarget=null});
+  window.addEventListener('bamco:feature-access-changed',()=>{const view=q('#responseReportView');if(!canResponseReport('view')){responseRows=[];view?.classList.add('hidden');return}if(state.view==='responseReport'&&!view?.classList.contains('hidden'))void loadResponseReport()});
 }
 function observeReportViews(){
   const setup=(id,fn)=>{const view=q('#'+id+'View');if(!view)return;let timer=0;new MutationObserver(()=>{clearTimeout(timer);timer=setTimeout(()=>fn(view),30)}).observe(view,{childList:true,subtree:false})};

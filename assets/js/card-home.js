@@ -50,9 +50,11 @@ function install(){
     const visible=[...group.querySelectorAll('[data-view]')].some(b=>!b.classList.contains('hidden'));
     if(group.classList.contains('hidden')===visible)group.classList.toggle('hidden',!visible);
    });
+   window.BamcoAccess?.applyNavigation?.();
   }finally{groupObserver.observe(nav,{childList:true,subtree:true,attributes:true,attributeFilter:['class']})}
  }
  syncGroups();
+ window.addEventListener('bamco:feature-access-changed',()=>{syncGroups();window.BamcoAccess?.applyNavigation?.()});
  const dialog=document.createElement('dialog');dialog.className='home-welcome-dialog';dialog.setAttribute('aria-labelledby','homeWelcomeTitle');dialog.innerHTML='<button class="welcome-dismiss" type="button" aria-label="بستن خوشامدگویی" autofocus><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button><div class="home-welcome-copy"><p class="welcome-person"></p><h2 id="homeWelcomeTitle">به سامانه مدیریت، پایش و پیگیری امور خوش آمدید</h2></div><img class="home-sticker female" alt="استیکر زن در وضعیت مطلوب"><img class="home-sticker male" alt="استیکر مرد در وضعیت مطلوب">';document.body.append(dialog);
  let welcomeStickerPromise=null,welcomeStickerGeneration=0,welcomeStickerReadyUser=null;
  async function loadWelcomeStickers(generation,force){
@@ -120,13 +122,17 @@ function install(){
   document.body.classList.add('card-navigation','card-home-active');
   document.body.classList.remove('welcome-active','content-only');
   if(typeof state!=='undefined')state.view='home';
+  window.BamcoAccess?.applyNavigation?.();
   const title=q('#viewTitle');if(title)title.textContent='میز کار';q('#addTaskBtn')?.classList.add('hidden');
   if(sync)syncGroups();
   if(reset)resetHomeScroll();
  }
  function showHome(){repairHome({reset:true,sync:true});void prepareHomeLayout()}
- function homeBroken(){
+function homeBroken(){
   if(!homeExpected||dialog.open||app.classList.contains('hidden'))return false;
+  // A delayed observer from the home screen must never reclaim the workspace
+  // after a user has opened an authorized feature route.
+  if(typeof state!=='undefined'&&state.view!=='home')return false;
   return !home.isConnected||home.classList.contains('hidden')||nav.parentElement!==home||!top.isConnected||top.classList.contains('hidden')||document.body.classList.contains('content-only')||!document.body.classList.contains('card-home-active');
  }
  function scheduleHomeRepair(){

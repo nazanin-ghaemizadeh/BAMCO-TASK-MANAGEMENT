@@ -2,6 +2,13 @@
   'use strict';
   const q = (s, r = document) => r?.querySelector(s);
   const qa = (s, r = document) => [...(r?.querySelectorAll(s) || [])];
+  const canDocuments = (action = 'view') => window.BamcoAccess?.can?.('documents', action) === true;
+  const denyDocuments = (action = 'view') => window.BamcoAccess?.denied?.('documents', action);
+  const requireDocuments = (action = 'view') => {
+    if (canDocuments(action)) return true;
+    denyDocuments(action);
+    return false;
+  };
   const openSites = new Set(), openCategories = new Set();
   let categoryMap = new Map(), frame = 0, inboxFrame = 0;
 
@@ -51,15 +58,17 @@
       const id = card.dataset.categoryId, head = q(':scope > header', card), open = openCategories.has(id);
       if (!head) return;
       if (!q('[data-category-toggle]', head)) head.insertAdjacentHTML('afterbegin', disclosure('category', id, open));
-      const actions = q('.feature-row-actions', head);
-      if (!q('[data-add-subcategory]', head) && state?.profile?.role === 'manager') actions?.insertAdjacentHTML('afterbegin', `<button class="ghost" data-add-subcategory="${id}">زیر‌دسته جدید</button>`);
+      const actions = q('.feature-row-actions', head), addButton = q('[data-add-subcategory]', head);
+      if (canDocuments('create')) {
+        if (!addButton) actions?.insertAdjacentHTML('afterbegin', `<button class="ghost" data-add-subcategory="${id}">زیر‌دسته جدید</button>`);
+      } else addButton?.remove();
       card.classList.toggle('feature-collapsed', !open);
       card.style.setProperty('--category-depth', String(depth(id)));
       q('[data-category-toggle]', head)?.setAttribute('aria-expanded', String(open));
     });
   }
   async function refreshCategoryMap() {
-    if (!state?.token) return;
+    if (!state?.token || !canDocuments('view')) { categoryMap = new Map(); schedule(); return; }
     try {
       const rows = await selectAll('document_categories', 'select=id,parent_id,title&order=sort_order.asc,id.asc');
       categoryMap = new Map(rows.map(row => [String(row.id), row]));
@@ -115,9 +124,9 @@
     const form = event.target;
     if (form.id !== 'docCategoryForm') return;
     event.preventDefault(); event.stopImmediatePropagation();
-    const button = q('[type=submit]', form), id = form.elements.id.value;
+    const button = q('[type=submit]', form), id = form.elements.id.value, action = id ? 'edit' : 'create';
     const payload = { title: form.elements.title.value.trim(), description: form.elements.description.value.trim() || null, parent_id: form.elements.parent_id.value ? Number(form.elements.parent_id.value) : null };
-    if (!payload.title) return;
+    if (!payload.title || !requireDocuments(action)) return;
     button.disabled = true;
     try {
       if (id) await update('document_categories', `id=eq.${encodeURIComponent(id)}`, payload);
@@ -140,7 +149,7 @@
     const category = event.target.closest('[data-category-toggle]');
     if (category) { event.preventDefault(); event.stopPropagation(); const id = category.dataset.categoryToggle; openCategories.has(id) ? openCategories.delete(id) : openCategories.add(id); enhanceCategories(); return; }
     const add = event.target.closest('[data-add-subcategory]');
-    if (add) { event.preventDefault(); q('#addDocumentCategory')?.click(); populateParent(add.dataset.addSubcategory); return; }
+    if (add) { event.preventDefault(); if (!requireDocuments('create')) return; q('#addDocumentCategory')?.click(); populateParent(add.dataset.addSubcategory); return; }
     if (event.target.closest('#cashDashboardToggle')) { event.preventDefault(); event.stopImmediatePropagation(); void openCashDashboard(); }
   }, true);
   document.addEventListener('submit', saveCategory, true);
@@ -155,6 +164,10 @@
   if (sites) new MutationObserver(schedule).observe(sites, { childList: true, subtree: true });
   if (inbox) new MutationObserver(scheduleInboxNormalization).observe(inbox, { childList: true, subtree: true });
   document.addEventListener('bamco-inbox-updated', scheduleInboxNormalization);
+  window.addEventListener('bamco:feature-access-changed', () => {
+    if (canDocuments('view')) void refreshCategoryMap();
+    else { categoryMap = new Map(); schedule(); }
+  });
   q('#documentsRefresh')?.addEventListener('click', () => void refreshCategoryMap());
   window.addEventListener('focus', () => { schedule(); scheduleInboxNormalization(); });
   window.bamcoFeatureStructure = { refreshCategories: refreshCategoryMap, schedule };

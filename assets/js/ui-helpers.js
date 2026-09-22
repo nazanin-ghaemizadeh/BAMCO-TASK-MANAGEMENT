@@ -92,20 +92,6 @@ window.__bamcoStableStickerInstalled=true;
     },true);
   }
 
-  function installDeleteResequence(){
-    if(typeof window.deleteTask!=='function')return;
-    window.deleteTask=async id=>{
-      if(typeof isManager==='function'&&!isManager())return;
-      const task=state.tasks.find(t=>String(t.id)===String(id));
-      if(!task||!await window.bamcoConfirm(`وظیفه «${task.title}» برای همیشه حذف شود؟`))return;
-      try{
-        await rpc('delete_tasks_and_resequence',{p_task_ids:[Number(id)]});
-        state.selected.kanban=null;state.selected.archive=null;
-        await refresh();toast('وظیفه حذف شد و شماره‌ها در کانبان و آرشیو بازشماری شدند.');
-      }catch(err){toast(err.message,true)}
-    };
-  }
-
   function installFooter(){
     const app=document.querySelector('#appView');if(!app)return;
     let footer=document.querySelector('#appFooterCredit');
@@ -142,7 +128,7 @@ window.__bamcoStableStickerInstalled=true;
   function installFinalPolish(){appendOrderedScript('script[data-final-polish]','final-polish-20260907.js?v=20260907-core2','finalPolish')}
 
   const boot=()=>{
-    refreshStableLayout();installSidebarUniformStyle();installTypography();installOutsideSelectionClear();installDeleteResequence();installFooter();installSidebarHoverScroll();installGroupedSidebar();installUserRequestedFixesV2();installLoginControls();installFinalPolish();
+    refreshStableLayout();installSidebarUniformStyle();installTypography();installOutsideSelectionClear();installFooter();installSidebarHoverScroll();installGroupedSidebar();installUserRequestedFixesV2();installLoginControls();installFinalPolish();
   };
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();

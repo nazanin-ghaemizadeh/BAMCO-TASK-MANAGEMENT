@@ -3,7 +3,16 @@
  const manager={id:'00000000-0000-4000-8000-000000000001',full_name:'مدیر آزمایشی',display_name:'مدیر آزمایشی',email:'manager@example.test',role:'manager',active:true,avatar_path:'00000000-0000-4000-8000-000000000001/avatar.png'};
  const owner={id:'00000000-0000-4000-8000-000000000002',full_name:'متولی آزمایشی',email:'owner@example.test',role:'owner',active:true,avatar_path:'00000000-0000-4000-8000-000000000002/avatar.png'};
  const iso=new Date().toISOString(),today=iso.slice(0,10);
- const api=window.__testApi={actor:manager,calls:[],delay:{},fail:[],profiles:[manager,owner],templates:['state1','state2','state3','state4','state5','followup'].map((key,i)=>({id:i+1,template_key:key,subject_template:'موضوع '+key,body_html:'<p>متن ذخیره‌شده '+key+'</p>'})),deliveries:[30,31,32].map(id=>({delivery_id:id,recipient_id:owner.id,recipient_name:owner.full_name,channel:'portal',subject:'پیام آزمایشی '+id,sent_at:iso,response_status:'awaiting',delivery_status:'sent',reminder_count:0})),tasks:[{id:1,legacy_id:1,title:'وظیفه آزمایشی',owner_id:owner.id,archived:false,status:'در حال انجام',priority:'متوسط',start_date:today,due_date:today,reminder_days:1},{id:2,legacy_id:2,title:'وظیفه انجام‌شده',owner_id:owner.id,archived:true,status:'انجام شده',priority:'کم',start_date:today,due_date:today,done_date:today}],requests:[]};
+ const grant=(feature_key,can_view=true,can_create=false,can_edit=false,can_delete=false,can_export=false)=>({feature_key,can_view,can_create,can_edit,can_delete,can_export,can_manage_access:false,can_bypass_approval:false});
+ // Browser fixtures use the same canonical RPC shape as production. The
+ // owner deliberately has no letters or vehicle grant, while a manager is an
+ // implicit protected system manager in the access service.
+ const ownerFeatureAccess=[
+  grant('dashboard'),grant('kanban',true,true,true,true),grant('archive',true,false,true,false,true),grant('approvals'),grant('requestHistory',true,false,false,false,true),
+  grant('projects'),grant('parts'),grant('invoices'),grant('organization'),grant('messages',true,true,true),grant('responseTracking',true,false,true),grant('performanceReport'),grant('responseReport'),
+  grant('settings',true,false,true),grant('groupChat',true,true,true),grant('directMessages',true,true,true),grant('taskChats',true,true,true),grant('documents'),grant('sitesAccess',true,true,true,true),grant('userGuide')
+ ];
+ const api=window.__testApi={actor:manager,calls:[],delay:{},fail:[],profiles:[manager,owner],featureAccess:ownerFeatureAccess,directFeatureGrants:{},templates:['state1','state2','state3','state4','state5','followup'].map((key,i)=>({id:i+1,template_key:key,subject_template:'موضوع '+key,body_html:'<p>متن ذخیره‌شده '+key+'</p>'})),deliveries:[30,31,32].map(id=>({delivery_id:id,recipient_id:owner.id,recipient_name:owner.full_name,channel:'portal',subject:'پیام آزمایشی '+id,sent_at:iso,response_status:'awaiting',delivery_status:'sent',reminder_count:0})),tasks:[{id:1,legacy_id:1,title:'وظیفه آزمایشی',owner_id:owner.id,archived:false,status:'در حال انجام',priority:'متوسط',start_date:today,due_date:today,reminder_days:1},{id:2,legacy_id:2,title:'وظیفه انجام‌شده',owner_id:owner.id,archived:true,status:'انجام شده',priority:'کم',start_date:today,due_date:today,done_date:today}],requests:[]};
  window.__testTicks=0;setInterval(()=>window.__testTicks++,50);
  window.fetch=async(input,init={})=>{
   const url=new URL(typeof input==='string'?input:input.url,'https://bamco.test/'),endpoint=url.pathname.split('/').pop(),method=init.method||'GET',body=typeof init.body==='string'?JSON.parse(init.body):null;
@@ -18,10 +27,15 @@
   else if(endpoint==='document-library'){api.guideVersion=(api.guideVersion||1)+1;data={ok:true,document:{id:20,category_id:10,title:'راهنمای استفاده سامانه',version:api.guideVersion,updated_at:iso,original_file_name:'BAMCO-User-Guide.pdf',file_size:3355443,storage_path:'guide.pdf',mime_type:'application/pdf'}}}
   else if(endpoint==='user')data={id:api.actor.id};
   else if(endpoint==='session-audit')data=body.action==='start'?{ok:true,session:{id:'browser-test-session'}}:{ok:true,ended:body.action==='end'};
+  else if(endpoint==='effective_feature_access')data={schema:'bamco.feature-access.v1',grants:api.actor.role==='manager'?[]:api.featureAccess};
+  else if(endpoint==='feature_access_manage_snapshot'){
+   const feature=body?.p_feature_key,grants=api.directFeatureGrants[feature]||[];
+   data={schema:'bamco.feature-access.v1',feature:{feature_key:feature},users:api.profiles.filter(p=>p.active!==false),grants,effective_grants:api.profiles.map(profile=>({user_id:profile.id,...(api.actor.role==='manager'?grant(feature,true,true,true,true,true):(api.featureAccess.find(row=>row.feature_key===feature)||grant(feature,false)))}))};
+  }else if(endpoint==='set_feature_access'){
+   const feature=body?.p_feature_key;api.directFeatureGrants[feature]=(body?.p_grants||[]).map(row=>({...row,feature_key:feature}));data={schema:'bamco.feature-access.v1',feature_key:feature,changed:(body?.p_grants||[]).length};
+  }
   else if(endpoint==='letters')data=Array.from({length:53},(_,i)=>({id:'letter-'+i,letter_number:'1405/10/'+(i+1),letter_date:'1405/06/22',recipient:'گیرنده آزمایشی',subject:'موضوع نامه آزمایشی '+(i+1),version:1,storage_path:null}));
   else if(endpoint==='owner_workspace_preview')data={person:{id:body.p_user_id,name:'متولی آزمایشی'},tasks:api.tasks.filter(t=>t.owner_id===body.p_user_id),letters:false,vehicles:[]};
-  else if(endpoint==='can_access_vehicle')data=api.actor.active!==false&&(api.actor.role==='manager'||(api.vehicleAccess||[]).some(g=>g.user_id===api.actor.id&&g.scope===body.p_scope));
-  else if(endpoint==='can_access_letters')data=api.actor.active!==false&&(api.actor.role==='manager'||(api.letterAccess||[]).includes(api.actor.id));
   else if(endpoint==='profiles')data=filter(api.profiles);
   else if(endpoint==='task_status_view')data=api.actor.role==='manager'?api.tasks:api.tasks.filter(t=>t.owner_id===api.actor.id);
   else if(endpoint==='task_dataset_version')data=api.taskDatasetVersion||'fixture-v1';

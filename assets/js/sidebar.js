@@ -85,8 +85,13 @@
       const visible=[...g.querySelectorAll('.nav-group-items>button')].some(b=>!b.classList.contains('hidden'));
       if(g.classList.contains('hidden')===visible)g.classList.toggle('hidden',!visible);
     });
+    // The catalog is authoritative for navigation placement and BamcoAccess
+    // is authoritative for visibility. Run it after buttons are re-parented
+    // into groups so a grant change cannot leave an empty visible category.
+    window.BamcoAccess?.applyNavigation?.();
     refreshVisibility();
     new MutationObserver(refreshVisibility).observe(nav,{subtree:true,attributes:true,attributeFilter:['class']});
+    window.addEventListener('bamco:feature-access-changed',()=>{window.BamcoAccess?.applyNavigation?.();refreshVisibility()});
 
     [permanent,temporary].filter(Boolean).forEach(b=>b.addEventListener('click',()=>{
       closeAllGroups();

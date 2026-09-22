@@ -14,7 +14,7 @@ function renderText(node,text){
  if(parts.length&&parts.every(x=>/[\p{Extended_Pictographic}\p{Regional_Indicator}\p{Emoji_Modifier}\u20e3]/u.test(x))){node.classList.add('chat-emoji-message');node.dir='ltr';for(const glyph of parts){const span=document.createElement('span');span.className='chat-emoji-glyph';span.textContent=glyph;node.append(span)}}else node.textContent=text;
  window.bamcoEmoji?.render(node);
 }
-const directory=async()=>{try{return await rpc('chat_directory_v2',{})}catch{return await rpc('chat_directory',{})}};
+const directory=async()=>{try{return await rpc('chat_directory_v3',{})}catch{try{return await rpc('chat_directory_v2',{})}catch{return await rpc('chat_directory',{})}}};
 function summary(body){if(body?.startsWith(FILE)){try{return JSON.parse(body.slice(FILE.length)).name}catch{return'فایل'}}if(body?.startsWith(STICKER))return'استیکر';return body||''}
 async function mount(host,{id,title,subtitle='',actions=[],personId=null,groupPhoto='',companyLogo=false,readOnly=false}){
  if(active)active.close();
@@ -37,11 +37,13 @@ async function mount(host,{id,title,subtitle='',actions=[],personId=null,groupPh
  }
  async function load(manual=false){
   if(stateUI.closed)return;const run=++stateUI.loadRun;try{const [messages,people]=await Promise.all([selectAll('chat_messages',`select=*&thread_id=eq.${encodeURIComponent(id)}&deleted_at=is.null&order=created_at.asc`,200),directory()]);if(stateUI.closed||!host.isConnected||run!==stateUI.loadRun)return;
+   window.BamcoProfiles?.upsert?.(people,{source:'chat-directory'});
    const nearBottom=box.scrollHeight-box.scrollTop-box.clientHeight<90,oldTop=box.scrollTop,signature=JSON.stringify(messages);if(signature===stateUI.signature)return;stateUI.signature=signature;stateUI.messages=messages;
-   const names=Object.fromEntries(people.map(p=>[p.id,p.display_name||p.full_name||'کاربر'])),profiles=Object.fromEntries(people.map(p=>[p.id,p]));box.replaceChildren();let date='';
+   const names=Object.fromEntries(people.map(p=>[p.id,window.BamcoProfiles?.label?.(p.id,p.display_name||p.full_name||'کاربر')||p.display_name||p.full_name||'کاربر'])),profiles=Object.fromEntries(people.map(p=>[p.id,p]));box.replaceChildren();let date='';
    for(const m of messages){const day=new Date(m.created_at).toLocaleDateString('fa-IR');if(day!==date){const divider=document.createElement('div');divider.className='chat-date';divider.textContent=day;box.append(divider);date=day}
     const mine=!m.is_system&&m.sender_id===state.user.id,item=document.createElement('article');item.className='chat-bubble'+(mine?' mine':'');item.dataset.messageId=m.id;
-    item.innerHTML=`<div class="chat-author"><span class="chat-avatar" data-profile-photo="${esc(m.sender_id)}">${esc((names[m.sender_id]||m.sender_name_snapshot||'ک').slice(0,1))}</span><b class="chat-sender">${esc(m.is_system?'سامانه':names[m.sender_id]||m.sender_name_snapshot||'کاربر')}</b></div><div class="chat-body"></div><div class="chat-bubble-meta"><time>${m.edited_at?'ویرایش‌شده · ' :''}${new Date(m.created_at).toLocaleTimeString('fa-IR',{hour:'2-digit',minute:'2-digit'})}</time><button type="button" class="message-reply">پاسخ</button>${mine&&!m.body?.startsWith(FILE)&&!m.body?.startsWith(STICKER)?'<button type="button" class="message-edit">ویرایش</button>':''}${isManager()?'<button type="button" class="message-delete">حذف</button>':''}</div>`;
+    const deleteAllowed=window.BamcoAccess?.can?.('messages','delete')||window.BamcoAccess?.can?.('groupChat','delete')||window.BamcoAccess?.can?.('directMessages','delete')||window.BamcoAccess?.can?.('taskChats','delete');
+    item.innerHTML=`<div class="chat-author"><span class="chat-avatar" data-profile-photo="${esc(m.sender_id)}">${esc((names[m.sender_id]||m.sender_name_snapshot||'ک').slice(0,1))}</span><b class="chat-sender">${esc(m.is_system?'سامانه':names[m.sender_id]||m.sender_name_snapshot||'کاربر')}</b></div><div class="chat-body"></div><div class="chat-bubble-meta"><time>${m.edited_at?'ویرایش‌شده · ' :''}${new Date(m.created_at).toLocaleTimeString('fa-IR',{hour:'2-digit',minute:'2-digit'})}</time><button type="button" class="message-reply">پاسخ</button>${mine&&!m.body?.startsWith(FILE)&&!m.body?.startsWith(STICKER)?'<button type="button" class="message-edit">ویرایش</button>':''}${deleteAllowed?'<button type="button" class="message-delete">حذف</button>':''}</div>`;
     const parent=messages.find(x=>String(x.id)===String(m.reply_to||m.reply_to_id));if(parent){const quote=document.createElement('blockquote');quote.textContent=summary(parent.body).slice(0,180);item.querySelector('.chat-body').before(quote)}
     const body=item.querySelector('.chat-body');body.dir=/[A-Za-z]/.test(m.body||'')&&!/[\u0600-\u06ff]/.test(m.body||'')?'ltr':'rtl';if(m.body?.startsWith(FILE))attach(m,body);else if(m.body?.startsWith(STICKER)){const key=m.body.slice(STICKER.length),src=window.BAMCO_DESKTOP_ASSETS?.[key];if(src){const img=document.createElement('img');img.className='chat-sticker';img.src=src;img.alt='استیکر';body.append(img)}else body.textContent='استیکر'}else renderText(body,m.body||'');
     item.querySelector('.message-reply').onclick=()=>reply(m);const edit=item.querySelector('.message-edit');if(edit)edit.onclick=()=>{stateUI.reply=null;stateUI.editing=m;stateUI.pending=null;q('.chat-pending').classList.add('hidden');q('.chat-reply').classList.remove('hidden');q('.chat-reply span').textContent='ویرایش پیام';input.value=m.body;input.focus()};const del=item.querySelector('.message-delete');if(del)del.onclick=async()=>{if(!await window.bamcoConfirm('این پیام حذف شود؟'))return;try{del.disabled=true;await rpc('chat_delete_message',{p_message_id:Number(m.id)});await load(true)}catch(err){error(err.message);del.disabled=false}};
@@ -95,8 +97,13 @@ async function mount(host,{id,title,subtitle='',actions=[],personId=null,groupPh
    select.onchange=search.oninput=()=>{limit=120;paint()};panel.querySelector('.chat-emoji-close').onclick=()=>panel.classList.add('hidden');panel.dataset.ready='true';paint();
   }catch(err){panel.textContent='دریافت شکلک‌ها انجام نشد؛ دوباره انتخابگر را باز کنید.';error(err.message)}
  };
+ stateUI.refresh=()=>{stateUI.signature=null;return load(true)};
  await load();
- async function tick(){if(stateUI.closed||!host.isConnected)return;if(!document.hidden&&!host.closest('.view')?.classList.contains('hidden'))await load();if(!stateUI.closed&&host.isConnected)stateUI.timer=setTimeout(tick,5000)}stateUI.timer=setTimeout(tick,5000);
+ // Realtime domain events are the primary transport.  This modest fallback
+ // covers browsers/networks where a websocket cannot remain connected.
+ async function tick(){if(stateUI.closed||!host.isConnected)return;if(!document.hidden&&!host.closest('.view')?.classList.contains('hidden'))await load();if(!stateUI.closed&&host.isConnected)stateUI.timer=setTimeout(tick,60000)}stateUI.timer=setTimeout(tick,60000);
 }
-window.bamcoChat={mount,close(){active?.close();active=null}};
+document.addEventListener('bamco:profiles-updated',()=>{if(active&&!active.closed)void active.refresh?.()});
+document.addEventListener('bamco:domain-invalidated',event=>{if(String(event.detail?.domain||'')==='chat'&&active&&!active.closed)void active.refresh?.()});
+window.bamcoChat={mount,close(){active?.close();active=null},refresh(){return active?.refresh?.()}};
 })();

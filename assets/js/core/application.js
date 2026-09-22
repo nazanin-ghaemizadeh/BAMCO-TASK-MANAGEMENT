@@ -36,6 +36,17 @@
     navigate(view){
       if(typeof view!=='string'||!/^[A-Za-z][A-Za-z0-9]*$/.test(view))return false;
       const target=root.document?.getElementById(`${view}View`);if(!target)return false;
+      // Route visibility is not an authorization boundary, but it must use the
+      // same canonical feature decision as the server and the navigation UI.
+      // The catalog and access service are loaded after this kernel, therefore
+      // look them up at navigation time rather than capturing stale references.
+      const route=root.BamcoNavigationCatalog?.routeFor?.(view);
+      const featureKey=route?.featureKey||root.BamcoNavigationCatalog?.featureForRoute?.(view);
+      const access=root.BamcoAccess;
+      if(featureKey&&access&&access.can(featureKey,'view')!==true){
+        access.denied?.(featureKey,'view',{route:view});
+        return false;
+      }
       const previous=currentView;if(previous&&previous!==view)disposeView(previous);emit('navigation-before',{from:previous,to:view});
       root.bamcoLeaveHome?.();state.view=view;currentView=view;
       root.document?.querySelectorAll('.view').forEach(node=>node.classList.add('hidden'));target.classList.remove('hidden');

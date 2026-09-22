@@ -8,16 +8,23 @@
   const model = { roles: [], positions: [], assignments: [], loaded: false, scoped: false };
   let loading = null;
   const root = () => q('#organizationFeatureRoot');
-  const canManageStructure = () => typeof isManager === 'function' && isManager();
+  // Editing the tree is a feature action, not a role-name shortcut.  The
+  // server-side save RPC makes the same decision before it mutates a position.
+  const canManageStructure = () => window.BamcoAccess?.can?.('organization', 'edit') === true
+    || window.BamcoAccess?.can?.('organization', 'manage_access') === true;
   const role = id => model.roles.find(item => String(item.id) === String(id));
   const position = id => model.positions.find(item => String(item.id) === String(id));
-  const activeAssignment = positionId => model.assignments.find(item =>
-    String(item.position_id) === String(positionId) && item.is_primary && !item.valid_to
-  );
+  const activeAssignment = positionId => {
+    const today = new Date().toISOString().slice(0, 10);
+    return model.assignments.find(item => String(item.position_id) === String(positionId)
+      && item.is_primary
+      && String(item.valid_from || '0000-01-01').slice(0, 10) <= today
+      && (!item.valid_to || String(item.valid_to).slice(0, 10) > today));
+  };
   function organizationProfiles() {
     const people = canManageStructure()
-      ? (state.profiles || [])
-      : (state.organizationScope?.people || window.bamcoOrganizationAccess?.people?.() || []);
+      ? (window.BamcoProfiles?.list?.() || state.profiles || [])
+      : (window.bamcoOrganizationAccess?.people?.() || []);
     const byId = new Map();
     for (const person of [state.profile, ...people].filter(Boolean)) {
       if (person.id) byId.set(String(person.id), person);
@@ -37,7 +44,11 @@
     (!snapshot || window.bamcoAuth?.isCurrent?.(snapshot) !== false);
 
   function userOrganization(userId) {
-    const assignment = model.assignments.find(item => String(item.user_id) === String(userId) && item.is_primary && !item.valid_to);
+    const today = new Date().toISOString().slice(0, 10);
+    const assignment = model.assignments.find(item => String(item.user_id) === String(userId)
+      && item.is_primary
+      && String(item.valid_from || '0000-01-01').slice(0, 10) <= today
+      && (!item.valid_to || String(item.valid_to).slice(0, 10) > today));
     const assignedPosition = assignment && position(assignment.position_id);
     return assignedPosition ? { assignment, position: assignedPosition, role: role(assignedPosition.role_id) } : null;
   }
@@ -374,6 +385,16 @@
     if (!root()) return;
     render();
     window.BamcoNavigation?.registerView?.('organization', { activate: load });
+    // Cards resolve their occupant through BamcoProfiles.  Repaint only the
+    // current chart when a display name/avatar revision arrives, rather than
+    // retaining a chart-specific person copy.
+    document.addEventListener('bamco:profiles-updated', () => {
+      if (model.loaded && !root()?.closest('.view')?.classList.contains('hidden')) render();
+    });
+    document.addEventListener('bamco:domain-invalidated', event => {
+      const domain = String(event.detail?.domain || event.detail?.table || '').toLowerCase();
+      if (domain === 'organization' && state?.view === 'organization') void load({ ensureProfiles: false, force: true });
+    });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true });
   else boot();

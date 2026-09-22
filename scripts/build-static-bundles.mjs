@@ -45,7 +45,6 @@ const javascript = [
   'assets/js/tab-workspace.js',
   'assets/js/conversations.js',
   'assets/js/session-runtime.js',
-  'assets/js/request-sync.js',
   'assets/js/card-home.js',
   'assets/js/interior-ui.js',
   'assets/js/table-pages.js',
@@ -140,6 +139,14 @@ async function syncEntryCritical() {
   if (!checkOnly && index !== expected) await writeFile(new URL('index.html', root), expected);
 }
 await syncEntryCritical();
+
+// The mail queue runs in an isolated Edge bundle, while the same renderer is
+// also part of the browser bundle.  Keep the Edge import as a generated copy
+// of the one authored browser module, and verify it in --check mode.
+await sync(
+  'supabase/functions/send-message-queue/message-renderer.js',
+  await read('assets/js/message-renderer.js')
+);
 
 await Promise.all([
   sync('assets/js/bamco.bundle.js', await buildJavascript()),

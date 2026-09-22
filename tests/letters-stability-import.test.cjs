@@ -5,7 +5,7 @@ test('letters keep table, scroll and route through refresh, focus and access net
  const f=await fixture({tables:{letters:records}});t.after(()=>f.dispose());await f.open('letters');await until(()=>f.d.querySelector('#lettersTable tbody tr').textContent.includes('نامه'));
  const table=f.d.querySelector('#lettersTable'),wrap=table.parentElement;wrap.scrollTop=120;f.d.querySelector('#refreshLetters').click();await until(()=>!f.d.querySelector('#refreshLetters').disabled);await new Promise(r=>setTimeout(r,80));assert.equal(f.d.querySelector('#lettersTable'),table);assert.equal(wrap.scrollTop,120);
  const before=f.calls.filter(c=>c.endpoint==='letters').length;f.w.dispatchEvent(new f.w.Event('focus'));await new Promise(r=>setTimeout(r,80));assert.equal(f.calls.filter(c=>c.endpoint==='letters').length,before);
- f.failures.add('can_access_letters');f.w.dispatchEvent(new f.w.Event('focus'));await until(()=>f.d.querySelector('#lettersError').textContent.includes('بررسی دسترسی'));assert.equal(f.w.eval('state.view'),'letters');assert.equal(f.d.querySelector('#lettersTable'),table);
+ assert(!f.calls.some(c=>c.endpoint==='can_access_letters'),'letters must not maintain a feature-specific authorization path');
 });
 test('partial import retains failed rows and retry submits only the remaining rows',async t=>{
  const {JSDOM}=require('jsdom');const dom=new JSDOM('<dialog id="importDialog"></dialog><input id="importFile">',{url:'https://example.test',runScripts:'outside-only'});t.after(()=>dom.window.close());const w=dom.window;

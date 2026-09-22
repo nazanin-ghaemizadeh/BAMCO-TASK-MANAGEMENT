@@ -2,9 +2,9 @@
   'use strict';
   const q=(s,r=document)=>r.querySelector(s),qa=(s,r=document)=>[...r.querySelectorAll(s)];
   const picked={kanban:new Set(),archive:new Set()};let taskActionBusy=false;
-  const canManageTaskScope=()=>typeof window.bamcoOrganizationAccess?.canManageTasks==='function'
-    ?window.bamcoOrganizationAccess.canManageTasks()
-    :(typeof isManager==='function'&&isManager());
+  const canDirectTaskAction=(task,action='edit')=>typeof window.bamcoOrganizationAccess?.canDirectlyManageTask==='function'
+    ?window.bamcoOrganizationAccess.canDirectlyManageTask(task,action)
+    :false;
 
   function scopeInfo(scope){return {view:q(`#${scope}View`),body:q(`#${scope}Body`),archived:scope==='archive'}}
   function cleanup(scope){
@@ -15,8 +15,8 @@
   function syncToolbar(scope){
     const count=picked[scope].size,single=count===1;
     q(`#${scope}EditBtn`)?.toggleAttribute('disabled',taskActionBusy||!count);
-    q(`#${scope}DeleteBtn`)?.toggleAttribute('disabled',taskActionBusy||!count||!canManageTaskScope());
-    q(scope==='kanban'?'#kanbanArchiveBtn':'#archiveRestoreBtn')?.toggleAttribute('disabled',taskActionBusy||!count||(scope==='archive'&&!canManageTaskScope()));
+    q(`#${scope}DeleteBtn`)?.toggleAttribute('disabled',taskActionBusy||!count);
+    q(scope==='kanban'?'#kanbanArchiveBtn':'#archiveRestoreBtn')?.toggleAttribute('disabled',taskActionBusy||!count);
   }
   function decorate(scope){
     const {view,body}=scopeInfo(scope);if(!view||!body)return;
@@ -37,18 +37,31 @@
   async function bulkAction(scope,kind){
     const ids=[...picked[scope]];if(!ids.length||taskActionBusy)return;
     if(kind==='edit'){if(ids.length!==1){toast('برای ویرایش فقط یک ردیف را انتخاب کنید.',true);return}const task=state.tasks.find(t=>String(t.id)===ids[0]);if(task)openTask(task);return}
-    if((kind==='restore'||kind==='delete')&&!canManageTaskScope()){toast('این عملیات فقط برای بالادستِ همین شاخه سازمانی مجاز است.',true);return}
-    if(kind==='restore'&&ids.some(id=>{const t=state.tasks.find(x=>String(x.id)===id);return !t?.owner_id||!t.start_date||!t.due_date})){if(ids.length===1){await restoreTask(Number(ids[0]));return}toast('برای بازگردانی گروهی، متولی و تاریخ شروع و پایان همه وظایف باید کامل باشد. موارد ناقص را تکی بازگردانید.',true);return}
+    const tasks=ids.map(id=>state.tasks.find(task=>String(task.id)===id)).filter(Boolean);
+    if(tasks.length!==ids.length){toast('بخشی از انتخاب دیگر در دسترس نیست.',true);return}
+    if(kind==='delete'&&ids.length===1){await window.deleteTask?.(tasks[0].id);return}
+    if(kind==='restore'&&ids.length===1){await window.restoreTask?.(tasks[0].id);return}
+    if(kind==='restore'&&tasks.some(task=>!task?.owner_id||!task.start_date||!task.due_date)){toast('برای بازگردانی گروهی، متولی و تاریخ شروع و پایان همه وظایف باید کامل باشد. موارد ناقص را تکی بازگردانید.',true);return}
     const labels={archive:'تکمیل و آرشیو',restore:'بازگردانی به کانبان',delete:'حذف'};
     if(!await window.bamcoConfirm(`${labels[kind]} برای ${fa(ids.length)} وظیفه انتخاب‌شده انجام شود؟`))return;
     taskActionBusy=true;syncToolbar(scope);
     try{
-      if(kind==='restore'&&canManageTaskScope())await rpc('restore_tasks_to_kanban_and_resequence',{p_task_ids:ids.map(Number)});
-      if(kind==='delete'&&canManageTaskScope())await rpc('delete_tasks_and_resequence',{p_task_ids:ids.map(Number)});
-      for(const id of ids){
-        if(kind==='archive'){const t=state.tasks.find(x=>String(x.id)===id);if(canManageTaskScope())await update('tasks',`id=eq.${id}`,{archived:true,archived_at:new Date().toISOString(),status:'انجام شده',done_date:t.done_date||new Date().toISOString().slice(0,10)});else await rpc('submit_change_request',{p_request_type:'complete',p_task_id:Number(id),p_proposed_data:{done_date:new Date().toISOString().slice(0,10)},p_note:null})}
+      if(kind==='restore'){
+        const direct=tasks.filter(task=>canDirectTaskAction(task,'edit')),approval=tasks.filter(task=>!canDirectTaskAction(task,'edit'));
+        if(direct.length)await rpc('restore_tasks_to_kanban_and_resequence',{p_task_ids:direct.map(task=>Number(task.id))});
+        for(const task of approval)await rpc('submit_change_request',{p_request_type:'update',p_task_id:Number(task.id),p_proposed_data:{archived:false,archived_at:null,status:window.bamcoOptions?.label?.('status','doing')||'در حال انجام',done_date:null},p_note:null});
+      }else if(kind==='delete'){
+        const direct=tasks.filter(task=>canDirectTaskAction(task,'delete')),approval=tasks.filter(task=>!canDirectTaskAction(task,'delete'));
+        if(direct.length)await rpc('delete_tasks_and_resequence',{p_task_ids:direct.map(task=>Number(task.id))});
+        for(const task of approval)await rpc('submit_change_request',{p_request_type:'delete',p_task_id:Number(task.id),p_proposed_data:{},p_note:null});
+      }else if(kind==='archive'){
+        for(const task of tasks){
+          const data={archived:true,archived_at:new Date().toISOString(),status:'انجام شده',done_date:task.done_date||new Date().toISOString().slice(0,10)};
+          if(canDirectTaskAction(task,'edit'))await update('tasks',`id=eq.${task.id}`,data);
+          else await rpc('submit_change_request',{p_request_type:'complete',p_task_id:Number(task.id),p_proposed_data:{done_date:data.done_date},p_note:null});
+        }
       }
-      window.bamcoSelection.clear('#'+scope+'Body');toast(`${fa(ids.length)} وظیفه با موفقیت پردازش شد.`);await refresh();
+      window.bamcoSelection?.clear?.('#'+scope+'Body');toast(`${fa(ids.length)} وظیفه با موفقیت پردازش شد.`);await refresh();
     }catch(err){toast(err.message,true)}finally{taskActionBusy=false;syncToolbar(scope)}
   }
   function interceptBulk(){

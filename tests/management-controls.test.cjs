@@ -11,12 +11,14 @@ const {fixture}=require('./helpers/app-fixture.cjs');
 
 test('people credential action edits an emailed user and the Excel export contains only safe account state',async t=>{
  let f;f=await fixture({fetchResult:({endpoint,body})=>{
-  if(endpoint!=='admin-users'||!body.action)return;
+  // The canonical directory performs a GET before a credential action.
+  if(endpoint!=='admin-users'||!body?.action)return;
   const person=f.profiles.find(p=>p.id===body.user_id);
   if(body.action==='save_credentials'){person.login_name=body.login_name;person.must_change_password=!!body.temporary_password}
   return {ok:true,id:person.id,login_name:person.login_name||person.email,credential_editable:true};
  }});t.after(()=>f.dispose());const {d,w}=f;
  await f.open('people');const view=d.querySelector('#peopleView');
+ await until(()=>view.querySelector('#peopleBody [data-id="test-owner"]'));
  assert.deepEqual([...view.querySelectorAll('thead tr:first-child th')].map(x=>x.textContent),['فرد','عکس پروفایل','نقش سازمانی','سمت سازمانی','دسترسی سامانه','جنسیت','پست الکترونیک سازمانی','نام کاربری','رمز عبور','عنوان خطاب','فعال']);
  const ownerRow=view.querySelector('#peopleBody [data-id="test-owner"]');assert.equal(ownerRow.cells[0].textContent.trim(),'متولی آزمایشی');assert.equal(ownerRow.cells[1].classList.contains('people-avatar-cell'),true);assert.equal(ownerRow.cells[1].querySelector('[data-profile-photo="test-owner"]')!==null,true);
  view.querySelector('[data-person-credentials="test-owner"]').click();await until(()=>d.querySelector('#initialCredentials')?.open);
@@ -47,7 +49,9 @@ test('management pages: shipped click handlers, toolbars, Excel downloads and re
   d.querySelector('[data-person-close]').click();assert(!d.querySelector('#personDialog').open);
   d.querySelector('#editPersonBtn').click();form.elements.full_name.value='متولی ویرایش‌شده';form.querySelector('[type=submit]').click();
   await until(()=>!d.querySelector('#personDialog').open);await until(()=>d.querySelector('#peopleBody').textContent.includes('متولی ویرایش‌شده'));
-  assert.equal(f.calls.filter(c=>c.endpoint==='admin-users').at(-1).body.user_id,'test-owner');
+  // Saving a person is followed by a canonical directory refresh.  Assert the
+  // mutation itself rather than treating the later GET refresh as a write.
+  assert.equal(f.calls.filter(c=>c.endpoint==='admin-users'&&c.method!=='GET').at(-1).body.user_id,'test-owner');
   d.querySelector('#addPersonBtn').click();form.elements.full_name.value='فرد جدید';f.setFailSave(true);form.requestSubmit();
   await until(()=>d.querySelector('#personError').textContent);assert(d.querySelector('#personDialog').open);assert(!form.querySelector('[type=submit]').disabled);
   f.setFailSave(false);form.requestSubmit();await until(()=>!d.querySelector('#personDialog').open);await until(()=>d.querySelector('#peopleBody [data-id="test-new"]'));

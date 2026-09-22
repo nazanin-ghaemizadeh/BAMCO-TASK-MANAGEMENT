@@ -44,9 +44,12 @@ test('conversation controls use the real UI: public attachment, reply, delete, g
  assert.deepEqual(f.errors,[]);
 });
 
-test('owner portal: private conversation works while manager-only create and delete controls stay absent',async t=>{
+test('owner portal: conversation controls follow explicit feature grants, not the manager role',async t=>{
  const f=await fixture({role:'owner',tables:{tasks}}),{d}=f;t.after(()=>f.dispose());
- await f.open('groupChat');await until(()=>d.querySelector('#groupChatView .messenger-compose'));assert.equal(d.querySelector('[data-create-group]'),null);
+ // The fixture grants this owner group-chat creation, while deliberately not
+ // granting deletion.  The visible controls must follow those action grants
+ // rather than the historical "manager only" assumption.
+ await f.open('groupChat');await until(()=>d.querySelector('#groupChatView .messenger-compose'));assert(d.querySelector('[data-create-group]'));
  d.querySelector('.messenger-compose textarea').value='پیام متولی';d.querySelector('.messenger-compose').requestSubmit();await until(()=>f.messages.length);await until(()=>d.querySelector('.chat-bubble'));assert.equal(d.querySelector('.message-delete'),null);
  await f.open('directMessages');await until(()=>d.querySelector('[data-person="test-manager"]'));d.querySelector('[data-person="test-manager"]').click();await until(()=>d.querySelector('#directMessagesView .messenger-compose'));
  assert.equal(f.calls.findLast(c=>c.endpoint==='chat_ensure_direct').body.p_other_user,'test-manager');assert(![...d.querySelectorAll('.messenger-head-actions button')].some(b=>b.textContent.includes('حذف')));

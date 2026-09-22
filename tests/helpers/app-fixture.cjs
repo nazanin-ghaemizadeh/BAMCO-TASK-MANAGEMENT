@@ -10,8 +10,35 @@ async function until(check){for(let i=0;i<100;i++){if(check())return;await pause
 // (including authentication, user deletion or session revocation) reaches a server.
 async function fixture(options={}){
  const profiles=[{id:'test-manager',full_name:'مدیر آزمایشی',display_name:'مدیر آزمایشی',email:'manager@example.test',role:'manager',active:true},{id:'test-owner',full_name:'متولی آزمایشی',email:'owner@example.test',role:'owner',active:true}];
+ const baselineFeatureAccess=[
+  ['dashboard',true,false,false,false,false],['kanban',true,true,true,true,false],
+  ['archive',true,false,true,false,true],['taskTimeline',true,false,false,false,false],
+  ['approvals',true,false,true,false,false],['requestHistory',true,false,false,false,true],
+  ['projects',true,false,false,false,false],['parts',true,false,false,false,false],
+  ['invoices',true,false,false,false,false],['organization',true,false,false,false,false],
+  ['messages',true,true,true,false,false],['groupChat',true,true,true,false,false],
+  ['directMessages',true,true,true,false,false],['taskChats',true,true,true,false,false],
+  ['documents',true,false,false,false,false],['sitesAccess',true,true,true,true,false],
+  ['userGuide',true,false,false,false,false],['settings',true,false,true,false,false]
+ ].map(([feature_key,can_view,can_create,can_edit,can_delete,can_export])=>({feature_key,can_view,can_create,can_edit,can_delete,can_export,can_manage_access:false,can_bypass_approval:false}));
  const sessions=[{id:'test-session',auth_session_id:'test-auth-session',user_id:'test-owner',login_at:new Date().toISOString(),last_activity_at:new Date().toISOString()}];
  const actor=options.role==='owner'?profiles[1]:profiles[0],tables={task_statuses:[['registered','ثبت شده','registered','none','none','none',false],['doing','در حال انجام','active','required','required','required',true],['waiting','منتظر پاسخ','waiting','required','required','none',false],['done','انجام شده','completed','required','optional','optional',false]].map(([key,label,kind,owner_mode,start_mode,due_mode,tracks_deadline],i)=>({key,label,kind,owner_mode,start_mode,due_mode,tracks_deadline,active:true,color:'#8b949e',sort_order:i+1})),priorities:[{key:'medium',label:'متوسط',color:'#f2a93b',active:true,sort_order:1}],...options.tables};
+ const workflowSnapshot=()=>{
+  const routes=[...(tables.request_routing_status||tables.request_routes||[])];
+  const routesFor=id=>routes.filter(route=>String(route.request_id)===String(id));
+  const routeParticipant=id=>routesFor(id).some(route=>route.actionable===true||['approver_id','current_approver_id','user_id'].some(key=>String(route[key]||'')===String(actor.id))||Array.isArray(route.participant_ids)&&route.participant_ids.map(String).includes(String(actor.id)));
+  // `actionable` is already scoped by the server.  Do not infer it from a
+  // manager role; the fixture mirrors the protected workbench contract.
+  const participant=row=>actor.role==='manager'||String(row.requested_by||'')===String(actor.id)||routeParticipant(row.id);
+  const rows=[...(tables.change_requests||[])].filter(participant);
+  const visible=new Set(rows.map(row=>String(row.id)));
+  return{
+   schema:'bamco.workflow.v2',
+   current_requests:rows.filter(row=>['pending','in_review','needs_revision'].includes(String(row.request_status||'in_review'))),
+   history_requests:rows.filter(row=>['approved','rejected','cancelled'].includes(String(row.request_status||''))),
+   routes:routes.filter(route=>visible.has(String(route.request_id)))
+  };
+ };
  const threads=[{id:'test-room',thread_type:'public',title:'گفت‌وگوی عمومی',is_active:true}],members=[],messages=[],uploads=[];
  const calls=[],errors=[],downloads=[],observers=[],blobs=new Map();let failSave=false;const failures=new Set();
 
@@ -66,6 +93,11 @@ async function fixture(options={}){
     data={position_id:position.id,assignment_id:assignment?.id||null,title:position.title};
    }
    if(endpoint==='task_status_view')data=actor.role==='manager'?(tables.tasks||[]):(tables.tasks||[]).filter(t=>t.owner_id===actor.id);
+   if(endpoint==='request_workflow_snapshot')data=workflowSnapshot();
+   // Mirror the canonical migration baseline rather than treating the new
+   // authorization RPC as an empty endpoint.  Individual tests can still
+   // override this through fetchResult to exercise grant/revoke states.
+   if(endpoint==='effective_feature_access')data={schema:'bamco.feature-access.v1',grants:baselineFeatureAccess};
    if(endpoint==='sent_message_dataset_version')data='sent-fixture-v1';
    if(endpoint==='dismiss_my_inbox'){
     const now=new Date().toISOString(),notes=(tables.notifications||[]).filter(x=>x.user_id===actor.id&&x.dismissed_at==null),linked=new Set((tables.message_deliveries||[]).filter(x=>x.chat_thread_id).map(x=>String(x.portal_message_id))),portal=(tables.portal_message_recipients||[]).filter(x=>x.recipient_id===actor.id&&x.dismissed_at==null&&!linked.has(String(x.message_id)));
@@ -75,6 +107,7 @@ async function fixture(options={}){
    if(endpoint==='user_sessions')data=sessions;
    if(endpoint==='admin-users'){
     if(failSave){status=400;data={error:'خطای آزمایشی ذخیره'}}
+    else if(method==='GET')data={ok:true,profiles}
     else if(method==='DELETE'){profiles.splice(profiles.findIndex(p=>p.id===body.user_id),1);data={ok:true}}
     else{const existing=profiles.find(p=>p.id===body.user_id);if(existing)Object.assign(existing,body);else profiles.push({id:'test-new',...body});data={ok:true}}
    }

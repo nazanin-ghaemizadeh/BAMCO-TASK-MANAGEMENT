@@ -107,10 +107,11 @@ test('feature runtime boots without console error and exposes both views for a n
   dom.window.close();
 });
 
-test('manager controls become visible on entering feature tabs',async()=>{
+test('feature grants, not the profile manager role, make document and site controls visible',async()=>{
   const dom=new JSDOM('<!doctype html><body><nav id="nav"><button data-view="documents"></button><button data-view="sitesAccess"></button></nav><div class="workspace"><section id="documentsView" class="view hidden"><button id="addDocumentCategory" class="hidden"></button><input id="documentsSearch"><button id="documentsRefresh"></button><div id="documentsFeatureBody"></div></section><section id="sitesAccessView" class="view hidden"><input id="sitesSearch"><select id="sitesFilter"><option value="all">all</option></select><button id="sitesRefresh"></button><button id="addPersonalSite"></button><button id="addOrganizationSite" class="hidden"></button><button id="sitesExcel"></button><button id="sitesManagerExcel" class="hidden"></button><div id="sitesFeatureBody"></div></section></div></body>',{url:'https://example.test/',runScripts:'outside-only'});
   const ctx=dom.getInternalVMContext();
-  Object.assign(ctx,{state:{token:'token',user:{id:'manager'},profile:{id:'manager',role:'manager',active:true},profiles:[]},SB_URL:'https://example.supabase.co',SB_KEY:'publishable',titles:{},toast:()=>{},selectAll:async()=>[],select:async()=>[],insert:async()=>[],update:async()=>[],rpc:async()=>{},api:async()=>{},fetch:async()=>({ok:true,text:async()=>'{"items":[]}'})});
+  const grants={documents:new Set(['view','create','edit','delete']),sitesAccess:new Set(['view','create','edit','delete','manage_access'])};
+  Object.assign(ctx,{state:{token:'token',user:{id:'granted-user'},profile:{id:'granted-user',role:'owner',active:true},profiles:[]},SB_URL:'https://example.supabase.co',SB_KEY:'publishable',titles:{},BamcoAccess:{can:(feature,action)=>grants[feature]?.has(action)===true,isReady:()=>true,isSystemManager:()=>true,applyNavigation:()=>{}},toast:()=>{},selectAll:async()=>[],select:async()=>[],insert:async()=>[],update:async()=>[],rpc:async()=>({users:[],grants:[]}),api:async()=>{},fetch:async()=>({ok:true,text:async()=>'{"items":[]}'})});
   vm.runInContext(fs.readFileSync(featurePath,'utf8'),ctx,{filename:'documents-sites.js'});
   ctx.document.querySelector('[data-view="documents"]').dispatchEvent(new dom.window.MouseEvent('click',{bubbles:true}));
   ctx.document.querySelector('[data-view="sitesAccess"]').dispatchEvent(new dom.window.MouseEvent('click',{bubbles:true}));
@@ -180,7 +181,7 @@ test('PDF opens a synchronous standalone Chrome tab, receives authenticated byte
  const dom=new JSDOM(fs.readFileSync(path.join(ROOT,'index.html'),'utf8'),{url:'https://example.test/',runScripts:'outside-only'}),w=dom.window,calls=[],blobs=[];
  let payload='%PDF-1.7\nfixture';const opened=[],notices=[];
  w.open=()=>{const v={document:{body:{}},location:{},closed:false,close(){this.closed=true}};opened.push(v);return v};
- Object.assign(w,{Blob,TextDecoder,state:{token:'test-token',profile:{role:'manager',active:true}},SB_URL:'https://example.supabase.co',SB_KEY:'test',titles:{},toast:(v)=>notices.push(v),selectAll:async t=>t==='document_categories'?[{id:1,title:'Forms'}]:[{id:1,category_id:1,title:'PDF',original_file_name:'form.pdf',storage_path:'private/form.pdf',mime_type:'application/pdf',file_size:100,version:1}],fetch:async(url,options)=>{calls.push({url,options});return{ok:true,blob:async()=>new Blob([payload],{type:'application/octet-stream'})}}});
+ Object.assign(w,{Blob,TextDecoder,state:{token:'test-token',profile:{role:'owner',active:true}},SB_URL:'https://example.supabase.co',SB_KEY:'test',titles:{},BamcoAccess:{can:(feature,action)=>feature==='documents'&&action==='view',isReady:()=>true,applyNavigation:()=>{}},toast:(v)=>notices.push(v),selectAll:async t=>t==='document_categories'?[{id:1,title:'Forms'}]:[{id:1,category_id:1,title:'PDF',original_file_name:'form.pdf',storage_path:'private/form.pdf',mime_type:'application/pdf',file_size:100,version:1}],fetch:async(url,options)=>{calls.push({url,options});return{ok:true,blob:async()=>new Blob([payload],{type:'application/octet-stream'})}}});
  w.URL.createObjectURL=b=>{blobs.push(b);return 'blob:https://example.test/pdf'};w.URL.revokeObjectURL=()=>{};
  w.HTMLDialogElement.prototype.showModal=function(){this.open=true};
  w.eval(fs.readFileSync(featurePath,'utf8'));

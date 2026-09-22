@@ -19,9 +19,9 @@ const picked={kanban:new Set(),archive:new Set()};
 const lastPicked={kanban:null,archive:null};
 const seeded={kanban:false,archive:false};
 let deleting=false;
-const canManageTaskScope=()=>typeof window.bamcoOrganizationAccess?.canManageTasks==='function'
-  ?window.bamcoOrganizationAccess.canManageTasks()
-  :(typeof isManager==='function'&&isManager());
+const canDirectTaskAction=(task,action='delete')=>typeof window.bamcoOrganizationAccess?.canDirectlyManageTask==='function'
+  ?window.bamcoOrganizationAccess.canDirectlyManageTask(task,action)
+  :false;
 
 function ensureStyles(){
   if(q('#bamcoTaskBulkDeleteSelectionStyleV3'))return;
@@ -74,7 +74,7 @@ function removeLegacySelectAll(){qa('[data-bamco-task-select-all]').forEach(inpu
 function syncToolbar(scope){
   const list=ids(scope),count=list.length;
   if(typeof state!=='undefined'&&state?.selected)state.selected[scope]=count===1?Number(list[0]):null;
-  const del=q(config[scope].del);if(del){del.disabled=count===0||!canManageTaskScope();del.textContent=count>1?`حذف (${faDigits(count)})`:'حذف';del.dataset.selectionCount=String(count)}
+  const del=q(config[scope].del);if(del){del.disabled=count===0;del.textContent=count>1?`حذف (${faDigits(count)})`:'حذف';del.dataset.selectionCount=String(count)}
   for(const selector of config[scope].single){const button=q(selector);if(button)button.disabled=count!==1}
   removeLegacySelectAll();
 }
@@ -121,7 +121,6 @@ function renderBoth(){
 }
 async function deleteSelected(scope){
   if(deleting)return;
-  if(!canManageTaskScope()){typeof toast==='function'&&toast('حذف مستقیم فقط برای بالادستِ این شاخه سازمانی مجاز است.',true);return}
   let selected=ids(scope);
   if(!selected.length&&typeof state!=='undefined'&&state?.selected?.[scope]!=null)selected=[String(state.selected[scope])];
   if(!selected.length){typeof toast==='function'&&toast('ابتدا یک یا چند ردیف را انتخاب کنید.',true);return}
@@ -130,6 +129,19 @@ async function deleteSelected(scope){
   const question=tasks.length===1?`وظیفه «${tasks[0].title}» برای همیشه حذف شود؟`:`${faDigits(tasks.length)} وظیفه انتخاب‌شده برای همیشه حذف شوند و شناسه‌ها بازشماری شوند؟`;
   if(typeof window.bamcoConfirm==='function'&&!await window.bamcoConfirm(question))return;
   if(typeof window.bamcoConfirm!=='function'&&!window.confirm(question))return;
+
+  const direct=tasks.filter(task=>canDirectTaskAction(task,'delete')),approval=tasks.filter(task=>!canDirectTaskAction(task,'delete'));
+  if(approval.length){
+    deleting=true;const deleteButtons=[q('#kanbanDeleteBtn'),q('#archiveDeleteBtn')].filter(Boolean);deleteButtons.forEach(button=>{button.disabled=true;button.setAttribute('aria-busy','true')});
+    try{
+      if(direct.length)await rpc('delete_tasks_and_resequence',{p_task_ids:direct.map(task=>Number(task.id))});
+      for(const task of approval)await rpc('submit_change_request',{p_request_type:'delete',p_task_id:Number(task.id),p_proposed_data:{},p_note:null});
+      clear(scope);await refresh();
+      if(typeof toast==='function')toast(approval.length?`${faDigits(approval.length)} درخواست حذف برای تأیید بالادست ارسال شد.`:'وظایف حذف شدند.');
+    }catch(err){if(typeof toast==='function')toast(err?.message||String(err),true)}
+    finally{deleting=false;deleteButtons.forEach(button=>button.removeAttribute('aria-busy'));decorate('kanban');decorate('archive')}
+    return;
+  }
 
   deleting=true;const before=(state.tasks||[]).map(task=>({...task})),restoreIds=[...selected];
   const deleteButtons=[q('#kanbanDeleteBtn'),q('#archiveDeleteBtn')].filter(Boolean);deleteButtons.forEach(button=>{button.disabled=true;button.setAttribute('aria-busy','true')});

@@ -6,7 +6,7 @@ const q=(s,r=document)=>r?.querySelector?.(s)||null;
 const qa=(s,r=document)=>[...(r?.querySelectorAll?.(s)||[])];
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const digits=v=>typeof fa==='function'?fa(v):String(v??'').replace(/\d/g,d=>'۰۱۲۳۴۵۶۷۸۹'[d]);
-let responseRows=[],dateTarget=null,syncBusy=false,rawTabRender=null,responseDeleting=false,taskDatasetVersion='',sentDatasetVersion='',monitoringStartedAt=null;
+let responseRows=[],dateTarget=null,rawTabRender=null,responseDeleting=false,monitoringStartedAt=null,domainRefreshTimer=0;
 function installCss(){
  q('#bamcoCanonicalReportCss')?.remove();const s=document.createElement('style');s.id='bamcoCanonicalReportCss';s.textContent=`
  #performanceReportView .canonical-report,#responseReportView .canonical-report{min-height:160px}
@@ -44,8 +44,23 @@ function markReportOwners(){for(const id of ['performanceReportView','responseRe
 function panel(view,title,tools,table){view.innerHTML=`<div class="panel workspace-panel canonical-report"><div class="panel-head"><h3>${esc(title)}</h3></div>${tools||''}${table||''}</div>`}
 function currentMonthRange(){try{const p=currentJalali(),from=jalaliToISO(p.y,p.m,1),next=p.m===12?jalaliToISO(p.y+1,1,1):jalaliToISO(p.y,p.m+1,1);if(!from||!next)return null;const d=new Date(next+'T00:00:00Z');d.setUTCDate(d.getUTCDate()-1);const to=d.toISOString().slice(0,10);return{from,to,fromText:jalaliText(from),toText:jalaliText(to)}}catch{return null}}
 function inputIso(input){const raw=typeof en==='function'?en(input?.value||''):String(input?.value||''),m=raw.match(/\d+/g)?.map(Number);return m?.length===3?jalaliToISO(m[0],m[1],m[2])||'':''}
-function personName(id){const p=(state.profiles||[]).find(x=>String(x.id)===String(id));return p?.display_name||p?.full_name||p?.email||String(id||'—')}
-function personRole(id){return (state.profiles||[]).find(x=>String(x.id)===String(id))?.role||''}
+function profileFor(id){return window.BamcoProfiles?.get?.(id)||(state.profiles||[]).find(x=>String(x.id)===String(id))||null}
+function personName(id,fallback='—'){const canonical=window.BamcoProfiles?.label?.(id,'');return canonical||profileFor(id)?.display_name||profileFor(id)?.full_name||profileFor(id)?.email||fallback}
+function personRole(id){return profileFor(id)?.role||''}
+const uniqueWorkflowRows=rows=>[...new Map((rows||[]).filter(Boolean).map((row,index)=>[row?.id==null?`snapshot-${index}`:String(row.id),row])).values()];
+function workflowRows(){return uniqueWorkflowRows(state.definitionRequests?.length?state.definitionRequests:[...(state.requests||[]),...(state.requestHistory||[])]);}
+async function refreshWorkflowRows(){
+ const actor=state.user?.id,token=state.token,load=window.bamcoLoadRequestWorkflow;
+ if(!actor||!token)return workflowRows();
+ if(typeof load!=='function')throw Error('کارتابل تأیید هنوز آماده نیست.');
+ const workflow=await load();
+ if(actor!==state.user?.id||token!==state.token)return[];
+ state.requests=workflow.requests||[];
+ state.requestHistory=workflow.history||[];
+ state.requestRoutes=workflow.routes||[];
+ state.definitionRequests=uniqueWorkflowRows([...state.requests,...state.requestHistory]);
+ return workflowRows();
+}
 function within(value,from,to){const day=String(value||'').slice(0,10);return !!day&&(!from||day>=from)&&(!to||day<=to)}
 function afterMonitoringStart(value){return !monitoringStartedAt||String(value||'')>=monitoringStartedAt}
 async function loadMonitoringStart(){
@@ -62,8 +77,8 @@ function perfTools(range){return `<div class="workspace-report-tools canonical-r
 async function renderPerformance(force=false){
  const epoch=++renderEpoch.performanceReport,view=q('#performanceReportView');if(!view)return;const range=currentMonthRange();
  if(force||!q('.canonical-report',view))panel(view,'گزارش عملکرد',perfTools(range),'<div class="table-wrap"><table class="workspace-table"><thead></thead><tbody><tr><td class="empty">در حال دریافت اطلاعات…</td></tr></tbody></table></div>');window.bamcoInteriorUI?.decorateView?.(view);
- const from=inputIso(q('#canonicalPerfFrom')),to=inputIso(q('#canonicalPerfTo'));let query='select=id,requested_by,request_type,created_at&request_type=eq.create&order=created_at.desc';if(from)query+=`&created_at=gte.${from}T00:00:00`;if(to)query+=`&created_at=lte.${to}T23:59:59`;
- let requests=[];try{[requests]=await Promise.all([selectAll('change_requests',query),loadMonitoringStart()])}catch(err){if(epoch===renderEpoch.performanceReport&&state.view==='performanceReport')showError(view,err,'performanceReport');return}
+ const from=inputIso(q('#canonicalPerfFrom')),to=inputIso(q('#canonicalPerfTo'));
+ let requests=[];try{[requests]=await Promise.all([refreshWorkflowRows(),loadMonitoringStart()])}catch(err){if(epoch===renderEpoch.performanceReport&&state.view==='performanceReport')showError(view,err,'performanceReport');return}
  if(epoch!==renderEpoch.performanceReport||state.view!=='performanceReport')return;const table=q('table',view);if(!table)return;
  const tasks=state.tasks||[],ids=[...new Set([...tasks.map(t=>t.owner_id),...tasks.map(t=>t.created_by),...requests.map(r=>r.requested_by)])].filter(Boolean),defaultRange=!!range&&from===range.from&&to===range.to,metrics=window.bamcoDashboardMetrics;
  const headers=['متولی','کل واگذارشده','فعال','هشدار','دیرکرد',defaultRange?'محول‌شده در این ماه':'محول‌شده در بازه',defaultRange?'انجام‌شده در این ماه':'انجام‌شده در بازه','درصد تکمیل',defaultRange?'درخواست تعریف وظیفه این ماه':'درخواست تعریف وظیفه در بازه'];
@@ -75,7 +90,7 @@ function channel(v){return v==='email'?'ایمیل':v==='portal'?'داخل سا�
 function responseVisible(){const from=inputIso(q('#canonicalResponseFrom')),to=inputIso(q('#canonicalResponseTo'));return responseRows.filter(x=>x.delivery_status!=='cancelled'&&(!from||String(x.sent_at||'').slice(0,10)>=from)&&(!to||String(x.sent_at||'').slice(0,10)<=to))}
 function syncResponseDelete(){const b=q('#responseReportView [data-response-bulk-delete]');if(!b)return;const ids=window.bamcoSelection?.ids?.('#responseReportBody')||[];b.disabled=responseDeleting||!ids.length;b.textContent=ids.length>1?`حذف ${digits(ids.length)} رکورد`:'حذف رکورد'}
 function reconcileResponseSelection(list){const selection=window.bamcoSelection;if(!selection?.ids||!selection?.set)return;const valid=new Set(list.map(x=>String(x.delivery_id))),keep=selection.ids('#responseReportBody').filter(id=>valid.has(String(id)));selection.set('#responseReportBody',keep)}
-function renderResponseRows(){const body=q('#responseReportBody');if(!body)return;const list=responseVisible(),total=list.length;body.innerHTML=list.map((x,i)=>`<tr data-canonical-row="1" data-delivery-id="${esc(x.delivery_id)}"><td>${digits(total-i)}</td><td>${esc(x.recipient_name||x.recipient_email||'—')}</td><td>${esc(channel(x.channel))}</td><td>${esc(x.subject||'—')}</td><td>${esc(x.sent_at?jalaliDateTime(x.sent_at):'—')}</td><td>${esc(responseLabel(x.response_status))}</td><td>${esc(x.reply_text||'—')}</td><td>${esc(channel(x.reply_channel))}</td><td>${esc(x.replied_at?jalaliDateTime(x.replied_at):'—')}</td><td>${digits(x.reminder_count||0)}</td></tr>`).join('')||'<tr><td colspan="10" class="empty">رکوردی مطابق فیلترها وجود ندارد.</td></tr>';reconcileResponseSelection(list);syncResponseDelete()}
+function renderResponseRows(){const body=q('#responseReportBody');if(!body)return;const list=responseVisible(),total=list.length;body.innerHTML=list.map((x,i)=>`<tr data-canonical-row="1" data-delivery-id="${esc(x.delivery_id)}"><td>${digits(total-i)}</td><td>${esc(personName(x.recipient_id,x.recipient_name||x.recipient_email||'—'))}</td><td>${esc(channel(x.channel))}</td><td>${esc(x.subject||'—')}</td><td>${esc(x.sent_at?jalaliDateTime(x.sent_at):'—')}</td><td>${esc(responseLabel(x.response_status))}</td><td>${esc(x.reply_text||'—')}</td><td>${esc(channel(x.reply_channel))}</td><td>${esc(x.replied_at?jalaliDateTime(x.replied_at):'—')}</td><td>${digits(x.reminder_count||0)}</td></tr>`).join('')||'<tr><td colspan="10" class="empty">رکوردی مطابق فیلترها وجود ندارد.</td></tr>';reconcileResponseSelection(list);syncResponseDelete()}
 function responseTools(range){return `<div class="response-command-row"><button type="button" class="ghost" data-response-home>بازگشت به خانه</button><div class="canonical-date-controls"><label><span>از تاریخ</span><span class="canonical-date-field"><input id="canonicalResponseFrom" class="jalali-input" readonly value="${esc(range?.fromText||'')}"><button type="button" class="ghost" data-canonical-date="response-from" aria-label="انتخاب تاریخ شروع">▦</button></span></label><label><span>تا تاریخ</span><span class="canonical-date-field"><input id="canonicalResponseTo" class="jalali-input" readonly value="${esc(range?.toText||'')}"><button type="button" class="ghost" data-canonical-date="response-to" aria-label="انتخاب تاریخ پایان">▦</button></span></label></div><button type="button" class="ghost" data-canonical-refresh="responseReport">تازه‌سازی</button><button type="button" class="ghost" data-canonical-export="response">خروجی اکسل</button><button type="button" class="ghost" data-response-bulk-delete disabled>حذف رکورد</button></div>`}
 async function renderResponse(force=false){
  const epoch=++renderEpoch.responseReport,view=q('#responseReportView');if(!view)return;
@@ -90,31 +105,22 @@ async function exportReport(kind){
  let data;
  if(kind==='response'){
   const list=responseVisible(),headers=['ردیف','فرد','کانال','موضوع','ارسال','وضعیت پاسخ','پاسخ','کانال پاسخ','تاریخ پاسخ','تعداد یادآوری'];
-  data=[headers,...list.map((x,i)=>[list.length-i,x.recipient_name||x.recipient_email||'—',channel(x.channel),x.subject||'—',x.sent_at?jalaliDateTime(x.sent_at):'—',responseLabel(x.response_status),x.reply_text||'—',channel(x.reply_channel),x.replied_at?jalaliDateTime(x.replied_at):'—',x.reminder_count||0])];
+  data=[headers,...list.map((x,i)=>[list.length-i,personName(x.recipient_id,x.recipient_name||x.recipient_email||'—'),channel(x.channel),x.subject||'—',x.sent_at?jalaliDateTime(x.sent_at):'—',responseLabel(x.response_status),x.reply_text||'—',channel(x.reply_channel),x.replied_at?jalaliDateTime(x.replied_at):'—',x.reminder_count||0])];
  }else{const table=q('table',view);if(!table)return;data=[...table.rows].filter(r=>!r.hidden).map(r=>[...r.cells].map(c=>c.textContent.trim()))}
  if(!data.length)return;const X=await window.ensureBamcoXLSX(),ws=X.utils.aoa_to_sheet(data),wb=X.utils.book_new();ws['!views']=[{rightToLeft:true}];ws['!autofilter']={ref:X.utils.encode_range({s:{r:0,c:0},e:{r:Math.max(0,data.length-1),c:Math.max(0,data[0].length-1)}})};ws['!cols']=data[0].map((_,i)=>({wch:kind==='response'?[8,22,15,32,20,18,34,16,20,14][i]:i===0?24:16}));wb.Workbook={Views:[{RTL:true}]};X.utils.book_append_sheet(wb,ws,kind==='performance'?'گزارش عملکرد':'گزارش پاسخ‌ها');X.writeFile(wb,(kind==='performance'?'گزارش عملکرد':'گزارش پاسخ‌ها')+'.xlsx',{compression:true})
 }
 function openCalendar(kind){const input=q(kind==='perf-from'?'#canonicalPerfFrom':kind==='perf-to'?'#canonicalPerfTo':kind==='response-from'?'#canonicalResponseFrom':'#canonicalResponseTo');if(!input)return;dateTarget={kind,input};const now=currentJalali(),raw=typeof en==='function'?en(input.value||''):String(input.value||''),m=raw.match(/\d+/g)?.map(Number),p=m?.length===3?{y:m[0],m:m[1],d:m[2]}:now;q('#calendarLabel').textContent=kind.includes('from')?'انتخاب تاریخ شروع':'انتخاب تاریخ پایان';q('#calYear').innerHTML=Array.from({length:16},(_,i)=>now.y-5+i).map(y=>`<option value="${y}">${digits(y)}</option>`).join('');q('#calMonth').innerHTML=['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'].map((n,i)=>`<option value="${i+1}">${n}</option>`).join('');q('#calYear').value=String(p.y);q('#calMonth').value=String(p.m);fillCalendarDays();q('#calDay').value=String(p.d);q('#calendarDialog').showModal()}
 function commitDate(clear=false){if(!dateTarget)return;const {kind,input}=dateTarget;input.value=clear?'':digits(`${q('#calYear').value}/${String(q('#calMonth').value).padStart(2,'0')}/${String(q('#calDay').value).padStart(2,'0')}`);dateTarget=null;q('#calendarDialog')?.close();if(kind.startsWith('perf'))void renderPerformance(false);else{window.bamcoSelection?.clear?.('#responseReportBody');renderResponseRows()}}
 function patchTabs(){const tabs=window.bamcoTabs;if(!tabs?.render)return false;if(!rawTabRender)rawTabRender=tabs.render.bind(tabs);if(tabs.__canonicalReportsV6)return true;tabs.render=(id,...args)=>id==='performanceReport'?renderPerformance(false):id==='responseReport'?renderResponse(false):rawTabRender(id,...args);tabs.__canonicalReportsV6=true;return true}
-async function syncCore(){
- if(syncBusy||typeof state==='undefined'||state?.workspaceRefreshPromise||!state?.token||!state?.profile||state.profile.must_change_password||document.hidden)return;syncBusy=true;const userId=state.user?.id,token=state.token,taskRevision=state.taskRevision||0;
- try{
-  const [versionRaw,sentVersionRaw]=await Promise.all([rpc('task_dataset_version',{}),isManager()?rpc('sent_message_dataset_version',{}):Promise.resolve('')]);
-  const version=String(versionRaw||''),sentVersion=String(sentVersionRaw||'');if(userId!==state.user?.id||token!==state.token)return;
-  // The first check establishes a server baseline after the initial workspace
-  // refresh. Later checks download the 1+ MB task dataset only when it changed.
-  if(!taskDatasetVersion)taskDatasetVersion=version;
-  else if(version!==taskDatasetVersion){
-   const tasks=await selectAll('task_status_view','select=*&order=id.desc');if(userId!==state.user?.id||token!==state.token)return;
-   if(taskRevision===(state.taskRevision||0)){taskDatasetVersion=version;if(JSON.stringify(tasks)!==JSON.stringify(state.tasks)){state.tasks=tasks;if(state.view==='kanban')renderTasks(false);else if(state.view==='archive')renderTasks(true);else if(state.view==='dashboard')window.renderDashboard?.()}}
-  }
-  if(!sentDatasetVersion)sentDatasetVersion=sentVersion;
-  else if(sentVersion&&sentVersion!==sentDatasetVersion){sentDatasetVersion=sentVersion;if(state.view==='sentMessages')await window.bamcoSentMessages?.refresh?.()}
-  if(state.view==='performanceReport')await renderPerformance(false);else if(state.view==='responseReport')await renderResponse(false);document.dispatchEvent(new CustomEvent('bamco-live-sync',{detail:{at:Date.now()}}))
- }catch(err){console.warn('Lightweight live sync',err?.message||err)}finally{syncBusy=false}
+function refreshVisibleReport(detail={}){
+ const domain=String(detail.domain||detail.table||'').toLowerCase();
+ if(!state?.token||!['profiles','organization','tasks','workflow','notifications','access'].includes(domain))return;
+ clearTimeout(domainRefreshTimer);
+ domainRefreshTimer=setTimeout(()=>{
+  if(state.view==='performanceReport')void renderPerformance(false);
+  else if(state.view==='responseReport'&&['notifications','profiles','access'].includes(domain))void renderResponse(false);
+ },60);
 }
-function immediateSync(){if(typeof state!=='undefined'&&state?.token&&!document.hidden)void syncCore()}
 function bindReportControls(){
  document.addEventListener('click',e=>{
   const refresh=e.target.closest?.('[data-canonical-refresh]');if(refresh){e.preventDefault();e.stopImmediatePropagation();refresh.dataset.canonicalRefresh==='performanceReport'?void renderPerformance(false):void renderResponse(false);return}
@@ -130,6 +136,6 @@ function bindReportControls(){
  document.addEventListener('bamco-selection-change',e=>{if(e.target.closest?.('#responseReportView'))syncResponseDelete()});
 }
 function watchVisibility(){for(const [id,render] of [['performanceReport',renderPerformance],['responseReport',renderResponse]]){const view=q('#'+id+'View');if(!view)continue;new MutationObserver(()=>{if(state.view===id&&!view.classList.contains('hidden')&&!q('.canonical-report',view))void render(false)}).observe(view,{attributes:true,attributeFilter:['class']})}}
-function boot(){installCss();markReportOwners();patchTabs();bindReportControls();watchVisibility();setInterval(immediateSync,5000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)immediateSync()});window.addEventListener('focus',immediateSync);const app=q('#appView');if(app)new MutationObserver(()=>{if(!app.classList.contains('hidden')){taskDatasetVersion='';sentDatasetVersion='';patchTabs();setTimeout(immediateSync,500)}}).observe(app,{attributes:true,attributeFilter:['class']});let tries=0,t=setInterval(()=>{if(patchTabs()&&typeof state!=='undefined'&&state?.token){clearInterval(t);setTimeout(immediateSync,1000)}else if(++tries>200)clearInterval(t)},100);window.bamcoLiveSync={refresh:syncCore,interval:5000};window.bamcoCanonicalReports={renderPerformance,renderResponse,visibleResponse:responseVisible}}
+function boot(){installCss();markReportOwners();patchTabs();bindReportControls();watchVisibility();document.addEventListener('bamco:domain-invalidated',event=>refreshVisibleReport(event.detail));document.addEventListener('bamco:profiles-updated',()=>refreshVisibleReport({domain:'profiles'}));document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshVisibleReport({domain:'profiles'})});window.addEventListener('focus',()=>refreshVisibleReport({domain:'profiles'}));const app=q('#appView');if(app)new MutationObserver(()=>{if(!app.classList.contains('hidden')){patchTabs();refreshVisibleReport({domain:'profiles'})}}).observe(app,{attributes:true,attributeFilter:['class']});window.bamcoLiveSync={refresh:()=>refreshVisibleReport({domain:'profiles'}),interval:null};window.bamcoCanonicalReports={renderPerformance,renderResponse,visibleResponse:responseVisible}}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
