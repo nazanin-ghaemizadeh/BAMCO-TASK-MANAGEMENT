@@ -48,7 +48,7 @@
     ['kanban', 'kanban', 'کانبان وظایف'],
     ['archive', 'archive', 'آرشیو وظایف'],
     ['taskTimeline', 'kanban', 'زمان‌بندی وظایف'],
-    ['approvals', 'approvals', 'کارتابل من'],
+    ['approvals', 'approvals', 'تأیید درخواست‌ها'],
     ['requestHistory', 'requestHistory', 'سوابق درخواست‌ها'],
     ['projects', 'projects', 'مدیریت پروژه‌ها'],
     ['vehiclePermanent', 'vehiclePermanent', 'تحویل دائم خودرو'],

@@ -16,7 +16,7 @@ const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const fa=n=>String(n??'').replace(/\d/g,d=>'۰۱۲۳۴۵۶۷۸۹'[d]);
 const en=n=>String(n??'').replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d));
 const norm=s=>String(s??'').replace(/ي/g,'ی').replace(/ك/g,'ک').replace(/\u200c/g,' ').replace(/\s+/g,' ').trim();
-const state=globalThis.Bamco.state=Object.assign(globalThis.Bamco.state||{}, {token:'',user:null,profile:null,profiles:[],tasks:[],requests:[],requestHistory:[],definitionRequests:[],requestRoutes:[],organizationScope:{loaded:false,rows:[],positionIds:[],ownPositionIds:[],directReportUserIds:[],descendantUserIds:[],hasSubordinates:false},dashboardMonitoringStart:window.bamcoDashboardMetrics?.DEFAULT_MONITORING_START||'2026-09-14T00:00:00Z',view:'dashboard',editing:null,reviewing:null,reviewEdit:null,resubmitting:null,dateInput:null,selected:{kanban:null,archive:null}});
+const state=globalThis.Bamco.state=Object.assign(globalThis.Bamco.state||{}, {token:'',user:null,profile:null,profiles:[],tasks:[],requests:[],requestHistory:[],definitionRequests:[],requestRoutes:[],organizationScope:{loaded:false,rows:[],positionIds:[],ownPositionIds:[],directReportUserIds:[],descendantUserIds:[],hasSubordinates:false},dashboardMonitoringStart:window.bamcoDashboardMetrics?.DEFAULT_MONITORING_START||'2026-09-14T00:00:00Z',view:'dashboard',editing:null,reviewing:null,reviewEdit:null,resubmitting:null,amendingRequest:null,dateInput:null,selected:{kanban:null,archive:null}});
 // Remove the former profile-shaped organization projection on hot reloads too.
 delete state.organizationScope?.people;
 
@@ -332,7 +332,7 @@ function showLogin(){
   window.BamcoAccess?.clear?.();
   window.bamcoConversations?.close();window.bamcoChat?.close();
   sessionStorage.removeItem('bamco_session');
-  Object.assign(state,{workspaceRefreshPromise:null,token:'',user:null,profile:null,profiles:[],tasks:[],requests:[],requestHistory:[],definitionRequests:[],requestRoutes:[],organizationScope:{loaded:false,rows:[],positionIds:[],ownPositionIds:[],directReportUserIds:[],descendantUserIds:[],hasSubordinates:false},dashboardMonitoringStart:window.bamcoDashboardMetrics?.DEFAULT_MONITORING_START||'2026-09-14T00:00:00Z',view:'dashboard',editing:null,reviewing:null,reviewEdit:null,resubmitting:null,dateInput:null,selected:{kanban:null,archive:null}});
+  Object.assign(state,{workspaceRefreshPromise:null,token:'',user:null,profile:null,profiles:[],tasks:[],requests:[],requestHistory:[],definitionRequests:[],requestRoutes:[],organizationScope:{loaded:false,rows:[],positionIds:[],ownPositionIds:[],directReportUserIds:[],descendantUserIds:[],hasSubordinates:false},dashboardMonitoringStart:window.bamcoDashboardMetrics?.DEFAULT_MONITORING_START||'2026-09-14T00:00:00Z',view:'dashboard',editing:null,reviewing:null,reviewEdit:null,resubmitting:null,amendingRequest:null,dateInput:null,selected:{kanban:null,archive:null}});
   $('#appView').classList.add('hidden');
   $('#loginView').classList.remove('hidden');
 }
@@ -430,32 +430,24 @@ function newestRequestRows(rows){
   const stamp=r=>{const value=Date.parse(r.created_at);return Number.isFinite(value)?value:0};
   return [...(rows||[])].sort((a,b)=>stamp(b)-stamp(a)||String(b.id).localeCompare(String(a.id),'en',{numeric:true}));
 }
-function workbenchRequestRows(){
-  const filter=window.bamcoApprovalCenter?.filter?.()||'action',current=[...(state.requests||[])],history=[...(state.requestHistory||[])],mine=row=>String(row.requested_by)===String(state.user?.id),routeById=new Map((state.requestRoutes||[]).map(row=>[String(row.request_id),row]));
-  if(filter==='mine')return[...current,...history].filter(mine);
-  if(filter==='revision')return current.filter(row=>row.request_status==='needs_revision'&&mine(row));
-  if(filter==='approved')return history.filter(row=>row.request_status==='approved');
-  if(filter==='closed')return history.filter(row=>['rejected','cancelled'].includes(row.request_status));
-  // "اقدام من" is deliberately narrower than "all active requests": only the
-  // server-marked current approver may receive a review affordance.
-  return current.filter(row=>routeById.get(String(row.id))?.actionable===true);
-}
+function workbenchRequestRows(){return[...(state.requests||[])];}
 function renderRequests(){
   const types={create:'تعریف فعالیت جدید',update:'ویرایش وظیفه',status:'تغییر وضعیت',priority:'تغییر اولویت',description:'تغییر توضیحات',complete:'اعلام انجام',delete:'درخواست حذف',due_date:'تغییر تاریخ پایان'},statuses={pending:'در انتظار بررسی',in_review:'در زنجیره تأیید',needs_revision:'برگشت جهت اصلاح',approved:'تأیید',rejected:'رد',cancelled:'لغوشده'},routeById=new Map((state.requestRoutes||[]).map(x=>[String(x.request_id),x])),rows=newestRequestRows(workbenchRequestRows()),actionable=(state.requests||[]).filter(request=>routeById.get(String(request.id))?.actionable===true);
   $('#approvalBadge').textContent=fa(actionable.length);$('#approvalBadge').classList.toggle('hidden',!actionable.length);
   $('#approvalBody').innerHTML=rows.length?rows.map((r,index)=>{
-    const route=routeById.get(String(r.id)),terminal=['approved','rejected','cancelled'].includes(r.request_status),mine=String(r.requested_by)===String(state.user?.id),routeText=route?.stage_title?`مرحله ${fa(route.stage_no)}: ${safe(route.stage_title)} — ${safe(route.approver_names||'بدون تأییدکننده')}`:statuses[r.request_status]||r.request_status;
-    let action='در انتظار تأییدکننده این مرحله';
+    const route=routeById.get(String(r.id)),terminal=['approved','rejected','cancelled'].includes(r.request_status),mine=String(r.requested_by)===String(state.user?.id),routeText=route?.approver_names?`در انتظار تأیید ${safe(route.approver_names)}`:statuses[r.request_status]||'در انتظار تعیین تأییدکننده';
+    let action=route?.approver_names?`در انتظار تأیید ${safe(route.approver_names)}`:'در انتظار تعیین تأییدکننده';
     if(terminal)action='—';
     else if(route?.actionable===true&&featureAllowed('approvals','edit'))action=`<button class="primary" data-review-request="${r.id}">بررسی</button>`;
     else if(r.request_status==='needs_revision'&&mine)action=`<button class="primary" data-revise-request="${r.id}">اصلاح و ارسال مجدد</button>`;
+    else if(mine)action=`<button class="ghost" data-amend-request="${r.id}">ویرایش</button> <button class="ghost danger" data-cancel-request="${r.id}">لغو درخواست</button>`;
     return`<tr data-request-id="${r.id}"><td>${fa(rows.length-index)}</td><td>${safe(profileLabel(r.requested_by,r.requester_name_snapshot||'—'))}</td><td>${types[r.request_type]||r.request_type}</td><td>${safe(r.proposed_data?.title||state.tasks.find(t=>String(t.id)===String(r.task_id))?.title||'—')}</td><td>${jalaliDateTime(r.created_at)}</td><td>${routeText}</td><td>${action}</td></tr>`;
   }).join(''):'<tr><td colspan="7" class="empty">موردی در این بخش وجود ندارد.</td></tr>';
   window.bamcoApprovalCenter?.sync?.();
 }
-$('#approvalBody').addEventListener('click',e=>{const revise=e.target.closest('[data-revise-request]'),review=e.target.closest('[data-review-request]');if(revise)reviseRequest(revise.dataset.reviseRequest);if(review)openReview(review.dataset.reviewRequest)});
+$('#approvalBody').addEventListener('click',e=>{const revise=e.target.closest('[data-revise-request]'),review=e.target.closest('[data-review-request]'),amend=e.target.closest('[data-amend-request]'),cancel=e.target.closest('[data-cancel-request]');if(revise)reviseRequest(revise.dataset.reviseRequest);if(review)openReview(review.dataset.reviewRequest);if(amend)amendRequest(amend.dataset.amendRequest);if(cancel)cancelRequest(cancel.dataset.cancelRequest)});
 function renderRequestHistory(){const types={create:'تعریف فعالیت جدید',update:'ویرایش وظیفه',status:'تغییر وضعیت',priority:'تغییر اولویت',description:'تغییر توضیحات',complete:'اعلام انجام',delete:'درخواست حذف',due_date:'تغییر تاریخ پایان'},statuses={approved:'تأیید',rejected:'رد',cancelled:'لغوشده'},terminal=new Set(Object.keys(statuses)),rows=newestRequestRows(state.requestHistory).filter(r=>terminal.has(r.request_status));$('#requestHistoryBody').innerHTML=rows.length?rows.map((r,index)=>`<tr data-request-id="${r.id}"><td>${fa(rows.length-index)}</td><td>${safe(profileLabel(r.requested_by,r.requester_name_snapshot||'—'))}</td><td>${types[r.request_type]||r.request_type}</td><td>${safe(r.proposed_data?.title||state.tasks.find(t=>String(t.id)===String(r.task_id))?.title||'—')}</td><td>${jalaliDateTime(r.reviewed_at||r.created_at)}</td><td>${statuses[r.request_status]}</td><td>${safe(r.manager_note||'—')} <button class="ghost request-timeline-btn" data-request="${r.id}">خط زمانی</button></td></tr>`).join(''):'<tr><td colspan="7" class="empty">سابقه‌ای وجود ندارد.</td></tr>'}
-const titles={dashboard:'داشبورد',kanban:'کانبان وظایف',archive:'آرشیو وظایف',approvals:'کارتابل من',requestHistory:'سوابق درخواست‌ها',projects:'مدیریت پروژه‌ها',parts:'مدیریت قطعات',invoices:'صورتحساب‌ها و تعهدات مالی',organization:'ساختار سازمانی',vehiclePermanent:'تحویل دائم خودرو',vehicleTemporary:'تحویل موقت خودرو',tools:'مدیریت ابزار',userGuide:'راهنمای استفاده سامانه',sentMessages:'پیام‌های ارسال‌شده'};globalThis.BamcoNavigation?.configure?.({state,titles});
+const titles={dashboard:'داشبورد',kanban:'کانبان وظایف',archive:'آرشیو وظایف',approvals:'تأیید درخواست‌ها',requestHistory:'سوابق درخواست‌ها',projects:'مدیریت پروژه‌ها',parts:'مدیریت قطعات',invoices:'صورتحساب‌ها و تعهدات مالی',organization:'ساختار سازمانی',vehiclePermanent:'تحویل دائم خودرو',vehicleTemporary:'تحویل موقت خودرو',tools:'مدیریت ابزار',userGuide:'راهنمای استفاده سامانه',sentMessages:'پیام‌های ارسال‌شده'};globalThis.BamcoNavigation?.configure?.({state,titles});
 function showView(view){if(typeof BamcoNavigation!=='undefined'&&typeof BamcoNavigation.navigate==='function')return BamcoNavigation.navigate(view);const target=typeof view==='string'&&/^[A-Za-z][A-Za-z0-9]*$/.test(view)?document.getElementById(view+'View'):null;if(!target)return false;globalThis.bamcoLeaveHome?.();state.view=view;$$('.view').forEach(x=>x.classList.add('hidden'));target.classList.remove('hidden');$$('#nav button').forEach(x=>x.classList.toggle('active',x.dataset.view===view));$('#viewTitle').textContent=titles[view]||'';$('#addTaskBtn').classList.toggle('hidden',view!=='kanban');return true}
 $('#nav').addEventListener('click',e=>{const button=e.target.closest('button[data-view]');if(button&&!button.disabled)showView(button.dataset.view)});$$('[data-go]').forEach(b=>b.addEventListener('click',()=>showView(b.dataset.go)));
 $('#kanbanSearch').addEventListener('input',()=>renderTasks(false));$('#archiveSearch').addEventListener('input',()=>renderTasks(true));$('#collapseBtn').addEventListener('click',()=>$('#sidebar').classList.toggle('collapsed'));
@@ -467,7 +459,7 @@ function canCreateDirectTask(){return featureAllowed('kanban','create')&&(hasApp
 function formOwnerId(){return $('#taskForm [name=owner_id]')?.value||state.profile?.id||null}
 function canEditTaskDirectly(task=state.editing){
   if(state.reviewEdit)return featureAllowed('approvals','edit');
-  if(state.resubmitting)return false;
+  if(state.resubmitting||state.amendingRequest)return false;
   // A supervisor may open the assignment form, but their own new task still
   // follows their direct parent.  The selected target—not merely the fact
   // that the actor has descendants—decides whether this is a direct mutation.
@@ -475,14 +467,14 @@ function canEditTaskDirectly(task=state.editing){
 }
 function canChooseTaskOwner(task=state.editing){
   if(state.reviewEdit)return featureAllowed('approvals','edit');
-  if(state.resubmitting)return false;
+  if(state.resubmitting||state.amendingRequest)return false;
   return task?canDirectlyManageTask(task,'edit'):canCreateDirectTask();
 }
 function syncTaskDialogAuthority(task=state.editing){
   const directAuthority=canEditTaskDirectly(task);
-  $('#taskDialogTitle').textContent=state.reviewEdit?'اصلاح درخواست مدیر':state.resubmitting?'اصلاح و ارسال مجدد':task?(directAuthority?'ویرایش وظیفه':'درخواست تغییر وظیفه'):(directAuthority?'افزودن وظیفه':'درخواست وظیفه جدید');
-  $('#taskDialogHint').textContent=state.reviewEdit?'اصلاحات همراه با تأیید درخواست اعمال می‌شود.':state.resubmitting?'موارد خواسته‌شده را اصلاح و دوباره ارسال کنید.':directAuthority?'تغییر مستقیم فقط برای وظایفِ رده‌های پایین‌ترِ همین شاخه سازمانی مجاز است.':'درخواست شما پس از تأیید بالادستِ مستقیم در ساختار سازمانی اعمال می‌شود.';
-  $('#saveTaskBtn').textContent=state.reviewEdit?'ثبت اصلاحات و تأیید':state.resubmitting?'ارسال مجدد':directAuthority?(task?'ثبت تغییرات':'ثبت وظیفه'):'ارسال برای تأیید';
+  $('#taskDialogTitle').textContent=state.reviewEdit?'اصلاح درخواست مدیر':state.resubmitting?'اصلاح و ارسال مجدد':state.amendingRequest?'ویرایش درخواست':task?(directAuthority?'ویرایش وظیفه':'درخواست تغییر وظیفه'):(directAuthority?'افزودن وظیفه':'درخواست وظیفه جدید');
+  $('#taskDialogHint').textContent=state.reviewEdit?'اصلاحات همراه با تأیید درخواست اعمال می‌شود.':state.resubmitting?'موارد خواسته‌شده را اصلاح و دوباره ارسال کنید.':state.amendingRequest?'ویرایش شما درخواست را دوباره در گردش تأیید قرار می‌دهد.':directAuthority?'تغییر مستقیم فقط برای وظایفِ رده‌های پایین‌ترِ همین شاخه سازمانی مجاز است.':'درخواست شما پس از تأیید بالادستِ مستقیم در ساختار سازمانی اعمال می‌شود.';
+  $('#saveTaskBtn').textContent=state.reviewEdit?'ثبت اصلاحات و تأیید':state.resubmitting?'ارسال مجدد':state.amendingRequest?'ثبت و ارسال مجدد':directAuthority?(task?'ثبت تغییرات':'ثبت وظیفه'):'ارسال برای تأیید';
 }
 function fillOwners(selected,task=state.editing){
   const sel=$('#taskForm [name=owner_id]'),canChoose=canChooseTaskOwner(task),byId=new Map();
@@ -500,7 +492,7 @@ function fillOwners(selected,task=state.editing){
 function syncTaskState(){
   const f=$('#taskForm'),rule=window.bamcoOptions.status(f.elements.status.value);if(!rule)return;
   const canChoose=canChooseTaskOwner(state.editing);
-  if(rule.owner_mode==='none')f.elements.owner_id.value='';else if(!canChoose&&!state.resubmitting)f.elements.owner_id.value=state.profile.id;
+  if(rule.owner_mode==='none')f.elements.owner_id.value='';else if(!canChoose&&!state.resubmitting&&!state.amendingRequest)f.elements.owner_id.value=state.profile.id;
   f.elements.owner_id.disabled=rule.owner_mode==='none'||!canChoose||!!(state.editing?.archived&&state.editing?.owner_deleted_at);f.elements.owner_id.required=rule.owner_mode==='required';
   for(const [name,mode]of [['start_date',rule.start_mode],['due_date',rule.due_mode],['done_date',rule.kind==='completed'?'optional':'none']]){
     const disabled=mode==='none';if(disabled)setJalaliField(name+'_j','');f.elements[name+'_j'].disabled=disabled;f.elements[name+'_j'].required=mode==='required';f.querySelector(`[data-date-input="${name}_j"]`).disabled=disabled;
@@ -530,6 +522,10 @@ function openTask(task=null){
   $('#taskDialog').showModal();
 }
 $('#addTaskBtn').addEventListener('click',()=>openTask());window.openEdit=id=>openTask(state.tasks.find(t=>String(t.id)===String(id)));
+$('#taskDialog').addEventListener('close',()=>{
+  if(state.taskDialogSubmitting)return;
+  state.reviewEdit=null;state.resubmitting=null;state.amendingRequest=null;
+});
 $('#taskForm [name="owner_id"]').addEventListener('change',()=>{
   syncTaskState();
   syncTaskDialogAuthority(state.editing);
@@ -555,8 +551,8 @@ $('#taskForm').addEventListener('submit',async e=>{
   for(const k of ['start_date','done_date','due_date'])if(!data[k])data[k]=null;
   data.reminder_days=Number(data.reminder_days||0);
   const currentTask=state.editing;
-  const directMutation=state.reviewEdit?featureAllowed('approvals','edit'):state.resubmitting?false:currentTask?canDirectlyManageTask(currentTask,'edit'):canDirectlyCreateFor(data.owner_id);
-  if(!directMutation&&!state.reviewEdit&&!state.resubmitting)data.owner_id=currentTask?.owner_id||state.profile.id;
+  const directMutation=state.reviewEdit?featureAllowed('approvals','edit'):(state.resubmitting||state.amendingRequest)?false:currentTask?canDirectlyManageTask(currentTask,'edit'):canDirectlyCreateFor(data.owner_id);
+  if(!directMutation&&!state.reviewEdit&&!state.resubmitting&&!state.amendingRequest)data.owner_id=currentTask?.owner_id||state.profile.id;
   if(!data.owner_id)data.owner_id=null;
   if(state.editing?.archived&&state.editing?.owner_deleted_at)data.owner_id=state.editing.owner_id;
   try{window.bamcoOptions.normalizeTask(data,state.editing)}catch(error){toast(error.message,true);return}
@@ -574,6 +570,8 @@ $('#taskForm').addEventListener('submit',async e=>{
       await rpc('review_request_stage',{p_request_id:state.reviewEdit.id,p_decision:'approved',p_note:state.reviewEdit.managerNote||null,p_final_data:data});
     }else if(state.resubmitting){
       await rpc('resubmit_change_request',{p_request_id:state.resubmitting.id,p_proposed_data:data});
+    }else if(state.amendingRequest){
+      await rpc('amend_change_request',{p_request_id:state.amendingRequest.id,p_proposed_data:data});
     }else if(directMutation){
       if(completing){data.archived=true;data.archived_at=new Date().toISOString()}
       if(state.editing?._restoring){await update('tasks',`id=eq.${state.editing.id}`,{...data,archived:true,archived_at:state.editing.archived_at||new Date().toISOString()});await rpc('restore_tasks_to_kanban_and_resequence',{p_task_ids:[Number(state.editing.id)]})}
@@ -586,9 +584,10 @@ $('#taskForm').addEventListener('submit',async e=>{
         await rpc('submit_change_request',{p_request_type:state.editing?'update':'create',p_task_id:state.editing?.id||null,p_proposed_data:state.editing?{...data,...(state.editing._restoring?{archived:false,archived_at:null}:{} )}:data,p_note:null});
       }
     }
+    state.taskDialogSubmitting=true;
     $('#taskDialog').close();
-    toast(state.reviewEdit?'درخواست با اصلاحات مدیر تأیید شد.':state.resubmitting?'درخواست اصلاح‌شده دوباره ارسال شد.':directMutation?(completing?'وظیفه انجام شد و به آرشیو منتقل شد.':'تغییرات ثبت شد.'):(completing?'درخواست تکمیل برای تأیید ارسال شد.':'درخواست برای تأیید بالادست ارسال شد.'));
-    state.reviewEdit=null;state.resubmitting=null;
+    toast(state.reviewEdit?'درخواست با اصلاحات مدیر تأیید شد.':state.resubmitting?'درخواست اصلاح‌شده دوباره ارسال شد.':state.amendingRequest?'درخواست ویرایش و دوباره برای تأیید ارسال شد.':directMutation?(completing?'وظیفه انجام شد و به آرشیو منتقل شد.':'تغییرات ثبت شد.'):(completing?'درخواست تکمیل برای تأیید ارسال شد.':'درخواست برای تأیید بالادست ارسال شد.'));
+    state.reviewEdit=null;state.resubmitting=null;state.amendingRequest=null;state.taskDialogSubmitting=false;
     await refresh();
   }catch(err){toast(err.message,true)}finally{$('#saveTaskBtn').disabled=false}
 });
@@ -616,6 +615,8 @@ async function review(decision){
   try{const result=await rpc('review_request_stage',{p_request_id:request.id,p_decision:decision,p_note:$('#managerNote').value.trim()||null,p_final_data:null});$('#reviewDialog').close();toast(decision==='approved'?(result==='next_stage'?'مرحله اول تأیید شد و درخواست به مرحله بعد رفت.':'درخواست تأیید و اعمال شد.'):decision==='needs_revision'?'درخواست جهت اصلاح به متولی برگشت.':'درخواست رد شد.');await refresh()}catch(err){toast(err.message,true)}
 }
 window.reviseRequest=id=>{const r=state.requests.find(row=>String(row.id)===String(id));if(!r||r.request_status!=='needs_revision'||String(r.requested_by)!==String(state.user?.id)){toast('این درخواست برای اصلاح شما در دسترس نیست.',true);return}state.resubmitting=r;const task=state.tasks.find(t=>String(t.id)===String(r.task_id))||{};openTask({...task,...r.proposed_data,owner_id:state.profile.id})};
+window.amendRequest=id=>{const r=state.requests.find(row=>String(row.id)===String(id));if(!r||!['pending','in_review'].includes(r.request_status)||String(r.requested_by)!==String(state.user?.id)){toast('این درخواست برای ویرایش شما در دسترس نیست.',true);return}state.amendingRequest=r;const task=state.tasks.find(t=>String(t.id)===String(r.task_id))||{};openTask({...task,...r.proposed_data,owner_id:r.proposed_data?.owner_id||state.profile.id})};
+window.cancelRequest=async id=>{const r=state.requests.find(row=>String(row.id)===String(id));if(!r||String(r.requested_by)!==String(state.user?.id)){toast('این درخواست برای لغو شما در دسترس نیست.',true);return}if(!await window.bamcoConfirm('این درخواست لغو و به سوابق منتقل شود؟'))return;try{await rpc('cancel_change_request',{p_request_id:r.id,p_note:null});toast('درخواست لغو و به سوابق منتقل شد.');await refresh()}catch(error){toast(error.message,true)}};
 $('#approveBtn').addEventListener('click',()=>review('approved'));$('#rejectBtn').addEventListener('click',()=>review('rejected'));$('#revisionBtn').addEventListener('click',()=>review('needs_revision'));$('#editRequestBtn').addEventListener('click',()=>{const r=state.reviewing;if(!canReviewRequest(r)){toast('این درخواست دیگر در مرحله اقدام شما نیست.',true);return}const task=state.tasks.find(t=>String(t.id)===String(r.task_id))||{};state.reviewEdit={...r,managerNote:$('#managerNote').value.trim()};$('#reviewDialog').close();openTask({...task,...r.proposed_data,owner_id:r.proposed_data?.owner_id||task.owner_id||r.requested_by})});
 
 $('#passwordForm').addEventListener('submit',async e=>{e.preventDefault();const form=e.currentTarget;const p=$('#newPassword').value,c=$('#confirmPassword').value,wasRequired=!!state.profile.must_change_password;$('#passwordError').textContent='';if(p!==c){$('#passwordError').textContent='تکرار رمز عبور یکسان نیست.';return}try{await window.bamcoAuth.changePassword(p);form.reset();$('#passwordDialog').close();toast('رمز عبور با موفقیت تغییر کرد.');if(wasRequired)showView('kanban')}catch(err){if(wasRequired)try{await update('profiles',`id=eq.${state.profile.id}`,{must_change_password:true,updated_at:new Date().toISOString()})}catch{}const message=err.message==='New password should be different from the old password.'?'رمز جدید باید با رمز قبلی متفاوت باشد.':err.message;$('#passwordError').textContent=message}});

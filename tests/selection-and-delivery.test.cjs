@@ -71,8 +71,8 @@ test('manager performance definition metric counts every task authored after the
  await w.eval('refresh()');await f.open('performanceReport');await until(()=>d.querySelector('[data-definition-metric="manager-created-task"]'));const metric=d.querySelector('[data-definition-metric="manager-created-task"]');assert.equal(metric.textContent.trim(),'۲');assert.match(metric.title,/شروع پایش/);assert.equal(d.querySelector('[data-definition-metric="owner-request"]').textContent.trim(),'۰');assert.deepEqual(f.errors,[]);
 });
 
-test('the central workbench presents organization-routed approvals',async t=>{
- const f=await fixture({tables:{change_requests:[{id:10,requested_by:'test-owner',request_type:'update',request_status:'in_review',created_at:new Date().toISOString(),proposed_data:{title:'درخواست سازمانی'}}],request_routing_status:[]}}),{d}=f;t.after(()=>f.dispose());await f.open('approvals');assert(d.querySelector('#workbenchSummary'));assert(d.querySelector('[data-workbench-filter="action"]'));assert.equal(d.querySelector('#approvalChainForm'),null);assert.deepEqual(f.errors,[]);
+test('the central workbench presents active organization-routed approvals in one table',async t=>{
+ const f=await fixture({tables:{change_requests:[{id:10,requested_by:'test-owner',request_type:'update',request_status:'in_review',created_at:new Date().toISOString(),proposed_data:{title:'درخواست سازمانی'}}],request_routing_status:[{request_id:10,approver_names:'تأییدکننده آزمایشی',actionable:false}]}}),{d}=f;t.after(()=>f.dispose());await f.open('approvals');assert.equal(d.querySelector('#workbenchSummary'),null);assert.equal(d.querySelector('[data-workbench-filter]'),null);assert.match(d.querySelector('#approvalsView').textContent,/تأیید درخواست‌ها/);assert.match(d.querySelector('#approvalBody').textContent,/در انتظار تأیید تأییدکننده آزمایشی/);assert.equal(d.querySelector('#approvalChainForm'),null);assert.deepEqual(f.errors,[]);
 });
 
 test('sticker switching reuses simultaneous authenticated downloads',async t=>{
