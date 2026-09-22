@@ -345,11 +345,34 @@ $('#loginForm').addEventListener('submit',async e=>{e.preventDefault();$('#login
 async function enterApp(){
   const enteringUser=state.user.id;
   void window.bamcoPrepareWelcomeStickers?.();
-  const checks=await Promise.allSettled([select('profiles',`id=eq.${enteringUser}&select=*`),window.bamcoSession?.start()]);
-  const failed=checks.find(result=>result.status==='rejected');
-  if(failed){if(checks[1].status==='fulfilled')await window.bamcoSession?.end('logout');throw failed.reason}
-  const profiles=checks[0].value;
-  if(state.user?.id!==enteringUser)throw Error('نشست ورود تغییر کرده است.');if(!profiles.length||profiles[0].active===false){await window.bamcoSession?.end('logout');throw Error(profiles.length?'حساب کاربری غیرفعال است.':'پروفایل کاربر پیدا نشد.')}state.profile=profiles[0];syncCanonicalProfiles([state.profile]);
+  // Authentication and the canonical profile are the admission gate.  Session
+  // presence is audit/telemetry: a temporary failure to record it must never
+  // turn a valid Supabase login into a false "cannot sign in" result or keep
+  // the person on the login screen while that non-authoritative call is slow.
+  // The session runtime retries in the background; management views retain
+  // their own strict checks when they actually need an audit record.
+  const profileLoad=select('profiles',`id=eq.${enteringUser}&select=*`);
+  const auditStart=Promise.resolve().then(()=>window.bamcoSession?.start());
+  const reportAuditUnavailable=error=>{
+    console.warn('BAMCO session audit unavailable at sign-in',error?.message||error);
+    document.dispatchEvent(new CustomEvent('bamco:session-audit-unavailable',{detail:{user_id:enteringUser}}));
+  };
+  // Handle the audit promise independently so it can never surface as an
+  // unhandled rejection after the authenticated workspace has opened.
+  void auditStart.catch(reportAuditUnavailable);
+  const closeAuditAfterFailedAdmission=async()=>{
+    try{await auditStart;await window.bamcoSession?.end('logout')}
+    catch(error){console.warn('BAMCO session audit cleanup failed',error?.message||error)}
+  };
+  let profiles;
+  try{profiles=await profileLoad}
+  catch(error){await closeAuditAfterFailedAdmission();throw error}
+  if(state.user?.id!==enteringUser)throw Error('نشست ورود تغییر کرده است.');
+  if(!profiles.length||profiles[0].active===false){
+    await closeAuditAfterFailedAdmission();
+    throw Error(profiles.length?'حساب کاربری غیرفعال است.':'پروفایل کاربر پیدا نشد.');
+  }
+  state.profile=profiles[0];syncCanonicalProfiles([state.profile]);
   await window.BamcoAccess?.refresh?.();
   await refreshOrganizationScope({silent:true});
   void window.BamcoDomainSync?.start?.();

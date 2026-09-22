@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const VERSION='20260911-login-logo-single-load-1';
+const VERSION='20260922-login-core-readiness-1';
 if(window.__bamcoAuthUiInstalled===VERSION)return;
 window.__bamcoAuthUiInstalled=VERSION;
 
@@ -35,25 +35,12 @@ function buildLogin(){
   q('#email').value=email;q('#password').value=password;return form;
 }
 
-async function requestJson(path,{method='GET',body,auth=false,timeout=12000}={}){
-  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeout);
-  const headers={apikey:SB_KEY,'Content-Type':'application/json',Accept:'application/json'};
-  if(auth&&state.token)headers.Authorization=`Bearer ${state.token}`;
-  try{
-    const res=await fetch(SB_URL+path,{method,headers,signal:controller.signal,body:body===undefined?undefined:JSON.stringify(body)});
-    const text=await res.text();let data=null;try{data=text?JSON.parse(text):null}catch{data=text}
-    if(!res.ok){const msg=typeof apiErrorMessage==='function'?apiErrorMessage(data,res.status):(data?.message||'خطا در ارتباط با سامانه.');throw new Error(msg)}
-    return data;
-  }catch(err){if(controller.signal.aborted)throw new Error('ارتباط با سامانه بیش از حد طول کشید. دوباره تلاش کنید.');throw err}
-  finally{clearTimeout(timer)}
-}
-
 function install(){
   injectCss();
   // The login logo is already declared in index.html. Do not rewrite its src here;
   // assigning the same src again forces a second image load/decode and causes a flash.
   const form=buildLogin();if(!form)return;
-  const password=q('#password'),toggle=q('.login-password-toggle'),box=q('#loginVerification'),display=q('#loginVerifyDisplay'),verify=q('#loginVerifyCode'),verifyError=q('#loginVerifyError'),refreshCode=q('#refreshLoginVerify');
+  const password=q('#password'),toggle=q('.login-password-toggle'),box=q('#loginVerification'),display=q('#loginVerifyDisplay'),verify=q('#loginVerifyCode'),verifyError=q('#loginVerifyError'),refreshCode=q('#refreshLoginVerify'),btn=form.querySelector('button[type="submit"]'),error=q('#loginError');
   const digits=[...form.querySelectorAll('.verification-digit')];
   const focusDigit=()=>digits[0].focus({preventScroll:true});
   const syncDigits=()=>{verify.value=digits.map(x=>x.value).join('');verifyError.textContent=''};
@@ -64,21 +51,36 @@ function install(){
   });
   const renew=(clear=true)=>{box.dataset.code=makeCode();display.textContent=box.dataset.code;verify.value='';digits.forEach(x=>x.value='');if(clear)verifyError.textContent=''};renew();
   const normalize=()=>{const v=toLatinDigits(verify.value).replace(/\D/g,'').slice(0,4);if(verify.value!==v)verify.value=v;return v};
+  // auth-ui intentionally owns only the visual preflight.  App.js owns the
+  // actual authentication request and session transition.  The controls load
+  // before the bundle, so never reach into its lexical bindings here.
+  const coreReady=()=>typeof window.bamcoAuth?.accept==='function'&&typeof window.loginEmail==='function'&&typeof window.enterApp==='function';
+  let coreTimer=null,delegatedBusy=false;
+  const setCoreMessage=(message,state)=>{error.textContent=message;error.dataset.bamcoCoreState=state};
+  const clearCoreMessage=()=>{if(error.dataset.bamcoCoreState){error.textContent='';delete error.dataset.bamcoCoreState}};
+  const syncCoreReadiness=(final=false)=>{
+    const ready=coreReady();form.dataset.bamcoCoreReady=ready?'1':'0';btn.disabled=!ready;
+    if(ready){if(coreTimer)clearTimeout(coreTimer);coreTimer=null;clearCoreMessage();return true}
+    if(final)setCoreMessage('هستهٔ ورود آماده نشد. صفحه را تازه‌سازی کنید و دوباره تلاش کنید.','failed');
+    else setCoreMessage('در حال آماده‌سازی سامانه…','loading');
+    return false;
+  };
+  const observer=typeof MutationObserver==='function'?new MutationObserver(()=>{if(!btn.disabled)delegatedBusy=false}):null;
+  observer?.observe(btn,{attributes:true,attributeFilter:['disabled']});
+  syncCoreReadiness();
+  window.addEventListener('load',()=>syncCoreReadiness(true),{once:true});
+  coreTimer=window.setTimeout(()=>syncCoreReadiness(true),15000);
   verify.addEventListener('input',()=>{normalize();verifyError.textContent=''});verify.addEventListener('paste',()=>setTimeout(normalize,0));
   refreshCode.addEventListener('click',()=>{renew();focusDigit()});
   toggle.addEventListener('click',()=>{const showing=password.type==='text';password.type=showing?'password':'text';toggle.innerHTML=showing?EYE_ICON:EYE_OFF_ICON;toggle.title=showing?'نمایش رمز عبور':'مخفی کردن رمز عبور';toggle.setAttribute('aria-label',toggle.title);password.focus()});
-  form.addEventListener('submit',async event=>{
-    event.preventDefault();event.stopImmediatePropagation();
-    if(form.dataset.busy==='1')return;
-    const entered=normalize();if(entered!==box.dataset.code){renew(false);verifyError.textContent='کد تأیید صحیح نیست. کد جدید را وارد کنید.';focusDigit();return}
-    const btn=form.querySelector('button[type="submit"]'),error=q('#loginError');
-    form.dataset.busy='1';btn.disabled=true;btn.textContent='در حال ورود…';error.textContent='';verifyError.textContent='';
-    try{
-      const auth=await requestJson('/auth/v1/token?grant_type=password',{method:'POST',body:{email:loginEmail(q('#email').value),password:q('#password').value},timeout:12000});
-      window.bamcoAuth.accept(auth);
-      await enterApp();
-    }catch(err){window.bamcoAuth?.clear();state.token='';state.user=null;error.textContent=err?.message||'ورود انجام نشد. دوباره تلاش کنید.';renew(false)}
-    finally{form.dataset.busy='0';btn.disabled=false;btn.textContent='ورود به سامانه'}
+  form.addEventListener('submit',event=>{
+    if(delegatedBusy){event.preventDefault();event.stopImmediatePropagation();return}
+    const entered=normalize();if(entered!==box.dataset.code){event.preventDefault();event.stopImmediatePropagation();renew(false);verifyError.textContent='کد تأیید صحیح نیست. کد جدید را وارد کنید.';focusDigit();return}
+    if(!syncCoreReadiness(true)){event.preventDefault();event.stopImmediatePropagation();renew(false);return}
+    // Let the canonical app.js bubble handler perform the one real sign-in.
+    // The capture handler has only validated the CAPTCHA and must not make a
+    // parallel request with a duplicate session/profile path.
+    delegatedBusy=true;verifyError.textContent='';error.textContent='';
   },true);
 }
 

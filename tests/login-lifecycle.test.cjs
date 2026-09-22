@@ -1,6 +1,14 @@
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const {fixture,until,pause}=require('./helpers/app-fixture.cjs');
+
+async function submitLogin(d,{email='manager@example.test',password='Synthetic-test-password'}={}){
+ d.querySelector('#email').value=email;d.querySelector('#password').value=password;
+ const code=d.querySelector('#loginVerification').dataset.code;
+ [...d.querySelectorAll('.verification-digit')].forEach((input,i)=>{input.value=code[i];input.dispatchEvent(new d.defaultView.Event('input',{bubbles:true}))});
+ d.querySelector('#loginForm').requestSubmit();
+}
+
 test('actual login module records one session, gates first entry, changes password, and revokes logout',async t=>{
  const f=await fixture({authUi:true,fetchResult:({endpoint})=>endpoint==='token'?{access_token:'signed-in',refresh_token:'refresh-fixture',expires_in:3600,user:{id:'test-manager'}}:undefined}),{w,d}=f;t.after(()=>f.dispose());
  f.profiles[0].must_change_password=true;w.eval('showLogin()');const start=f.calls.length;
@@ -13,6 +21,37 @@ test('actual login module records one session, gates first entry, changes passwo
  assert.equal(f.calls.slice(start).filter(c=>c.endpoint==='user'&&c.method==='PUT').length,1);assert.equal(f.calls.slice(start).filter(c=>c.endpoint==='profiles'&&c.method==='PATCH').length,1);assert.equal(f.profiles[0].must_change_password,false);
  d.querySelector('.home-welcome-dialog')?.close();d.querySelector('#logoutBtn').click();await until(()=>!d.querySelector('#loginView').classList.contains('hidden'));
  assert.equal(f.calls.slice(start).filter(c=>c.endpoint==='session-audit'&&c.body.action==='end'&&c.body.session_id==='test-current-session').length,1);assert.equal(f.calls.slice(start).filter(c=>c.endpoint==='logout').length,1);assert.equal(w.eval('state.token'),'');assert.deepEqual(f.errors,[]);
+});
+
+test('a valid authenticated profile enters even when session-audit start is unavailable',async t=>{
+ const f=await fixture({authUi:true,fetchResult:({endpoint})=>{
+  if(endpoint==='token')return{access_token:'signed-in',refresh_token:'refresh-fixture',expires_in:3600,user:{id:'test-manager'}};
+  // session-runtime rejects this because there is no committed session id. It
+  // is presence telemetry, not the authority for password authentication.
+  if(endpoint==='session-audit')return{ok:false,error:'ثبت نشست موقتاً در دسترس نیست'};
+ }}),{w,d}=f;t.after(()=>f.dispose());
+ w.eval('showLogin()');
+ await submitLogin(d);
+ await until(()=>!d.querySelector('#appView').classList.contains('hidden'));
+ assert.equal(w.eval('state.token'),'signed-in');
+ assert.equal(d.querySelector('#loginView').classList.contains('hidden'),true);
+ assert.equal(d.querySelector('#loginError').textContent,'');
+});
+
+test('profile validation remains mandatory when session-audit is unavailable',async t=>{
+ const f=await fixture({authUi:true,fetchResult:({endpoint})=>{
+  if(endpoint==='token')return{access_token:'signed-in',refresh_token:'refresh-fixture',expires_in:3600,user:{id:'test-manager'}};
+  if(endpoint==='session-audit')return{ok:false,error:'ثبت نشست موقتاً در دسترس نیست'};
+ }}),{w,d,profiles}=f;t.after(()=>f.dispose());
+ // The authenticated identity has no canonical application profile.  The
+ // session-audit degradation must never turn that into an admitted account.
+ profiles.splice(0,profiles.length);
+ w.eval('showLogin()');
+ await submitLogin(d);
+ await until(()=>d.querySelector('#loginError').textContent.trim().length>0);
+ assert.equal(d.querySelector('#appView').classList.contains('hidden'),true);
+ assert.equal(w.eval('state.token'),'');
+ assert.match(d.querySelector('#loginError').textContent,/پروفایل کاربر پیدا نشد/);
 });
 
 test('home and welcome appear before slow data/stickers and late callbacks cannot replace the chosen page',async t=>{
