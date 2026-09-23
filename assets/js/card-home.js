@@ -153,7 +153,14 @@ function homeBroken(){
  repairObserver.observe(home,{attributes:true,attributeFilter:['class','style','hidden']});
  repairObserver.observe(top,{attributes:true,attributeFilter:['class','style','hidden']});
  new MutationObserver(syncMode).observe(home,{attributes:true,attributeFilter:['class']});
- document.addEventListener('click',e=>{if(e.target.closest('#nav button[data-view]'))leaveHome()},true);
+ document.addEventListener('click',e=>{
+  const button=e.target.closest('#nav button[data-view]');if(!button)return;
+  leaveHome();
+  const route=button.dataset.view;
+  // A home card can be reparented while its click bubbles through the grouped
+  // navigation. Recover the authorized route if the delegated handler missed it.
+  queueMicrotask(()=>{if(button.isConnected&&state.view==='home')window.BamcoNavigation?.navigate?.(route)});
+ },true);
  window.bamcoLeaveHome=leaveHome;
  window.bamcoShowHome=settleHome;
  let welcomed=false;
