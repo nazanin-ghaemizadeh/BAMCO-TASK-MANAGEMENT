@@ -50,6 +50,13 @@ test('authorization has a dedicated denial state and cannot own renderer hidden 
   assert.match(css,/\[data-bamco-access-denied="true"\]\{display:none!important\}/);
 });
 
+test('an RLS-filtered realtime access change refreshes the recipient portal immediately',()=>{
+  const source=fs.readFileSync(path.join(__dirname,'../assets/js/navigation-registry.js'),'utf8');
+  assert.match(source,/document\.addEventListener\('bamco:domain-invalidated'/);
+  assert.match(source,/event\.detail\?\.domain === 'access'/);
+  assert.match(source,/void invalidate\(\)/);
+});
+
 test('people usernames use organizational email and the access editor shows names only', async t => {
   const f = await fixture({ fetchResult: ({ endpoint }) => {
     if (endpoint === 'feature_access_manage_snapshot') return {
