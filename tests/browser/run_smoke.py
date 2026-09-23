@@ -58,9 +58,7 @@ async def visible_count(page,selector):
 
 async def manager_checks(page,result):
     await open_tab(page,'letters')
-    letter_dialog=page.locator('#letterTypeDialog')
-    if await letter_dialog.count() and await letter_dialog.is_visible():
-        await letter_dialog.locator('[data-letter-mode="outgoing"]').click()
+    await page.locator('#lettersView [data-letter-mode="outgoing"]').click()
     await expect(page.locator('#lettersTable tbody tr')).to_have_count(53)
     await expect(page.locator('#lettersView .letters-heading h3')).to_have_count(1)
     await expect(page.locator('#lettersView .letter-toolbar.bamco-command-bar')).to_have_count(1)
