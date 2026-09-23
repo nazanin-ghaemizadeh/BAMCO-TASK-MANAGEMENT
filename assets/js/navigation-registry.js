@@ -402,5 +402,13 @@
   // Realtime invalidation is the primary path. Focus is deliberately only a
   // lightweight recovery path for a suspended tab, never a timed poll.
   window.addEventListener('bamco:feature-access-invalidated', () => { if (state().token) void invalidate(); });
+  // profile-runtime emits canonical realtime changes on `document`.  Access
+  // grants are RLS-filtered to the affected recipient, so this is the point
+  // where that recipient must refresh their effective feature list.  Without
+  // this bridge a saved grant reaches the database but an already-open portal
+  // keeps its old navigation until the next focus or login.
+  document.addEventListener('bamco:domain-invalidated', event => {
+    if (event.detail?.domain === 'access' && state().token) void invalidate();
+  });
   window.addEventListener('focus', () => { if (state().token) void refresh(); });
 })();
