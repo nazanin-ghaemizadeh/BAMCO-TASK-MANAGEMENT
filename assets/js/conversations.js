@@ -4,7 +4,7 @@
  const q=(s,r=document)=>r.querySelector(s),qa=(s,r=document)=>[...r.querySelectorAll(s)];
  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const names={groupChat:'گفت‌وگوی عمومی و گروه‌ها',directMessages:'گفت‌وگوی خصوصی',taskChats:'گفت‌وگوی مرتبط با وظیفه'};
- const label=p=>window.BamcoProfiles?.label?.(p?.id)||p?.display_name||p?.full_name||p?.email||'کاربر';let serial=0,currentView='',selectedTask=null;
+ const label=p=>window.BamcoProfiles?.label?.(p?.id,'')||p?.display_name||p?.full_name||p?.email||'کاربر';let serial=0,currentView='',selectedTask=null;
  const can=(feature,action='view')=>window.BamcoAccess?.can?.(feature,action)===true;
  const denied=(feature,action='view')=>window.BamcoAccess?.denied?.(feature,action);
  // Choose each new color as far as possible from those already used, across

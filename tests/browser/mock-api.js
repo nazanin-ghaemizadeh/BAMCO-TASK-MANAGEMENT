@@ -41,6 +41,7 @@
   else if(endpoint==='task_dataset_version')data=api.taskDatasetVersion||'fixture-v1';
   else if(endpoint==='sent_message_dataset_version')data=api.sentMessageDatasetVersion||'sent-fixture-v1';
   else if(endpoint==='change_requests')data=api.requests;
+  else if(endpoint==='request_workflow_snapshot')data={current_requests:api.requests,history_requests:[],routes:[]};
   else if(endpoint==='email_templates'){
    data=filter(api.templates);if(method==='PATCH')data.forEach(row=>Object.assign(row,body));
   }else if(endpoint==='message_response_tracking')data=api.deliveries.slice();

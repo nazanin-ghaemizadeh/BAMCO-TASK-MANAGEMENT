@@ -25,7 +25,7 @@ test('descending labels survive refresh and history filtering while action IDs s
  await f.open('requestHistory');await until(()=>rows('requestHistoryBody').length===3);
  assert.deepEqual(rows('requestHistoryBody').map(r=>r.cells[0].textContent),['۳','۲','۱']);
  assert.deepEqual(rows('requestHistoryBody').map(r=>r.dataset.requestId),['10','8','6']);
- assert.deepEqual(rows('requestHistoryBody').map(r=>r.querySelector('[data-request]').dataset.request),['10','8','6']);
+ assert(rows('requestHistoryBody').every(r=>!r.querySelector('.request-timeline-btn')));
 });
 test('mixed table typography preserves descendants, text, links and attached handlers',()=>{
  const dom=new JSDOM('<table><tbody><tr><td id="cell">بررسی ECU <a href="#test">ABS-123</a> نسخه ۲</td></tr></tbody></table>',{runScripts:'outside-only'}),w=dom.window;

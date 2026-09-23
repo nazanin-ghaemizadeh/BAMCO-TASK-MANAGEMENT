@@ -41,8 +41,14 @@ async def login(page,role):
 async def open_tab(page,tab):
     print('open',tab,flush=True)
     start=time.monotonic()
+    if tab=='messages':
+        await page.evaluate("""() => { window.__messageTrace=[]; const original=window.bamcoShowHome; window.bamcoShowHome=function(){window.__messageTrace.push('showHome: '+new Error().stack); return original.apply(this,arguments)}; document.addEventListener('bamco:navigation-after',e=>window.__messageTrace.push('navigation: '+e.detail.to)); document.addEventListener('click',e=>{if(e.target.closest('#nav [data-view=messages]'))window.__messageTrace.push('document-capture')},true); document.querySelector('#nav').addEventListener('click',e=>{if(e.target.closest('[data-view=messages]'))window.__messageTrace.push('nav-bubble')}); }""")
     await page.locator('#nav [data-view="'+tab+'"]').click(force=True)
-    await settled(page,tab)
+    try:
+        await settled(page,tab)
+    except Exception as exc:
+        detail=await page.evaluate("id=>({route:window.Bamco?.state?.view,allowed:window.BamcoAccess?.can?.(id,'view'),home:document.querySelector('#homeView')?.className,button:document.querySelector('#nav [data-view='+JSON.stringify(id)+']')?.outerHTML,view:document.querySelector('#'+id+'View')?.className,trace:window.__messageTrace})",tab)
+        raise AssertionError(f'{tab} failed navigation: {detail}') from exc
     await heartbeat(page)
     return round((time.monotonic()-start)*1000)
 
@@ -58,9 +64,7 @@ async def visible_count(page,selector):
 
 async def manager_checks(page,result):
     await open_tab(page,'letters')
-    letter_dialog=page.locator('#letterTypeDialog')
-    if await letter_dialog.count() and await letter_dialog.is_visible():
-        await letter_dialog.locator('[data-letter-mode="outgoing"]').click()
+    await page.locator('#lettersView [data-letter-mode="outgoing"]').click()
     await expect(page.locator('#lettersTable tbody tr')).to_have_count(53)
     await expect(page.locator('#lettersView .letters-heading h3')).to_have_count(1)
     await expect(page.locator('#lettersView .letter-toolbar.bamco-command-bar')).to_have_count(1)
@@ -289,8 +293,9 @@ async def main(offline):
             for width,role in [(1365,'manager'),(390,'manager'),(1365,'owner'),(390,'owner')]:
                 results.append(await case(browser,f'http://127.0.0.1:{server.server_port}/',offline,width,role))
             await browser.close()
-        (OUT/'results.json').write_text(json.dumps(results,ensure_ascii=False,indent=2))
-        assert all(r['status']=='passed' for r in results),'Browser regression failed; see test-results/browser/results.json'
+            (OUT/'results.json').write_text(json.dumps(results,ensure_ascii=False,indent=2))
+            print('BROWSER_FAILURES '+json.dumps([r for r in results if r['status']!='passed'],ensure_ascii=False),flush=True)
+            assert all(r['status']=='passed' for r in results),'Browser regression failed; see test-results/browser/results.json'
     finally:
         server.shutdown()
 

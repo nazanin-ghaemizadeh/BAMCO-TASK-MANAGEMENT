@@ -642,3 +642,5 @@ html body.table-suite dialog.bamco-dialog table.suite-table :where(caption,thead
 .chat-body .bamco-emoji,.chat-body .bamco-emoji-fallback,.chat-body .chat-emoji-glyph,.chat-bubble .bamco-emoji,.chat-bubble .bamco-emoji-fallback{display:inline-block;direction:ltr;unicode-bidi:isolate;vertical-align:-.25em}
 .chat-body .chat-sticker{display:block;direction:ltr;unicode-bidi:isolate;margin-inline:auto}
 .chat-bubble blockquote{unicode-bidi:plaintext}
+
+#reviewDialog .review-manager-note{display:block;width:100%;margin:18px 0 0;text-align:right;color:#225b47;font-weight:700}#reviewDialog .review-manager-note textarea{display:block;width:100%;min-height:110px;box-sizing:border-box;margin-top:8px;resize:vertical;border:1px solid #b9d0c4;border-radius:9px;padding:12px;font:inherit}#reviewDialog .review-details{max-height:55vh;overflow:auto;line-height:1.8}
