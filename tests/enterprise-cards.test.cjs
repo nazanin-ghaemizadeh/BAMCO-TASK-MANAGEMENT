@@ -31,6 +31,6 @@ test('projects: a supervisor can assign only within their organizational branch'
  w.bamcoEnterprise={q:(s,r=w.document)=>r.querySelector(s),esc:String,fa:String,date:v=>v||'—',dateTime:v=>v||'—',progress:()=>'',statusText:String,personName:()=>'',fetchRows:async name=>name==='projects'?[]:[],insert:async()=>[{id:2}],setBusy:()=>{},notify:()=>{}};
  w.eval(fs.readFileSync('assets/js/project-management.js','utf8'));w.document.dispatchEvent(new w.Event('DOMContentLoaded'));await registered.get('projects').activate();
  w.document.querySelector('[data-project-action="new"]').click();
- const owner=[...w.document.querySelector('[name="owner_id"]').options].map(option=>option.value);
- assert.deepEqual(owner,['lead','expert']);assert.match(w.document.querySelector('.panel-head h3').textContent,/زیرمجموعه/);dom.window.close();
+ const responsible=[...w.document.querySelector('[name="responsible_id"]').options].map(option=>option.value);
+ assert.deepEqual(responsible,['lead','expert']);assert.match(w.document.querySelector('.panel-head h3').textContent,/زیرمجموعه/);dom.window.close();
 });
