@@ -42,7 +42,11 @@ async def open_tab(page,tab):
     print('open',tab,flush=True)
     start=time.monotonic()
     await page.locator('#nav [data-view="'+tab+'"]').click(force=True)
-    await settled(page,tab)
+    try:
+        await settled(page,tab)
+    except Exception as exc:
+        detail=await page.evaluate("id=>({route:window.Bamco?.state?.view,allowed:window.BamcoAccess?.can?.(id,'view'),home:document.querySelector('#homeView')?.className,button:document.querySelector('#nav [data-view='+JSON.stringify(id)+']')?.outerHTML,view:document.querySelector('#'+id+'View')?.className})",tab)
+        raise AssertionError(f'{tab} failed navigation: {detail}') from exc
     await heartbeat(page)
     return round((time.monotonic()-start)*1000)
 
