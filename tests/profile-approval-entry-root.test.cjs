@@ -83,3 +83,10 @@ test('a rerendered avatar host restores its confirmed image without a second net
  await h.w.bamcoMedia.bindAvatar(el,profile);const src=el.querySelector('img').src;el.textContent='ب';
  await h.w.bamcoMedia.bindAvatar(el,profile);assert.equal(el.querySelector('img').src,src);assert.equal(h.calls.length,1);
 });
+test('a profile avatar opens the centered viewer without changing its containing action',async t=>{
+ const h=mediaHarness();t.after(h.close);const profile={id:'one',full_name:'کاربر آزمایشی',avatar_path:'one/view.png',updated_at:'2026-09-19T05:00:00Z'},el=h.d.querySelector('#a');
+ h.w.state.profiles=[profile];h.w.HTMLDialogElement.prototype.showModal=function(){this.open=true};
+ await h.w.bamcoMedia.bindAvatar(el,profile);el.dispatchEvent(new h.w.MouseEvent('click',{bubbles:true,cancelable:true}));
+ await new Promise(resolve=>setTimeout(resolve,0));const dialog=h.d.querySelector('#bamcoAvatarViewer');
+ assert.equal(dialog.open,true);assert.match(dialog.textContent,/کاربر آزمایشی/);assert.ok(dialog.querySelector('img'));
+});
