@@ -18,6 +18,7 @@ test('permanent vehicle register reads newest rows first without changing tempor
   const vehicles = read('assets/js/vehicles.js');
   assert.match(vehicles, /scope==='vehiclePermanent'\?'id\.desc':'id\.asc'/);
   assert.match(vehicles, /scope==='vehicleTemporary'\?rows\.reverse\(\):rows/);
+  assert.match(vehicles, /scope==='vehiclePermanent'\?data\[scope\]\.rows\.length-index:index\+1/);
 });
 
 test('every standalone task tab has a distinct feature grant and target grants update in place', () => {

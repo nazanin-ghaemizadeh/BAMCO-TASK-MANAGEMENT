@@ -23,3 +23,14 @@ for(const [route,script,dialog,create,table] of [
  [...root.querySelectorAll('button')].find(b=>b.textContent.includes(create)).click();
  assert(root.querySelector('#'+dialog).open);dom.window.close();
 });
+
+test('projects: a supervisor can assign only within their organizational branch',async()=>{
+ const dom=new JSDOM('<section id="projectsView"><div id="projectFeatureRoot"></div></section>',{url:'https://example.test/',runScripts:'outside-only'});
+ const w=dom.window,registered=new Map();w.HTMLDialogElement.prototype.showModal=function(){this.open=true};
+ w.state={profile:{id:'lead',role:'supervisor'},user:{id:'lead'},organizationScope:{descendantUserIds:['expert']},profiles:[{id:'lead',display_name:'سرپرست'},{id:'expert',display_name:'کارشناس'},{id:'outside',display_name:'نامرتبط'}]};w.BamcoNavigation={registerView:(id,options)=>registered.set(id,options)};
+ w.bamcoEnterprise={q:(s,r=w.document)=>r.querySelector(s),esc:String,fa:String,date:v=>v||'—',dateTime:v=>v||'—',progress:()=>'',statusText:String,personName:()=>'',fetchRows:async name=>name==='projects'?[]:[],insert:async()=>[{id:2}],setBusy:()=>{},notify:()=>{}};
+ w.eval(fs.readFileSync('assets/js/project-management.js','utf8'));w.document.dispatchEvent(new w.Event('DOMContentLoaded'));await registered.get('projects').activate();
+ w.document.querySelector('[data-project-action="new"]').click();
+ const owner=[...w.document.querySelector('[name="owner_id"]').options].map(option=>option.value);
+ assert.deepEqual(owner,['lead','expert']);assert.match(w.document.querySelector('.panel-head h3').textContent,/زیرمجموعه/);dom.window.close();
+});

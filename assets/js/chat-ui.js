@@ -3,8 +3,19 @@
 'use strict';
 const qa=(s,r=document)=>[...r.querySelectorAll(s)],LIMIT=5*1024*1024,FILE='BAMCO_ATTACHMENT_V1:',STICKER='BAMCO_STICKER_V1:',esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const avatar='<span class="chat-avatar" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></svg></span>';
+const mediaIcon='▤',trashIcon='🗑';
 const fileAllowed=file=>!!file&&file.size>0&&file.size<=LIMIT;
-if(typeof module!=='undefined'&&module.exports)module.exports={fileAllowed,LIMIT};
+function captureScroll(box){
+ const oldTop=box.scrollTop,atBottom=box.scrollHeight-box.clientHeight-oldTop<48;
+ const anchor=[...box.querySelectorAll('[data-message-id]')].find(node=>node.offsetTop+node.offsetHeight>oldTop);
+ return {oldTop,atBottom,anchorId:anchor?.dataset.messageId||'',anchorOffset:anchor?anchor.offsetTop-oldTop:0};
+}
+function restoreScroll(box,snapshot,{initial=false,forceBottom=false}={}){
+ if(initial||forceBottom||snapshot.atBottom){box.scrollTop=box.scrollHeight;return}
+ const anchor=snapshot.anchorId&&[...box.querySelectorAll('[data-message-id]')].find(node=>node.dataset.messageId===snapshot.anchorId);
+ box.scrollTop=Math.max(0,anchor?anchor.offsetTop-snapshot.anchorOffset:snapshot.oldTop);
+}
+if(typeof module!=='undefined'&&module.exports)module.exports={fileAllowed,LIMIT,captureScroll,restoreScroll};
 if(typeof document==='undefined')return;
 let active=null;
 let emojiCatalog=null;
@@ -35,30 +46,30 @@ async function mount(host,{id,title,subtitle='',actions=[],personId=null,groupPh
  if(['image/png','image/jpeg','image/webp','image/gif'].includes(meta.mime)){try{const url=await retrieve();if(stateUI.closed)return;const img=document.createElement('img');img.className='chat-photo';img.src=url;img.alt=String(meta.name||'تصویر پیوست');node.prepend(img)}catch(err){error(err.message)}}
  if(meta.caption){const caption=document.createElement('div');caption.textContent=meta.caption;node.append(caption)}
  }
- async function load(manual=false){
+ async function load({forceBottom=false}={}){
   if(stateUI.closed)return;const run=++stateUI.loadRun;try{const [messages,people]=await Promise.all([selectAll('chat_messages',`select=*&thread_id=eq.${encodeURIComponent(id)}&deleted_at=is.null&order=created_at.asc`,200),directory()]);if(stateUI.closed||!host.isConnected||run!==stateUI.loadRun)return;
    window.BamcoProfiles?.upsert?.(people,{source:'chat-directory'});
-   const nearBottom=box.scrollHeight-box.scrollTop-box.clientHeight<90,oldTop=box.scrollTop,signature=JSON.stringify(messages);if(signature===stateUI.signature)return;stateUI.signature=signature;stateUI.messages=messages;
+   const scroll=captureScroll(box),signature=JSON.stringify(messages);if(signature===stateUI.signature)return;stateUI.signature=signature;stateUI.messages=messages;
    const names=Object.fromEntries(people.map(p=>[p.id,window.BamcoProfiles?.label?.(p.id,p.display_name||p.full_name||'کاربر')||p.display_name||p.full_name||'کاربر'])),profiles=Object.fromEntries(people.map(p=>[p.id,p]));box.replaceChildren();let date='';
    for(const m of messages){const day=new Date(m.created_at).toLocaleDateString('fa-IR');if(day!==date){const divider=document.createElement('div');divider.className='chat-date';divider.textContent=day;box.append(divider);date=day}
     const mine=!m.is_system&&m.sender_id===state.user.id,item=document.createElement('article');item.className='chat-bubble'+(mine?' mine':'');item.dataset.messageId=m.id;
     const deleteAllowed=window.BamcoAccess?.can?.('messages','delete')||window.BamcoAccess?.can?.('groupChat','delete')||window.BamcoAccess?.can?.('directMessages','delete')||window.BamcoAccess?.can?.('taskChats','delete');
-    item.innerHTML=`<div class="chat-author"><span class="chat-avatar" data-profile-photo="${esc(m.sender_id)}">${esc((names[m.sender_id]||m.sender_name_snapshot||'ک').slice(0,1))}</span><b class="chat-sender">${esc(m.is_system?'سامانه':names[m.sender_id]||m.sender_name_snapshot||'کاربر')}</b></div><div class="chat-body"></div><div class="chat-bubble-meta"><time>${m.edited_at?'ویرایش‌شده · ' :''}${new Date(m.created_at).toLocaleTimeString('fa-IR',{hour:'2-digit',minute:'2-digit'})}</time><button type="button" class="message-reply">پاسخ</button>${mine&&!m.body?.startsWith(FILE)&&!m.body?.startsWith(STICKER)?'<button type="button" class="message-edit">ویرایش</button>':''}${deleteAllowed?'<button type="button" class="message-delete">حذف</button>':''}</div>`;
+    item.innerHTML=`<div class="chat-author"><span class="chat-avatar" data-profile-photo="${esc(m.sender_id)}">${esc((names[m.sender_id]||m.sender_name_snapshot||'ک').slice(0,1))}</span><b class="chat-sender">${esc(m.is_system?'سامانه':names[m.sender_id]||m.sender_name_snapshot||'کاربر')}</b></div><div class="chat-body"></div><div class="chat-bubble-meta"><time>${m.edited_at?'ویرایش‌شده · ' :''}${new Date(m.created_at).toLocaleTimeString('fa-IR',{hour:'2-digit',minute:'2-digit'})}</time><button type="button" class="message-reply">پاسخ</button>${mine&&!m.body?.startsWith(FILE)&&!m.body?.startsWith(STICKER)?'<button type="button" class="message-edit">ویرایش</button>':''}${deleteAllowed?`<button type="button" class="message-delete bamco-icon-button" title="حذف پیام" aria-label="حذف پیام">${trashIcon}</button>`:''}</div>`;
     const parent=messages.find(x=>String(x.id)===String(m.reply_to||m.reply_to_id));if(parent){const quote=document.createElement('blockquote');quote.textContent=summary(parent.body).slice(0,180);item.querySelector('.chat-body').before(quote)}
     const body=item.querySelector('.chat-body');body.dir=/[A-Za-z]/.test(m.body||'')&&!/[\u0600-\u06ff]/.test(m.body||'')?'ltr':'rtl';if(m.body?.startsWith(FILE))attach(m,body);else if(m.body?.startsWith(STICKER)){const key=m.body.slice(STICKER.length),src=window.BAMCO_DESKTOP_ASSETS?.[key];if(src){const img=document.createElement('img');img.className='chat-sticker';img.src=src;img.alt='استیکر';body.append(img)}else body.textContent='استیکر'}else renderText(body,m.body||'');
-    item.querySelector('.message-reply').onclick=()=>reply(m);const edit=item.querySelector('.message-edit');if(edit)edit.onclick=()=>{stateUI.reply=null;stateUI.editing=m;stateUI.pending=null;q('.chat-pending').classList.add('hidden');q('.chat-reply').classList.remove('hidden');q('.chat-reply span').textContent='ویرایش پیام';input.value=m.body;input.focus()};const del=item.querySelector('.message-delete');if(del)del.onclick=async()=>{if(!await window.bamcoConfirm('این پیام حذف شود؟'))return;try{del.disabled=true;await rpc('chat_delete_message',{p_message_id:Number(m.id)});await load(true)}catch(err){error(err.message);del.disabled=false}};
+    item.querySelector('.message-reply').onclick=()=>reply(m);const edit=item.querySelector('.message-edit');if(edit)edit.onclick=()=>{stateUI.reply=null;stateUI.editing=m;stateUI.pending=null;q('.chat-pending').classList.add('hidden');q('.chat-reply').classList.remove('hidden');q('.chat-reply span').textContent='ویرایش پیام';input.value=m.body;input.focus()};const del=item.querySelector('.message-delete');if(del)del.onclick=async()=>{if(!await window.bamcoConfirm('این پیام حذف شود؟'))return;try{del.disabled=true;await rpc('chat_delete_message',{p_message_id:Number(m.id)});await load()}catch(err){error(err.message);del.disabled=false}};
     if(readOnly){item.querySelector('.message-reply')?.remove();item.querySelector('.message-edit')?.remove();}
     box.append(item);
    }
    bamcoMedia.avatars(host,people);filterMessages();
    if(!messages.length)box.innerHTML='<div class="chat-empty">'+avatar+'<strong>گفتگو از اینجا شروع می‌شود</strong><span>پیام، استیکر، عکس یا فایل تا ۵ مگابایت ارسال کنید.</span></div>';
-   if(!stateUI.loaded||nearBottom||manual)box.scrollTop=box.scrollHeight;else box.scrollTop=oldTop;stateUI.loaded=true;await rpc('chat_mark_read',{p_thread_id:id});if(stateUI.closed||run!==stateUI.loadRun)return;error('');document.dispatchEvent(new CustomEvent('bamco-messages-changed'));
+   restoreScroll(box,scroll,{initial:!stateUI.loaded,forceBottom});stateUI.loaded=true;await rpc('chat_mark_read',{p_thread_id:id});if(stateUI.closed||run!==stateUI.loadRun)return;error('');document.dispatchEvent(new CustomEvent('bamco-messages-changed'));
   }catch(err){if(stateUI.closed||run!==stateUI.loadRun)return;error(err.message||'پیام‌ها بارگذاری نشدند.');if(!stateUI.loaded)box.innerHTML='<div class="chat-empty">دریافت پیام‌ها انجام نشد. دکمه تازه‌سازی را بزنید.</div>'}
  }
  async function send(sticker){if(stateUI.busy||stateUI.closed)return;let text=input.value.trim(),uploaded=null;if(!sticker&&!text&&!stateUI.pending)return;stateUI.busy=true;q('.chat-send').disabled=true;error('');
   try{if(stateUI.editing&&(sticker||stateUI.pending))throw Error('هنگام ویرایش، فقط متن پیام را تغییر دهید.');if(sticker)text=STICKER+sticker;
    else if(stateUI.pending){const file=stateUI.pending;if(!fileAllowed(file))throw Error('فایل باید حداکثر ۵ مگابایت باشد.');const extension=/\.([a-z0-9]{1,10})$/i.exec(file.name),path=id+'/'+state.user.id+'/'+crypto.randomUUID()+(extension?'.'+extension[1].toLowerCase():'');await storage('chat-attachments/'+path.split('/').map(encodeURIComponent).join('/'),{method:'POST',headers:{'Content-Type':file.type||'application/octet-stream','x-upsert':'false'},body:file});uploaded=path;text=FILE+JSON.stringify({path,name:file.name,size:file.size,mime:file.type,caption:text})}
-   if(stateUI.editing){await rpc('chat_edit_message',{p_message_id:Number(stateUI.editing.id),p_body:text})}else await rpc('chat_send_message',{p_thread_id:id,p_body:text,p_reply_to:stateUI.reply?.id||null});input.value='';reply(null);stateUI.pending=null;q('.chat-pending').classList.add('hidden');q('.chat-stickers').classList.add('hidden');await load(true);await window.bamcoConversations?.refresh?.();
+   if(stateUI.editing){await rpc('chat_edit_message',{p_message_id:Number(stateUI.editing.id),p_body:text})}else await rpc('chat_send_message',{p_thread_id:id,p_body:text,p_reply_to:stateUI.reply?.id||null});input.value='';reply(null);stateUI.pending=null;q('.chat-pending').classList.add('hidden');q('.chat-stickers').classList.add('hidden');await load({forceBottom:true});await window.bamcoConversations?.refresh?.();
   }catch(err){error(err.message||'ارسال انجام نشد.');if(uploaded)fetch(SB_URL+'/storage/v1/object/chat-attachments',{method:'DELETE',headers:{apikey:SB_KEY,Authorization:'Bearer '+state.token,'Content-Type':'application/json'},body:JSON.stringify({prefixes:[uploaded]})}).catch(()=>{})}
   finally{stateUI.busy=false;if(host.isConnected)q('.chat-send').disabled=false}
  }
@@ -73,12 +84,12 @@ async function mount(host,{id,title,subtitle='',actions=[],personId=null,groupPh
   }if(!area.childElementCount)area.innerHTML='<p class="conversation-empty">موردی در این بخش ثبت نشده است.</p>'};
   dialog.querySelector('[data-media-close]').onclick=()=>dialog.close();dialog.querySelectorAll('[data-media-tab]').forEach(b=>b.onclick=()=>paint(b.dataset.mediaTab));dialog.showModal();paint('photos');
  }
- actions=[{label:'عکس‌ها، فایل‌ها و لینک‌ها',run:mediaLibrary},...actions];
+ actions=[{label:'عکس‌ها، فایل‌ها و لینک‌ها',icon:mediaIcon,run:mediaLibrary},...actions];
  const controls=document.createElement('div');controls.className='messenger-head-actions';
- for(const action of actions){const button=document.createElement('button');button.type='button';button.className=action.danger?'danger':'ghost';button.textContent=action.label;button.onclick=async()=>{if(button.disabled)return;button.disabled=true;try{await action.run()}catch(err){error(err.message||'عملیات انجام نشد.')}finally{if(button.isConnected)button.disabled=false}};controls.append(button)}
+ for(const action of actions){const button=document.createElement('button');button.type='button';button.className=action.icon?`bamco-icon-button chat-head-icon${action.danger?' danger':''}`:(action.danger?'danger':'ghost');button.textContent=action.icon||action.label;button.title=action.label;button.setAttribute('aria-label',action.label);button.onclick=async()=>{if(button.disabled)return;button.disabled=true;try{await action.run()}catch(err){error(err.message||'عملیات انجام نشد.')}finally{if(button.isConnected)button.disabled=false}};controls.append(button)}
  q('.messenger-head').append(controls);
  q('form').onsubmit=e=>{e.preventDefault();send()};input.onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing&&!matchMedia('(pointer:coarse)').matches){e.preventDefault();send()}};
- q('.chat-reply button').onclick=()=>{if(stateUI.editing)input.value='';reply(null)};q('.chat-pending button').onclick=()=>{stateUI.pending=null;q('.chat-pending').classList.add('hidden')};q('.chat-refresh').onclick=()=>load(true);
+ q('.chat-reply button').onclick=()=>{if(stateUI.editing)input.value='';reply(null)};q('.chat-pending button').onclick=()=>{stateUI.pending=null;q('.chat-pending').classList.add('hidden')};q('.chat-refresh').onclick=()=>load();
  q('.chat-attach').onclick=()=>{if(stateUI.editing)return error('ابتدا ویرایش پیام را ذخیره یا لغو کنید.');q('input[type=file]').click()};q('input[type=file]').onchange=e=>{const file=e.target.files[0];e.target.value='';if(!file)return;if(!fileAllowed(file)){error('فایل خالی یا بزرگ‌تر از ۵ مگابایت پذیرفته نمی‌شود.');return}stateUI.pending=file;q('.chat-pending span').textContent=file.name;q('.chat-pending').classList.remove('hidden');error('')};
  q('.chat-sticker-toggle').onclick=async()=>{
   const panel=q('.chat-stickers');panel.classList.toggle('hidden');if(panel.classList.contains('hidden')||panel.dataset.ready)return;
@@ -97,7 +108,7 @@ async function mount(host,{id,title,subtitle='',actions=[],personId=null,groupPh
    select.onchange=search.oninput=()=>{limit=120;paint()};panel.querySelector('.chat-emoji-close').onclick=()=>panel.classList.add('hidden');panel.dataset.ready='true';paint();
   }catch(err){panel.textContent='دریافت شکلک‌ها انجام نشد؛ دوباره انتخابگر را باز کنید.';error(err.message)}
  };
- stateUI.refresh=()=>{stateUI.signature=null;return load(true)};
+ stateUI.refresh=()=>{stateUI.signature=null;return load()};
  await load();
  // Realtime domain events are the primary transport.  This modest fallback
  // covers browsers/networks where a websocket cannot remain connected.
