@@ -53,6 +53,14 @@
 .part-related-grid>section{border-top:1px solid var(--line);padding-top:8px}
 .part-related-grid h4{margin:0 0 7px}
 
+/* The parts register uses the shared table pager. Keep its table area flexible
+   so the pager and table-settings strip stay at the bottom of this page. */
+#partsView.focus-table-view:not(.hidden){display:flex;flex-direction:column;height:100dvh;min-height:0;overflow:hidden}
+#partsView .enterprise-feature-root{display:flex;flex:1 1 auto;min-height:0;flex-direction:column}
+#partsView .part-handover-panel{display:flex;flex:1 1 auto;min-height:0;flex-direction:column;margin:0}
+#partsView .part-handover-panel>.table-wrap{flex:1 1 auto;min-height:120px;overflow:auto}
+#partsView .part-handover-panel>:is(.table-pagination,.suite-table-options){flex:none;margin:0}
+
 .organization-grid{grid-template-columns:minmax(0,1fr)}
 .organization-chart-panel{min-height:470px}
 .organization-chart{min-height:390px;overflow:auto;padding:0;background:linear-gradient(180deg,#f8fbf9 0%,#fff 100%);border:1px solid #e4ece8;border-radius:12px}

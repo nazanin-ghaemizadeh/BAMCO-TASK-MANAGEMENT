@@ -47,7 +47,7 @@
     ['emailSettings', 'settings', 'تنظیمات پست الکترونیک'],
     ['kanban', 'kanban', 'کانبان وظایف'],
     ['archive', 'archive', 'آرشیو وظایف'],
-    ['taskTimeline', 'kanban', 'زمان‌بندی وظایف'],
+    ['taskTimeline', 'taskTimeline', 'زمان‌بندی وظایف'],
     ['approvals', 'approvals', 'تأیید درخواست‌ها'],
     ['requestHistory', 'requestHistory', 'سوابق درخواست‌ها'],
     ['projects', 'projects', 'مدیریت پروژه‌ها'],

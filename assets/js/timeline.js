@@ -65,12 +65,17 @@
     const statuses=window.bamcoOptions.ordered('status',tasks.map(t=>t.status));status.innerHTML='<option value="">همه وضعیت‌ها</option>'+statuses.map(v=>`<option>${esc(v)}</option>`).join('');status.value=filters.status;
     const priorities=window.bamcoOptions.ordered('priority',tasks.map(t=>t.priority));priority.innerHTML='<option value="">همه اولویت‌ها</option>'+priorities.map(v=>`<option>${esc(v)}</option>`).join('');priority.value=filters.priority;
   }
-  function openView(){
+  function activateView(){
     ensure();const view=q('#taskTimelineView');if(!view)return;
-    qa('.view').forEach(v=>v.classList.add('hidden'));view.classList.remove('hidden');
-    qa('#nav button').forEach(b=>b.classList.toggle('active',b.dataset.view==='taskTimeline'));
     const title=q('#viewTitle'),sub=q('#viewSubtitle'),add=q('#addTaskBtn');if(title)title.textContent='تقویم و گانت';if(sub)sub.textContent='نمای زمان‌بندی وظایف جاری';if(add)add.classList.add('hidden');
     if(!month)month=currentMonth();fillFilters();render();
+  }
+  function openView(){
+    ensure();
+    if(window.BamcoNavigation?.navigate?.('taskTimeline'))return;
+    qa('.view').forEach(v=>v.classList.add('hidden'));q('#taskTimelineView')?.classList.remove('hidden');
+    qa('#nav button').forEach(b=>b.classList.toggle('active',b.dataset.view==='taskTimeline'));
+    const s=appState();if(s)s.view='taskTimeline';activateView();
   }
   function render(){const legend=q('.tt-legend');if(legend){const type=colorMode==='status'?'status':'priority',options=window.bamcoOptions.rows(type).filter(x=>x.active||activeTasks().some(t=>t[type]===x.label));legend.innerHTML=options.map(x=>`<span><i style="--c:${x.color}"></i>${esc(x.label)}</span>`).join('');if(type==='priority'&&activeTasks().some(isWaiting)){const waiting=window.bamcoOptions.rows('status').filter(x=>x.kind==='waiting');legend.innerHTML+=waiting.map(x=>`<span><i style="--c:${x.color}"></i>${esc(x.label)}</span>`).join('')}}if(!month)month=currentMonth();q('#ttMonthLabel').textContent=`${monthNames[month.m-1]} ${faNum(month.y)}`;renderUnscheduled();renderBody()}
   function renderUnscheduled(){const rows=filtered().filter(t=>!t.start_date||(!t.due_date&&!isWaiting(t))),button=q('#ttUnscheduled b'),list=q('#ttUnscheduledList');if(button)button.textContent=faNum(rows.length);if(list)list.innerHTML=rows.map(t=>`<button type="button" data-task="${t.id}"><b>${faNum(taskId(t))}</b><span>${esc(t.title)}</span><small>${isWaiting(t)?'منتظر پاسخ بدون تاریخ شروع':window.bamcoOptions.kind(t)==='registered'?'ثبت‌شده':'بدون تاریخ شروع یا پایان'}</small></button>`).join('')||'<div class="tt-empty">وظیفه بدون زمان‌بندی وجود ندارد.</div>';qa('[data-task]',list||document).forEach(b=>b.onclick=()=>{const t=activeTasks().find(x=>String(x.id)===b.dataset.task);if(t)openKanban(t)})}
@@ -100,6 +105,6 @@
     html+='</div></div>';body.innerHTML=html;qa('.tt-bar',body).forEach(b=>b.onclick=()=>{const t=activeTasks().find(x=>String(x.id)===b.dataset.task);if(t)openKanban(t)});
   }
   window.bamcoTimelineRefresh=()=>{if(q('#taskTimelineView')&&!q('#taskTimelineView').classList.contains('hidden')){fillFilters();render()}};
-  function boot(){ensure();month=currentMonth();document.addEventListener('bamco:profiles-updated',()=>window.bamcoTimelineRefresh())}
+  function boot(){ensure();month=currentMonth();window.BamcoNavigation?.registerView?.('taskTimeline',{activate:activateView});document.addEventListener('bamco:profiles-updated',()=>window.bamcoTimelineRefresh())}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
