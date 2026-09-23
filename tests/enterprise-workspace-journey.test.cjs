@@ -42,7 +42,7 @@ test('enterprise pages keep a stable shared shell and persist the project, part 
   };
 
   await f.open('organization');
-  assert.deepEqual([...d.querySelectorAll('#organizationFeatureRoot .enterprise-toolbar button')].map(button => button.textContent.trim()), ['بازگشت به خانه', '＋ جایگاه جدید']);
+  assert.deepEqual([...d.querySelectorAll('#organizationFeatureRoot .enterprise-toolbar button')].map(button => button.textContent.trim()), ['بازگشت به خانه', '＋ جایگاه جدید', 'مدیریت دسترسی']);
   assert.equal(d.querySelector('[data-org-action="unit"]'), null);
   assert.equal(d.querySelector('[data-org-action="refresh"]'), null);
   d.querySelector('[data-org-action="position"]').click();

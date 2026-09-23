@@ -182,6 +182,7 @@
     '.bamco-management-toolbar'
   ].join(',');
   const LOCAL_MANAGE_CONTROL_SELECTOR = '.vehicle-access-button,#lettersAccess,[data-feature-access-control="local"]';
+  let manageControlQueued = false;
 
   // Keep access management beside the feature's native command row; never float it over the app shell.
   function actionHostFor(route) {
@@ -251,6 +252,14 @@
     }
     if (button.parentElement !== host) host.append(button);
     configureManageControl(button, featureKey, true, { generic: true });
+  }
+  function scheduleManageControl() {
+    if (manageControlQueued) return;
+    manageControlQueued = true;
+    queueMicrotask(() => {
+      manageControlQueued = false;
+      syncManageControl();
+    });
   }
   function applyNavigation() {
     if (!loaded || !document?.querySelectorAll) return;
@@ -365,14 +374,30 @@
     featureTitle: catalog.featureTitle,
     routeFeature: catalog.featureForRoute
   });
-  window.Bamco?.lifecycle?.on?.('navigation-after', syncManageControl);
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', syncManageControl, { once: true });
-  else syncManageControl();
-  // `card-home.js` flips this class after a route changes. Observe only the
-  // layout state so the universal control moves to the visible host without a
-  // duplicate per-feature implementation.
+  window.Bamco?.lifecycle?.on?.('navigation-after', scheduleManageControl);
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', scheduleManageControl, { once: true });
+  else scheduleManageControl();
+  // A number of feature pages redraw their native toolbar after navigation
+  // (notably Parts and Invoices).  Reconcile the control after that redraw so
+  // the authoritative access editor is never silently removed from the page.
   if (document.body && typeof MutationObserver !== 'undefined') {
-    new MutationObserver(() => syncManageControl()).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+    new MutationObserver(() => scheduleManageControl())
+      .observe(document.body, { attributes: true, attributeFilter: ['class'] });
+    new MutationObserver(records => {
+      const route = state().view;
+      const view = route && route !== 'home' ? document.getElementById(`${route}View`) : null;
+      if (!view) return;
+      const relevant = node => node?.nodeType === 1 && (
+        node.id === 'featureAccessControl'
+        || node.matches?.(ACTION_HOST_SELECTOR)
+        || node.querySelector?.('#featureAccessControl')
+        || node.querySelector?.(ACTION_HOST_SELECTOR)
+      );
+      if (records.some(record => view.contains(record.target)
+        && ([...record.addedNodes, ...record.removedNodes].some(relevant)))) {
+        scheduleManageControl();
+      }
+    }).observe(document.body, { childList: true, subtree: true });
   }
   // Realtime invalidation is the primary path. Focus is deliberately only a
   // lightweight recovery path for a suspended tab, never a timed poll.

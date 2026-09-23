@@ -5,6 +5,7 @@ let generation=0;
 const imageCacheName='bamco-auth-images-v2';
 const imageBuckets=new Set(['avatars','stickers','group-avatars']);
 const validPath=path=>path&&!String(path).split('/').includes('..');
+const personById=id=>window.BamcoProfiles?.get?.(id)||(state.profiles||[]).find(p=>String(p?.id)===String(id))||(String(state.profile?.id)===String(id)?state.profile:null);
 const cacheKey=(user,bucket,path)=>new URL('media-cache/'+encodeURIComponent(user)+'/'+encodeURIComponent(bucket)+'/'+encodeURIComponent(path),location.href).href;
 async function diskCache(){if(!window.caches)return null;try{return await caches.open(imageCacheName)}catch{return null}}
 function avatarRevision(path,revision){
@@ -57,6 +58,8 @@ function paintInitial(el,p){
 }
 async function bindAvatar(el,p){
  if(!el||!p||el.dataset.avatarDraft==='true')return false;
+ el.dataset.profilePhoto=String(p.id);el.dataset.avatarPreview='true';
+ if(!el.hasAttribute('tabindex')&&!el.closest('button,a,input,label'))el.tabIndex=0;
  const user=state.user?.id,epoch=generation,path=String(p.avatar_path||''),revision=avatarRevision(path,p.updated_at);
  const signature=JSON.stringify([user,p.id,path,revision,epoch]);
  const previous=bindings.get(el);
@@ -85,7 +88,26 @@ async function avatars(root,people){
  await Promise.all([...root.querySelectorAll('[data-profile-photo]')].map(el=>{const p=byId.get(String(el.dataset.profilePhoto));return p?bindAvatar(el,p):Promise.resolve(false)}));
 }
 async function groups(root,threads){const byId=new Map(threads.map(t=>[t.id,t]));await Promise.all([...root.querySelectorAll('[data-thread-photo]')].map(async el=>{const t=byId.get(el.dataset.threadPhoto);if(!t?.avatar_path)return;try{const src=await get('group-avatars',t.avatar_path);if(!el.isConnected)return;let img=el.querySelector(':scope>img');if(!img){img=document.createElement('img');img.alt='';el.replaceChildren(img)}if(img.src!==src)img.src=src;el.classList.add('has-image')}catch{}}))}
+function ensureAvatarViewer(){
+ let dialog=document.querySelector('#bamcoAvatarViewer');if(dialog)return dialog;
+ const style=document.createElement('style');style.id='bamcoAvatarViewerCss';style.textContent='#bamcoAvatarViewer{width:min(430px,calc(100vw - 28px));margin:auto;border:0;border-radius:20px;padding:0;overflow:hidden;background:#fff;box-shadow:0 22px 70px #102f245c}#bamcoAvatarViewer::backdrop{background:#102f2475;backdrop-filter:blur(4px)}#bamcoAvatarViewer .bamco-avatar-viewer-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 17px;border-bottom:1px solid #dce7e1;color:#174d3c}#bamcoAvatarViewer .bamco-avatar-viewer-head b{font-size:18px}#bamcoAvatarViewer .bamco-avatar-viewer-close{width:38px;height:38px;border:1px solid #cdded5;border-radius:11px;background:#f8fbf9;color:#17644b;font-size:24px;line-height:1;cursor:pointer}#bamcoAvatarViewer .bamco-avatar-viewer-body{display:grid;place-items:center;min-height:300px;padding:22px;background:#f4f8f6}#bamcoAvatarViewer .bamco-avatar-viewer-body img{display:block;width:min(340px,78vw);aspect-ratio:1;object-fit:cover;border-radius:50%;border:5px solid #fff;box-shadow:0 10px 28px #176b4d2b}#bamcoAvatarViewer .bamco-avatar-viewer-initial{display:grid;place-items:center;width:min(340px,78vw);aspect-ratio:1;border-radius:50%;border:5px solid #fff;background:#dfeee6;color:#17644b;font-size:100px;font-weight:700;box-shadow:0 10px 28px #176b4d2b}';document.head.append(style);
+ dialog=document.createElement('dialog');dialog.id='bamcoAvatarViewer';dialog.dir='rtl';dialog.addEventListener('click',event=>{if(event.target===dialog)dialog.close()});document.body.append(dialog);return dialog;
+}
+async function openAvatarViewer(id){
+ const person=personById(id);if(!person)return false;
+ const label=person.display_name||person.full_name||person.email||'کاربر';const dialog=ensureAvatarViewer();
+ dialog.innerHTML=`<div class="bamco-avatar-viewer-head"><b>${String(label).replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]))}</b><button type="button" class="bamco-avatar-viewer-close" aria-label="بستن">×</button></div><div class="bamco-avatar-viewer-body"><span class="bamco-avatar-viewer-initial">${String(label).trim().charAt(0)||'ب'}</span></div>`;
+ dialog.querySelector('.bamco-avatar-viewer-close').onclick=()=>dialog.close();if(!dialog.open)dialog.showModal();
+ if(!person.avatar_path)return true;
+ try{const src=await get('avatars',person.avatar_path,person.updated_at);if(!dialog.open)return false;const image=document.createElement('img');image.src=src;image.alt=`تصویر پروفایل ${label}`;dialog.querySelector('.bamco-avatar-viewer-body')?.replaceChildren(image)}catch{}return true;
+}
+function previewTarget(target){return target?.closest?.('[data-profile-photo],#avatar,#profileAvatarPreview')||null}
+function installAvatarPreview(){
+ document.addEventListener('click',event=>{const el=previewTarget(event.target);if(!el||el.dataset.avatarDraft==='true')return;const id=el.dataset.profilePhoto||el.dataset.avatarPerson;if(!id)return;event.preventDefault();event.stopImmediatePropagation();void openAvatarViewer(id)},true);
+ document.addEventListener('keydown',event=>{if(!['Enter',' '].includes(event.key))return;const el=previewTarget(event.target);if(!el||el.dataset.avatarDraft==='true')return;const id=el.dataset.profilePhoto||el.dataset.avatarPerson;if(!id)return;event.preventDefault();void openAvatarViewer(id)},true);
+}
 function clear(){generation++;if(window.caches)caches.delete(imageCacheName).catch(()=>{});cache.clear();urls.forEach(url=>URL.revokeObjectURL(url));urls.clear()}
 document.addEventListener('click',e=>{if(e.target.closest('#logoutBtn'))clear()});
-window.bamcoMedia={get,avatars,bindAvatar,groups,invalidate,clear};
+installAvatarPreview();
+window.bamcoMedia={get,avatars,bindAvatar,groups,invalidate,clear,openAvatarViewer};
 })();
