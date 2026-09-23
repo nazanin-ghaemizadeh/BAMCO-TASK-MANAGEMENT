@@ -293,8 +293,9 @@ async def main(offline):
             for width,role in [(1365,'manager'),(390,'manager'),(1365,'owner'),(390,'owner')]:
                 results.append(await case(browser,f'http://127.0.0.1:{server.server_port}/',offline,width,role))
             await browser.close()
-        (OUT/'results.json').write_text(json.dumps(results,ensure_ascii=False,indent=2))
-        assert all(r['status']=='passed' for r in results),'Browser regression failed; see test-results/browser/results.json'
+            (OUT/'results.json').write_text(json.dumps(results,ensure_ascii=False,indent=2))
+            print('BROWSER_FAILURES '+json.dumps([r for r in results if r['status']!='passed'],ensure_ascii=False),flush=True)
+            assert all(r['status']=='passed' for r in results),'Browser regression failed; see test-results/browser/results.json'
     finally:
         server.shutdown()
 
