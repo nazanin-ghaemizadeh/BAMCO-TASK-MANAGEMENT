@@ -41,11 +41,13 @@ async def login(page,role):
 async def open_tab(page,tab):
     print('open',tab,flush=True)
     start=time.monotonic()
+    if tab=='messages':
+        await page.evaluate("""() => { window.__messageTrace=[]; const original=window.bamcoShowHome; window.bamcoShowHome=function(){window.__messageTrace.push('showHome: '+new Error().stack); return original.apply(this,arguments)}; document.addEventListener('bamco:navigation-after',e=>window.__messageTrace.push('navigation: '+e.detail.to)); document.addEventListener('click',e=>{if(e.target.closest('#nav [data-view=messages]'))window.__messageTrace.push('document-capture')},true); document.querySelector('#nav').addEventListener('click',e=>{if(e.target.closest('[data-view=messages]'))window.__messageTrace.push('nav-bubble')}); }""")
     await page.locator('#nav [data-view="'+tab+'"]').click(force=True)
     try:
         await settled(page,tab)
     except Exception as exc:
-        detail=await page.evaluate("id=>({route:window.Bamco?.state?.view,allowed:window.BamcoAccess?.can?.(id,'view'),home:document.querySelector('#homeView')?.className,button:document.querySelector('#nav [data-view='+JSON.stringify(id)+']')?.outerHTML,view:document.querySelector('#'+id+'View')?.className})",tab)
+        detail=await page.evaluate("id=>({route:window.Bamco?.state?.view,allowed:window.BamcoAccess?.can?.(id,'view'),home:document.querySelector('#homeView')?.className,button:document.querySelector('#nav [data-view='+JSON.stringify(id)+']')?.outerHTML,view:document.querySelector('#'+id+'View')?.className,trace:window.__messageTrace})",tab)
         raise AssertionError(f'{tab} failed navigation: {detail}') from exc
     await heartbeat(page)
     return round((time.monotonic()-start)*1000)
