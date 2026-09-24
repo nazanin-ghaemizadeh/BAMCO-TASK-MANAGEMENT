@@ -87,7 +87,7 @@
     const roots = (byParent.get('__project__') || []).map(row => branch(row, 1, new Set(), Math.min(Math.max(0, subtreeDepth(row) - 1), 6) * wbsIndentStep)).filter(Boolean);
     rows.forEach(row => { if (!seen.has(String(row.id))) roots.push(branch(row, 1, new Set(), Math.min(Math.max(0, subtreeDepth(row) - 1), 6) * wbsIndentStep)); });
     const forest = roots.length ? `<div class="project-wbs-forest" style="--wbs-root-count:${roots.length}">${roots.join('')}</div>` : '<div class="empty">برای شروع، یک فاز، فعالیت یا نقطه عطف اضافه کنید.</div>';
-    return `<div class="wbs-direct"><div class="project-wbs-canvas"><svg class="project-wbs-connectors" aria-label="اتصالات ساختار شکست"></svg><div class="project-wbs-tree">${rootCard}${forest}</div></div></div>`;
+    return `<div class="wbs-direct"><div class="project-wbs-scroll" tabindex="0" aria-label="ساختار شکست پروژه"><div class="project-wbs-canvas"><svg class="project-wbs-connectors" aria-label="اتصالات ساختار شکست"></svg><div class="project-wbs-tree">${rootCard}${forest}</div></div></div></div>`;
   }
   function ganttMarkup(rows) {
     const dated = rows.filter(row => row.planned_start || row.planned_end); if (!dated.length) return '<div class="empty">برای نمایش گانت، تاریخ برنامه‌ای فعالیت‌ها را ثبت کنید.</div>';

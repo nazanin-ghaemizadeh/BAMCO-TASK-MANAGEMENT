@@ -204,10 +204,11 @@
   const catalogRows = () => {
     const catalog = window.BamcoNavigationCatalog;
     if (!catalog) return [];
+    const visibleRoutes = new Set(catalog.accessMatrixRoutes || []);
     return catalog.groups.map(group => ({
       group,
-      routes: group.routes.filter(route => route !== ROUTE).map(route => catalog.routeFor(route)).filter(Boolean)
-    }));
+      routes: group.routes.filter(route => visibleRoutes.has(route)).map(route => catalog.routeFor(route)).filter(Boolean)
+    })).filter(entry => entry.routes.length);
   };
   const featureKeys = () => [...new Set(catalogRows().flatMap(entry => entry.routes.map(route => route.featureKey)))];
   async function pool(values, limit, worker) {

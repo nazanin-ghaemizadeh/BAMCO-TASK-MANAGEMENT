@@ -161,6 +161,7 @@ test('enterprise pages keep a stable shared shell and persist the project, part 
   assert.match(d.querySelector('#projectFeatureRoot').textContent, /نمای گانت/);
   d.querySelector('[data-project-view="wbs"]').click();
   assert.ok(d.querySelector('.wbs-direct'), 'ساختار شکست سطح اسکرول مستقل دارد');
+  assert.ok(d.querySelector('.wbs-direct > .project-wbs-scroll'), 'ساختار شکست مانند گانت یک سطح اسکرول تمام‌قد دارد');
   assert.match(d.querySelector('.project-wbs-tree').textContent, /تحویل اولیه/);
   assert.ok(d.querySelector('.project-wbs-forest'), 'ساختار شکست از ریشه به شاخه‌های عمودی تقسیم می‌شود');
   assert.equal(d.querySelector('.project-wbs-root-card').dataset.wbsNode, 'project-root');

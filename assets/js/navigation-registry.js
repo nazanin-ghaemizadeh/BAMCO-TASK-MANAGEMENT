@@ -22,6 +22,22 @@
     { key: 'resources', title: 'منابع', icon: '▧', routes: ['documents', 'sitesAccess', 'lettersIncoming', 'lettersOutgoing', 'userGuide'] }
   ]);
 
+  // The access matrix mirrors the grantable cards/tabs shown on the application
+  // home screen. The access editor itself remains admin-only and is deliberately
+  // not a grantable row; legacy/internal routes stay registered for direct-route
+  // compatibility without leaking into the user-facing matrix.
+  const accessMatrixRoutes = Object.freeze([
+    'people', 'organization', 'activeSessions', 'loginActivity',
+    'messages', 'messageCenter', 'sentMessages', 'responseTracking', 'stickers',
+    'dashboard', 'performanceReport', 'responseReport',
+    'systemOptions', 'settings',
+    'kanban', 'archive', 'taskTimeline', 'projects', 'approvals', 'requestHistory',
+    'pettyCash', 'invoices',
+    'vehiclePermanent', 'vehicleTemporary', 'parts', 'tools',
+    'groupChat', 'directMessages', 'taskChats',
+    'documents', 'sitesAccess', 'lettersIncoming', 'lettersOutgoing', 'userGuide'
+  ]);
+
   // A few legacy route names deliberately share a feature. Every visible
   // application view still has an explicit record, so direct navigation cannot
   // bypass the access service by using an alias.
@@ -30,35 +46,35 @@
     ['accessMatrix', 'people', 'دسترسی‌ها'],
     ['organization', 'organization', 'ساختار سازمانی'],
     ['activeSessions', 'activeSessions', 'نشست‌های فعال'],
-    ['loginActivity', 'loginActivity', 'فعالیت ورود'],
+    ['loginActivity', 'loginActivity', 'ورود و خروج'],
     ['messages', 'messages', 'پیام‌ها'],
-    ['messageCenter', 'messageCenter', 'مرکز پیام'],
+    ['messageCenter', 'messageCenter', 'ارسال پیام'],
     ['sentMessages', 'sentMessages', 'پیام‌های ارسال‌شده'],
     ['responseTracking', 'responseTracking', 'پیگیری پاسخ'],
     ['templates', 'templates', 'قالب‌ها'],
-    ['stickers', 'stickers', 'استیکرها'],
+    ['stickers', 'stickers', 'مدیریت استیکرها'],
     ['dashboard', 'dashboard', 'داشبورد'],
     ['performanceReport', 'performanceReport', 'گزارش عملکرد'],
-    ['responseReport', 'responseReport', 'گزارش پاسخ'],
+    ['responseReport', 'responseReport', 'گزارش پاسخ‌ها'],
     ['pettyCash', 'pettyCash', 'گزارش تنخواه'],
     ['invoices', 'invoices', 'صورتحساب‌ها و تعهدات مالی'],
-    ['systemOptions', 'systemOptions', 'گزینه‌های سامانه'],
-    ['settings', 'settings', 'تنظیمات حساب'],
+    ['systemOptions', 'systemOptions', 'وضعیت‌ها و اولویت‌ها'],
+    ['settings', 'settings', 'تنظیمات کاربری'],
     ['alertSettings', 'settings', 'تنظیمات هشدار'],
     ['emailSettings', 'settings', 'تنظیمات پست الکترونیک'],
-    ['kanban', 'kanban', 'کانبان وظایف'],
-    ['archive', 'archive', 'آرشیو وظایف'],
-    ['taskTimeline', 'taskTimeline', 'زمان‌بندی وظایف'],
+    ['kanban', 'kanban', 'کانبان'],
+    ['archive', 'archive', 'آرشیو'],
+    ['taskTimeline', 'taskTimeline', 'تقویم و گانت'],
     ['approvals', 'approvals', 'تأیید درخواست‌ها'],
     ['requestHistory', 'requestHistory', 'سوابق درخواست‌ها'],
-    ['projects', 'projects', 'مدیریت پروژه‌ها'],
+    ['projects', 'projects', 'پروژه‌ها'],
     ['vehiclePermanent', 'vehiclePermanent', 'تحویل دائم خودرو'],
     ['vehicleTemporary', 'vehicleTemporary', 'تحویل موقت خودرو'],
     ['parts', 'parts', 'مدیریت قطعات'],
     ['tools', 'tools', 'مدیریت ابزار'],
-    ['groupChat', 'groupChat', 'گفت‌وگوی گروهی'],
-    ['directMessages', 'directMessages', 'پیام خصوصی'],
-    ['taskChats', 'taskChats', 'گفت‌وگوی وظیفه'],
+    ['groupChat', 'groupChat', 'گفت‌وگوی عمومی و گروه‌ها'],
+    ['directMessages', 'directMessages', 'گفت‌وگوی خصوصی'],
+    ['taskChats', 'taskChats', 'گفت‌وگوی مرتبط با وظیفه'],
     ['documents', 'documents', 'فرم‌ها و مستندات'],
     ['sitesAccess', 'sitesAccess', 'سایت‌ها و دسترسی‌ها'],
     ['lettersIncoming', 'letters', 'نامه‌های ورودی'],
@@ -80,7 +96,7 @@
   const noHomeReturnRoutes = new Set(['projects', 'invoices']);
 
   const catalog = Object.freeze({
-    groups, byKey, routeGroup, byRoute, featureRoutes, standaloneLayoutRoutes, noHomeReturnRoutes,
+    groups, byKey, routeGroup, byRoute, featureRoutes, accessMatrixRoutes, standaloneLayoutRoutes, noHomeReturnRoutes,
     routeFor: route => byRoute[String(route || '')] || null,
     featureForRoute: route => byRoute[String(route || '')]?.featureKey || null,
     routesForFeature: featureKey => [...(featureRoutes[String(featureKey || '')] || [])],

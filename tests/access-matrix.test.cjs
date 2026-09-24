@@ -26,8 +26,24 @@ test('people access matrix mirrors aliases and saves through the canonical acces
   try {
     await f.open('accessMatrix');
     await until(() => f.d.querySelector('.access-matrix-table'));
-    assert.match(f.d.querySelector('.access-matrix-table').textContent, /مدیریت افراد/);
-    assert.match(f.d.querySelector('.access-matrix-table').textContent, /مدیریت پروژه‌ها/);
+    const expectedTabs = [
+      'افراد و نقش‌ها', 'ساختار سازمانی', 'نشست‌های فعال', 'ورود و خروج',
+      'پیام‌ها', 'ارسال پیام', 'پیام‌های ارسال‌شده', 'پیگیری پاسخ', 'مدیریت استیکرها',
+      'داشبورد', 'گزارش عملکرد', 'گزارش پاسخ‌ها',
+      'وضعیت‌ها و اولویت‌ها', 'تنظیمات کاربری',
+      'کانبان', 'آرشیو', 'تقویم و گانت', 'پروژه‌ها', 'تأیید درخواست‌ها', 'سوابق درخواست‌ها',
+      'گزارش تنخواه', 'صورتحساب‌ها و تعهدات مالی',
+      'تحویل دائم خودرو', 'تحویل موقت خودرو', 'مدیریت قطعات', 'مدیریت ابزار',
+      'گفت‌وگوی عمومی و گروه‌ها', 'گفت‌وگوی خصوصی', 'گفت‌وگوی مرتبط با وظیفه',
+      'فرم‌ها و مستندات', 'سایت‌ها و دسترسی‌ها', 'نامه‌های ورودی', 'نامه‌های خروجی', 'راهنمای استفاده سامانه'
+    ];
+    const actualTabs = [...f.d.querySelectorAll('.access-matrix-route > th > span')].map(cell => cell.textContent.trim());
+    assert.equal(actualTabs.length, 34, 'ماتریس همهٔ تب‌های قابل‌واگذاری را دارد و دسترسی مدیر سامانه را فهرست نمی‌کند');
+    assert.deepEqual(actualTabs, expectedTabs, 'عنوان و ترتیب تب‌های قابل‌واگذاری دقیقاً با صفحهٔ اصلی یکسان است');
+    assert.equal(actualTabs.includes('دسترسی‌ها'), false, 'تب دسترسی مدیر سامانه داخل ماتریس قابل‌واگذاری نیست');
+    assert.equal(f.d.querySelector('.access-matrix-table').textContent.includes('قالب‌ها'), false);
+    assert.equal(f.d.querySelector('.access-matrix-table').textContent.includes('تنظیمات هشدار'), false);
+    assert.equal(f.d.querySelector('.access-matrix-table').textContent.includes('تنظیمات پست الکترونیک'), false);
     assert.equal(f.d.querySelector('#accessMatrixFeatureRoot > .feature-toolbar h3').textContent.trim(), 'دسترسی‌ها');
     assert.equal(f.d.querySelector('#accessMatrixFeatureRoot .feature-toolbar small'), null, 'توضیح اضافی سربرگ نمایش داده نمی‌شود');
     assert.equal(f.d.querySelector('[data-access-matrix-search]').classList.contains('search'), true, 'جست‌وجو از استایل استاندارد سامانه استفاده می‌کند');

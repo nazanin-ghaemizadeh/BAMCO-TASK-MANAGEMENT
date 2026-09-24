@@ -31,7 +31,9 @@ test('selected project and access matrix share the approved toolbar and scroll c
   assert.doesNotMatch(access, /مدیریت یکپارچهٔ دسترسی افراد به کارت‌ها و تب‌های سامانه/);
   assert.match(access, /id="accessMatrixFeatureRoot"/);
   assert.match(access, /type="search" class="search" data-access-matrix-search/);
-  assert.match(css, /#projectFeatureRoot \.wbs-direct\{[^}]*height:100%[^}]*overflow:auto/);
+  assert.match(projects, /class="project-wbs-scroll" tabindex="0"/);
+  assert.match(css, /#projectFeatureRoot \.wbs-direct\{[^}]*height:100%[^}]*overflow:hidden/);
+  assert.match(css, /#projectFeatureRoot \.project-wbs-scroll\{[^}]*height:100%[^}]*overflow:auto/);
 });
 
 test('manual approval-chain write UI is retired and organization workflow is the active source', () => {
