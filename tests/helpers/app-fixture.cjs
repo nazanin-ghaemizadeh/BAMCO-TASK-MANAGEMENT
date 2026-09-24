@@ -73,6 +73,7 @@ async function fixture(options={}){
     if(method==='GET')data=filter(tables[endpoint]);
     else if(method==='POST'){data=(Array.isArray(body)?body:[body]).map((row,i)=>({id:1000+tables[endpoint].length+i,...row}));tables[endpoint].push(...data)}
     else if(method==='PATCH'){data=filter(tables[endpoint]);data.forEach(row=>Object.assign(row,body))}
+    else if(method==='DELETE'){data=filter(tables[endpoint]);if(endpoint==='invoices')for(const row of data){const paymentRows=tables.invoice_payments||[];for(let i=paymentRows.length-1;i>=0;i--)if(String(paymentRows[i].invoice_id)===String(row.id))paymentRows.splice(i,1)}for(const row of data){const index=tables[endpoint].indexOf(row);if(index>=0)tables[endpoint].splice(index,1)}}
    }
    if(endpoint==='save_approval_chain'){
     const id=1000+(tables.approval_chains||[]).length,old=(tables.approval_chains||[]).find(c=>c.id===body.p_chain_id);if(old){old.active=false;old.superseded_by=id}

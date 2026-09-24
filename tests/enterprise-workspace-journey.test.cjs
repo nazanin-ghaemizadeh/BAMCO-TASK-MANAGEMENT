@@ -154,5 +154,30 @@ test('enterprise pages keep a stable shared shell and persist the project, part 
   }
   assert.equal(tables.invoice_payments.reduce((sum, item) => sum + item.amount, 0), 500000000);
   assert.match(d.querySelector('#invoiceFeatureRoot').textContent, /۱۰۰٪/);
+  d.querySelector('[data-invoice-payment-edit="1002"]').click();
+  const editPaymentForm = d.querySelector('#invoicePaymentForm');
+  assert.equal(editPaymentForm.elements.payment_id.value, '1002');
+  field(editPaymentForm, 'amount', '150000000');
+  submit(w, editPaymentForm);
+  await until(() => tables.invoice_payments.find(item => item.id === 1002)?.amount === 150000000);
+  assert.match(d.querySelector('#invoiceFeatureRoot').textContent, /۹۰٪/);
+  assert.match(d.querySelector('#invoiceFeatureRoot').textContent, /۵۰,۰۰۰,۰۰۰ ریال/);
+
+  d.querySelector('[data-invoice-action="edit"]').click();
+  const editInvoiceForm = d.querySelector('#invoiceForm');
+  assert.equal(editInvoiceForm.elements.invoice_id.value, '1000');
+  field(editInvoiceForm, 'total_amount', '600000000');
+  submit(w, editInvoiceForm);
+  await until(() => tables.invoices[0]?.total_amount === 600000000);
+  assert.match(d.querySelector('#invoiceFeatureRoot').textContent, /۷۵٪/);
+
+  await f.open('invoices');
+  assert.equal(d.querySelector('.invoice-grid').classList.contains('detail-open'), false, 'هر ورود به صورت‌حساب با کارت‌ها آغاز می‌شود');
+  d.querySelector('[data-invoice-select="1000"]').click();
+  d.querySelector('[data-invoice-action="delete"]').click();
+  await until(() => d.querySelector('#bamcoNoticeDialog')?.open);
+  d.querySelector('[data-notice-ok]').click();
+  await until(() => tables.invoices.length === 0 && tables.invoice_payments.length === 0);
+  assert.equal(d.querySelectorAll('[data-invoice-select]').length, 0);
   assert.deepEqual(f.errors, []);
 });

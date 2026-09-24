@@ -40,6 +40,21 @@
 .project-item-row{padding-right:calc(8px + var(--item-depth) * 20px)}
 .project-item-row>div{display:grid}
 .project-item-row small,.payment-row span,.related-row span,.related-row small{color:var(--muted);font-size:12px}
+.invoice-list-card>span:last-child{gap:5px}
+.invoice-list-card>span:last-child b{font-size:15px;color:var(--green-900)}
+.payment-row{grid-template-columns:minmax(125px,.95fr) minmax(150px,1.15fr) minmax(190px,1.4fr) auto;gap:14px;padding:16px 14px;margin-top:8px;border:1px solid #dce9e2;border-radius:12px;background:#fff;box-shadow:0 3px 10px #0b3f3208}
+.payment-row>div{display:grid;gap:5px;min-width:0}
+.payment-row b{font-size:17px;color:var(--green-900)}
+.payment-row small,.payment-row span{font-size:14px;line-height:1.55}
+.payment-stage-title small{color:var(--green-800);font-weight:600}
+.payment-stage-value b{font-size:18px}
+.payment-stage-dates{color:var(--muted)}
+.payment-row button{white-space:nowrap}
+.invoice-payment-form{padding:16px;margin-top:14px;gap:12px}
+.invoice-payment-form label{min-width:160px;gap:5px;font-size:14px}
+.invoice-payment-form input,.invoice-payment-form select,.invoice-payment-form textarea{font-size:15px}
+.invoice-payment-form textarea{min-height:58px;border:1px solid var(--line);border-radius:8px;background:#fff;padding:7px 8px;resize:vertical}
+.invoice-payment-form .payment-notes{min-width:min(100%,300px);flex:1 1 260px}
 .enterprise-inline-form{display:flex;flex-wrap:wrap;gap:9px;align-items:end;padding:12px;margin-top:10px;border:1px dashed var(--line-dark);border-radius:10px;background:var(--green-50)}
 .enterprise-inline-form label{display:grid;gap:3px;min-width:130px}
 .enterprise-inline-form input,.enterprise-inline-form select{height:36px;border:1px solid var(--line);border-radius:8px;background:#fff;padding:5px 8px}
@@ -98,7 +113,7 @@
 .workbench-tabs button.active{color:var(--green-900);border-bottom-color:var(--green-600);font-weight:700}
 
 @media(max-width:900px){.enterprise-grid,.organization-grid{grid-template-columns:1fr}.project-kpis,.invoice-total{grid-template-columns:repeat(2,minmax(0,1fr))}.part-related-grid{grid-template-columns:1fr}.part-spec-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:600px){.enterprise-feature-root>.enterprise-toolbar>.feature-toolbar-actions{display:grid;grid-template-columns:1fr 1fr;width:100%}.enterprise-feature-root>.enterprise-toolbar input[type=search]{grid-column:1/-1;min-width:0}.enterprise-grid{padding:12px}.enterprise-list-card{align-items:flex-start;flex-direction:column}.project-detail-head{display:grid}.project-item-row,.payment-row,.related-row{grid-template-columns:1fr 1fr}.project-item-row>div,.payment-row b{grid-column:1/-1}.part-spec-grid{grid-template-columns:1fr}.enterprise-modal .form-grid{grid-template-columns:1fr}.enterprise-modal .form-grid .span-2{grid-column:auto}.gantt-row{grid-template-columns:90px minmax(160px,1fr)}.workbench-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.organization-chart-canvas{min-width:700px}}
+@media(max-width:600px){.enterprise-feature-root>.enterprise-toolbar>.feature-toolbar-actions{display:grid;grid-template-columns:1fr 1fr;width:100%}.enterprise-feature-root>.enterprise-toolbar input[type=search]{grid-column:1/-1;min-width:0}.enterprise-grid{padding:12px}.enterprise-list-card{align-items:flex-start;flex-direction:column}.project-detail-head{display:grid}.project-item-row,.payment-row,.related-row{grid-template-columns:1fr 1fr}.project-item-row>div,.payment-row b{grid-column:1/-1}.payment-row{gap:10px;padding:14px 12px}.payment-row>div{grid-column:1/-1}.payment-row button{justify-self:start}.part-spec-grid{grid-template-columns:1fr}.enterprise-modal .form-grid{grid-template-columns:1fr}.enterprise-modal .form-grid .span-2{grid-column:auto}.gantt-row{grid-template-columns:90px minmax(160px,1fr)}.workbench-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.organization-chart-canvas{min-width:700px}}
 
 /* Project and invoice index: one card per record, with its own detail page. */
 .enterprise-grid.project-grid,.enterprise-grid.invoice-grid{display:block;padding:16px}.enterprise-grid:is(.project-grid,.invoice-grid)>section:first-child{border:0;box-shadow:none;background:transparent}.enterprise-grid:is(.project-grid,.invoice-grid):not(.detail-open)>section:last-child{display:none}.enterprise-grid:is(.project-grid,.invoice-grid).detail-open>section:first-child{display:none}.enterprise-grid:is(.project-grid,.invoice-grid) .enterprise-card-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr));gap:14px;padding:14px 0}.enterprise-grid:is(.project-grid,.invoice-grid) .enterprise-list-card{min-height:145px;display:flex;flex-direction:column;align-items:stretch;justify-content:space-between;text-align:right}.enterprise-grid:is(.project-grid,.invoice-grid) .enterprise-list-card>span:last-child{text-align:right}.enterprise-grid:is(.project-grid,.invoice-grid) .enterprise-list-card strong{white-space:normal}.enterprise-detail-back{margin-bottom:16px}
