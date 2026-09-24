@@ -13,11 +13,16 @@ test('profile refresh updates both header and settings avatars through one canon
  assert.match(final,/BamcoData\?\.select\?\.\('profiles'/);
 });
 
-test('performance report derives the two definition-request columns from the requester and target owner',()=>{
+test('performance report derives the two task-definition columns from canonical web tasks and task ownership',()=>{
  const report=fs.readFileSync('assets/js/reports.js','utf8');
- assert.match(report,/definitionRequests=requests\.filter\(r=>String\(r\.requested_by\)===String\(id\)&&r\.request_type==='create'&&within\(r\.created_at,from,to\)\)/);
- assert.match(report,/forSelf=definitionRequests\.filter\(r=>String\(r\.proposed_data\?\.owner_id\|\|r\.requested_by\)===String\(id\)\)\.length/);
- assert.match(report,/forOthers=definitionRequests\.length-forSelf/);
- assert.match(report,/\.\.\.tasks\.map\(t=>t\.created_by\)/);
+ assert.match(report,/definitionTasks=tasks\.filter\(t=>String\(t\?\.source\|\|''\)\.toLowerCase\(\)==='web'/);
+ assert.match(report,/forSelf=definitions\.filter\(t=>String\(t\.owner_id\)===String\(id\)\)\.length/);
+ assert.match(report,/forOthers=definitions\.filter\(t=>t\.owner_id&&String\(t\.owner_id\)!==String\(id\)\)\.length/);
+ assert.match(report,/2026-09-06T00:00:00Z/);
+ assert.match(report,/\.\.\.scopedTasks\.map\(t=>t\.created_by\)/);
+ assert.match(report,/تعریف وظیفه در بازه انتخاب‌شده \(برای دیگران\)/);
+ assert.match(report,/تعریف وظیفه در بازه انتخاب‌شده \(برای خود\)/);
+ assert.match(report,/renderPerformance\(false,true\)/);
+ assert.doesNotMatch(report,/definitionLabel='از ۱۵ شهریور'/);
  assert.doesNotMatch(report,/manager\?metrics\?\.definitionCount/);
 });
