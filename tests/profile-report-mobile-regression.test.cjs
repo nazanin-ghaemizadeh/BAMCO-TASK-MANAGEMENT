@@ -13,9 +13,11 @@ test('profile refresh updates both header and settings avatars through one canon
  assert.match(final,/BamcoData\?\.select\?\.\('profiles'/);
 });
 
-test('manager activity uses created tasks after the saved monitoring baseline',()=>{
+test('performance report derives the two definition-request columns from the requester and target owner',()=>{
  const report=fs.readFileSync('assets/js/reports.js','utf8');
- assert.match(report,/tasks\.filter\(t=>String\(t\.created_by\)===String\(id\)&&within\(t\.created_at,from,to\)&&afterMonitoringStart\(t\.created_at\)\)\.length/);
+ assert.match(report,/definitionRequests=requests\.filter\(r=>String\(r\.requested_by\)===String\(id\)&&r\.request_type==='create'&&within\(r\.created_at,from,to\)\)/);
+ assert.match(report,/forSelf=definitionRequests\.filter\(r=>String\(r\.proposed_data\?\.owner_id\|\|r\.requested_by\)===String\(id\)\)\.length/);
+ assert.match(report,/forOthers=definitionRequests\.length-forSelf/);
  assert.match(report,/\.\.\.tasks\.map\(t=>t\.created_by\)/);
- assert.doesNotMatch(report,/manager\?all\.filter\(t=>String\(t\.created_by\)/);
+ assert.doesNotMatch(report,/manager\?metrics\?\.definitionCount/);
 });
