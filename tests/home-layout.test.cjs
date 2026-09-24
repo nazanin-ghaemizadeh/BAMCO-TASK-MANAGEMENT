@@ -9,10 +9,10 @@ const reconciliation=source.slice(source.indexOf(' const catalog=window.BamcoNav
 const catalogGroups=[
  ['people',['people','organization','activeSessions','loginActivity']],
  ['messages',['messages','messageCenter','sentMessages','responseTracking','templates','stickers']],
- ['reports',['dashboard','performanceReport','responseReport','pettyCash','invoices']],
+ ['reports',['dashboard','performanceReport','responseReport']],
  ['configuration',['systemOptions','settings','alertSettings','emailSettings']],
- ['tasks',['kanban','archive','taskTimeline','approvals','requestHistory']],
- ['delivery',['projects']],
+ ['tasks',['kanban','archive','taskTimeline','projects','approvals','requestHistory']],
+ ['delivery',['pettyCash','invoices']],
  ['vehicle',['vehiclePermanent','vehicleTemporary','parts','tools']],
  ['conversations',['groupChat','directMessages','taskChats']],
  ['resources',['documents','sitesAccess','lettersIncoming','lettersOutgoing','userGuide']]
@@ -56,7 +56,9 @@ test('home cards keep people structure and enterprise modules in their approved 
  f.sync();assert.deepEqual(f.nav.children.map(x=>x.dataset.group),['people','messages','reports','configuration','tasks','delivery','vehicle','conversations','resources']);
  for(const [key,ids] of f.order)assert.deepEqual(f.boxes[key].children.map(x=>x.dataset.view),Array.from(ids));
  assert.deepEqual(f.boxes.people.children.map(x=>x.dataset.view),['people','organization','activeSessions','loginActivity']);
- assert.deepEqual(f.boxes.reports.children.map(x=>x.dataset.view),['dashboard','performanceReport','responseReport','pettyCash','invoices']);
+ assert.deepEqual(f.boxes.reports.children.map(x=>x.dataset.view),['dashboard','performanceReport','responseReport']);
+ assert.deepEqual(f.boxes.tasks.children.map(x=>x.dataset.view),['kanban','archive','taskTimeline','projects','approvals','requestHistory']);
+ assert.deepEqual(f.boxes.delivery.children.map(x=>x.dataset.view),['pettyCash','invoices']);
  assert.deepEqual(f.boxes.configuration.children.map(x=>x.dataset.view),['systemOptions','settings','alertSettings','emailSettings']);
 });
 
@@ -94,7 +96,8 @@ test('home styles have one owner, loaded last; phase modules load once',()=>{
  const home=read('assets/css/home-stable.css');assert.match(home,/grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);assert.match(home,/grid-auto-rows:var\(--home-row-height/);
  assert.match(home,/card-navigation\.card-home-active #appView #homeView #nav \.nav-group-items>\[data-view\]\.hidden\{display:none!important\}/);
  assert.match(home,/\[data-view="responseReport"\]\{grid-column:1!important;grid-row:2!important\}/);
- assert.match(home,/\[data-view="pettyCash"\]\{grid-column:2!important;grid-row:2!important\}/);
+ assert.match(home,/\[data-view="projects"\]\{grid-column:2!important;grid-row:2!important\}/);
+ assert.match(home,/data-group="delivery"[^\n]+\[data-view="pettyCash"\]\{grid-column:1!important;grid-row:1!important\}/);
  assert.match(home,/\[data-view="systemOptions"\]\{grid-column:1!important;grid-row:1!important\}/);
  assert.match(home,/\[data-view="settings"\]\{grid-column:2!important;grid-row:1!important\}/);
  assert.match(home,/card-home-active:not\(\.home-layout-ready\)[^\n]+#homeView #nav\{visibility:hidden!important\}/);

@@ -28,6 +28,11 @@ test('sticker manager is empty-safe and previews both sides together',()=>{
   const js=read('assets/js/stickers.js');
   assert.doesNotMatch(js,/desktopStickerGender/);
   assert.match(js,/sticker-pair/);
+  assert.match(js,/Promise\.all\(\[select\('sticker_sets'[\s\S]*select\('stickers'/);
+  assert.match(js,/sticker-prefetch/);
+  const css=read('assets/css/stability.css');
+  assert.match(css,/\.sticker-pair\{[^}]*grid-auto-rows:minmax\(620px,1fr\)[^}]*min-height:620px/);
+  assert.match(css,/\.sticker-pair img\{[^}]*height:620px/);
   assert.match(js,/نسخه‌ای ثبت نشده است/);
   assert.match(js,/state1:'وضعیت مطلوب'/);
   assert.doesNotMatch(js,/وضعیت یک/);

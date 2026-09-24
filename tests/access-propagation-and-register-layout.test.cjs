@@ -11,6 +11,7 @@ test('parts register keeps the common table footer at the bottom of its workspac
   const pager = read('assets/js/table-pages.js');
   assert.match(css, /#partsView\.focus-table-view:not\(\.hidden\)/);
   assert.match(css, /part-handover-panel>:is\(\.table-pagination,\.suite-table-options\)/);
+  assert.match(css, /#partsView \.table-pagination select\{[^}]*border-radius:10px!important[^}]*background:#fff!important/);
   assert.match(pager, /pager\.className='table-pagination'/);
 });
 

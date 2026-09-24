@@ -9,7 +9,7 @@ const read = file => fs.readFileSync(path.join(root, file), 'utf8');
 test('enterprise modules use the canonical navigation and shared UI bundle', () => {
   const html = read('index.html');
   const manifest = read('scripts/build-static-bundles.mjs');
-  for (const [view, label] of [['projects', 'مدیریت پروژه‌ها'], ['parts', 'مدیریت قطعات'], ['invoices', 'صورتحساب‌ها و تعهدات مالی'], ['organization', 'ساختار سازمانی']]) {
+  for (const [view, label] of [['projects', 'پروژه‌ها'], ['parts', 'مدیریت قطعات'], ['invoices', 'صورتحساب‌ها و تعهدات مالی'], ['organization', 'ساختار سازمانی']]) {
     assert.match(html, new RegExp(`data-view="${view}"`));
     assert.match(html, new RegExp(label));
     assert.match(manifest, new RegExp(`assets/js/${view === 'projects' ? 'project-management' : view === 'parts' ? 'part-catalog' : view === 'invoices' ? 'financial-obligations' : 'organization-structure'}\\.js`));
@@ -45,7 +45,9 @@ test('enterprise navigation places new modules in the approved groups', () => {
   const documents = read('assets/js/documents-sites.js');
   assert.match(catalog, /key: 'people'[\s\S]*routes: \['people', 'organization', 'activeSessions', 'loginActivity'\]/);
   assert.match(catalog, /key: 'vehicle'[\s\S]*'parts', 'tools'/);
-  assert.match(catalog, /key: 'reports'[\s\S]*'invoices'/);
+  assert.match(catalog, /key: 'reports'[\s\S]*routes: \['dashboard', 'performanceReport', 'responseReport'\]/);
+  assert.match(catalog, /key: 'tasks'[\s\S]*'taskTimeline', 'projects', 'approvals'/);
+  assert.match(catalog, /key: 'delivery'[\s\S]*title: 'مدیریت مالی'[\s\S]*routes: \['pettyCash', 'invoices'\]/);
   assert.match(catalog, /key: 'resources'[\s\S]*'documents', 'sitesAccess', 'lettersIncoming', 'lettersOutgoing', 'userGuide'/);
   assert.match(sidebar, /BamcoNavigationCatalog/);
   assert.match(runtime, /const ORDER=Object\.fromEntries\(catalog\.groups/);
@@ -53,6 +55,17 @@ test('enterprise navigation places new modules in the approved groups', () => {
   assert.match(read('index.html'), /id="userGuideView"/);
   assert.doesNotMatch(documents, /if\(!q\('#userGuideView'\)\)\{const view=document\.createElement/);
   assert.doesNotMatch(sidebar, /makeGroup\('مرکز راهنما'/);
+});
+
+test('home-card routes use related, distinct icons instead of the fallback icon', () => {
+  const icons = read('assets/js/visual-system.js');
+  for (const [route, key] of Object.entries({
+    lettersIncoming: 'letterIncoming', lettersOutgoing: 'letterOutgoing', projects: 'projects',
+    parts: 'parts', tools: 'tools', invoices: 'invoices', pettyCash: 'cash'
+  })) assert.match(icons, new RegExp(`${route}:'${key}'`));
+  for (const key of ['letterIncoming', 'letterOutgoing', 'projects', 'parts', 'tools', 'invoices', 'cash', 'delivery']) {
+    assert.match(icons, new RegExp(`\\b${key}:'M`));
+  }
 });
 
 test('organization view is a visual position tree and preserves one primary assignment source', () => {

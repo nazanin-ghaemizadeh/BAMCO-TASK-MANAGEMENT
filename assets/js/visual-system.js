@@ -7,6 +7,8 @@ const paths={
  resources:'M3 7h7l2 2h9v12H3zM3 7V3h7l2 4',
  documents:'M6 2h8l4 4v16H6zM14 2v5h4M9 11h6M9 15h6M9 19h4',
  letters:'M3 6h18v14H3zM3 7l9 7 9-7M7 3h10',
+ letterIncoming:'M3 7h18v14H3zM3 8l9 7 9-7M12 3v8M8 7l4 4 4-4',
+ letterOutgoing:'M3 7h18v14H3zM3 8l9 7 9-7M12 11V3M8 7l4-4 4 4',
  sitesAccess:'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18M3 12h18M12 3c-5 5-5 13 0 18M12 3c5 5 5 13 0 18',
  tasks:'M8 5H5v16h14V5h-3M9 3h6v4H9zM8 12l2 2 4-4M8 18h8',
  people:'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8M17 4a4 4 0 0 1 0 8M22 21v-2a4 4 0 0 0-3-4',
@@ -31,9 +33,16 @@ const paths={
  bell:'M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4',
  user:'M12 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8M4 21v-2a8 8 0 0 1 16 0v2',
  temporary:'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18M12 7v5l4 2',
+ projects:'M4 5h6l2 2h8v13H4zM8 11h8M8 15h5',
+ parts:'M9 3h6v4h4v6h-4v8H9v-8H5V7h4z',
+ tools:'M14 6a4 4 0 0 0 4 4L9 19l-4-4 9-9M14 6l4-3 3 3-3 4',
+ invoices:'M6 2h12v20l-3-2-3 2-3-2-3 2zM9 7h6M9 11h6M9 15h4',
+ cash:'M3 7h18v12H3zM3 10h18M16 14h2M5 7V5h13',
+ delivery:'M3 9l9-6 9 6M5 10v9M9 10v9M15 10v9M19 10v9M3 21h18',
+ sentLog:'M4 3h16v18H4zM8 8h8M8 12h5M8 16l2 2 5-5',
  logout:'M10 4H4v16h6M15 8l4 4-4 4M9 12h10'
 };
-const views={userGuide:'documents',documents:'documents',letters:'letters',sitesAccess:'sitesAccess',projects:'projects',parts:'parts',invoices:'invoices',organization:'organization',tools:'tools',kanban:'kanban',archive:'archive',taskTimeline:'calendar',approvals:'check',requestHistory:'history',people:'people',loginActivity:'login',activeSessions:'screen',messages:'messages',messageCenter:'send',sentMessages:'check',responseTracking:'reply',templates:'text',stickers:'sticker',vehiclePermanent:'vehicle',vehicleTemporary:'temporary',dashboard:'dashboard',performanceReport:'reports',messageReport:'messages',responseReport:'reply',requestReport:'tasks',loginReport:'login',systemOptions:'configuration',alertSettings:'bell',emailSettings:'messages',settings:'user',groupChat:'people',directMessages:'messages',taskChats:'conversations'};
+const views={userGuide:'guide',documents:'documents',letters:'letters',lettersIncoming:'letterIncoming',lettersOutgoing:'letterOutgoing',sitesAccess:'sitesAccess',projects:'projects',parts:'parts',invoices:'invoices',pettyCash:'cash',organization:'organization',tools:'tools',kanban:'kanban',archive:'archive',taskTimeline:'calendar',approvals:'check',requestHistory:'history',people:'people',loginActivity:'login',activeSessions:'screen',messages:'messages',messageCenter:'send',sentMessages:'sentLog',responseTracking:'reply',templates:'text',stickers:'sticker',vehiclePermanent:'vehicle',vehicleTemporary:'temporary',dashboard:'dashboard',performanceReport:'reports',messageReport:'messages',responseReport:'reply',requestReport:'tasks',loginReport:'login',systemOptions:'configuration',alertSettings:'bell',emailSettings:'messages',settings:'user',groupChat:'people',directMessages:'messages',taskChats:'conversations'};
 const svg=key=>`<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="${paths[key]||paths.configuration}"/></svg>`;
 function install(){
  const nav=document.querySelector('#nav');if(!nav)return;

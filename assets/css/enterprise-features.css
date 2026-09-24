@@ -88,6 +88,9 @@
 #partsView .part-handover-panel{display:flex;flex:1 1 auto;min-height:0;flex-direction:column;margin:0}
 #partsView .part-handover-panel>.table-wrap{flex:1 1 auto;min-height:120px;overflow:auto}
 #partsView .part-handover-panel>:is(.table-pagination,.suite-table-options){flex:none;margin:0}
+#partsView .table-pagination .page-controls{direction:rtl}
+#partsView .table-pagination label{display:flex;align-items:center;gap:8px;margin:0;white-space:nowrap}
+#partsView .table-pagination select{width:82px!important;min-width:82px!important;height:34px!important;min-height:34px!important;padding:3px 10px!important;border:1px solid #b7cbbf!important;border-radius:10px!important;background:#fff!important;color:var(--text)!important;box-shadow:none!important}
 
 .organization-grid{grid-template-columns:minmax(0,1fr)}
 .organization-chart-panel{min-height:470px}
