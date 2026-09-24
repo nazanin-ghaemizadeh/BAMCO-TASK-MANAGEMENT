@@ -227,3 +227,26 @@
 /* Dynamic Gantt relations use measured bar positions. */
 .gantt-direct .gantt-dependencies{z-index:8}.gantt-direct .gantt-dependency-line{stroke:#5b6972;stroke-width:1.65;stroke-dasharray:none;stroke-linecap:round;stroke-linejoin:round;filter:none;opacity:.9}.gantt-direct .gantt-dependencies marker path{fill:#5b6972}
 @media(max-width:700px){:is(#projectFeatureRoot,#invoiceFeatureRoot)>.feature-toolbar.enterprise-toolbar{min-height:46px;padding:7px 8px}:is(#projectFeatureRoot .project-top-command-row,#invoiceFeatureRoot .invoice-top-command-row).bamco-command-bar{min-height:44px;padding:5px 8px}:is(#projectFeatureRoot .project-top-command-row,#invoiceFeatureRoot .invoice-top-command-row).bamco-command-bar input[type=search]{order:20;width:100%;margin:0}.project-wbs-canvas{min-height:calc(100dvh - 235px)}.wbs-direct{padding:18px 10px 32px}.project-wbs-forest{gap:26px}.project-wbs-branch{width:calc(244px + var(--wbs-branch-extra,0px));min-width:calc(244px + var(--wbs-branch-extra,0px))}.project-wbs-children .project-wbs-branch{width:100%;min-width:0}.project-wbs-card{width:226px}.project-wbs-root-card{width:320px}.gantt-direct .gantt-pro{grid-template-columns:250px minmax(0,1fr);min-height:calc(100dvh - 235px)}}
+
+/* Fixed-axis project Gantt. Only the chart body scrolls; its scroll position is
+   mirrored to the hidden-overflow calendar and description rail by JS. */
+html body #appView#appView #projectsView:not(.hidden){height:calc(100dvh - var(--app-header-h,158px) - var(--app-footer-h,39px) - 32px);min-height:0;overflow:hidden}
+#projectFeatureRoot{display:flex;flex-direction:column;height:100%;min-height:0;overflow:hidden}
+#projectFeatureRoot>.feature-toolbar,#projectFeatureRoot>.project-top-command-row{flex:0 0 auto}
+#projectFeatureRoot>.project-grid{flex:1 1 0;min-height:0;overflow:auto}
+#projectFeatureRoot>.project-grid.detail-open{display:flex;min-height:0;padding:0;overflow:hidden}
+#projectFeatureRoot>.project-grid.detail-open>.project-detail{display:block;flex:1 1 0;width:100%;height:100%;min-height:0;overflow:hidden}
+#projectFeatureRoot .gantt-direct{width:100%;height:100%;min-height:0;max-height:none;overflow:hidden;background:#fff;direction:rtl}
+#projectFeatureRoot .gantt-direct .gantt-pro{display:grid;grid-template-columns:310px minmax(0,1fr);grid-template-rows:72px minmax(0,1fr);width:100%;height:100%;min-width:0;min-height:0;overflow:hidden;direction:rtl}
+#projectFeatureRoot .gantt-direct .gantt-pro-label-head{display:grid;height:72px;min-height:72px;place-items:center start;box-sizing:border-box;padding:0 14px;background:#edf2f5;color:#40566a;border:0;border-bottom:1px solid #d7e0e5;border-left:1px solid #d7e0e5;font-size:13px;font-weight:700;z-index:12}
+#projectFeatureRoot .gantt-pro-header-scroll{min-width:0;overflow:hidden;direction:rtl;background:#fff;border-bottom:1px solid #d7e0e5;z-index:11}
+#projectFeatureRoot .gantt-pro-header{height:72px;direction:rtl;background:#fff}
+#projectFeatureRoot .gantt-pro-label-scroll{min-width:0;min-height:0;overflow:hidden;background:#fff;border-left:1px solid #d7e0e5;box-shadow:-5px 0 12px #263d4e0d;z-index:10}
+#projectFeatureRoot .gantt-direct .gantt-pro-labels{position:static;width:100%;min-width:0;background:#fff;border:0;box-shadow:none}
+#projectFeatureRoot .gantt-pro-timeline-scroll{min-width:0;min-height:0;max-width:none;overflow:auto;direction:rtl;overscroll-behavior:contain;scrollbar-gutter:stable}
+#projectFeatureRoot .gantt-direct .gantt-pro-timeline{position:relative;min-height:100%;direction:rtl;background:#fff}
+#projectFeatureRoot .gantt-direct .gantt-pro-label-row:first-child{margin-top:0}
+#projectFeatureRoot .gantt-direct .gantt-pro-label-row,#projectFeatureRoot .gantt-direct .gantt-pro-track{height:58px;min-height:58px;box-sizing:border-box;margin:0}
+#projectFeatureRoot .gantt-direct .gantt-pro-label-row.subactivity-row,#projectFeatureRoot .gantt-direct .gantt-pro-track.subactivity-row{height:58px;min-height:58px}
+#projectFeatureRoot .gantt-direct .gantt-dependencies{top:0;height:auto;z-index:8}
+@media(max-width:700px){#projectFeatureRoot .gantt-direct .gantt-pro{grid-template-columns:250px minmax(0,1fr)}}

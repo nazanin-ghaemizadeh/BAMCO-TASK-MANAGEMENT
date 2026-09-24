@@ -654,3 +654,16 @@ html body.table-suite dialog.bamco-dialog table.suite-table :where(caption,thead
 .chat-bubble blockquote{unicode-bidi:plaintext}
 
 #reviewDialog .review-manager-note{display:block;width:100%;margin:18px 0 0;text-align:right;color:#225b47;font-weight:700}#reviewDialog .review-manager-note textarea{display:block;width:100%;min-height:110px;box-sizing:border-box;margin-top:8px;resize:vertical;border:1px solid #b9d0c4;border-radius:9px;padding:12px;font:inherit}#reviewDialog .review-details{max-height:55vh;overflow:auto;line-height:1.8}
+
+/* Sticker library: use the available viewport without adding a document scroll.
+   Preview captions are intentionally omitted by the renderer, so both images
+   receive the largest stable area that fits between the app chrome. */
+html body #appView#appView #stickersView.bamco-interior:not(.hidden){height:calc(100dvh - var(--app-header-h,158px) - var(--app-footer-h,39px) - 32px)!important;min-height:0!important;max-height:calc(100dvh - var(--app-header-h,158px) - var(--app-footer-h,39px) - 32px)!important;overflow:hidden!important}
+html body #appView#appView #stickersView.bamco-interior>.sticker-library{display:flex!important;flex:1 1 0!important;flex-direction:column!important;min-height:0!important;height:auto!important;margin:0!important;padding:12px!important;overflow:hidden!important}
+html body #appView#appView #stickersView .sticker-toolbar{flex:0 0 auto!important;min-height:42px!important}
+html body #appView#appView #stickersView .sticker-toolbar :is(label,select,option),html body #appView#appView #stickersView .sticker-meta :is(span,b,strong){font-weight:400!important;font-synthesis:none!important}
+html body #appView#appView #stickersView .sticker-pair{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;grid-auto-rows:minmax(0,1fr)!important;flex:1 1 0!important;min-height:0!important;height:auto!important;margin:10px 0 0!important;gap:12px!important;overflow:hidden!important}
+html body #appView#appView #stickersView .sticker-pair article{display:grid!important;place-items:center!important;min-width:0!important;min-height:0!important;height:100%!important;padding:4px!important;overflow:hidden!important}
+html body #appView#appView #stickersView .sticker-pair article>strong{display:none!important}
+html body #appView#appView #stickersView .sticker-pair img{display:block!important;width:100%!important;height:100%!important;min-height:0!important;max-height:none!important;object-fit:contain!important;padding:2px!important}
+@media(max-width:700px){html body #appView#appView #stickersView .sticker-pair{grid-template-columns:repeat(2,minmax(0,1fr))!important;grid-auto-rows:minmax(0,1fr)!important}html body #appView#appView #stickersView .sticker-pair article,html body #appView#appView #stickersView .sticker-pair img{height:100%!important;min-height:0!important;max-height:none!important}}

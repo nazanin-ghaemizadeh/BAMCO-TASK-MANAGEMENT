@@ -127,9 +127,10 @@ html body.card-home-active #homeView #nav>.nav-group[data-group="resources"]{gri
 
 /* A late permission result may reveal a button, but cannot move another button. */
 html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="people"]{grid-column:1!important;grid-row:1!important}
-html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="organization"]{grid-column:2!important;grid-row:1!important}
-html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="activeSessions"]{grid-column:1!important;grid-row:2!important}
-html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="loginActivity"]{grid-column:2!important;grid-row:2!important}
+html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="accessMatrix"]{grid-column:2!important;grid-row:1!important}
+html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="organization"]{grid-column:1!important;grid-row:2!important}
+html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="activeSessions"]{grid-column:2!important;grid-row:2!important}
+html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="loginActivity"]{grid-column:1!important;grid-row:3!important}
 html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="messages"]{grid-column:1!important;grid-row:1!important}
 html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="messageCenter"]{grid-column:2!important;grid-row:1!important}
 html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="sentMessages"]{grid-column:1!important;grid-row:2!important}

@@ -7,7 +7,7 @@ const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
 const source=read('assets/js/card-home.js');
 const reconciliation=source.slice(source.indexOf(' const catalog=window.BamcoNavigationCatalog;'),source.indexOf('\n syncGroups();')).replace(' if(!catalog)return;','');
 const catalogGroups=[
- ['people',['people','organization','activeSessions','loginActivity']],
+ ['people',['people','accessMatrix','organization','activeSessions','loginActivity']],
  ['messages',['messages','messageCenter','sentMessages','responseTracking','templates','stickers']],
  ['reports',['dashboard','performanceReport','responseReport']],
  ['configuration',['systemOptions','settings','alertSettings','emailSettings']],
@@ -55,7 +55,7 @@ test('home cards keep people structure and enterprise modules in their approved 
  const f=fixture();for(const [,ids] of f.order)for(const id of [...ids].reverse())f.button(id);
  f.sync();assert.deepEqual(f.nav.children.map(x=>x.dataset.group),['people','messages','reports','configuration','tasks','delivery','vehicle','conversations','resources']);
  for(const [key,ids] of f.order)assert.deepEqual(f.boxes[key].children.map(x=>x.dataset.view),Array.from(ids));
- assert.deepEqual(f.boxes.people.children.map(x=>x.dataset.view),['people','organization','activeSessions','loginActivity']);
+ assert.deepEqual(f.boxes.people.children.map(x=>x.dataset.view),['people','accessMatrix','organization','activeSessions','loginActivity']);
  assert.deepEqual(f.boxes.reports.children.map(x=>x.dataset.view),['dashboard','performanceReport','responseReport']);
  assert.deepEqual(f.boxes.tasks.children.map(x=>x.dataset.view),['kanban','archive','taskTimeline','projects','approvals','requestHistory']);
  assert.deepEqual(f.boxes.delivery.children.map(x=>x.dataset.view),['pettyCash','invoices']);

@@ -3,6 +3,7 @@
 let registration=null,publicKey='',boundUser='',openedNotification=false,noticeIdentity='',noticeSeeded=false,lastNoticePoll=0;
 const seenNoticeIds=new Set();
 const timeoutMessage='پاسخ دریافت نشد؛ اتصال را بررسی و دوباره تلاش کنید.';
+const faText=value=>String(value??'').replace(/\d/g,digit=>'۰۱۲۳۴۵۶۷۸۹'[digit]);
 function bounded(promise,ms=12000){let timer;return Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error(timeoutMessage)),ms)})]).finally(()=>clearTimeout(timer))}
 const supported=()=>('serviceWorker'in navigator)&&('PushManager'in window)&&('Notification'in window)&&window.isSecureContext;
 const ios=()=>/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
@@ -50,7 +51,7 @@ async function showForegroundAlerts(){
   rows.forEach(row=>seenNoticeIds.add(String(row.id)));noticeSeeded=true;
   if(!deliver.length)return;
   const reg=await ready();
-  for(const row of deliver)await reg.showNotification(row.title||'BAMCO',{body:String(row.body||'اعلان جدید در سامانه').slice(0,700),icon:new URL('assets/images/bamco-icon-192.png',document.baseURI).href,badge:new URL('assets/images/bamco-icon-192.png',document.baseURI).href,tag:'bamco-'+row.id,dir:'rtl',lang:'fa',data:{url:new URL('./?notification='+encodeURIComponent(row.id),document.baseURI).href}});
+  for(const row of deliver)await reg.showNotification(faText(row.title||'BAMCO'),{body:faText(String(row.body||'اعلان جدید در سامانه').slice(0,700)),icon:new URL('assets/images/bamco-icon-192.png',document.baseURI).href,badge:new URL('assets/images/bamco-icon-192.png',document.baseURI).href,tag:'bamco-'+row.id,dir:'rtl',lang:'fa',data:{url:new URL('./?notification='+encodeURIComponent(row.id),document.baseURI).href}});
  }catch{}
 }
 window.bamcoPush={unsubscribe};

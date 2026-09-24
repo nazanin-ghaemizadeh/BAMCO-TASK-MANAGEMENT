@@ -11,7 +11,7 @@
   if (window.BamcoNavigationCatalog) return;
 
   const groups = Object.freeze([
-    { key: 'people', title: 'مدیریت افراد', icon: '♙', routes: ['people', 'organization', 'activeSessions', 'loginActivity'] },
+    { key: 'people', title: 'مدیریت افراد', icon: '♙', routes: ['people', 'accessMatrix', 'organization', 'activeSessions', 'loginActivity'] },
     { key: 'messages', title: 'مدیریت پیام', icon: '✉', routes: ['messages', 'messageCenter', 'sentMessages', 'responseTracking', 'templates', 'stickers'] },
     { key: 'reports', title: 'گزارش‌ها', icon: '▦', routes: ['dashboard', 'performanceReport', 'responseReport'] },
     { key: 'configuration', title: 'تنظیمات', icon: '⚙', routes: ['systemOptions', 'settings', 'alertSettings', 'emailSettings'] },
@@ -27,6 +27,7 @@
   // bypass the access service by using an alias.
   const routeDefinitions = Object.freeze([
     ['people', 'people', 'افراد و نقش‌ها'],
+    ['accessMatrix', 'people', 'دسترسی‌ها'],
     ['organization', 'organization', 'ساختار سازمانی'],
     ['activeSessions', 'activeSessions', 'نشست‌های فعال'],
     ['loginActivity', 'loginActivity', 'فعالیت ورود'],

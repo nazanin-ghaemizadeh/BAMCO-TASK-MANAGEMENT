@@ -3,7 +3,7 @@
 const q=(s,r=document)=>r?.querySelector(s)||null,qa=(s,r=document)=>[...(r?.querySelectorAll(s)||[])];
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
 const REMOVED=new Set(['requestReport']);
-const NEW=[['loginActivity','ورود و خروج','people'],['activeSessions','نشست‌های فعال','people'],['groupChat','گفت‌وگوی عمومی و گروه‌ها','conversations'],['directMessages','گفت‌وگوی خصوصی','conversations'],['taskChats','گفت‌وگوی مرتبط با وظیفه','conversations'],['performanceReport','گزارش عملکرد','reports'],['responseReport','گزارش پاسخ‌ها','reports'],['systemOptions','وضعیت‌ها و اولویت‌ها','configuration']];
+const NEW=[['accessMatrix','دسترسی‌ها','people'],['loginActivity','ورود و خروج','people'],['activeSessions','نشست‌های فعال','people'],['groupChat','گفت‌وگوی عمومی و گروه‌ها','conversations'],['directMessages','گفت‌وگوی خصوصی','conversations'],['taskChats','گفت‌وگوی مرتبط با وظیفه','conversations'],['performanceReport','گزارش عملکرد','reports'],['responseReport','گزارش پاسخ‌ها','reports'],['systemOptions','وضعیت‌ها و اولویت‌ها','configuration']];
 const catalog=window.BamcoNavigationCatalog;
 if(!catalog)return;
 const ORDER=Object.fromEntries(catalog.groups.map(group=>[group.key,group.routes]));

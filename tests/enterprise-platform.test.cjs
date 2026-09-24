@@ -43,7 +43,7 @@ test('enterprise navigation places new modules in the approved groups', () => {
   const catalog = read('assets/js/navigation-registry.js');
   const runtime = read('assets/js/production-runtime.js');
   const documents = read('assets/js/documents-sites.js');
-  assert.match(catalog, /key: 'people'[\s\S]*routes: \['people', 'organization', 'activeSessions', 'loginActivity'\]/);
+  assert.match(catalog, /key: 'people'[\s\S]*routes: \['people', 'accessMatrix', 'organization', 'activeSessions', 'loginActivity'\]/);
   assert.match(catalog, /key: 'vehicle'[\s\S]*'parts', 'tools'/);
   assert.match(catalog, /key: 'reports'[\s\S]*routes: \['dashboard', 'performanceReport', 'responseReport'\]/);
   assert.match(catalog, /key: 'tasks'[\s\S]*'taskTimeline', 'projects', 'approvals'/);
@@ -61,9 +61,9 @@ test('home-card routes use related, distinct icons instead of the fallback icon'
   const icons = read('assets/js/visual-system.js');
   for (const [route, key] of Object.entries({
     lettersIncoming: 'letterIncoming', lettersOutgoing: 'letterOutgoing', projects: 'projects',
-    parts: 'parts', tools: 'tools', invoices: 'invoices', pettyCash: 'cash'
+    parts: 'parts', tools: 'tools', invoices: 'invoices', pettyCash: 'cash', accessMatrix: 'accessMatrix'
   })) assert.match(icons, new RegExp(`${route}:'${key}'`));
-  for (const key of ['letterIncoming', 'letterOutgoing', 'projects', 'parts', 'tools', 'invoices', 'cash', 'delivery']) {
+  for (const key of ['letterIncoming', 'letterOutgoing', 'projects', 'parts', 'tools', 'invoices', 'cash', 'delivery', 'accessMatrix']) {
     assert.match(icons, new RegExp(`\\b${key}:'M`));
   }
 });

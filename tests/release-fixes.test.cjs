@@ -30,9 +30,13 @@ test('sticker manager is empty-safe and previews both sides together',()=>{
   assert.match(js,/sticker-pair/);
   assert.match(js,/Promise\.all\(\[select\('sticker_sets'[\s\S]*select\('stickers'/);
   assert.match(js,/sticker-prefetch/);
-  const css=read('assets/css/stability.css');
-  assert.match(css,/\.sticker-pair\{[^}]*grid-auto-rows:minmax\(620px,1fr\)[^}]*min-height:620px/);
-  assert.match(css,/\.sticker-pair img\{[^}]*height:620px/);
+  const css=read('assets/css/unified-ui.css');
+  assert.match(css,/#stickersView\.bamco-interior:not\(\.hidden\)\{[^}]*overflow:hidden!important/);
+  assert.match(css,/#stickersView \.sticker-pair\{[^}]*grid-auto-rows:minmax\(0,1fr\)[^}]*overflow:hidden!important/);
+  assert.match(css,/#stickersView \.sticker-pair img\{[^}]*height:100%!important[^}]*object-fit:contain!important/);
+  assert.doesNotMatch(js,/class="sticker-pair"[\s\S]{0,400}<strong>خانم<\/strong>/);
+  assert.doesNotMatch(js,/class="sticker-pair"[\s\S]{0,400}<strong>آقا<\/strong>/);
+  assert.match(css,/\.sticker-toolbar :is\(label,select,option\)[^}]*font-weight:400!important/);
   assert.match(js,/نسخه‌ای ثبت نشده است/);
   assert.match(js,/state1:'وضعیت مطلوب'/);
   assert.doesNotMatch(js,/وضعیت یک/);

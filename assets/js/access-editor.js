@@ -172,3 +172,171 @@
   }
   window.bamcoAccessEditor = Object.freeze({ open });
 })();
+
+/* Organization-wide access matrix. It is a second interface over the same
+   feature_access_manage_snapshot/set_feature_access contract used above. */
+(() => {
+  'use strict';
+  const ROUTE = 'accessMatrix';
+  const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+  const bool = value => value === true || value === 1 || value === '1' || String(value || '').toLowerCase() === 'true';
+  const state = () => window.Bamco?.state || window.state || {};
+  const canManage = () => window.BamcoAccess?.isSystemManager?.() === true || window.BamcoAccess?.can?.('settings', 'manage_access') === true;
+  const rpc = (name, body = {}) => {
+    const call = window.BamcoData?.rpc || window.rpc;
+    return typeof call === 'function' ? call(name, body) : Promise.reject(new Error('سرویس دادهٔ سامانه آماده نیست.'));
+  };
+  const personName = user => user?.display_name || user?.full_name || user?.email || '—';
+  const matrix = { loading: false, loaded: false, saving: false, search: '', users: [], values: new Map(), initial: new Map(), protected: new Set(), error: '' };
+  const keyOf = (featureKey, userId) => `${featureKey}:${userId}`;
+  const snapshotParts = payload => {
+    const source = Array.isArray(payload) ? payload[0] : payload;
+    return {
+      users: Array.isArray(source?.users) ? source.users : [],
+      direct: Array.isArray(source?.grants) ? source.grants : (Array.isArray(source?.direct_grants) ? source.direct_grants : []),
+      effective: Array.isArray(source?.effective_grants) ? source.effective_grants : (Array.isArray(source?.effectiveGrants) ? source.effectiveGrants : [])
+    };
+  };
+  const catalogRows = () => {
+    const catalog = window.BamcoNavigationCatalog;
+    if (!catalog) return [];
+    return catalog.groups.map(group => ({
+      group,
+      routes: group.routes.filter(route => route !== ROUTE).map(route => catalog.routeFor(route)).filter(Boolean)
+    }));
+  };
+  const featureKeys = () => [...new Set(catalogRows().flatMap(entry => entry.routes.map(route => route.featureKey)))];
+  async function pool(values, limit, worker) {
+    const pending = [...values];
+    await Promise.all(Array.from({ length: Math.min(limit, pending.length) }, async () => {
+      while (pending.length) await worker(pending.shift());
+    }));
+  }
+  function ensureView() {
+    let view = document.getElementById(`${ROUTE}View`);
+    if (!view) {
+      view = document.createElement('section');
+      view.id = `${ROUTE}View`;
+      view.className = 'view hidden';
+      document.querySelector('.workspace')?.append(view);
+    }
+    view.dataset.featureKey = 'people';
+    view.dataset.featureAction = 'view';
+    if (!view.querySelector('.access-matrix-shell')) {
+      view.innerHTML = `<section class="panel access-matrix-shell"><div class="panel-head"><div><h3>دسترسی‌ها</h3><small>مدیریت یکپارچهٔ دسترسی افراد به کارت‌ها و تب‌های سامانه</small></div></div><div class="manager-toolbar bamco-command-bar access-matrix-toolbar"><button type="button" class="ghost" data-home-action>بازگشت به خانه</button><button type="button" class="ghost" data-access-matrix-refresh>تازه‌سازی</button><button type="button" class="primary" data-access-matrix-save disabled>ذخیره تغییرات</button><input type="search" data-access-matrix-search placeholder="جست‌وجوی فرد…" aria-label="جست‌وجوی فرد"><span data-feature-access-suppressed="true" hidden></span></div><div class="access-matrix-content" aria-live="polite"><p class="access-matrix-status">برای دریافت دسترسی‌ها، تازه‌سازی کنید.</p></div></section>`;
+    }
+    bind(view);
+    return view;
+  }
+  function syncRouteVisibility() {
+    const button = document.querySelector(`#nav button[data-view="${ROUTE}"]`);
+    if (!button) return;
+    const allowed = canManage();
+    button.hidden = !allowed;
+    button.disabled = !allowed;
+    button.classList.toggle('hidden', !allowed);
+    button.setAttribute('aria-hidden', allowed ? 'false' : 'true');
+    button.setAttribute('aria-disabled', allowed ? 'false' : 'true');
+  }
+  function dirtyKeys() {
+    return [...matrix.values.keys()].filter(key => matrix.values.get(key) !== matrix.initial.get(key) && !matrix.protected.has(key));
+  }
+  function renderTable() {
+    const view = ensureView(), content = view.querySelector('.access-matrix-content'), save = view.querySelector('[data-access-matrix-save]');
+    if (!content) return;
+    if (matrix.loading) content.innerHTML = '<p class="access-matrix-status" role="status">در حال دریافت دسترسی‌ها…</p>';
+    else if (matrix.error) content.innerHTML = `<p class="access-matrix-status error" role="alert">${esc(matrix.error)}</p>`;
+    else if (!matrix.loaded) content.innerHTML = '<p class="access-matrix-status">برای دریافت دسترسی‌ها، تازه‌سازی کنید.</p>';
+    else {
+      const query = matrix.search.trim().toLocaleLowerCase('fa');
+      const users = matrix.users.filter(user => !query || `${personName(user)} ${user.email || ''}`.toLocaleLowerCase('fa').includes(query));
+      const heads = users.map(user => `<th scope="col"><span>${esc(personName(user))}</span><small>${esc(user.email || '')}</small></th>`).join('');
+      const body = catalogRows().map(({ group, routes }) => {
+        const groupRow = `<tr class="access-matrix-group"><th scope="row">${esc(group.title)}</th><td colspan="${Math.max(1, users.length)}"></td></tr>`;
+        const routeRows = routes.map(route => `<tr class="access-matrix-route"><th scope="row"><span>${esc(route.title)}</span></th>${users.map(user => {
+          const key = keyOf(route.featureKey, user.id), enabled = matrix.values.get(key) === true, locked = matrix.protected.has(key);
+          return `<td><button type="button" class="access-matrix-toggle ${enabled ? 'allowed' : 'denied'}" data-access-feature="${esc(route.featureKey)}" data-access-user="${esc(user.id)}" aria-pressed="${enabled ? 'true' : 'false'}" aria-label="${enabled ? 'برداشتن' : 'دادن'} دسترسی ${esc(personName(user))} به ${esc(route.title)}" ${locked ? 'disabled title="دسترسی محافظت‌شده"' : ''}><span aria-hidden="true">${enabled ? '✓' : '×'}</span></button></td>`;
+        }).join('')}</tr>`).join('');
+        return groupRow + routeRows;
+      }).join('');
+      content.innerHTML = users.length ? `<div class="access-matrix-scroll"><table class="access-matrix-table"><thead><tr><th scope="col">کارت و تب</th>${heads}</tr></thead><tbody>${body}</tbody></table></div>` : '<p class="access-matrix-status">فردی با این عبارت پیدا نشد.</p>';
+    }
+    if (save) save.disabled = matrix.loading || matrix.saving || dirtyKeys().length === 0;
+  }
+  async function loadMatrix({ force = false } = {}) {
+    if (matrix.loading || (matrix.loaded && !force)) { renderTable(); return; }
+    if (!canManage()) { syncRouteVisibility(); window.BamcoAccess?.denied?.('settings', 'manage_access', { route: ROUTE }); return; }
+    matrix.loading = true; matrix.error = ''; renderTable();
+    const token = state().token, snapshots = new Map();
+    try {
+      await pool(featureKeys(), 5, async featureKey => snapshots.set(featureKey, snapshotParts(await rpc('feature_access_manage_snapshot', { p_feature_key: featureKey }))));
+      if (state().token !== token) return;
+      const users = new Map();
+      snapshots.forEach(snapshot => snapshot.users.filter(user => user?.id && user.active !== false).forEach(user => users.set(String(user.id), user)));
+      matrix.users = [...users.values()].sort((a, b) => personName(a).localeCompare(personName(b), 'fa'));
+      matrix.values.clear(); matrix.initial.clear(); matrix.protected.clear();
+      snapshots.forEach((snapshot, featureKey) => {
+        const direct = new Map(snapshot.direct.map(row => [String(row.user_id || row.id), row]));
+        const effective = new Map(snapshot.effective.map(row => [String(row.user_id || row.id), row]));
+        matrix.users.forEach(user => {
+          const id = String(user.id), directGrant = direct.get(id) || {}, grant = effective.get(id) || user.effective_access || user.effective_grant || directGrant;
+          const key = keyOf(featureKey, id), protectedGrant = bool(user.protected) || bool(directGrant.protected) || (id === String(state().user?.id) && window.BamcoAccess?.isSystemManager?.() === true);
+          const value = protectedGrant || bool(grant.can_view);
+          matrix.values.set(key, value); matrix.initial.set(key, value); if (protectedGrant) matrix.protected.add(key);
+        });
+      });
+      matrix.loaded = true;
+    } catch (error) {
+      matrix.error = error?.message || 'دریافت ماتریس دسترسی انجام نشد.';
+    } finally {
+      matrix.loading = false; renderTable();
+    }
+  }
+  async function saveMatrix() {
+    if (matrix.saving || !canManage()) return;
+    const changes = dirtyKeys(), grouped = new Map();
+    changes.forEach(key => {
+      const separator = key.lastIndexOf(':'), featureKey = key.slice(0, separator), userId = key.slice(separator + 1), enabled = matrix.values.get(key) === true;
+      grouped.set(featureKey, [...(grouped.get(featureKey) || []), { user_id: userId, effect: enabled ? 'allow' : 'deny', can_view: enabled, can_create: enabled, can_edit: enabled, can_delete: enabled, can_export: enabled }]);
+    });
+    if (!grouped.size) return;
+    matrix.saving = true; renderTable();
+    try {
+      await pool([...grouped.entries()], 4, ([featureKey, grants]) => rpc('set_feature_access', { p_feature_key: featureKey, p_grants: grants }));
+      await window.BamcoAccess?.refresh?.({ force: true });
+      matrix.loaded = false; await loadMatrix({ force: true });
+      window.toast?.('ماتریس دسترسی‌ها ذخیره شد.');
+    } catch (error) {
+      matrix.error = error?.message || 'ذخیره ماتریس دسترسی انجام نشد.';
+    } finally {
+      matrix.saving = false; renderTable();
+    }
+  }
+  function bind(view) {
+    if (view.dataset.accessMatrixBound === '1') return;
+    view.dataset.accessMatrixBound = '1';
+    view.addEventListener('input', event => {
+      if (!event.target.matches('[data-access-matrix-search]')) return;
+      matrix.search = event.target.value; renderTable();
+      const input = view.querySelector('[data-access-matrix-search]'); if (input) { input.value = matrix.search; input.focus(); }
+    });
+    view.addEventListener('click', event => {
+      if (event.target.closest('[data-access-matrix-refresh]')) return void loadMatrix({ force: true });
+      if (event.target.closest('[data-access-matrix-save]')) return void saveMatrix();
+      const toggle = event.target.closest('[data-access-feature][data-access-user]'); if (!toggle || toggle.disabled) return;
+      const key = keyOf(toggle.dataset.accessFeature, toggle.dataset.accessUser); matrix.values.set(key, matrix.values.get(key) !== true); renderTable();
+    });
+  }
+  function activate() {
+    syncRouteVisibility();
+    if (!canManage()) { window.BamcoAccess?.denied?.('settings', 'manage_access', { route: ROUTE }); window.bamcoShowHome?.(); return; }
+    void loadMatrix();
+  }
+  function boot() {
+    ensureView(); syncRouteVisibility();
+    try { window.BamcoNavigation?.registerView?.(ROUTE, { activate }); } catch {}
+    window.addEventListener('bamco:feature-access-changed', () => { queueMicrotask(syncRouteVisibility); if (!matrix.saving && state().view === ROUTE) { matrix.loaded = false; void loadMatrix({ force: true }); } });
+    window.bamcoAccessMatrix = Object.freeze({ load: () => loadMatrix({ force: true }), state: matrix });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true }); else boot();
+})();
