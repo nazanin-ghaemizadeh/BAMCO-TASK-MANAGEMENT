@@ -21,6 +21,16 @@ test('each vehicle tab displays identifiers from one independently of database k
  const f=await fixture({tables:{vehicle_temporary_records:[{id:4,plate_number:'79و'}]}});t.after(()=>f.dispose());await f.open('vehicleTemporary');await until(()=>f.d.querySelector('#vehicleTemporaryView tbody tr[data-id]'));
  assert.equal(f.d.querySelector('#vehicleTemporaryView tbody tr[data-id] td').textContent.trim(),'۱');assert.deepEqual(f.errors,[]);
 });
+
+test('vehicle registers localize every number except the English vehicle type',async t=>{
+ const f=await fixture({tables:{vehicle_temporary_records:[{id:4,plate_number:'12 ب 345',vehicle_type:'BMW X5',chassis_number:'CH-123',last_mileage:7438,exit_time:'08:20'}]}});t.after(()=>f.dispose());await f.open('vehicleTemporary');await until(()=>f.d.querySelector('#vehicleTemporaryView tbody tr[data-id]'));
+ const row=f.d.querySelector('#vehicleTemporaryView tbody tr[data-id]');
+ assert.match(row.textContent,/۷۴۳۸/);assert.match(row.textContent,/۰۸:۲۰/);assert.match(row.textContent,/CH-۱۲۳/);
+ const type=row.querySelector('.vehicle-type-latin');assert.equal(type.textContent,'BMW X5');assert.match(type.getAttribute('style')||type.className,/vehicle-type-latin/);
+ row.click();f.d.querySelector('#vehicleTemporaryView .vehicle-edit').click();const form=f.d.querySelector('#vehicleRecordForm');
+ assert.equal(form.elements.last_mileage.value,'۷۴۳۸');assert.equal(form.elements.vehicle_type.value,'BMW X5');assert(form.elements.vehicle_type.classList.contains('vehicle-type-latin'));
+ assert.deepEqual(f.errors,[]);
+});
 test('owner preview is removed from navigation and workspace',async t=>{
  const f=await fixture();t.after(()=>f.dispose());
  assert.equal(f.d.querySelector('[data-view="ownerPreview"],#ownerPreviewView'),null);

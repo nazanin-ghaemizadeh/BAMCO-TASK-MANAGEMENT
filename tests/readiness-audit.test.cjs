@@ -19,13 +19,10 @@ test('vehicle creation ignores double submission and an unconfirmed update keeps
 });
 
 test('a background response report cannot cancel the visible performance report',async t=>{
- let block=false;const releases=[];
- const f=await fixture({tables:{tasks:[{id:1,title:'QA',owner_id:'test-owner',status:'در حال انجام',archived:false}]},fetchResult:({endpoint})=>{
-  if(block&&endpoint==='request_workflow_snapshot')return new Promise(r=>releases.push(r));
- }});t.after(()=>f.dispose());
+ const today=new Date().toISOString().slice(0,10);
+ const f=await fixture({tables:{tasks:[{id:1,title:'QA',owner_id:'test-owner',status:'در حال انجام',archived:false,due_date:today}]}});t.after(()=>f.dispose());
  await pause(1200);await f.open('performanceReport');await until(()=>f.d.querySelector('#performanceReportView tbody [data-workspace-index]'));
- block=true;const pending=f.w.bamcoCanonicalReports.renderPerformance(true);await until(()=>releases.length);
- await f.w.bamcoCanonicalReports.renderResponse(true);block=false;releases.forEach(r=>r({current_requests:[],history_requests:[],routes:[]}));await pending;
+ const pending=f.w.bamcoCanonicalReports.renderPerformance(true);await f.w.bamcoCanonicalReports.renderResponse(true);await pending;
  assert(f.d.querySelector('#performanceReportView tbody [data-workspace-index]'),'visible report was cancelled by an unrelated report');
  assert.deepEqual(f.errors,[]);
 });

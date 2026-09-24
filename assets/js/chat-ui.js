@@ -6,9 +6,9 @@ const avatar='<span class="chat-avatar" aria-hidden="true"><svg viewBox="0 0 24 
 const mediaIcon='▤',trashIcon='🗑',replyIcon='↩',editIcon='✎';
 const fileAllowed=file=>!!file&&file.size>0&&file.size<=LIMIT;
 function captureScroll(box){
- const oldTop=box.scrollTop,atBottom=box.scrollHeight-box.clientHeight-oldTop<48;
- const anchor=[...box.querySelectorAll('[data-message-id]')].find(node=>node.offsetTop+node.offsetHeight>oldTop);
- return {oldTop,atBottom,anchorId:anchor?.dataset.messageId||'',anchorOffset:anchor?anchor.offsetTop-oldTop:0};
+ const oldTop=box.scrollTop,bottomGap=Math.max(0,box.scrollHeight-box.clientHeight-oldTop),atBottom=bottomGap<12,viewportTop=box.getBoundingClientRect().top;
+ const anchor=[...box.querySelectorAll('[data-message-id]')].find(node=>node.getBoundingClientRect().bottom>viewportTop+1);
+ return {oldTop,bottomGap,atBottom,anchorId:anchor?.dataset.messageId||'',anchorOffset:anchor?anchor.getBoundingClientRect().top-viewportTop:0};
 }
 function restoreScroll(box,snapshot,{initial=false,forceBottom=false}={}){
  // Re-rendering replaces every message node.  A global smooth-scroll rule
@@ -17,7 +17,8 @@ function restoreScroll(box,snapshot,{initial=false,forceBottom=false}={}){
  box.style.setProperty('scroll-behavior','auto','important');
  if(initial||forceBottom||snapshot.atBottom){box.scrollTop=box.scrollHeight;restoreBehavior();return}
  const anchor=snapshot.anchorId&&[...box.querySelectorAll('[data-message-id]')].find(node=>node.dataset.messageId===snapshot.anchorId);
- box.scrollTop=Math.max(0,anchor?anchor.offsetTop-snapshot.anchorOffset:snapshot.oldTop);
+ if(anchor){const before=box.getBoundingClientRect().top;box.scrollTop=Math.max(0,box.scrollTop+anchor.getBoundingClientRect().top-before-snapshot.anchorOffset)}
+ else box.scrollTop=Math.max(0,Math.min(snapshot.oldTop,box.scrollHeight-box.clientHeight));
  restoreBehavior();
  function restoreBehavior(){if(previous)box.style.setProperty('scroll-behavior',previous,priority);else box.style.removeProperty('scroll-behavior')}
 }
@@ -37,7 +38,7 @@ async function mount(host,{id,title,subtitle='',actions=[],personId=null,groupPh
  if(active)active.close();
  if(!host)throw Error('پنل گفتگو آماده نیست.');
  const stateUI={id,reply:null,editing:null,pending:null,files:new Map(),busy:false,closed:false,urls:[],messages:[],loaded:false,loadRun:0};
- active=stateUI;stateUI.close=()=>{stateUI.closed=true;clearTimeout(stateUI.timer);stateUI.urls.forEach(URL.revokeObjectURL);stateUI.urls=[];stateUI.pending=null;stateUI.reply=null;stateUI.messages=[];document.querySelector('#chatMediaDialog[open]')?.close()};
+ active=stateUI;stateUI.close=()=>{stateUI.closed=true;clearTimeout(stateUI.timer);stateUI.urls.forEach(URL.revokeObjectURL);stateUI.urls=[];stateUI.pending=null;stateUI.reply=null;stateUI.messages=[];host.classList.remove('messenger-host');document.querySelector('#chatMediaDialog[open]')?.close()};
  host.classList.add('messenger-host');host.innerHTML=`<div class="messenger-head">${companyLogo?'<span class="chat-avatar company-chat-logo"><img src="assets/images/bamco-icon-192.png" alt="لوگوی شرکت"></span>':personId?`<span class="chat-avatar" data-profile-photo="${esc(personId)}">${esc(title[0])}</span>`:avatar}<div><strong>${esc(title)}</strong><small>${esc(subtitle||'گفتگو')}</small></div><button type="button" class="chat-search-toggle bamco-icon-button" aria-label="جست‌وجو در پیام‌ها">⌕</button><button type="button" class="chat-refresh bamco-icon-button" aria-label="تازه‌سازی پیام‌ها">↻</button></div><div class="chat-search-bar hidden"><input type="search" aria-label="جست‌وجو در پیام‌ها" placeholder="جست‌وجو در این گفت‌وگو…"><span class="chat-search-count"></span><button type="button" class="ghost" aria-label="بستن جست‌وجو">×</button></div><div class="messenger-messages" role="log" aria-live="polite"><div class="chat-empty">در حال دریافت پیام‌ها…</div></div><div class="chat-error" role="status"></div><div class="chat-reply hidden"><span></span><button type="button" aria-label="لغو پاسخ">×</button></div><div class="chat-pending hidden"><span></span><button type="button" aria-label="حذف پیوست">×</button></div><div class="chat-stickers hidden" aria-label="انتخاب شکلک و استیکر"></div><form class="messenger-compose"><button type="button" class="chat-attach bamco-icon-button" title="عکس یا فایل تا ۵ مگابایت" aria-label="پیوست عکس یا فایل">＋</button><button type="button" class="chat-sticker-toggle bamco-icon-button" title="شکلک و استیکر" aria-label="انتخاب شکلک و استیکر">☺</button><textarea rows="1" aria-label="متن پیام" placeholder="پیام بنویسید…"></textarea><button type="submit" class="chat-send bamco-icon-button" aria-label="ارسال پیام">➤</button><input type="file" hidden></form>`;
  if(groupPhoto&&!companyLogo)bamcoMedia.get('group-avatars',groupPhoto).then(src=>{if(stateUI.closed)return;const el=host.querySelector('.chat-avatar');if(el){const img=document.createElement('img');img.src=src;img.alt='عکس گروه';el.replaceChildren(img)}}).catch(()=>{});
  const q=s=>host.querySelector(s),error=message=>{if(stateUI.closed||!q('.chat-error'))return;q('.chat-error').textContent=message;if(message)toast(message,true)},box=q('.messenger-messages'),input=q('textarea');
@@ -49,14 +50,14 @@ async function mount(host,{id,title,subtitle='',actions=[],personId=null,groupPh
  const button=document.createElement('button');button.type='button';button.className='chat-file';button.textContent='↓ '+String(meta.name||'فایل')+' · '+Math.ceil(meta.size/1024).toLocaleString('fa-IR')+' کیلوبایت';node.append(button);
  const retrieve=async()=>{if(stateUI.files.has(meta.path))return stateUI.files.get(meta.path);const res=await storage('authenticated/chat-attachments/'+meta.path.split('/').map(encodeURIComponent).join('/'));const blob=await res.blob();if(blob.size>LIMIT)throw Error('اندازه فایل بیش از ۵ مگابایت است.');const url=URL.createObjectURL(blob);stateUI.urls.push(url);stateUI.files.set(meta.path,url);return url};
  button.onclick=async()=>{try{button.disabled=true;const url=await retrieve(),a=document.createElement('a');a.href=url;a.download=String(meta.name||'attachment');a.click()}catch(err){error(err.message)}finally{button.disabled=false}};
- if(['image/png','image/jpeg','image/webp','image/gif'].includes(meta.mime)){try{const url=await retrieve();if(stateUI.closed)return;const img=document.createElement('img');img.className='chat-photo';img.src=url;img.alt=String(meta.name||'تصویر پیوست');node.prepend(img)}catch(err){error(err.message)}}
+ if(['image/png','image/jpeg','image/webp','image/gif'].includes(meta.mime)){try{const url=await retrieve();if(stateUI.closed)return;const img=document.createElement('img');img.className='chat-photo';img.src=url;img.alt=String(meta.name||'تصویر پیوست');try{await img.decode()}catch{}if(stateUI.closed)return;node.prepend(img)}catch(err){error(err.message)}}
  if(meta.caption){const caption=document.createElement('div');caption.textContent=meta.caption;node.append(caption)}
  }
  async function load({forceBottom=false}={}){
   if(stateUI.closed)return;const run=++stateUI.loadRun;try{const [messages,people]=await Promise.all([selectAll('chat_messages',`select=*&thread_id=eq.${encodeURIComponent(id)}&deleted_at=is.null&order=created_at.asc`,200),directory()]);if(stateUI.closed||!host.isConnected||run!==stateUI.loadRun)return;
    window.BamcoProfiles?.upsert?.(people,{source:'chat-directory'});
    const scroll=captureScroll(box),signature=JSON.stringify(messages);if(signature===stateUI.signature)return;stateUI.signature=signature;stateUI.messages=messages;
-   const names=Object.fromEntries(people.map(p=>[p.id,window.BamcoProfiles?.label?.(p.id,p.display_name||p.full_name||'کاربر')||p.display_name||p.full_name||'کاربر'])),profiles=Object.fromEntries(people.map(p=>[p.id,p]));box.replaceChildren();let date='';
+   const names=Object.fromEntries(people.map(p=>[p.id,window.BamcoProfiles?.label?.(p.id,p.display_name||p.full_name||'کاربر')||p.display_name||p.full_name||'کاربر'])),profiles=Object.fromEntries(people.map(p=>[p.id,p]));box.replaceChildren();const mediaJobs=[];let date='';
    for(const m of messages){const day=new Date(m.created_at).toLocaleDateString('fa-IR');if(day!==date){const divider=document.createElement('div');divider.className='chat-date';divider.textContent=day;box.append(divider);date=day}
     const mine=!m.is_system&&m.sender_id===state.user.id,item=document.createElement('article');item.className='chat-bubble'+(mine?' mine':'');item.dataset.messageId=m.id;
     const deleteAllowed=window.BamcoAccess?.can?.('messages','delete')||window.BamcoAccess?.can?.('groupChat','delete')||window.BamcoAccess?.can?.('directMessages','delete')||window.BamcoAccess?.can?.('taskChats','delete');
@@ -64,11 +65,12 @@ async function mount(host,{id,title,subtitle='',actions=[],personId=null,groupPh
     const replyButton=item.querySelector('.message-reply');replyButton.classList.add('bamco-icon-button');replyButton.title='پاسخ';replyButton.setAttribute('aria-label','پاسخ');replyButton.textContent=replyIcon;
     const editButton=item.querySelector('.message-edit');if(editButton){editButton.classList.add('bamco-icon-button');editButton.title='ویرایش پیام';editButton.setAttribute('aria-label','ویرایش پیام');editButton.textContent=editIcon}
     const parent=messages.find(x=>String(x.id)===String(m.reply_to||m.reply_to_id));if(parent){const quote=document.createElement('blockquote');quote.textContent=summary(parent.body).slice(0,180);item.querySelector('.chat-body').before(quote)}
-    const body=item.querySelector('.chat-body');body.dir=/[A-Za-z]/.test(m.body||'')&&!/[\u0600-\u06ff]/.test(m.body||'')?'ltr':'rtl';if(m.body?.startsWith(FILE))attach(m,body);else if(m.body?.startsWith(STICKER)){const key=m.body.slice(STICKER.length),src=window.BAMCO_DESKTOP_ASSETS?.[key];if(src){const img=document.createElement('img');img.className='chat-sticker';img.src=src;img.alt='استیکر';body.append(img)}else body.textContent='استیکر'}else renderText(body,m.body||'');
+    const body=item.querySelector('.chat-body');body.dir=/[A-Za-z]/.test(m.body||'')&&!/[\u0600-\u06ff]/.test(m.body||'')?'ltr':'rtl';if(m.body?.startsWith(FILE))mediaJobs.push(attach(m,body));else if(m.body?.startsWith(STICKER)){const key=m.body.slice(STICKER.length),src=window.BAMCO_DESKTOP_ASSETS?.[key];if(src){const img=document.createElement('img');img.className='chat-sticker';img.src=src;img.alt='استیکر';body.append(img)}else body.textContent='استیکر'}else renderText(body,m.body||'');
     item.querySelector('.message-reply').onclick=()=>reply(m);const edit=item.querySelector('.message-edit');if(edit)edit.onclick=()=>{stateUI.reply=null;stateUI.editing=m;stateUI.pending=null;q('.chat-pending').classList.add('hidden');q('.chat-reply').classList.remove('hidden');q('.chat-reply span').textContent='ویرایش پیام';input.value=m.body;input.focus()};const del=item.querySelector('.message-delete');if(del)del.onclick=async()=>{if(!await window.bamcoConfirm('این پیام حذف شود؟'))return;try{del.disabled=true;await rpc('chat_delete_message',{p_message_id:Number(m.id)});await load()}catch(err){error(err.message);del.disabled=false}};
     if(readOnly){item.querySelector('.message-reply')?.remove();item.querySelector('.message-edit')?.remove();}
     box.append(item);
    }
+   await Promise.allSettled(mediaJobs);if(stateUI.closed||!host.isConnected||run!==stateUI.loadRun)return;
    bamcoMedia.avatars(host,people);filterMessages();
    if(!messages.length)box.innerHTML='<div class="chat-empty">'+avatar+'<strong>گفتگو از اینجا شروع می‌شود</strong><span>پیام، استیکر، عکس یا فایل تا ۵ مگابایت ارسال کنید.</span></div>';
    restoreScroll(box,scroll,{initial:!stateUI.loaded,forceBottom});stateUI.loaded=true;await rpc('chat_mark_read',{p_thread_id:id});if(stateUI.closed||run!==stateUI.loadRun)return;error('');document.dispatchEvent(new CustomEvent('bamco-messages-changed'));

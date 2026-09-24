@@ -197,6 +197,8 @@ test('enterprise pages keep a stable shared shell and persist the project, part 
   assert.equal(tables.part_handovers[0].delivery_type, 'temporary');
 
   await f.open('invoices');
+  await until(() => !d.querySelector('#invoiceFeatureRoot [data-invoice-action="access"]').classList.contains('hidden'));
+  assert.deepEqual([...d.querySelectorAll('#invoiceFeatureRoot .invoice-top-command-row > button')].filter(button => !button.classList.contains('hidden')).map(button => button.textContent.trim()), ['بازگشت به خانه', 'صورتحساب جدید', 'تازه‌سازی', 'مدیریت دسترسی']);
   d.querySelector('[data-invoice-action="new"]').click();
   const invoiceForm = d.querySelector('#invoiceForm');
   field(invoiceForm, 'invoice_number', 'INV-500');
@@ -209,6 +211,9 @@ test('enterprise pages keep a stable shared shell and persist the project, part 
   submit(w, invoiceForm);
   await until(() => tables.invoices.length === 1);
   assertActiveRoute('invoices');
+  assert.deepEqual([...d.querySelectorAll('#invoiceFeatureRoot .invoice-top-command-row > button')].map(button => button.textContent.trim()), ['بازگشت به خانه', 'بازگشت به کارت‌ها', 'ثبت مرحله پرداخت', 'ویرایش', 'حذف']);
+  assert.equal(d.querySelector('#invoiceFeatureRoot .invoice-detail > [data-invoice-action="back"]'), null);
+  assert.equal(d.querySelector('#invoiceFeatureRoot .invoice-detail .project-actions [data-invoice-action="payment"]'), null);
   assert.equal(tables.invoices[0].total_amount, 500000000);
   assert.equal(tables.invoices[0].account_party, 'آزمایشگاه نمونه');
 
