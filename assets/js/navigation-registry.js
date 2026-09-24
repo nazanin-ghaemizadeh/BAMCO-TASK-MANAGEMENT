@@ -232,6 +232,13 @@
     const local = view?.querySelector(LOCAL_MANAGE_CONTROL_SELECTOR) || null;
     const generic = document.getElementById('featureAccessControl');
 
+    // A selected record can deliberately suppress feature-level access controls while
+    // retaining its record actions.  The list view remains the only access entry point.
+    if (view?.querySelector('[data-feature-access-suppressed="true"]')) {
+      if (generic) configureManageControl(generic, '', false, { generic: true });
+      return;
+    }
+
     if (local) {
       if (generic) configureManageControl(generic, '', false, { generic: true });
       configureManageControl(local, featureKey, allowed);

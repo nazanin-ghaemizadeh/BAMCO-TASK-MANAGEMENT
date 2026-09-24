@@ -66,7 +66,7 @@ function afterMonitoringStart(value){return !monitoringStartedAt||String(value||
 async function loadMonitoringStart(){
  if(monitoringStartedAt!==null)return monitoringStartedAt;
  try{const rows=await selectAll('app_settings','select=key,value&key=eq.performance_monitoring_started_at&limit=1'),raw=rows?.[0]?.value;monitoringStartedAt=String(raw?.value||raw||'').trim()}catch{}
- if(!monitoringStartedAt)monitoringStartedAt='2026-09-14T00:00:00Z';
+ if(!monitoringStartedAt)monitoringStartedAt='2026-09-06T00:00:00Z';
  return monitoringStartedAt;
 }
 function temporal(t){try{return window.bamcoTaskPresentation?.(t)?.temporal||String(t?.due_state||'')}catch{return String(t?.due_state||'')}}
@@ -78,12 +78,12 @@ async function renderPerformance(force=false){
  const epoch=++renderEpoch.performanceReport,view=q('#performanceReportView');if(!view)return;const range=currentMonthRange();
  if(force||!q('.canonical-report',view))panel(view,'گزارش عملکرد',perfTools(range),'<div class="table-wrap"><table class="workspace-table"><thead></thead><tbody><tr><td class="empty">در حال دریافت اطلاعات…</td></tr></tbody></table></div>');window.bamcoInteriorUI?.decorateView?.(view);
  const from=inputIso(q('#canonicalPerfFrom')),to=inputIso(q('#canonicalPerfTo'));
- let requests=[];try{[requests]=await Promise.all([refreshWorkflowRows(),loadMonitoringStart()])}catch(err){if(epoch===renderEpoch.performanceReport&&state.view==='performanceReport')showError(view,err,'performanceReport');return}
+ try{await loadMonitoringStart()}catch(err){if(epoch===renderEpoch.performanceReport&&state.view==='performanceReport')showError(view,err,'performanceReport');return}
  if(epoch!==renderEpoch.performanceReport||state.view!=='performanceReport')return;const table=q('table',view);if(!table)return;
- const tasks=state.tasks||[],ids=[...new Set([...tasks.map(t=>t.owner_id),...tasks.map(t=>t.created_by),...requests.map(r=>r.requested_by)])].filter(Boolean),defaultRange=!!range&&from===range.from&&to===range.to,metrics=window.bamcoDashboardMetrics;
- const headers=['متولی','کل واگذارشده','فعال','هشدار','دیرکرد',defaultRange?'محول‌شده در این ماه':'محول‌شده در بازه',defaultRange?'انجام‌شده در این ماه':'انجام‌شده در بازه','درصد تکمیل',defaultRange?'درخواست تعریف وظیفه این ماه (برای دیگران)':'درخواست تعریف وظیفه در بازه (برای دیگران)',defaultRange?'درخواست تعریف وظیفه این ماه (برای خود)':'درخواست تعریف وظیفه در بازه (برای خود)'];
+ const tasks=state.tasks||[],usageStart=String(monitoringStartedAt||'2026-09-06T00:00:00Z').slice(0,10),defaultRange=!!range&&from===range.from&&to===range.to,definitionFrom=defaultRange?usageStart:(from&&from>usageStart?from:usageStart),definitionTasks=tasks.filter(t=>String(t?.source||'').toLowerCase()==='web'&&within(t.created_at,definitionFrom,to)),ids=[...new Set([...tasks.map(t=>t.owner_id),...tasks.map(t=>t.created_by),...definitionTasks.map(t=>t.created_by)])].filter(Boolean),definitionLabel=defaultRange?'از ۱۵ شهریور':'در بازهٔ انتخاب‌شده',metrics=window.bamcoDashboardMetrics;
+ const headers=['متولی','کل واگذارشده','فعال','هشدار','دیرکرد',defaultRange?'محول‌شده در این ماه':'محول‌شده در بازه',defaultRange?'انجام‌شده در این ماه':'انجام‌شده در بازه','درصد تکمیل',`تعریف وظیفه ${definitionLabel} (برای دیگران)`,`تعریف وظیفه ${definitionLabel} (برای خود)`];
  table.tHead.innerHTML='<tr>'+headers.map(h=>`<th>${esc(h)}</th>`).join('')+'</tr>';
- table.tBodies[0].innerHTML=ids.map((id,i)=>{const all=tasks.filter(t=>String(t.owner_id)===String(id)),active=all.filter(t=>!t.archived&&!terminal(t)),due=all.filter(t=>t.due_date&&(!from||String(t.due_date).slice(0,10)>=from)&&(!to||String(t.due_date).slice(0,10)<=to)),done=due.filter(completed),pct=due.length?Math.round(done.length/due.length*100):0,level=pct>=80?'high':pct>=60?'medium':pct>=40?'warning':'low',definitionRequests=requests.filter(r=>String(r.requested_by)===String(id)&&r.request_type==='create'&&within(r.created_at,from,to)),forSelf=definitionRequests.filter(r=>String(r.proposed_data?.owner_id||r.requested_by)===String(id)).length,forOthers=definitionRequests.length-forSelf;return `<tr data-canonical-row="1" data-workspace-index="${i}"><td>${esc(personName(id))}</td><td>${digits(all.length)}</td><td>${digits(active.length)}</td><td>${digits(active.filter(t=>temporal(t)==='دوره هشدار').length)}</td><td>${digits(active.filter(t=>temporal(t)==='دیرکرد').length)}</td><td>${digits(due.length)}</td><td>${digits(done.length)}</td><td class="completion-cell"><div class="performance-progress ${level}" style="--p:${Math.max(0,Math.min(100,pct))}%"><i></i><span>${digits(pct)}٪</span></div></td><td title="درخواست‌های تعریف وظیفه برای دیگران" data-definition-metric="for-others">${digits(forOthers)}</td><td title="درخواست‌های تعریف وظیفه برای خود" data-definition-metric="for-self">${digits(forSelf)}</td></tr>`}).join('')||'<tr><td colspan="10" class="empty">رکوردی ثبت نشده است.</td></tr>';
+ table.tBodies[0].innerHTML=ids.map((id,i)=>{const all=tasks.filter(t=>String(t.owner_id)===String(id)),active=all.filter(t=>!t.archived&&!terminal(t)),due=all.filter(t=>t.due_date&&(!from||String(t.due_date).slice(0,10)>=from)&&(!to||String(t.due_date).slice(0,10)<=to)),done=due.filter(completed),pct=due.length?Math.round(done.length/due.length*100):0,level=pct>=80?'high':pct>=60?'medium':pct>=40?'warning':'low',definitions=definitionTasks.filter(t=>String(t.created_by)===String(id)),forSelf=definitions.filter(t=>String(t.owner_id)===String(id)).length,forOthers=definitions.filter(t=>t.owner_id&&String(t.owner_id)!==String(id)).length;return `<tr data-canonical-row="1" data-workspace-index="${i}"><td>${esc(personName(id))}</td><td>${digits(all.length)}</td><td>${digits(active.length)}</td><td>${digits(active.filter(t=>temporal(t)==='دوره هشدار').length)}</td><td>${digits(active.filter(t=>temporal(t)==='دیرکرد').length)}</td><td>${digits(due.length)}</td><td>${digits(done.length)}</td><td class="completion-cell"><div class="performance-progress ${level}" style="--p:${Math.max(0,Math.min(100,pct))}%"><i></i><span>${digits(pct)}٪</span></div></td><td title="وظایف تعریف‌شده برای دیگران" data-definition-metric="for-others">${digits(forOthers)}</td><td title="وظایف تعریف‌شده برای خود" data-definition-metric="for-self">${digits(forSelf)}</td></tr>`}).join('')||'<tr><td colspan="10" class="empty">رکوردی ثبت نشده است.</td></tr>';
 }
 function responseLabel(v){return({replied:'پاسخ داده',awaiting:'بدون پاسخ',failed:'خطای ارسال',reminder_needed:'نیازمند یادآوری'})[v]||v||'—'}
 function channel(v){return v==='email'?'ایمیل':v==='portal'?'داخل سامانه':v==='both'?'هر دو':v||'—'}
@@ -116,10 +116,12 @@ function refreshVisibleReport(detail={}){
  const domain=String(detail.domain||detail.table||'').toLowerCase();
  if(!state?.token||!['profiles','organization','tasks','workflow','notifications','access'].includes(domain))return;
  clearTimeout(domainRefreshTimer);
+ // The main task state refresh is scheduled after the same event.  Render this
+ // report afterwards so its counts always use the refreshed canonical task set.
  domainRefreshTimer=setTimeout(()=>{
   if(state.view==='performanceReport')void renderPerformance(false);
   else if(state.view==='responseReport'&&['notifications','profiles','access'].includes(domain))void renderResponse(false);
- },60);
+ },180);
 }
 function bindReportControls(){
  document.addEventListener('click',e=>{
