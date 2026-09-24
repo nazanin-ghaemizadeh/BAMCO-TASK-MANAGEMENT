@@ -25,14 +25,15 @@ test('access management is a normal action beside the current page controls',asy
   const f=await fixture(),{d}=f;t.after(()=>f.dispose());
   await f.open('responseTracking');
   await until(()=>{
-    const button=d.querySelector('#featureAccessControl');
+    const button=d.querySelector('#responseTrackingView [data-response-access]');
     return button&&!button.classList.contains('hidden')&&button.closest('#responseTrackingView')&&button.parentElement?.classList.contains('bamco-command-bar');
   });
-  const button=d.querySelector('#featureAccessControl');
+  const button=d.querySelector('#responseTrackingView [data-response-access]');
   assert(button.classList.contains('ghost'));
   assert.equal(button.textContent.trim(),'مدیریت دسترسی');
   assert(button.parentElement.classList.contains('bamco-command-bar'));
   assert(button.closest('#responseTrackingView'));
+  assert.equal(d.querySelector('#responseTrackingView #featureAccessControl'),null,'کنترل عمومی نباید کنار کنترل محلی تکرار شود');
 
   const css=fs.readFileSync(path.join(__dirname,'../assets/css/access-editor.css'),'utf8');
   assert.doesNotMatch(css,/body\.content-only[\s\S]*?#featureAccessControl/,'access management must not return to the old floating fixed-position layout');

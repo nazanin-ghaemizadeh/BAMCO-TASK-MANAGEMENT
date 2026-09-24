@@ -11,6 +11,7 @@ if(typeof document==='undefined')return;
 const q=(s,r=document)=>r.querySelector(s),qa=(s,r=document)=>[...r.querySelectorAll(s)],dt=v=>v&&Number.isFinite(Date.parse(v))?new Date(v).toLocaleString('fa-IR'):'—',word=v=>labels[v]||v||'—';
 function name(id,fallback=id||'—'){const canonical=window.BamcoProfiles?.label?.(id,'');if(canonical)return canonical;const profile=(state.profiles||[]).find(p=>String(p.id)===String(id));return profile?.display_name||profile?.full_name||profile?.email||fallback;}
 const titles={sentMessages:'پیام‌های ارسال‌شده',loginActivity:'ورود و خروج کاربران',activeSessions:'نشست‌های فعال',loginReport:'گزارش ورود و خروج',performanceReport:'گزارش عملکرد',messageReport:'گزارش پیام‌ها',responseReport:'گزارش پاسخ‌ها',requestReport:'گزارش درخواست‌ها',systemOptions:'وضعیت‌ها و اولویت‌ها'};
+const externallyOwnedTabs=new Set(['sentMessages']);
 // Legacy report aliases still render through this workspace, but their access
 // decision comes from the same feature registry as every navigable tab.
 const featureForWorkspace=id=>window.BamcoNavigationCatalog?.featureForRoute?.(id)||({messageReport:'messages'})[id]||id;
@@ -74,7 +75,7 @@ function bind(){
  // Realtime domain invalidation is the primary refresh path. Focus is only a
  // recovery mechanism for a suspended tab; report screens do not poll.
  const refreshSessions=()=>{const id=state.view,view=q('#'+id+'View');if(!state.token||document.hidden||!['activeSessions','loginActivity','loginReport'].includes(id)||!view||view.classList.contains('hidden')||view.querySelector('.workspace-loading')||view.querySelector('[data-report-search]')?.value||view.contains(document.activeElement)||document.querySelector('dialog[open]')||window.bamcoSelection?.ids('#'+id+'View').length)return;render(id,true)};
- const refreshVisibleReport=detail=>{const domain=String(detail?.domain||detail?.table||'').toLowerCase(),id=state.view;if(!state.token||!Object.hasOwn(titles,id))return;if(['workflow','tasks','profiles','notifications','access'].includes(domain)&&['performanceReport','requestReport','messageReport','sentMessages','responseReport'].includes(id))void render(id,true);if((domain==='profiles'&&['activeSessions','loginActivity','loginReport'].includes(id))||['user_sessions','sessions'].includes(domain))refreshSessions()};
+ const refreshVisibleReport=detail=>{const domain=String(detail?.domain||detail?.table||'').toLowerCase(),id=state.view;if(!state.token||!Object.hasOwn(titles,id))return;if(['workflow','tasks','profiles','notifications','access'].includes(domain)&&['performanceReport','requestReport','messageReport','responseReport'].includes(id))void render(id,true);if((domain==='profiles'&&['activeSessions','loginActivity','loginReport'].includes(id))||['user_sessions','sessions'].includes(domain))refreshSessions()};
  document.addEventListener('bamco:domain-invalidated',event=>refreshVisibleReport(event.detail));
  document.addEventListener('bamco:profiles-updated',()=>refreshVisibleReport({domain:'profiles'}));
  document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshSessions()});window.addEventListener('focus',refreshSessions);
@@ -82,7 +83,7 @@ function bind(){
  document.addEventListener('input',e=>{if(!e.target.matches('[data-report-search]'))return;const term=e.target.value.trim().toLocaleLowerCase();qa('tbody tr[data-workspace-index]',e.target.closest('.view')).forEach(r=>{r.classList.toggle('workspace-search-hidden',!r.textContent.toLocaleLowerCase().includes(term));r.hidden=r.classList.contains('workspace-search-hidden')});e.target.dispatchEvent(new Event('change',{bubbles:true}))});
 
  function extras(){for(const id of ['kanban','archive']){const bar=q('#'+id+'View .task-toolbar');if(bar&&!q('[data-task-history]',bar)){const b=document.createElement('button');b.type='button';b.className='ghost';b.dataset.taskHistory='';b.textContent='تاریخچه وظیفه';bar.append(b)}}}
- extras();const activeView=state.view;if(Object.hasOwn(titles,activeView))setTimeout(()=>render(activeView),0);window.bamcoLoadTaskOptions().catch(err=>console.warn('Task options could not be loaded',err));window.bamcoTaskPresentation=presentation;window.bamcoTabs={owns:id=>Object.hasOwn(titles,id),render};
+ extras();const activeView=state.view;if(Object.hasOwn(titles,activeView)&&!externallyOwnedTabs.has(activeView))setTimeout(()=>render(activeView),0);window.bamcoLoadTaskOptions().catch(err=>console.warn('Task options could not be loaded',err));window.bamcoTaskPresentation=presentation;window.bamcoTabs={owns:id=>Object.hasOwn(titles,id)&&!externallyOwnedTabs.has(id),render};
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bind,{once:true});else bind();
 })();

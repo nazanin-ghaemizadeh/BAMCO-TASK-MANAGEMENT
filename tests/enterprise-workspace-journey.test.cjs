@@ -139,6 +139,9 @@ test('enterprise pages keep a stable shared shell and persist the project, part 
   assert.match(d.querySelector('#projectFeatureRoot').textContent, /نمای گانت/);
   d.querySelector('[data-project-view="wbs"]').click();
   assert.match(d.querySelector('.project-wbs-tree').textContent, /تحویل اولیه/);
+  assert.ok(d.querySelector('.project-wbs-forest'), 'ساختار شکست از ریشه به شاخه‌های عمودی تقسیم می‌شود');
+  assert.equal(d.querySelector('.project-wbs-root-card').dataset.wbsNode, 'project-root');
+  assert.ok(d.querySelector('.project-wbs-connectors'), 'اتصال‌های درخت در یک لایهٔ اندازه‌گیری‌شده رسم می‌شوند');
   d.querySelector('[data-project-item-open="1000"]').dispatchEvent(new w.MouseEvent('dblclick', { bubbles: true }));
   assert.equal(d.querySelector('#projectItemDialog').open, true, 'دوبارکلیک ساختار شکست، ویرایش فعالیت را باز می‌کند');
   assert.ok(d.querySelector('#projectItemDialog [data-project-item-delete="1000"]'), 'حذف در همان پنجرهٔ ویرایش فعالیت موجود است');
@@ -164,6 +167,9 @@ test('enterprise pages keep a stable shared shell and persist the project, part 
   d.querySelector('[data-project-close]').click();
   d.querySelector('[data-project-view="gantt"]').click();
   assert.ok(d.querySelector('.gantt-direct.gantt-pro-wrap'), 'گانت کل فضای صفحهٔ پروژه را می‌گیرد');
+  assert.ok(d.querySelector('.gantt-direct .gantt-pro-timeline-scroll'), 'فقط تقویم اسکرول افقی مستقل دارد');
+  assert.match(d.querySelector('.gantt-direct .gantt-pro-timeline').getAttribute('style'), /--gantt-cell-width:/, 'هر روز دقیقاً یک ستون زمان دارد');
+  assert.equal(d.querySelectorAll('.gantt-pro-label-row').length, d.querySelectorAll('.gantt-pro-track').length, 'شرح و تقویم ردیف‌های هم‌تراز دارند');
   assert.ok(d.querySelector('.gantt-direct .gantt-dependencies path'), 'رابطه روی گانت با فلش نمایش داده می‌شود');
   assert.ok(d.querySelector('.gantt-direct .gantt-pro-months').textContent.trim(), 'سال و ماه در گانت نمایش داده می‌شود');
   d.querySelector('.gantt-direct [data-project-item-open="1000"]').dispatchEvent(new w.MouseEvent('dblclick', { bubbles: true }));

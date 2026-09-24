@@ -147,8 +147,8 @@ async def manager_checks(page,result):
     headers=await page.locator('#messageCenterView thead tr:first-child th').all_text_contents()
     assert headers==['نام','کار فعال','هشدار','دیرکرد','وضعیت پیام','آخرین ارسال'],f'message headers: {headers!r}'
     controls=await command_texts(page,'#messageCenterView .message-command-row')
-    assert controls[:3]==['بازگشت به خانه','خروجی اکسل','تازه‌سازی'],f'message controls: {controls!r}'
-    assert len(controls)>=5 and controls[3].startswith('کانال ارسال') and controls[4]=='ارسال',f'message channel/send controls: {controls!r}'
+    assert controls[:4]==['بازگشت به خانه','خروجی اکسل','تازه‌سازی','مدیریت دسترسی'],f'message controls: {controls!r}'
+    assert len(controls)>=6 and controls[4].startswith('کانال ارسال') and controls[5]=='ارسال',f'message channel/send controls: {controls!r}'
     assert await visible_count(page,'#messageCenterView button')>=4,'message controls not visible'
     assert await visible_count(page,'#messageCenterView .bamco-management-toolbar .content-back')==0,'duplicate message-center home button visible'
     await expect(page.locator('#messageChannel')).to_be_visible()
@@ -167,7 +167,7 @@ async def manager_checks(page,result):
     controls=await command_texts(page,'#sentMessagesView .sent-command-row')
     assert controls[:3]==['بازگشت به خانه','خروجی اکسل','تازه‌سازی'],f'sent controls: {controls!r}'
     headers=await page.locator('#sentMessagesView thead tr:first-child th').all_text_contents()
-    expected=['ردیف','نوع','فرستنده','گیرنده','موضوع','کانال','وضعیت','زمان ارسال','تلاش','خطا','جزئیات']
+    expected=['ردیف','نوع','فرستنده','گیرنده','موضوع','کانال','وضعیت','زمان ارسال','تلاش','جزئیات']
     assert headers==expected,f'sent headers: {headers!r}'
     assert await page.locator('#sentMessagesView .sent-overview,#sentMessagesView .sent-log-summary').count()==0,'sent overview cards returned'
     assert await page.locator('#sentSearch,#sentStatusFilter,#sentChannelFilter').count()==0,'removed sent-message filters returned'
@@ -179,9 +179,9 @@ async def manager_checks(page,result):
     controls=await command_texts(page,'#responseTrackingView .response-command-row')
     assert controls[0]=='بازگشت به خانه','tracking home order'
     assert 'از تاریخ' in controls[1] and 'تا تاریخ' in controls[1],'tracking date order'
-    assert controls[2:4]==['تازه‌سازی','خروجی اکسل'],f'tracking controls: {controls!r}'
-    assert all(label in controls[4] for label in ('داخل سامانه','ایمیل','هر دو')),f'tracking channel control: {controls!r}'
-    assert controls[5]=='ارسال یادآوری',f'tracking reminder control: {controls!r}'
+    assert controls[2:5]==['تازه‌سازی','مدیریت دسترسی','خروجی اکسل'],f'tracking controls: {controls!r}'
+    assert all(label in controls[5] for label in ('داخل سامانه','ایمیل','هر دو')),f'tracking channel control: {controls!r}'
+    assert controls[6]=='ارسال یادآوری',f'tracking reminder control: {controls!r}'
     assert await page.locator('#responseFrom').input_value() and await page.locator('#responseTo').input_value(),'tracking current-month defaults missing'
     assert 'شناسه پیگیری' not in ''.join(await page.locator('#responseTrackingView thead tr:first-child th').all_text_contents()),'tracking id still visible'
     assert await visible_count(page,'#responseTrackingView .bamco-management-toolbar .content-back')==0,'duplicate tracking home button visible'

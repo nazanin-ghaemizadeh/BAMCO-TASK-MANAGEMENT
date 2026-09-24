@@ -22,7 +22,8 @@ test('system message UI blocks generic table-suite controls and preserves inbox 
   assert.doesNotMatch(root,/qa\('\[data-mid\]',list\)\.forEach\(x=>x\.remove\(\)\)/);
   assert.match(root,/conversation-route-count/);
   assert.match(root,/#d52f2f/);
-  assert.match(root,/پاک کردن زنجیره/);
+  assert.match(root,/className='bamco-icon-button chat-head-icon danger system-chain-clear'/);
+  assert.match(root,/setAttribute\('aria-label','حذف گفت‌وگو'\)/);
   assert.match(root,/chat_clear_system_thread/);
 });
 

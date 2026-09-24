@@ -8,7 +8,7 @@ test('response tracking owns requested command order, current-month dates, selec
  const f=await fixture({tables:{message_response_tracking:[{delivery_id:11,recipient_id:'test-owner',recipient_name:'متولی آزمایشی',recipient_email:'owner@example.test',channel:'portal',subject:'پیام آزمایشی',sent_at:new Date().toISOString(),delivery_status:'sent',response_status:'awaiting',reminder_count:0}]}});t.after(()=>f.dispose());
  await f.open('responseTracking');
  const bar=f.d.querySelector('#responseTrackingView .response-command-row');assert.ok(bar);
- const texts=directTexts(bar);assert.match(texts[0],/بازگشت به خانه/);assert.match(texts[1],/از تاریخ/);assert.match(texts[2],/تازه‌سازی/);assert.match(texts[3],/خروجی اکسل/);assert.match(bar.querySelector('#sendResponseReminder').textContent,/ارسال یادآوری/);assert.equal(bar.querySelectorAll('select option').length,3);
+ const texts=directTexts(bar);assert.match(texts[0],/بازگشت به خانه/);assert.match(texts[1],/از تاریخ/);assert.match(texts[2],/تازه‌سازی/);assert.match(texts[3],/مدیریت دسترسی/);assert.match(texts[4],/خروجی اکسل/);assert.match(bar.querySelector('#sendResponseReminder').textContent,/ارسال یادآوری/);assert.equal(bar.querySelectorAll('select option').length,3);
  assert.ok(f.d.querySelector('#responseFrom').value);assert.ok(f.d.querySelector('#responseTo').value);
  assert.doesNotMatch(f.d.querySelector('#responseTrackingView table').textContent,/شناسه پیگیری/);
  const row=f.d.querySelector('#responseTrackingBody tr[data-delivery="11"]');assert.ok(row);assert.equal(f.d.querySelector('#sendResponseReminder').disabled,true);row.click();await pause(20);assert.equal(f.d.querySelector('#responseTrackingBody tr[data-delivery="11"]').getAttribute('aria-selected'),'true');assert.equal(f.d.querySelector('#sendResponseReminder').disabled,false);
@@ -31,7 +31,7 @@ test('message center command row is home, excel, refresh, green send and local r
  const f=await fixture({tables:{message_recipient_live_state:[{recipient_id:'test-owner',recipient_name:'متولی آزمایشی',email:'owner@example.test',active_count:2,warning_count:1,overdue_count:0,sticker_state:1,last_sent_at:null}]}});t.after(()=>f.dispose());
  await f.open('messageCenter');await until(()=>f.d.querySelector('#messageCenterView .message-command-row'));
  const bar=f.d.querySelector('#messageCenterView .message-command-row'),texts=directTexts(bar);
- assert.deepEqual([...bar.querySelectorAll(':scope > button')].map(b=>b.textContent.trim()),['بازگشت به خانه','خروجی اکسل','تازه‌سازی','ارسال']);assert.equal(bar.querySelectorAll('#messageChannel option').length,3);
+ assert.deepEqual([...bar.querySelectorAll(':scope > button')].map(b=>b.textContent.trim()),['بازگشت به خانه','خروجی اکسل','تازه‌سازی','مدیریت دسترسی','ارسال']);assert.equal(bar.querySelectorAll('#messageChannel option').length,3);
  assert.match(f.d.querySelector('#bamcoMessageCenterCommandCss').textContent,/sendSelectedMessages[^}]*background:#218764/);
  const row=f.d.querySelector('#messageCenterBody tr[data-id="test-owner"]'),send=f.d.querySelector('#sendSelectedMessages');assert.ok(row);assert.equal(send.disabled,true);row.click();await pause(20);assert.equal(row.classList.contains('suite-selected'),true);assert.equal(send.disabled,false);assert.match(f.d.querySelector('#messageSelectionCount').textContent,/۱ نفر/);
  assert.equal(f.errors.length,0,f.errors.join('\n'));
@@ -40,8 +40,10 @@ test('message center command row is home, excel, refresh, green send and local r
 test('sent messages uses unified log, has no overview cards and requested controls',async t=>{
  const f=await fixture({tables:{sent_message_log:[{log_key:'portal:1',source_type:'portal_event',source_id:1,recipient_id:'test-owner',recipient_name:'متولی آزمایشی',subject:'به‌روزرسانی وظیفه',channel:'portal',delivery_status:'sent',sent_at:new Date().toISOString(),attempt_count:0,error_message:null,sender_name:'سامانه',snapshot_id:null,portal_message_id:1}]}});t.after(()=>f.dispose());
  await f.open('sentMessages');await until(()=>f.d.querySelector('#sentMessagesView .sent-command-row'));
+ assert.equal(f.w.bamcoTabs.owns('sentMessages'),false,'نمای نهایی پیام‌های ارسال‌شده فقط یک مالک رندر دارد');
  const bar=f.d.querySelector('#sentMessagesView .sent-command-row');assert.deepEqual(directTexts(bar).slice(0,3),['بازگشت به خانه','خروجی اکسل','تازه‌سازی']);
  assert.equal(f.d.querySelectorAll('#sentMessagesView .sent-overview,#sentMessagesView .sent-log-summary').length,0);
+ assert.equal([...f.d.querySelectorAll('#sentMessagesView thead th')].some(th=>th.textContent.trim()==='خطا'),false);
  assert.match(f.d.querySelector('#sentMessagesView tbody').textContent,/پیام داخل سامانه/);assert.match(f.d.querySelector('#sentMessagesView tbody').textContent,/به‌روزرسانی وظیفه/);
  assert.ok(f.calls.some(c=>c.endpoint==='sent_message_log'));
  assert.equal(f.errors.length,0,f.errors.join('\n'));
