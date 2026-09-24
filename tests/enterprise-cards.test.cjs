@@ -4,7 +4,7 @@ const fs=require('node:fs');
 const {JSDOM}=require('jsdom');
 
 for(const [route,script,dialog,create,table] of [
- ['projects','project-management.js','projectDialog','پروژه جدید','projects'],
+ ['projects','project-management.js','projectDialog','افزودن پروژه','projects'],
  ['invoices','financial-obligations.js','invoiceDialog','صورتحساب جدید','invoices']
 ])test(`${route}: create opens and selecting a card reveals details`,async()=>{
  const dom=new JSDOM(`<section id="${route}View"><div id="${route==='projects'?'project':'invoice'}FeatureRoot"></div></section>`,{url:'https://example.test/',runScripts:'outside-only'});
@@ -24,13 +24,13 @@ for(const [route,script,dialog,create,table] of [
  assert(root.querySelector('#'+dialog).open);dom.window.close();
 });
 
-test('projects: a supervisor can assign only within their organizational branch',async()=>{
+test('projects: the project owner is the creator and assignment controls are not shown',async()=>{
  const dom=new JSDOM('<section id="projectsView"><div id="projectFeatureRoot"></div></section>',{url:'https://example.test/',runScripts:'outside-only'});
  const w=dom.window,registered=new Map();w.HTMLDialogElement.prototype.showModal=function(){this.open=true};
  w.state={profile:{id:'lead',role:'supervisor'},user:{id:'lead'},organizationScope:{descendantUserIds:['expert']},profiles:[{id:'lead',display_name:'سرپرست'},{id:'expert',display_name:'کارشناس'},{id:'outside',display_name:'نامرتبط'}]};w.BamcoNavigation={registerView:(id,options)=>registered.set(id,options)};
  w.bamcoEnterprise={q:(s,r=w.document)=>r.querySelector(s),esc:String,fa:String,date:v=>v||'—',dateTime:v=>v||'—',progress:()=>'',statusText:String,personName:()=>'',fetchRows:async name=>name==='projects'?[]:[],insert:async()=>[{id:2}],setBusy:()=>{},notify:()=>{}};
  w.eval(fs.readFileSync('assets/js/project-management.js','utf8'));w.document.dispatchEvent(new w.Event('DOMContentLoaded'));await registered.get('projects').activate();
  w.document.querySelector('[data-project-action="new"]').click();
- const responsible=[...w.document.querySelector('[name="responsible_id"]').options].map(option=>option.value);
- assert.deepEqual(responsible,['lead','expert']);assert.match(w.document.querySelector('.panel-head h3').textContent,/زیرمجموعه/);dom.window.close();
+ assert.equal(w.document.querySelector('[name="responsible_id"]'),null);
+ assert.match(w.document.querySelector('.panel-head h3').textContent,/زیرمجموعه/);dom.window.close();
 });

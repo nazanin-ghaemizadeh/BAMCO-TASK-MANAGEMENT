@@ -105,6 +105,61 @@ test('enterprise pages keep a stable shared shell and persist the project, part 
   assert.equal(tables.projects[0].owner_id, 'test-manager');
   assert.equal(tables.projects[0].manager_id, 'test-manager');
   assert.match(d.querySelector('#projectFeatureRoot').textContent, /پروژه آزمایشی/);
+  assert.ok(d.querySelector('[data-project-action="edit"]'));
+  assert.ok(d.querySelector('[data-project-action="delete"]'));
+
+  d.querySelector('[data-project-action="item"]').click();
+  assert.equal(d.querySelector('#projectItemDialog').open, true, 'آیتم پروژه در پنجرهٔ مرکزی باز می‌شود');
+  let projectItemForm = d.querySelector('#projectItemForm');
+  assert.equal(projectItemForm.elements.owner_id, undefined, 'مسئول آیتم از فرم حذف شده است');
+  assert.equal(projectItemForm.elements.weight, undefined, 'وزن از فرم حذف شده است');
+  field(projectItemForm, 'title', 'فاز تحلیل');
+  field(projectItemForm, 'item_planned_start', '2026-09-21');
+  field(projectItemForm, 'item_planned_end', '2026-09-28');
+  submit(w, projectItemForm);
+  await until(() => tables.project_items.length === 1);
+  assert.equal(tables.project_items[0].owner_id, 'test-manager');
+  assert.equal(tables.project_items[0].weight, 1);
+
+  d.querySelector('[data-project-action="item"]').click();
+  projectItemForm = d.querySelector('#projectItemForm');
+  field(projectItemForm, 'item_type', 'milestone');
+  projectItemForm.elements.item_type.dispatchEvent(new w.Event('change', { bubbles: true }));
+  assert.equal(projectItemForm.querySelector('.item-milestone-date').classList.contains('hidden'), false);
+  field(projectItemForm, 'title', 'تحویل اولیه');
+  field(projectItemForm, 'milestone_date', '2026-10-01');
+  submit(w, projectItemForm);
+  await until(() => tables.project_items.length === 2);
+  assert.equal(tables.project_items[1].planned_start, '2026-10-01');
+  assert.equal(tables.project_items[1].planned_end, '2026-10-01');
+  assert.match(d.querySelector('#projectFeatureRoot').textContent, /نمای گانت/);
+  d.querySelector('[data-project-view="wbs"]').click();
+  assert.match(d.querySelector('.wbs-board').textContent, /تحویل اولیه/);
+  d.querySelector('[data-project-item-edit="1000"]').click();
+  projectItemForm = d.querySelector('#projectItemForm');
+  assert.equal(d.querySelector('#projectItemDialog').open, true);
+  field(projectItemForm, 'title', 'فاز تحلیل و طراحی');
+  submit(w, projectItemForm);
+  await until(() => tables.project_items[0].title === 'فاز تحلیل و طراحی');
+
+  d.querySelector('[data-project-action="dependency"]').click();
+  assert.equal(d.querySelector('#projectDependencyDialog').open, true, 'روابط نیز در پنجرهٔ مرکزی هستند');
+  const dependencyForm = d.querySelector('#projectDependencyForm');
+  field(dependencyForm, 'predecessor_item_id', '1000');
+  field(dependencyForm, 'successor_item_id', '1001');
+  submit(w, dependencyForm);
+  await until(() => tables.project_dependencies.length === 1);
+  d.querySelector('[data-project-action="dependency"]').click();
+  d.querySelector('[data-project-dependency-edit="1000"]').click();
+  assert.equal(d.querySelector('#projectDependencyDialog').open, true);
+  assert.equal(d.querySelector('#projectDependencyForm').elements.dependency_id.value, '1000');
+
+  d.querySelector('[data-project-action="edit"]').click();
+  const editProjectForm = d.querySelector('#projectForm');
+  assert.equal(d.querySelector('#projectDialog').open, true);
+  field(editProjectForm, 'title', 'پروژه آزمایشی اصلاح‌شده');
+  submit(w, editProjectForm);
+  await until(() => tables.projects[0].title === 'پروژه آزمایشی اصلاح‌شده');
 
   await f.open('parts');
   d.querySelector('[data-part-action="new"]').click();
