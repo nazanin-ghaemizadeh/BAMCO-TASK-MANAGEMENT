@@ -16,6 +16,7 @@
     if(!view?.matches('.workspace > .view')||excluded.has(view.id))return;
     const route=view.id.replace(/View$/,'');
     if(!window.BamcoNavigationCatalog?.standaloneLayoutRoutes?.has(route))return;
+    if(view.querySelector('[data-home-return-suppressed="true"]'))return;
     const host=view.querySelector('.feature-toolbar-actions,.vehicle-toolbar,.bamco-command-bar');
     if(!host||view.querySelector('.content-back,[data-home-action]'))return;
     const back=document.createElement('button');back.type='button';back.className='ghost';

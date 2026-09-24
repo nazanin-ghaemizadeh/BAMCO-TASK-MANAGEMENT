@@ -18,6 +18,22 @@ test('enterprise modules use the canonical navigation and shared UI bundle', () 
   assert.match(read('assets/css/enterprise-features.css'), /enterprise-progress/);
 });
 
+test('selected project and access matrix share the approved toolbar and scroll contracts', () => {
+  const projects = read('assets/js/project-management.js');
+  const interior = read('assets/js/interior-ui.js');
+  const access = read('assets/js/access-editor.js');
+  const css = read('assets/css/enterprise-features.css');
+  const selectedToolbar = projects.match(/const commandBar = current \? `([^`]+)`/)?.[1] || '';
+  assert.match(selectedToolbar, /data-project-action="back">بازگشت به پروژه‌ها/);
+  assert.doesNotMatch(selectedToolbar, /data-home-action/);
+  assert.match(selectedToolbar, /data-home-return-suppressed="true"/);
+  assert.match(interior, /querySelector\('\[data-home-return-suppressed="true"\]'\)/);
+  assert.doesNotMatch(access, /مدیریت یکپارچهٔ دسترسی افراد به کارت‌ها و تب‌های سامانه/);
+  assert.match(access, /id="accessMatrixFeatureRoot"/);
+  assert.match(access, /type="search" class="search" data-access-matrix-search/);
+  assert.match(css, /#projectFeatureRoot \.wbs-direct\{[^}]*height:100%[^}]*overflow:auto/);
+});
+
 test('manual approval-chain write UI is retired and organization workflow is the active source', () => {
   const bundle = read('assets/js/bamco.bundle.js');
   const migration = read('supabase/migrations/20260920120000_organizational_platform.sql');

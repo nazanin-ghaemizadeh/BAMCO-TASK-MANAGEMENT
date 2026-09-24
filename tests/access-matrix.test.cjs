@@ -28,6 +28,10 @@ test('people access matrix mirrors aliases and saves through the canonical acces
     await until(() => f.d.querySelector('.access-matrix-table'));
     assert.match(f.d.querySelector('.access-matrix-table').textContent, /مدیریت افراد/);
     assert.match(f.d.querySelector('.access-matrix-table').textContent, /مدیریت پروژه‌ها/);
+    assert.equal(f.d.querySelector('#accessMatrixFeatureRoot > .feature-toolbar h3').textContent.trim(), 'دسترسی‌ها');
+    assert.equal(f.d.querySelector('#accessMatrixFeatureRoot .feature-toolbar small'), null, 'توضیح اضافی سربرگ نمایش داده نمی‌شود');
+    assert.equal(f.d.querySelector('[data-access-matrix-search]').classList.contains('search'), true, 'جست‌وجو از استایل استاندارد سامانه استفاده می‌کند');
+    assert.equal(f.d.querySelector('#accessMatrixView').textContent.includes('مدیریت یکپارچهٔ دسترسی افراد به کارت‌ها و تب‌های سامانه'), false);
     assert.equal(f.d.querySelectorAll('#accessMatrixView [data-home-action],#accessMatrixView .content-back').length, 1, 'فقط یک بازگشت به خانه نمایش داده می‌شود');
     assert.equal(f.d.querySelector('.access-matrix-table').hasAttribute('data-no-pagination'), true);
     assert.equal(f.d.querySelector('.access-matrix-table').textContent.includes('example.test'), false, 'ایمیل زیر نام افراد نمایش داده نمی‌شود');

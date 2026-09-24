@@ -107,6 +107,8 @@ test('enterprise pages keep a stable shared shell and persist the project, part 
   assert.match(d.querySelector('#projectFeatureRoot').textContent, /پروژه آزمایشی/);
   assert.ok(d.querySelector('[data-project-action="edit"]'));
   assert.ok(d.querySelector('[data-project-action="delete"]'));
+  assert.equal(d.querySelector('#projectFeatureRoot .project-top-command-row [data-home-action]'), null, 'داخل پروژهٔ انتخاب‌شده بازگشت به خانه نمایش داده نمی‌شود');
+  assert.equal(d.querySelector('#projectFeatureRoot .project-top-command-row button').textContent.trim(), 'بازگشت به پروژه‌ها');
 
   d.querySelector('[data-project-action="item"]').click();
   assert.equal(d.querySelector('#projectItemDialog').open, true, 'فعالیت پروژه در پنجرهٔ مرکزی باز می‌شود');
@@ -158,6 +160,7 @@ test('enterprise pages keep a stable shared shell and persist the project, part 
 
   assert.match(d.querySelector('#projectFeatureRoot').textContent, /نمای گانت/);
   d.querySelector('[data-project-view="wbs"]').click();
+  assert.ok(d.querySelector('.wbs-direct'), 'ساختار شکست سطح اسکرول مستقل دارد');
   assert.match(d.querySelector('.project-wbs-tree').textContent, /تحویل اولیه/);
   assert.ok(d.querySelector('.project-wbs-forest'), 'ساختار شکست از ریشه به شاخه‌های عمودی تقسیم می‌شود');
   assert.equal(d.querySelector('.project-wbs-root-card').dataset.wbsNode, 'project-root');
