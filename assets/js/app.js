@@ -154,7 +154,7 @@ function hasApprovalBypass(){
   if(typeof access?.can==='function'||typeof window.canAccessFeature==='function')return featureAllowed('approvals','bypass_approval');
   return isManager();
 }
-function emptyOrganizationScope(){return{loaded:false,rows:[],positionIds:[],ownPositionIds:[],directReportUserIds:[],descendantUserIds:[],hasSubordinates:false}}
+function emptyOrganizationScope(){return{loaded:false,rows:[],positionIds:[],ownPositionIds:[],ownRoleKeys:[],directReportUserIds:[],descendantUserIds:[],hasSubordinates:false}}
 function scopedTaskProfiles(){
   const currentId=state.user?.id;
   if(isManager())return profileList();
@@ -166,9 +166,10 @@ function scopedTaskProfiles(){
 function taskSubjectId(task){return task?.owner_id||task?.created_by||null}
 function isOwnTask(task){return !!task&&String(taskSubjectId(task))===String(state.user?.id)}
 function isStrictDescendant(userId){return !!userId&&(state.organizationScope?.descendantUserIds||[]).some(id=>String(id)===String(userId))}
+function isOrganizationManager(){return (state.organizationScope?.ownRoleKeys||[]).includes('manager')}
 function canDirectlyManageTask(task,action='edit'){
   if(!task||!featureAllowed('kanban',action))return false;
-  return hasApprovalBypass()||isStrictDescendant(taskSubjectId(task));
+  return hasApprovalBypass()||isStrictDescendant(taskSubjectId(task))||(isOrganizationManager()&&isOwnTask(task));
 }
 function canDirectlyCreateFor(userId){
   if(!featureAllowed('kanban','create'))return false;
@@ -177,7 +178,7 @@ function canDirectlyCreateFor(userId){
   // target; a missing owner must not turn into a supervisory bypass.
   return hasApprovalBypass()||!!userId&&isStrictDescendant(userId);
 }
-function canManageOrganizationTasks(){return hasApprovalBypass()||(state.organizationScope?.descendantUserIds||[]).length>0}
+function canManageOrganizationTasks(){return hasApprovalBypass()||isOrganizationManager()||(state.organizationScope?.descendantUserIds||[]).length>0}
 async function refreshOrganizationScope({silent=false}={}){
   const userId=state.user?.id;
   if(!userId||!state.token){state.organizationScope=emptyOrganizationScope();return state.organizationScope}
@@ -188,6 +189,7 @@ async function refreshOrganizationScope({silent=false}={}){
     if(state.user?.id!==userId||!state.token)return state.organizationScope;
     const directory=Array.isArray(rows)?rows:[];
     const ownPositions=new Set(directory.filter(row=>row.is_current_position).map(row=>String(row.position_id)));
+    const ownRoleKeys=[...new Set(directory.filter(row=>row.is_current_position).map(row=>String(row.role_key||'').trim()).filter(Boolean))];
     const peopleById=new Map();
     for(const row of directory){
       if(!row?.occupant_id)continue;
@@ -233,6 +235,7 @@ async function refreshOrganizationScope({silent=false}={}){
       rows:directory,
       positionIds:[...new Set(directory.map(row=>String(row.position_id)).filter(Boolean))],
       ownPositionIds,
+      ownRoleKeys,
       directReportUserIds:[...new Set(directReportUserIds)],
       descendantUserIds:[...new Set(descendantUserIds)],
       hasSubordinates:descendantUserIds.length>0
@@ -252,6 +255,7 @@ window.bamcoOrganizationAccess=Object.freeze({
   people:scopedTaskProfiles,
   positionIds:()=>state.organizationScope?.positionIds||[],
   ownPositionIds:()=>state.organizationScope?.ownPositionIds||[],
+  isOrganizationManager,
   directReportUserIds:()=>state.organizationScope?.directReportUserIds||[],
   descendantUserIds:()=>state.organizationScope?.descendantUserIds||[],
   isOwnTask,
@@ -447,7 +451,7 @@ function renderRequests(){
 }
 $('#approvalBody').addEventListener('click',e=>{const revise=e.target.closest('[data-revise-request]'),review=e.target.closest('[data-review-request]'),amend=e.target.closest('[data-amend-request]'),cancel=e.target.closest('[data-cancel-request]');if(revise)reviseRequest(revise.dataset.reviseRequest);if(review)openReview(review.dataset.reviewRequest);if(amend)amendRequest(amend.dataset.amendRequest);if(cancel)cancelRequest(cancel.dataset.cancelRequest)});
 function renderRequestHistory(){const types={create:'تعریف فعالیت جدید',update:'ویرایش وظیفه',status:'تغییر وضعیت',priority:'تغییر اولویت',description:'تغییر توضیحات',complete:'اعلام انجام',delete:'درخواست حذف',due_date:'تغییر تاریخ پایان'},statuses={approved:'تأیید',rejected:'رد',cancelled:'لغوشده'},terminal=new Set(Object.keys(statuses)),rows=newestRequestRows(state.requestHistory).filter(r=>terminal.has(r.request_status));$('#requestHistoryBody').innerHTML=rows.length?rows.map((r,index)=>`<tr data-request-id="${r.id}"><td>${fa(rows.length-index)}</td><td>${safe(profileLabel(r.requested_by,r.requester_name_snapshot||'—'))}</td><td>${types[r.request_type]||r.request_type}</td><td>${safe(r.proposed_data?.title||state.tasks.find(t=>String(t.id)===String(r.task_id))?.title||'—')}</td><td>${jalaliDateTime(r.reviewed_at||r.created_at)}</td><td>${statuses[r.request_status]}</td><td>${safe(r.manager_note||'—')}</td></tr>`).join(''):'<tr><td colspan="7" class="empty">سابقه‌ای وجود ندارد.</td></tr>'}
-const titles={dashboard:'داشبورد',kanban:'کانبان وظایف',archive:'آرشیو وظایف',approvals:'تأیید درخواست‌ها',requestHistory:'سوابق درخواست‌ها',projects:'مدیریت پروژه‌ها',parts:'مدیریت قطعات',invoices:'صورتحساب‌ها و تعهدات مالی',organization:'ساختار سازمانی',vehiclePermanent:'تحویل دائم خودرو',vehicleTemporary:'تحویل موقت خودرو',tools:'مدیریت ابزار',userGuide:'راهنمای استفاده سامانه',sentMessages:'پیام‌های ارسال‌شده'};globalThis.BamcoNavigation?.configure?.({state,titles});
+const titles={dashboard:'داشبورد',kanban:'کانبان وظایف',archive:'آرشیو وظایف',approvals:'تأیید درخواست‌ها',requestHistory:'سوابق درخواست‌ها',projects:'مدیریت پروژه‌ها',parts:'مدیریت قطعات',invoices:'صورتحساب‌ها و تعهدات مالی',organization:'ساختار سازمانی',vehiclePermanent:'تحویل دائم خودرو',vehicleTemporary:'تحویل موقت خودرو',tools:'مدیریت ابزار',lettersIncoming:'نامه‌های ورودی',lettersOutgoing:'نامه‌های خروجی',userGuide:'راهنمای استفاده سامانه',sentMessages:'پیام‌های ارسال‌شده'};globalThis.BamcoNavigation?.configure?.({state,titles});
 function showView(view){if(typeof BamcoNavigation!=='undefined'&&typeof BamcoNavigation.navigate==='function')return BamcoNavigation.navigate(view);const target=typeof view==='string'&&/^[A-Za-z][A-Za-z0-9]*$/.test(view)?document.getElementById(view+'View'):null;if(!target)return false;globalThis.bamcoLeaveHome?.();state.view=view;$$('.view').forEach(x=>x.classList.add('hidden'));target.classList.remove('hidden');$$('#nav button').forEach(x=>x.classList.toggle('active',x.dataset.view===view));$('#viewTitle').textContent=titles[view]||'';$('#addTaskBtn').classList.toggle('hidden',view!=='kanban');return true}
 $('#nav').addEventListener('click',e=>{const button=e.target.closest('button[data-view]');if(button&&!button.disabled)showView(button.dataset.view)});$$('[data-go]').forEach(b=>b.addEventListener('click',()=>showView(b.dataset.go)));
 $('#kanbanSearch').addEventListener('input',()=>renderTasks(false));$('#archiveSearch').addEventListener('input',()=>renderTasks(true));$('#collapseBtn').addEventListener('click',()=>$('#sidebar').classList.toggle('collapsed'));
@@ -473,7 +477,7 @@ function canChooseTaskOwner(task=state.editing){
 function syncTaskDialogAuthority(task=state.editing){
   const directAuthority=canEditTaskDirectly(task);
   $('#taskDialogTitle').textContent=state.reviewEdit?'اصلاح درخواست مدیر':state.resubmitting?'اصلاح و ارسال مجدد':state.amendingRequest?'ویرایش درخواست':task?(directAuthority?'ویرایش وظیفه':'درخواست تغییر وظیفه'):(directAuthority?'افزودن وظیفه':'درخواست وظیفه جدید');
-  $('#taskDialogHint').textContent=state.reviewEdit?'اصلاحات همراه با تأیید درخواست اعمال می‌شود.':state.resubmitting?'موارد خواسته‌شده را اصلاح و دوباره ارسال کنید.':state.amendingRequest?'ویرایش شما درخواست را دوباره در گردش تأیید قرار می‌دهد.':directAuthority?'تغییر مستقیم فقط برای وظایفِ رده‌های پایین‌ترِ همین شاخه سازمانی مجاز است.':'درخواست شما پس از تأیید بالادستِ مستقیم در ساختار سازمانی اعمال می‌شود.';
+  $('#taskDialogHint').textContent=state.reviewEdit?'اصلاحات همراه با تأیید درخواست اعمال می‌شود.':state.resubmitting?'موارد خواسته‌شده را اصلاح و دوباره ارسال کنید.':state.amendingRequest?'ویرایش شما درخواست را دوباره در گردش تأیید قرار می‌دهد.':directAuthority?(isOrganizationManager()&&task&&isOwnTask(task)?'تغییر مستقیم برای وظیفهٔ خودِ مدیر و وظایف رده‌های پایین‌تر مجاز است.':'تغییر مستقیم فقط برای وظایفِ رده‌های پایین‌ترِ همین شاخه سازمانی مجاز است.'):'درخواست شما پس از تأیید بالادستِ مستقیم در ساختار سازمانی اعمال می‌شود.';
   $('#saveTaskBtn').textContent=state.reviewEdit?'ثبت اصلاحات و تأیید':state.resubmitting?'ارسال مجدد':state.amendingRequest?'ثبت و ارسال مجدد':directAuthority?(task?'ثبت تغییرات':'ثبت وظیفه'):'ارسال برای تأیید';
 }
 function fillOwners(selected,task=state.editing){

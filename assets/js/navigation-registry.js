@@ -19,7 +19,7 @@
     { key: 'delivery', title: 'مدیریت پروژه‌ها', icon: '▰', routes: ['projects'] },
     { key: 'vehicle', title: 'مدیریت منابع', icon: '◇', routes: ['vehiclePermanent', 'vehicleTemporary', 'parts', 'tools'] },
     { key: 'conversations', title: 'گفتگوها', icon: '☵', routes: ['groupChat', 'directMessages', 'taskChats'] },
-    { key: 'resources', title: 'منابع و دسترسی‌ها', icon: '▧', routes: ['documents', 'sitesAccess', 'letters', 'userGuide'] }
+    { key: 'resources', title: 'منابع و دسترسی‌ها', icon: '▧', routes: ['documents', 'sitesAccess', 'lettersIncoming', 'lettersOutgoing', 'userGuide'] }
   ]);
 
   // A few legacy route names deliberately share a feature. Every visible
@@ -60,7 +60,8 @@
     ['taskChats', 'taskChats', 'گفت‌وگوی وظیفه'],
     ['documents', 'documents', 'فرم‌ها و مستندات'],
     ['sitesAccess', 'sitesAccess', 'سایت‌ها و دسترسی‌ها'],
-    ['letters', 'letters', 'نامه‌ها'],
+    ['lettersIncoming', 'letters', 'نامه‌های ورودی'],
+    ['lettersOutgoing', 'letters', 'نامه‌های خروجی'],
     ['userGuide', 'userGuide', 'راهنمای استفاده سامانه']
   ].map(([route, featureKey, title]) => Object.freeze({ route, featureKey, title, groupKey: null })));
 
@@ -181,7 +182,7 @@
     '.cash-toolbar',
     '.bamco-management-toolbar'
   ].join(',');
-  const LOCAL_MANAGE_CONTROL_SELECTOR = '.vehicle-access-button,#lettersAccess,[data-feature-access-control="local"]';
+  const LOCAL_MANAGE_CONTROL_SELECTOR = '.vehicle-access-button,[data-feature-access-control="local"]';
   let manageControlQueued = false;
 
   // Keep access management beside the feature's native command row; never float it over the app shell.
