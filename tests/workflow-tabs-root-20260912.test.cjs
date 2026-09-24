@@ -41,7 +41,8 @@ test('sent messages uses unified log, has no overview cards and requested contro
  const f=await fixture({tables:{sent_message_log:[{log_key:'portal:1',source_type:'portal_event',source_id:1,recipient_id:'test-owner',recipient_name:'متولی آزمایشی',subject:'به‌روزرسانی وظیفه',channel:'portal',delivery_status:'sent',sent_at:new Date().toISOString(),attempt_count:0,error_message:null,sender_name:'سامانه',snapshot_id:null,portal_message_id:1}]}});t.after(()=>f.dispose());
  await f.open('sentMessages');await until(()=>f.d.querySelector('#sentMessagesView .sent-command-row'));
  assert.equal(f.w.bamcoTabs.owns('sentMessages'),false,'نمای نهایی پیام‌های ارسال‌شده فقط یک مالک رندر دارد');
- const bar=f.d.querySelector('#sentMessagesView .sent-command-row');assert.deepEqual(directTexts(bar).slice(0,3),['بازگشت به خانه','خروجی اکسل','تازه‌سازی']);
+ const bar=f.d.querySelector('#sentMessagesView .sent-command-row');assert.deepEqual(directTexts(bar).slice(0,4),['بازگشت به خانه','خروجی اکسل','تازه‌سازی','مدیریت دسترسی']);
+ const access=bar.querySelector('[data-sent-access]');assert.ok(access);assert.equal(access.previousElementSibling?.textContent.trim(),'تازه‌سازی');
  assert.equal(f.d.querySelectorAll('#sentMessagesView .sent-overview,#sentMessagesView .sent-log-summary').length,0);
  assert.equal([...f.d.querySelectorAll('#sentMessagesView thead th')].some(th=>th.textContent.trim()==='خطا'),false);
  assert.match(f.d.querySelector('#sentMessagesView tbody').textContent,/پیام داخل سامانه/);assert.match(f.d.querySelector('#sentMessagesView tbody').textContent,/به‌روزرسانی وظیفه/);

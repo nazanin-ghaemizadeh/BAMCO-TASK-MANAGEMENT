@@ -165,7 +165,7 @@ async def manager_checks(page,result):
 
     await open_tab(page,'sentMessages')
     controls=await command_texts(page,'#sentMessagesView .sent-command-row')
-    assert controls[:3]==['بازگشت به خانه','خروجی اکسل','تازه‌سازی'],f'sent controls: {controls!r}'
+    assert controls[:4]==['بازگشت به خانه','خروجی اکسل','تازه‌سازی','مدیریت دسترسی'],f'sent controls: {controls!r}'
     headers=await page.locator('#sentMessagesView thead tr:first-child th').all_text_contents()
     expected=['ردیف','نوع','فرستنده','گیرنده','موضوع','کانال','وضعیت','زمان ارسال','تلاش','جزئیات']
     assert headers==expected,f'sent headers: {headers!r}'
