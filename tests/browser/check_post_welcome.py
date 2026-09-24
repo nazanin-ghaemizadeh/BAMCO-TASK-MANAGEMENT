@@ -19,22 +19,27 @@ async def one_case(browser,base,width,role):
         return await page.evaluate('''()=>{
           const rect=s=>{const n=document.querySelector(s);if(!n)return null;const r=n.getBoundingClientRect(),cs=getComputedStyle(n);return {x:Math.round(r.x),y:Math.round(r.y),width:Math.round(r.width),height:Math.round(r.height),display:cs.display,visibility:cs.visibility}};
           const groups=Object.fromEntries([...document.querySelectorAll('#homeView #nav>.nav-group')].map(g=>[g.dataset.group,rect('#homeView #nav>.nav-group[data-group="'+g.dataset.group+'"]')]));
-          return {groups,response:rect('#homeView #nav [data-view="responseReport"]'),petty:rect('#homeView #nav [data-view="pettyCash"]'),ready:document.body.classList.contains('home-layout-ready')};
+          return {groups,people:rect('#homeView #nav [data-view="people"]'),access:rect('#homeView #nav [data-view="accessMatrix"]'),ready:document.body.classList.contains('home-layout-ready')};
         }''')
     layout_before=await home_layout();await page.wait_for_timeout(900);layout_after=await home_layout()
     assert layout_before==layout_after,{'width':width,'role':role,'before':layout_before,'after':layout_after}
     assert layout_after['ready'],{'width':width,'role':role,'layout':layout_after}
     if width>=1000 and role=='manager':
-        groups_before=layout_after['groups']
         await page.evaluate('''()=>{
-          const petty=document.querySelector('#homeView #nav [data-view="pettyCash"]');
-          if(petty)petty.classList.remove('hidden');
+          const access=document.querySelector('#homeView #nav [data-view="accessMatrix"]');
+          if(access)access.classList.add('hidden');
+        }''')
+        await page.evaluate('()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))')
+        groups_before=(await home_layout())['groups']
+        await page.evaluate('''()=>{
+          const access=document.querySelector('#homeView #nav [data-view="accessMatrix"]');
+          if(access)access.classList.remove('hidden');
         }''')
         await page.evaluate('()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))')
         revealed=await home_layout()
-        assert revealed['response'] and revealed['petty'],revealed
-        assert revealed['response']['y']==revealed['petty']['y'],revealed
-        assert revealed['response']['x']!=revealed['petty']['x'],revealed
+        assert revealed['people'] and revealed['access'],revealed
+        assert revealed['people']['y']==revealed['access']['y'],revealed
+        assert revealed['people']['x']!=revealed['access']['x'],revealed
         assert revealed['groups']==groups_before,{'before':groups_before,'after':revealed['groups']}
     diag=await page.evaluate('''()=>{
       const box=s=>{const n=document.querySelector(s);if(!n)return null;const r=n.getBoundingClientRect(),c=getComputedStyle(n);return {top:Math.round(r.top),left:Math.round(r.left),width:Math.round(r.width),height:Math.round(r.height),display:c.display,visibility:c.visibility,opacity:c.opacity}};
