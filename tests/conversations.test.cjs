@@ -56,8 +56,8 @@ test('owner portal: conversation controls follow explicit feature grants, not th
  assert.deepEqual(f.errors,[]);
 });
 
-test('task notifications render task identifiers with Persian digits',async t=>{
- const f=await fixture({tables:{notifications:[{id:1,user_id:'test-manager',entity_type:'task',entity_id:'123',notification_type:'manual',title:'وظیفه 123 برای شما تعریف شد',body:'شناسه وظیفه 123',created_at:new Date().toISOString(),read_at:null,dismissed_at:null}]}});t.after(()=>f.dispose());
+test('system inbox messages render task identifiers with Persian digits regardless of entity alias',async t=>{
+ const f=await fixture({tables:{notifications:[{id:1,user_id:'test-manager',entity_type:'change_request',entity_id:'123',notification_type:'system',title:'وظیفه 1430 برای شما تعریف شد',body:'شناسه وظیفه 1430',created_at:new Date().toISOString(),read_at:null,dismissed_at:null}]}});t.after(()=>f.dispose());
  await f.open('messages');await until(()=>f.d.querySelector('[data-notification="1"]'));
- const notice=f.d.querySelector('[data-notification="1"]');assert.match(notice.querySelector('h4').textContent,/۱۲۳/);assert.match(notice.querySelector('p').textContent,/۱۲۳/);assert.doesNotMatch(notice.querySelector('h4').textContent,/123/);assert.deepEqual(f.errors,[]);
+ const notice=f.d.querySelector('[data-notification="1"]');assert.match(notice.querySelector('h4').textContent,/۱۴۳۰/);assert.match(notice.querySelector('p').textContent,/۱۴۳۰/);assert.doesNotMatch(notice.querySelector('h4').textContent,/1430/);assert.deepEqual(f.errors,[]);
 });

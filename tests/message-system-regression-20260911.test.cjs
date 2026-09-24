@@ -15,6 +15,15 @@ test('workflow message renderer is compact, centered and warning/overdue colored
   assert.match(renderer,/replace\(\/\\n\{3,\}\/g,'\\n\\n'\)/);
 });
 
+test('system message copy and task identifiers use Persian digits',()=>{
+  const renderer=require('../assets/js/message-renderer.js');
+  const html=renderer.html({subject:'وظیفه 1430',body_template:'وظیفه 1430 برای شما تعریف شد.',tasks:[]});
+  assert.match(html,/وظیفه ۱۴۳۰/);
+  assert.doesNotMatch(html,/وظیفه 1430/);
+  const table=renderer.html({body_template:'[جدول امور هشداری]',warning_task_ids:[1],tasks:[{id:1,legacy_id:1430,title:'نمونه',due_state:'warning'}]});
+  assert.match(table,/>۱۴۳۰</);
+});
+
 test('system message UI blocks generic table-suite controls and preserves inbox cards',()=>{
   const root=read('assets/js/message-history.js');
   assert.match(root,/\.workflow-message \.suite-filters/);

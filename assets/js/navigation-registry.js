@@ -19,7 +19,7 @@
     { key: 'delivery', title: 'مدیریت مالی', icon: '▰', routes: ['pettyCash', 'invoices'] },
     { key: 'vehicle', title: 'مدیریت منابع', icon: '◇', routes: ['vehiclePermanent', 'vehicleTemporary', 'parts', 'tools'] },
     { key: 'conversations', title: 'گفتگوها', icon: '☵', routes: ['groupChat', 'directMessages', 'taskChats'] },
-    { key: 'resources', title: 'منابع و دسترسی‌ها', icon: '▧', routes: ['documents', 'sitesAccess', 'lettersIncoming', 'lettersOutgoing', 'userGuide'] }
+    { key: 'resources', title: 'منابع', icon: '▧', routes: ['documents', 'sitesAccess', 'lettersIncoming', 'lettersOutgoing', 'userGuide'] }
   ]);
 
   // A few legacy route names deliberately share a feature. Every visible
@@ -74,7 +74,7 @@
     (map[featureKey] || (map[featureKey] = [])).push(route);
     return map;
   }, {}));
-  const standaloneLayoutRoutes = Object.freeze(new Set(['projects', 'parts', 'invoices', 'organization', 'tools']));
+  const standaloneLayoutRoutes = Object.freeze(new Set(['projects', 'parts', 'invoices', 'organization', 'tools', 'accessMatrix']));
   // Standalone layouts own their toolbar. The interior reconciler still
   // guarantees a native return control inside those toolbars.
   const noHomeReturnRoutes = new Set(['projects', 'invoices']);

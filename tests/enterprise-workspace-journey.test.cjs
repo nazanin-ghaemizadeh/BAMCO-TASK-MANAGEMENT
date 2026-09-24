@@ -189,9 +189,9 @@ test('enterprise pages keep a stable shared shell and persist the project, part 
   d.querySelector('[data-project-close]').click();
   d.querySelector('[data-project-view="gantt"]').click();
   assert.ok(d.querySelector('.gantt-direct.gantt-pro-wrap'), 'گانت کل فضای صفحهٔ پروژه را می‌گیرد');
-  assert.ok(d.querySelector('.gantt-direct .gantt-pro-header-scroll'), 'سربرگ تقویم خارج از بدنهٔ اسکرول است');
-  assert.ok(d.querySelector('.gantt-direct .gantt-pro-label-scroll'), 'ستون فاز و فعالیت خارج از بدنهٔ اسکرول است');
-  assert.ok(d.querySelector('.gantt-direct .gantt-pro-timeline-scroll'), 'فقط بدنهٔ گانت اسکرول می‌شود');
+  assert.ok(d.querySelector('.gantt-direct .gantt-pro-scroll'), 'گانت یک سطح اسکرول هم‌تراز برای هر دو محور دارد');
+  assert.ok(d.querySelector('.gantt-direct .gantt-pro-header'), 'سطر تقویم مستقل و قابل فریز است');
+  assert.ok(d.querySelector('.gantt-direct .gantt-pro-labels'), 'ستون فاز و فعالیت مستقل و قابل فریز است');
   assert.match(d.querySelector('.gantt-direct .gantt-pro-timeline').getAttribute('style'), /--gantt-cell-width:/, 'هر روز دقیقاً یک ستون زمان دارد');
   assert.equal(d.querySelectorAll('.gantt-pro-label-row').length, d.querySelectorAll('.gantt-pro-track').length, 'شرح و تقویم ردیف‌های هم‌تراز دارند');
   assert.ok(d.querySelector('.gantt-direct .gantt-dependencies path'), 'رابطه روی گانت با فلش نمایش داده می‌شود');

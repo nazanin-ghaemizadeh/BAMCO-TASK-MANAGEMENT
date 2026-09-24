@@ -105,7 +105,7 @@
     const labelRows = timelineRows.map(({ row, level }) => { const meta = phaseMeta(row, rows); return `<div class="gantt-pro-label-row ${row.item_type === 'phase' ? 'phase-row' : ''} ${level > 1 ? 'subactivity-row' : ''}" data-project-item-open="${row.id}" title="برای ویرایش دوبار کلیک کنید" style="--level:${level};--phase-color:${meta.color}"><b>${esc(row.title)}</b><small>${esc(itemLabel(row))}${row.item_type !== 'milestone' ? ` · ${fa(Math.round(calculatedProgress(row)))}٪` : ''}</small></div>`; }).join('');
     const trackRows = timelineRows.map(({ row, level }) => { const from = Math.floor((stamp(row.planned_start || row.planned_end) - start) / day), to = Math.floor((stamp(row.planned_end || row.planned_start) - start) / day), duration = Math.max(1, to - from + 1), meta = phaseMeta(row, rows); return `<div class="gantt-pro-track ${row.item_type === 'phase' ? 'phase-row' : ''} ${level > 1 ? 'subactivity-row' : ''}" data-project-item-open="${row.id}" title="برای ویرایش دوبار کلیک کنید" style="--phase-color:${meta.color}">${row.item_type === 'milestone' ? `<i class="gantt-pro-milestone" style="right:${from * cell + cell / 2 - 8}px" title="${esc(row.title)}"></i>` : `<i class="gantt-pro-bar" style="right:${from * cell + 3}px;width:${Math.max(10, duration * cell - 6)}px"><span>${fa(Math.round(calculatedProgress(row)))}٪</span></i>`}</div>`; }).join('');
     const timelineStyle = `width:${width}px;--gantt-cell-width:${cell}px`;
-    return `<div class="gantt-pro-wrap gantt-direct"><div class="gantt-pro"><div class="gantt-pro-label-head">فعالیت‌های پروژه</div><div class="gantt-pro-header-scroll" aria-label="تقویم گانت"><div class="gantt-pro-header" style="${timelineStyle}"><div class="gantt-pro-months">${months.map(month => `<span style="width:${month.count * cell}px">${esc(month.key)}</span>`).join('')}</div><div class="gantt-pro-days">${days.map(value => `<span style="width:${cell}px">${esc(date(value).split('/').at(-1))}</span>`).join('')}</div></div></div><aside class="gantt-pro-label-scroll"><div class="gantt-pro-labels">${labelRows}</div></aside><div class="gantt-pro-timeline-scroll"><div class="gantt-pro-timeline" style="${timelineStyle}"><svg class="gantt-dependencies" viewBox="0 0 ${width} ${timelineRows.length * rowH}" width="${width}" height="${timelineRows.length * rowH}" aria-label="روابط پیش‌نیازی و پس‌نیازی"><defs><marker id="ganttArrow" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L0,7 L6,3.5 z"></path></marker></defs>${relationSvg}</svg>${trackRows}</div></div></div></div>`;
+    return `<div class="gantt-pro-wrap gantt-direct"><div class="gantt-pro-scroll" tabindex="0" aria-label="گانت پروژه؛ سطر تقویم و ستون فعالیت‌ها ثابت هستند"><div class="gantt-pro" style="--gantt-timeline-width:${width}px"><div class="gantt-pro-label-head">فعالیت‌های پروژه</div><div class="gantt-pro-header" style="${timelineStyle}"><div class="gantt-pro-months">${months.map(month => `<span style="width:${month.count * cell}px">${esc(month.key)}</span>`).join('')}</div><div class="gantt-pro-days">${days.map(value => `<span style="width:${cell}px">${esc(date(value).split('/').at(-1))}</span>`).join('')}</div></div><aside class="gantt-pro-labels">${labelRows}</aside><div class="gantt-pro-timeline" style="${timelineStyle}"><svg class="gantt-dependencies" viewBox="0 0 ${width} ${timelineRows.length * rowH}" width="${width}" height="${timelineRows.length * rowH}" aria-label="روابط پیش‌نیازی و پس‌نیازی"><defs><marker id="ganttArrow" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L0,7 L6,3.5 z"></path></marker></defs>${relationSvg}</svg>${trackRows}</div></div></div></div>`;
   }
   function drawWbsConnectors() {
     const host = root(), canvas = host?.querySelector('.project-wbs-canvas'), svg = canvas?.querySelector('.project-wbs-connectors'); if (!canvas || !svg) return;
@@ -148,17 +148,9 @@
     if (!links) return; const defs = svg.querySelector('defs')?.outerHTML || '<defs><marker id="ganttArrow" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L0,7 L6,3.5 z"></path></marker></defs>';
     svg.setAttribute('viewBox', `0 0 ${Math.ceil(timeline.scrollWidth)} ${Math.ceil(timeline.scrollHeight)}`); svg.setAttribute('width', String(Math.ceil(timeline.scrollWidth))); svg.setAttribute('height', String(Math.ceil(timeline.scrollHeight))); svg.innerHTML = defs + links;
   }
-  function bindGanttScroll() {
-    const host = root(), body = host?.querySelector('.gantt-direct .gantt-pro-timeline-scroll'), header = host?.querySelector('.gantt-direct .gantt-pro-header-scroll'), labels = host?.querySelector('.gantt-direct .gantt-pro-label-scroll');
-    if (!body || !header || !labels || body.dataset.ganttScrollBound === '1') return;
-    body.dataset.ganttScrollBound = '1';
-    const sync = () => { header.scrollLeft = body.scrollLeft; labels.scrollTop = body.scrollTop; };
-    body.addEventListener('scroll', sync, { passive: true });
-    sync();
-  }
   let diagramResizeBound = false;
   function scheduleProjectDiagramLayout() {
-    const redraw = () => { bindGanttScroll(); drawWbsConnectors(); drawGanttDependencies(); };
+    const redraw = () => { drawWbsConnectors(); drawGanttDependencies(); };
     if (typeof requestAnimationFrame === 'function') requestAnimationFrame(redraw); else redraw();
     setTimeout(redraw, 80);
     if (!diagramResizeBound) { diagramResizeBound = true; window.addEventListener('resize', () => setTimeout(redraw, 0)); }

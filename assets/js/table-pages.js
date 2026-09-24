@@ -16,7 +16,7 @@
   const number=n=>Number(n).toLocaleString('fa-IR');
   const scrollTop=wrap=>{wrap.scrollTop=0};
   function addPager(table,wrap){
-   if(registry.has(table)||table.closest('#archiveView'))return;
+   if(registry.has(table)||table.closest('#archiveView')||table.matches('[data-no-pagination]'))return;
    const view=table.closest('.view'),model={page:1,size:25},pager=document.createElement('div');
    if(!table.id)table.id='pagedTable'+(++serial);
    pager.className='table-pagination';pager.setAttribute('role','navigation');pager.setAttribute('aria-label','صفحه‌بندی '+(view.querySelector('h3')?.textContent||'جدول'));
@@ -56,7 +56,7 @@
      const reset=e=>{if(!e.target.matches('input:not([type=checkbox]):not([type=radio]),select')||e.target.closest('.table-pagination,#archivePager'))return;view.querySelectorAll('table').forEach(table=>registry.get(table)?.reset())};
      view.addEventListener('input',reset);view.addEventListener('change',reset);
     }
-    const tables=[...view.querySelectorAll('table')].filter(t=>!t.closest('dialog'));
+    const tables=[...view.querySelectorAll('table')].filter(t=>!t.closest('dialog')&&!t.matches('[data-no-pagination]'));
     if(tables.length===1){
      const table=tables[0];let wrap=table.parentElement;
      if(wrap.tagName==='TD'||wrap===view)return;

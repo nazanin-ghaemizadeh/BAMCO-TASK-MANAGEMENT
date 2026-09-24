@@ -28,10 +28,24 @@ test('people access matrix mirrors aliases and saves through the canonical acces
     await until(() => f.d.querySelector('.access-matrix-table'));
     assert.match(f.d.querySelector('.access-matrix-table').textContent, /مدیریت افراد/);
     assert.match(f.d.querySelector('.access-matrix-table').textContent, /مدیریت پروژه‌ها/);
+    assert.equal(f.d.querySelectorAll('#accessMatrixView [data-home-action],#accessMatrixView .content-back').length, 1, 'فقط یک بازگشت به خانه نمایش داده می‌شود');
+    assert.equal(f.d.querySelector('.access-matrix-table').hasAttribute('data-no-pagination'), true);
+    assert.equal(f.d.querySelector('.access-matrix-table').textContent.includes('example.test'), false, 'ایمیل زیر نام افراد نمایش داده نمی‌شود');
+    assert.match([...f.d.querySelectorAll('.access-matrix-table thead th')].map(cell => cell.textContent.trim()).join('|'), /آزمایشی/);
+    await new Promise(resolve => setTimeout(resolve, 0));
+    assert.equal(f.d.querySelector('#accessMatrixView .table-pagination'), null, 'همهٔ ردیف‌ها در یک صفحه می‌مانند');
+
+    const tableBeforeAccessRefresh = f.d.querySelector('.access-matrix-table');
+    f.w.dispatchEvent(new f.w.CustomEvent('bamco:feature-access-changed'));
+    await new Promise(resolve => setTimeout(resolve, 0));
+    assert.equal(f.d.querySelector('.access-matrix-table'), tableBeforeAccessRefresh, 'تازه‌سازی نشست، جدول در حال کار را دوباره بارگذاری نمی‌کند');
+    assert.equal(f.d.querySelector('#accessMatrixView .access-matrix-status'), null);
 
     const letterCells = [...f.d.querySelectorAll('[data-access-feature="letters"][data-access-user="test-owner"]')];
     assert.equal(letterCells.length, 2, 'نامه‌های ورودی و خروجی یک منبع دسترسی مشترک دارند');
+    const tableBeforeToggle = f.d.querySelector('.access-matrix-table');
     letterCells[0].click();
+    assert.equal(f.d.querySelector('.access-matrix-table'), tableBeforeToggle, 'تغییر تیک جدول را بازسازی و اسکرول را صفر نمی‌کند');
     assert.ok([...f.d.querySelectorAll('[data-access-feature="letters"][data-access-user="test-owner"]')].every(button => button.getAttribute('aria-pressed') === 'true'));
 
     f.d.querySelector('[data-access-feature="projects"][data-access-user="test-owner"]').click();
