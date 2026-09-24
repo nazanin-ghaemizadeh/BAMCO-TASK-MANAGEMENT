@@ -162,14 +162,13 @@ test('enterprise pages keep a stable shared shell and persist the project, part 
   assert.equal(d.querySelector('#projectDependencyForm').elements.dependency_id.value, '1000');
   d.querySelector('[data-project-close]').click();
   d.querySelector('[data-project-view="gantt"]').click();
-  assert.equal(d.querySelector('#projectGanttDialog').open, true, 'گانت در نمای تمام‌صفحه باز می‌شود');
-  assert.ok(d.querySelector('#projectGanttDialog .gantt-dependencies path'), 'رابطه روی گانت با فلش نمایش داده می‌شود');
-  assert.ok(d.querySelector('#projectGanttDialog .gantt-pro-months').textContent.trim(), 'سال و ماه در گانت نمایش داده می‌شود');
-  d.querySelector('#projectGanttDialog [data-project-item-open="1000"]').dispatchEvent(new w.MouseEvent('dblclick', { bubbles: true }));
+  assert.ok(d.querySelector('.project-full-view .gantt-pro-wrap'), 'گانت کل فضای صفحهٔ پروژه را می‌گیرد');
+  assert.ok(d.querySelector('.project-full-view .gantt-dependencies path'), 'رابطه روی گانت با فلش نمایش داده می‌شود');
+  assert.ok(d.querySelector('.project-full-view .gantt-pro-months').textContent.trim(), 'سال و ماه در گانت نمایش داده می‌شود');
+  d.querySelector('.project-full-view [data-project-item-open="1000"]').dispatchEvent(new w.MouseEvent('dblclick', { bubbles: true }));
   assert.equal(d.querySelector('#projectItemDialog').open, true, 'دوبارکلیک گانت، ویرایش فعالیت را باز می‌کند');
   assert.deepEqual([...d.querySelector('#projectItemForm [name="item_type"]').options].map(option => option.value), ['phase', 'activity', 'milestone']);
   d.querySelector('[data-project-close]').click();
-  d.querySelector('[data-project-action="close-gantt"]').click();
 
   d.querySelector('[data-project-action="edit"]').click();
   const editProjectForm = d.querySelector('#projectForm');
