@@ -142,10 +142,12 @@ test('enterprise pages keep a stable shared shell and persist the project, part 
 
   for (const [sequence, amount] of [[1, 100000000], [2, 200000000], [3, 200000000]]) {
     d.querySelector('[data-invoice-action="payment"]').click();
+    assert.equal(d.querySelector('#invoicePaymentDialog').open, true, 'ثبت و ویرایش مرحله در پنجرهٔ مرکزی انجام می‌شود');
     const paymentForm = d.querySelector('#invoicePaymentForm');
     field(paymentForm, 'sequence_no', String(sequence));
     field(paymentForm, 'amount', String(amount));
     field(paymentForm, 'status', 'paid');
+    if (sequence === 1) { field(paymentForm, 'planned_date', '2026-09-01'); field(paymentForm, 'paid_date', '2026-09-02'); }
     paymentForm.elements.amount.dispatchEvent(new w.Event('input', { bubbles: true }));
     assertActiveRoute('invoices');
     submit(w, paymentForm);
@@ -154,7 +156,10 @@ test('enterprise pages keep a stable shared shell and persist the project, part 
   }
   assert.equal(tables.invoice_payments.reduce((sum, item) => sum + item.amount, 0), 500000000);
   assert.match(d.querySelector('#invoiceFeatureRoot').textContent, /۱۰۰٪/);
+  assert.match(d.querySelector('#invoiceFeatureRoot').textContent, /پرداخت‌شده/);
+  assert.ok(d.querySelector('.payment-late-icon'), 'پرداخت پس از تاریخ برنامه‌ای با علامت دیرکرد مشخص است');
   d.querySelector('[data-invoice-payment-edit="1002"]').click();
+  assert.equal(d.querySelector('#invoicePaymentDialog').open, true);
   const editPaymentForm = d.querySelector('#invoicePaymentForm');
   assert.equal(editPaymentForm.elements.payment_id.value, '1002');
   field(editPaymentForm, 'amount', '150000000');

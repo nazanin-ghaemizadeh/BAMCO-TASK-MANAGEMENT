@@ -14,7 +14,7 @@
   const progress = value => `<div class="enterprise-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.max(0, Math.min(100, Number(value || 0)))}"><span style="width:${Math.max(0, Math.min(100, Number(value || 0)))}%"></span></div>`;
   const status = {
     draft: 'پیش‌نویس', planned: 'برنامه‌ریزی‌شده', active: 'فعال', in_progress: 'در حال اجرا', paused: 'متوقف', waiting: 'در انتظار', completed: 'تکمیل‌شده', closed: 'بسته‌شده', cancelled: 'لغوشده',
-    initial: 'ثبت اولیه', pending_approval: 'در انتظار تأیید', approved: 'تأییدشده', awaiting_payment: 'در انتظار پرداخت', partially_paid: 'پرداخت جزئی', settled: 'تسویه‌شده', overdue: 'سررسید گذشته', returned: 'برگشت برای اصلاح'
+    initial: 'ثبت اولیه', pending_approval: 'در انتظار تأیید', approved: 'تأییدشده', awaiting_payment: 'در انتظار پرداخت', partially_paid: 'پرداخت جزئی', settled: 'تسویه‌شده', overdue: 'سررسید گذشته', returned: 'برگشت برای اصلاح', paid: 'پرداخت‌شده'
   };
   const statusText = value => status[value] || value || '—';
   const person = id => (state.profiles || []).find(profile => String(profile.id) === String(id));
