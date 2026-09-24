@@ -116,6 +116,7 @@ test('enterprise pages keep a stable shared shell and persist the project, part 
   field(projectItemForm, 'title', 'فاز تحلیل');
   field(projectItemForm, 'item_planned_start', '2026-09-21');
   field(projectItemForm, 'item_planned_end', '2026-09-28');
+  field(projectItemForm, 'progress', '40');
   submit(w, projectItemForm);
   await until(() => tables.project_items.length === 1);
   assert.equal(tables.project_items[0].owner_id, 'test-manager');
@@ -128,10 +129,12 @@ test('enterprise pages keep a stable shared shell and persist the project, part 
   assert.equal(projectItemForm.querySelector('.item-milestone-date').classList.contains('hidden'), false);
   field(projectItemForm, 'title', 'تحویل اولیه');
   field(projectItemForm, 'milestone_date', '2026-10-01');
+  field(projectItemForm, 'progress', '100');
   submit(w, projectItemForm);
   await until(() => tables.project_items.length === 2);
   assert.equal(tables.project_items[1].planned_start, '2026-10-01');
   assert.equal(tables.project_items[1].planned_end, '2026-10-01');
+  assert.match(d.querySelector('#projectFeatureRoot').textContent, /۷۰٪/, 'پیشرفت پروژه از برگ‌های ساختار محاسبه می‌شود');
   assert.match(d.querySelector('#projectFeatureRoot').textContent, /نمای گانت/);
   d.querySelector('[data-project-view="wbs"]').click();
   assert.match(d.querySelector('.wbs-board').textContent, /تحویل اولیه/);
@@ -153,6 +156,11 @@ test('enterprise pages keep a stable shared shell and persist the project, part 
   d.querySelector('[data-project-dependency-edit="1000"]').click();
   assert.equal(d.querySelector('#projectDependencyDialog').open, true);
   assert.equal(d.querySelector('#projectDependencyForm').elements.dependency_id.value, '1000');
+  d.querySelector('[data-project-close]').click();
+  d.querySelector('[data-project-view="gantt"]').click();
+  assert.ok(d.querySelector('.gantt-dependencies path'), 'رابطه روی گانت با فلش نمایش داده می‌شود');
+  assert.ok(d.querySelector('.gantt-pro-months').textContent.trim(), 'سال و ماه در گانت نمایش داده می‌شود');
+  assert.deepEqual([...d.querySelector('#projectItemForm [name="item_type"]').options].map(option => option.value), ['phase', 'activity', 'milestone']);
 
   d.querySelector('[data-project-action="edit"]').click();
   const editProjectForm = d.querySelector('#projectForm');
