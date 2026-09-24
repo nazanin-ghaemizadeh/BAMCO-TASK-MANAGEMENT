@@ -15,7 +15,7 @@ const catalogGroups=[
  ['delivery',['projects']],
  ['vehicle',['vehiclePermanent','vehicleTemporary','parts','tools']],
  ['conversations',['groupChat','directMessages','taskChats']],
- ['resources',['documents','sitesAccess','letters','userGuide']]
+ ['resources',['documents','sitesAccess','lettersIncoming','lettersOutgoing','userGuide']]
 ].map(([key,routes])=>({key,routes}));
 
 // A deliberately small navigation model: no browser, network, session or real data.

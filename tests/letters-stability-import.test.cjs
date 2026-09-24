@@ -1,9 +1,9 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs');
 const {fixture,until}=require('./helpers/app-fixture.cjs');
 test('letters keep table, scroll and route through refresh, focus and access network errors',async t=>{
- const records=Array.from({length:30},(_,i)=>({id:'L'+i,letter_number:String(i),letter_date:'1405/06/22',subject:'نامه '+i,recipient:'فرد',version:1}));
- const f=await fixture({tables:{letters:records}});t.after(()=>f.dispose());await f.open('letters');await until(()=>f.d.querySelector('#lettersTable tbody tr').textContent.includes('نامه'));
- const table=f.d.querySelector('#lettersTable'),wrap=table.parentElement;wrap.scrollTop=120;f.d.querySelector('#refreshLetters').click();await until(()=>!f.d.querySelector('#refreshLetters').disabled);await new Promise(r=>setTimeout(r,80));assert.equal(f.d.querySelector('#lettersTable'),table);assert.equal(wrap.scrollTop,120);
+ const records=Array.from({length:30},(_,i)=>({id:'L'+i,direction:'incoming',letter_number:String(i),letter_date:'1405/06/22',subject:'نامه '+i,recipient:'فرد',version:1}));
+ const f=await fixture({tables:{letters:records}});t.after(()=>f.dispose());await f.open('lettersIncoming');await until(()=>f.d.querySelector('#lettersIncomingView [data-letters-table] tbody tr').textContent.includes('نامه'));
+ const table=f.d.querySelector('#lettersIncomingView [data-letters-table]'),wrap=table.parentElement;wrap.scrollTop=120;f.d.querySelector('#lettersIncomingView [data-letter-action="refresh"]').click();await new Promise(r=>setTimeout(r,80));assert.equal(f.d.querySelector('#lettersIncomingView [data-letters-table]'),table);assert.equal(wrap.scrollTop,120);
  const before=f.calls.filter(c=>c.endpoint==='letters').length;f.w.dispatchEvent(new f.w.Event('focus'));await new Promise(r=>setTimeout(r,80));assert.equal(f.calls.filter(c=>c.endpoint==='letters').length,before);
  assert(!f.calls.some(c=>c.endpoint==='can_access_letters'),'letters must not maintain a feature-specific authorization path');
 });

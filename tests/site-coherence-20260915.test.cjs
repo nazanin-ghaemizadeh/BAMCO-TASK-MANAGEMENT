@@ -43,7 +43,7 @@ test('all resequencing paths resync task references and task chat bodies',()=>{
 test('letters use the same shared toggle selection as other workspace tables',()=>{
  const selection=read('assets/js/table-selection.js'),letters=read('assets/js/letters.js');
  const local=selection.match(/function usesLocalSelection\(row\)\{[^}]+\}/)?.[0]||'';
- assert(!local.includes('#lettersView'));
+ assert(!local.includes('#lettersIncomingView'));
  assert.match(letters,/data-selection-key=/);
  assert.match(letters,/bamco-selection-change/);
  assert.match(letters,/window\.bamcoSelection\.set\(liveTable/);

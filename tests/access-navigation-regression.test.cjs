@@ -75,8 +75,8 @@ test('people usernames use organizational email and the access editor shows name
   assert.equal(owner.cells[6].textContent.trim(), 'owner@example.test');
   assert.equal(owner.cells[7].textContent.trim(), 'owner@example.test');
 
-  await f.open('letters');
-  f.d.querySelector('#lettersAccess').click();
+  await f.open('lettersIncoming');
+  f.d.querySelector('#lettersIncomingView [data-letter-action="access"]').click();
   await until(() => f.d.querySelector('#letterAccessDialog .permission-person'));
   const dialog = f.d.querySelector('#letterAccessDialog');
   assert.equal(dialog.querySelector('.permission-person-identity small'), null);

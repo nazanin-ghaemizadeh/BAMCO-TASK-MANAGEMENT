@@ -137,7 +137,7 @@ test('documents and sites join the standard home card and interior command bar',
   const interior=fs.readFileSync(path.join(ROOT,'assets/js/interior-ui.js'),'utf8');
   const css=fs.readFileSync(path.join(ROOT,'assets/css/documents-sites.css'),'utf8');
   assert.match(sidebar,/BamcoNavigationCatalog/);
-  assert.match(catalog,/key: 'resources'[\s\S]*'documents', 'sitesAccess', 'letters', 'userGuide'/);
+  assert.match(catalog,/key: 'resources'[\s\S]*'documents', 'sitesAccess', 'lettersIncoming', 'lettersOutgoing', 'userGuide'/);
   assert.match(home,/catalog\?\.groups/);
   assert.match(interior,/feature-toolbar-actions/);
   assert.match(css,/#documentsView,#sitesAccessView/);

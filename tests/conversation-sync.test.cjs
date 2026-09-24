@@ -6,7 +6,7 @@ test('conversation media separates images, documents and safe links',async t=>{
  const file=(id,name,mime)=>({id,thread_id:'test-room',sender_id:'test-owner',created_at:new Date().toISOString(),body:'BAMCO_ATTACHMENT_V1:'+JSON.stringify({path:'test-room/'+name,name,mime,size:10})});
  f.messages.push(file(1,'photo.png','image/png'),file(2,'report.pdf','application/pdf'),{id:3,thread_id:'test-room',sender_id:'test-owner',created_at:new Date().toISOString(),body:'https://example.test/report javascript:alert(1)'});
  await f.open('groupChat');await until(()=>d.querySelector('#groupChatView .chat-bubble'));
- [...d.querySelectorAll('#groupChatView .messenger-head-actions button')].find(b=>b.textContent.includes('فایل‌ها')).click();await until(()=>d.querySelector('#chatMediaDialog')?.open);
+ d.querySelector('#groupChatView .messenger-head-actions [aria-label="عکس‌ها، فایل‌ها و لینک‌ها"]').click();await until(()=>d.querySelector('#chatMediaDialog')?.open);
  assert(d.querySelector('.chat-media-content').textContent.includes('photo.png'));assert(!d.querySelector('.chat-media-content').textContent.includes('report.pdf'));
  d.querySelector('[data-media-tab=files]').click();assert(d.querySelector('.chat-media-content').textContent.includes('report.pdf'));assert(!d.querySelector('.chat-media-content').textContent.includes('photo.png'));
  d.querySelector('[data-media-tab=links]').click();assert.equal(d.querySelectorAll('.chat-media-content a').length,1);assert.equal(d.querySelector('.chat-media-content a').href,'https://example.test/report');assert.deepEqual(f.errors,[]);

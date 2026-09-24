@@ -156,3 +156,43 @@ test('a supervisor routes a task for themself to the direct parent, but creates 
   assert.equal(d.querySelector('#taskDialogTitle').textContent, 'افزودن وظیفه');
   assert.equal(d.querySelector('#saveTaskBtn').textContent, 'ثبت وظیفه');
 });
+
+test('an organizational manager edits their own task directly without sending it to the deputy', async t => {
+  const directory = [
+    {
+      position_id: 40, parent_position_id: 50, position_title: 'مدیر محصول',
+      role_id: 4, role_key: 'manager', role_title: 'مدیر', role_level_no: 40,
+      occupant_id: 'test-owner', occupant_display_name: 'مدیر آزمایشی',
+      occupant_full_name: 'مدیر آزمایشی', occupant_email: 'owner@example.test',
+      occupant_active: true, is_current_position: true
+    },
+    {
+      position_id: 50, parent_position_id: null, position_title: 'معاونت',
+      role_id: 5, role_key: 'deputy', role_title: 'معاون', role_level_no: 50,
+      occupant_id: 'test-manager', occupant_display_name: 'معاون آزمایشی',
+      occupant_full_name: 'معاون آزمایشی', occupant_email: 'manager@example.test',
+      occupant_active: true, is_current_position: false
+    }
+  ];
+  const f = await fixture({
+    role: 'owner',
+    tables: { tasks: [{ id: 501, title: 'وظیفه مدیر', description: 'پیشین', owner_id: 'test-owner', created_by: 'test-owner', status: 'در حال انجام', priority: 'متوسط', start_date: '2026-09-20', due_date: '2026-09-30', reminder_days: 0, archived: false }] },
+    fetchResult: async ({ endpoint }) => (
+      endpoint === 'organization_scope_directory_with_avatars' || endpoint === 'organization_scope_directory'
+    ) ? directory : undefined
+  });
+  t.after(() => f.dispose());
+  const { w, d } = f;
+  await w.bamcoOrganizationAccess.refresh();
+  assert.equal(w.bamcoOrganizationAccess.isOrganizationManager(), true);
+  await w.eval('refresh()');
+  await f.open('kanban');
+  w.openEdit(501);
+  const form = d.querySelector('#taskForm');
+  assert.equal(d.querySelector('#taskDialogTitle').textContent, 'ویرایش وظیفه');
+  assert.match(d.querySelector('#taskDialogHint').textContent, /خودِ مدیر/);
+  form.elements.description.value = 'ثبت مستقیم مدیر';
+  form.requestSubmit();
+  await until(() => f.calls.some(call => call.endpoint === 'tasks' && call.method === 'PATCH'));
+  assert.equal(f.calls.some(call => call.endpoint === 'submit_change_request'), false);
+});
