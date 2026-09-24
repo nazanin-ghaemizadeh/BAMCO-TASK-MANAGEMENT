@@ -20,7 +20,7 @@ async def _spa_ready_goto(self, url, *args, **kwargs):
         """() => window.bamcoSelection
           && window.bamcoDocumentsSites
           && window.bamcoFeaturePrefetch
-          && document.querySelector('#lettersPanel')
+          && document.querySelector('#lettersIncomingView .letters-panel')
           && document.querySelector('#departmentEntry')""",
         timeout=15000,
     )

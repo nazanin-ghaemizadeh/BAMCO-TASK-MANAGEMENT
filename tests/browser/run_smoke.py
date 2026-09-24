@@ -63,21 +63,20 @@ async def visible_count(page,selector):
     return await page.locator(selector).evaluate_all("els=>els.filter(el=>{const s=getComputedStyle(el);return s.display!=='none'&&s.visibility!=='hidden'&&el.getClientRects().length>0}).length")
 
 async def manager_checks(page,result):
-    await open_tab(page,'letters')
-    await page.locator('#lettersView [data-letter-mode="outgoing"]').click()
-    await expect(page.locator('#lettersTable tbody tr')).to_have_count(53)
-    await expect(page.locator('#lettersView .letters-heading h3')).to_have_count(1)
-    await expect(page.locator('#lettersView .letter-toolbar.bamco-command-bar')).to_have_count(1)
-    assert await page.locator('#lettersView .letter-toolbar .content-back').count()==1
-    assert await page.locator('#lettersView .letter-toolbar #addLetter').count()==1
-    geometry=await page.locator('#lettersView .letters-scroll').evaluate("e=>({h:e.clientHeight,total:e.scrollHeight,bottom:e.getBoundingClientRect().bottom,viewport:innerHeight})")
+    await open_tab(page,'lettersOutgoing')
+    await expect(page.locator('#lettersOutgoingView [data-letters-table] tbody tr')).to_have_count(53)
+    await expect(page.locator('#lettersOutgoingView .letters-heading h3')).to_have_count(1)
+    await expect(page.locator('#lettersOutgoingView .letter-toolbar.bamco-command-bar')).to_have_count(1)
+    assert await page.locator('#lettersOutgoingView .letter-toolbar .content-back').count()==1
+    assert await page.locator('#lettersOutgoingView .letter-toolbar [data-letter-action="add"]').count()==1
+    geometry=await page.locator('#lettersOutgoingView .letters-scroll').evaluate("e=>({h:e.clientHeight,total:e.scrollHeight,bottom:e.getBoundingClientRect().bottom,viewport:innerHeight})")
     assert geometry['h']>100 and geometry['total']>geometry['h'] and geometry['bottom']<=geometry['viewport']+2,geometry
-    await page.locator('#lettersView .letters-scroll').evaluate('e=>e.scrollTop=e.scrollHeight')
-    assert await page.locator('#lettersView .letters-scroll').evaluate('e=>e.scrollTop')>0
-    await page.evaluate("window.__stableLetters=document.querySelector('#lettersTable');window.__lettersScroll=__stableLetters.parentElement.scrollTop")
-    await page.locator('#refreshLetters').click()
+    await page.locator('#lettersOutgoingView .letters-scroll').evaluate('e=>e.scrollTop=e.scrollHeight')
+    assert await page.locator('#lettersOutgoingView .letters-scroll').evaluate('e=>e.scrollTop')>0
+    await page.evaluate("window.__stableLetters=document.querySelector('#lettersOutgoingView [data-letters-table]');window.__lettersScroll=__stableLetters.parentElement.scrollTop")
+    await page.locator('#lettersOutgoingView [data-letter-action="refresh"]').click()
     await page.wait_for_timeout(200)
-    assert await page.evaluate("document.querySelector('#lettersTable')===window.__stableLetters")
+    assert await page.evaluate("document.querySelector('#lettersOutgoingView [data-letters-table]')===window.__stableLetters")
     assert await page.evaluate("Math.abs(__stableLetters.parentElement.scrollTop-window.__lettersScroll)<2")
     # Feature checks are centralized; opening or focusing this module must not
     # call a legacy letters-specific permission RPC.
@@ -85,14 +84,14 @@ async def manager_checks(page,result):
     await page.wait_for_timeout(120)
     assert not await page.evaluate("__testApi.calls.some(c=>c.endpoint==='can_access_letters')")
 
-    await expect(page.locator('#lettersSearch')).to_have_attribute('placeholder','جست‌وجوی نامه…')
-    assert await page.locator('#lettersSearch').evaluate('e=>e.clientHeight')>=32
-    await page.locator('#lettersSearch').fill('ناموجود')
-    await expect(page.locator('#lettersTable tbody')).to_contain_text('نامه‌ای مطابق جست‌وجو پیدا نشد')
-    await page.locator('#lettersSearch').fill('')
-    await expect(page.locator('#lettersTable tbody tr')).to_have_count(53)
+    await expect(page.locator('#lettersOutgoingView [data-letter-search]')).to_have_attribute('placeholder','جست‌وجوی نامه…')
+    assert await page.locator('#lettersOutgoingView [data-letter-search]').evaluate('e=>e.clientHeight')>=32
+    await page.locator('#lettersOutgoingView [data-letter-search]').fill('ناموجود')
+    await expect(page.locator('#lettersOutgoingView [data-letters-table] tbody')).to_contain_text('نامه‌ای مطابق جست‌وجو پیدا نشد')
+    await page.locator('#lettersOutgoingView [data-letter-search]').fill('')
+    await expect(page.locator('#lettersOutgoingView [data-letters-table] tbody tr')).to_have_count(53)
     await page.evaluate("window.__accessPeople=__testApi.profiles.slice();__testApi.profiles.push(...Array.from({length:25},(_,i)=>({id:'access-person-'+i,full_name:'متولی آزمایشی '+i,role:'owner',active:true})))")
-    await page.locator('#lettersAccess').click()
+    await page.locator('#lettersOutgoingView [data-letter-action="access"]').click()
     await expect(page.locator('#letterAccessDialog input[type=checkbox]')).to_have_count(27)
     box=await page.locator('#letterAccessDialog').evaluate('e=>({w:e.getBoundingClientRect().width,h:e.getBoundingClientRect().height,screen:innerWidth,screenH:innerHeight})')
     assert box['w']<=box['screen']-16 and box['h']<=box['screenH']-16,box
@@ -211,9 +210,11 @@ async def manager_checks(page,result):
 async def sweep_tabs(page,role,result):
     await home(page)
     if role=='manager':
-        await expect(page.locator('#lettersNav')).to_be_visible()
+        await expect(page.locator('#lettersIncomingNav')).to_be_visible()
+        await expect(page.locator('#lettersOutgoingNav')).to_be_visible()
     else:
-        await expect(page.locator('#lettersNav')).to_be_hidden()
+        await expect(page.locator('#lettersIncomingNav')).to_be_hidden()
+        await expect(page.locator('#lettersOutgoingNav')).to_be_hidden()
     views=await page.locator('#nav button[data-view]').evaluate_all("(els,role)=>els.filter(b=>!b.disabled&&!b.classList.contains('hidden')&&(role==='manager'||!b.classList.contains('manager-only'))).map(b=>b.dataset.view)",role)
     seen=[]; times={}
     for tab in views:
