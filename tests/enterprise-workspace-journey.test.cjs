@@ -109,9 +109,9 @@ test('enterprise pages keep a stable shared shell and persist the project, part 
   assert.ok(d.querySelector('[data-project-action="delete"]'));
 
   d.querySelector('[data-project-action="item"]').click();
-  assert.equal(d.querySelector('#projectItemDialog').open, true, 'آیتم پروژه در پنجرهٔ مرکزی باز می‌شود');
+  assert.equal(d.querySelector('#projectItemDialog').open, true, 'فعالیت پروژه در پنجرهٔ مرکزی باز می‌شود');
   let projectItemForm = d.querySelector('#projectItemForm');
-  assert.equal(projectItemForm.elements.owner_id, undefined, 'مسئول آیتم از فرم حذف شده است');
+  assert.equal(projectItemForm.elements.owner_id, undefined, 'مسئول فعالیت از فرم حذف شده است');
   assert.equal(projectItemForm.elements.weight, undefined, 'وزن از فرم حذف شده است');
   field(projectItemForm, 'title', 'فاز تحلیل');
   field(projectItemForm, 'item_planned_start', '2026-09-21');
