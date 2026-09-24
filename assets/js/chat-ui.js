@@ -11,9 +11,15 @@ function captureScroll(box){
  return {oldTop,atBottom,anchorId:anchor?.dataset.messageId||'',anchorOffset:anchor?anchor.offsetTop-oldTop:0};
 }
 function restoreScroll(box,snapshot,{initial=false,forceBottom=false}={}){
- if(initial||forceBottom||snapshot.atBottom){box.scrollTop=box.scrollHeight;return}
+ // Re-rendering replaces every message node.  A global smooth-scroll rule
+ // turns this restoration into a visible up/down jump for someone reading.
+ const previous=box.style.getPropertyValue('scroll-behavior'),priority=box.style.getPropertyPriority('scroll-behavior');
+ box.style.setProperty('scroll-behavior','auto','important');
+ if(initial||forceBottom||snapshot.atBottom){box.scrollTop=box.scrollHeight;restoreBehavior();return}
  const anchor=snapshot.anchorId&&[...box.querySelectorAll('[data-message-id]')].find(node=>node.dataset.messageId===snapshot.anchorId);
  box.scrollTop=Math.max(0,anchor?anchor.offsetTop-snapshot.anchorOffset:snapshot.oldTop);
+ restoreBehavior();
+ function restoreBehavior(){if(previous)box.style.setProperty('scroll-behavior',previous,priority);else box.style.removeProperty('scroll-behavior')}
 }
 if(typeof module!=='undefined'&&module.exports)module.exports={fileAllowed,LIMIT,captureScroll,restoreScroll};
 if(typeof document==='undefined')return;
