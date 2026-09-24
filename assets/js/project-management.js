@@ -13,6 +13,7 @@
   const dependency = id => model.dependencies.find(row => String(row.id) === String(id));
   const itemTypeText = value => ({ phase: 'فاز', activity: 'فعالیت', milestone: 'نقطه عطف' }[value] || value || '—');
   const phasePalette = ['#2f6fb6', '#8759ad', '#c57a2d', '#b75a67', '#536d8f', '#a76438'];
+  const wbsIndentStep = 52;
   const itemLabel = row => row?.item_type === 'activity' && item(row.parent_item_id)?.item_type === 'activity' ? 'زیرفعالیت' : itemTypeText(row?.item_type);
   const phaseMeta = (row, rows) => {
     const map = new Map(rows.map(entry => [String(entry.id), entry])); let cursor = row, guard = 0;
@@ -66,18 +67,25 @@
     const byParent = new Map(), known = new Set(rows.map(row => String(row.id)));
     rows.forEach(row => { const key = row.parent_item_id && known.has(String(row.parent_item_id)) ? String(row.parent_item_id) : '__project__'; byParent.set(key, [...(byParent.get(key) || []), row]); });
     const seen = new Set();
+    const subtreeDepth = (row, ancestry = new Set()) => {
+      const id = String(row.id); if (ancestry.has(id)) return 1;
+      const next = new Set(ancestry); next.add(id);
+      const childDepths = (byParent.get(id) || []).map(child => subtreeDepth(child, next));
+      return 1 + (childDepths.length ? Math.max(...childDepths) : 0);
+    };
     const rootCard = `<article class="project-wbs-card project-wbs-root-card" data-wbs-node="project-root"><span>پروژه</span><b>${esc(projectRow.title)}</b><small>${fa(Math.round(projectProgress(projectRow)))}٪ پیشرفت</small></article>`;
-    const branch = (row, depth = 1, ancestry = new Set()) => {
+    const branch = (row, depth = 1, ancestry = new Set(), columnShift = 0) => {
       const id = String(row.id); if (ancestry.has(id) || seen.has(id)) return '';
       seen.add(id); const next = new Set(ancestry); next.add(id);
       const meta = phaseMeta(row, rows), parent = row.parent_item_id && known.has(String(row.parent_item_id)) ? row.parent_item_id : 'project-root';
       const progressText = row.item_type === 'milestone' ? date(row.planned_start) : `${fa(Math.round(calculatedProgress(row)))}٪ پیشرفت`;
-      const children = (byParent.get(id) || []).map(child => branch(child, depth + 1, next)).filter(Boolean).join('');
-      const shift = Math.min(Math.max(0, depth - 1), 4) * 14;
-      return `<section class="project-wbs-branch ${children ? 'has-children' : ''}" data-wbs-branch="${row.id}"><article class="project-wbs-card ${row.item_type}" data-wbs-node="${row.id}" data-wbs-parent="${parent}" data-project-item-open="${row.id}" style="--wbs-depth:${depth};--wbs-shift:${shift}px;--phase-color:${meta.color}" title="برای ویرایش دوبار کلیک کنید"><span>${esc(itemLabel(row))}</span><b>${esc(row.title)}</b><small>${progressText}</small></article>${children ? `<div class="project-wbs-children">${children}</div>` : ''}</section>`;
+      const children = (byParent.get(id) || []).map(child => branch(child, depth + 1, next, columnShift)).filter(Boolean).join('');
+      const shift = Math.min(Math.max(0, depth - 1), 6) * wbsIndentStep;
+      const columnStyle = depth === 1 ? ` style="--wbs-branch-shift:${columnShift}px;--wbs-branch-extra:${columnShift * 2}px"` : '';
+      return `<section class="project-wbs-branch ${children ? 'has-children' : ''}" data-wbs-branch="${row.id}"${columnStyle}><article class="project-wbs-card ${row.item_type}" data-wbs-node="${row.id}" data-wbs-parent="${parent}" data-wbs-depth="${depth}" data-project-item-open="${row.id}" style="--wbs-depth:${depth};--wbs-shift:${shift}px;--phase-color:${meta.color}" title="برای ویرایش دوبار کلیک کنید"><span>${esc(itemLabel(row))}</span><b>${esc(row.title)}</b><small>${progressText}</small></article>${children ? `<div class="project-wbs-children">${children}</div>` : ''}</section>`;
     };
-    const roots = (byParent.get('__project__') || []).map(row => branch(row)).filter(Boolean);
-    rows.forEach(row => { if (!seen.has(String(row.id))) roots.push(branch(row)); });
+    const roots = (byParent.get('__project__') || []).map(row => branch(row, 1, new Set(), Math.min(Math.max(0, subtreeDepth(row) - 1), 6) * wbsIndentStep)).filter(Boolean);
+    rows.forEach(row => { if (!seen.has(String(row.id))) roots.push(branch(row, 1, new Set(), Math.min(Math.max(0, subtreeDepth(row) - 1), 6) * wbsIndentStep)); });
     const forest = roots.length ? `<div class="project-wbs-forest" style="--wbs-root-count:${roots.length}">${roots.join('')}</div>` : '<div class="empty">برای شروع، یک فاز، فعالیت یا نقطه عطف اضافه کنید.</div>';
     return `<div class="wbs-direct"><div class="project-wbs-canvas"><svg class="project-wbs-connectors" aria-label="اتصالات ساختار شکست"></svg><div class="project-wbs-tree">${rootCard}${forest}</div></div></div>`;
   }
@@ -102,11 +110,29 @@
     const host = root(), canvas = host?.querySelector('.project-wbs-canvas'), svg = canvas?.querySelector('.project-wbs-connectors'); if (!canvas || !svg) return;
     const box = canvas.getBoundingClientRect(); if (!box.width || !box.height) return;
     const nodes = new Map([...canvas.querySelectorAll('[data-wbs-node]')].map(node => [String(node.dataset.wbsNode), node]));
-    const links = [...nodes.values()].filter(node => node.dataset.wbsParent && nodes.has(String(node.dataset.wbsParent))).map(node => {
-      const parent = nodes.get(String(node.dataset.wbsParent)), a = parent.getBoundingClientRect(), b = node.getBoundingClientRect();
-      const x1 = Math.round(a.left + a.width / 2 - box.left), y1 = Math.round(a.bottom - box.top), x2 = Math.round(b.left + b.width / 2 - box.left), y2 = Math.round(b.top - box.top), bend = Math.round(y1 + Math.max(16, (y2 - y1) / 2));
-      return `<path d="M ${x1} ${y1} V ${bend} H ${x2} V ${y2}" class="project-wbs-link"></path>`;
-    }).join('');
+    const childGroups = new Map();
+    [...nodes.values()].forEach(node => {
+      const parentId = String(node.dataset.wbsParent || ''); if (!parentId || !nodes.has(parentId)) return;
+      childGroups.set(parentId, [...(childGroups.get(parentId) || []), node]);
+    });
+    const paths = [];
+    childGroups.forEach((children, parentId) => {
+      const parent = nodes.get(parentId), a = parent.getBoundingClientRect(), x1 = Math.round(a.left + a.width / 2 - box.left), y1 = Math.round(a.bottom - box.top);
+      const childRects = children.map(node => ({ node, rect: node.getBoundingClientRect() })).sort((left, right) => left.rect.top - right.rect.top || right.rect.right - left.rect.right);
+      if (parentId === 'project-root') {
+        const points = childRects.map(({ rect }) => ({ x: Math.round(rect.left + rect.width / 2 - box.left), y: Math.round(rect.top - box.top) }));
+        const firstTop = Math.min(...points.map(point => point.y)), busY = Math.round(y1 + Math.max(18, (firstTop - y1) / 2)), minX = Math.min(x1, ...points.map(point => point.x)), maxX = Math.max(x1, ...points.map(point => point.x));
+        paths.push(`M ${x1} ${y1} V ${busY}`);
+        if (maxX > minX) paths.push(`M ${minX} ${busY} H ${maxX}`);
+        points.forEach(point => paths.push(`M ${point.x} ${busY} V ${point.y}`));
+        return;
+      }
+      const points = childRects.map(({ rect }) => ({ edge: Math.round(rect.right - box.left), y: Math.round(rect.top + rect.height / 2 - box.top) }));
+      const trunkX = Math.max(...points.map(point => point.edge)) + 18, jointY = Math.round(y1 + 18), lastY = Math.max(jointY, ...points.map(point => point.y));
+      paths.push(`M ${x1} ${y1} V ${jointY} H ${trunkX} V ${lastY}`);
+      points.forEach(point => paths.push(`M ${trunkX} ${point.y} H ${point.edge}`));
+    });
+    const links = paths.length ? `<path d="${paths.join(' ')}" class="project-wbs-link"></path>` : '';
     svg.setAttribute('viewBox', `0 0 ${Math.ceil(canvas.scrollWidth)} ${Math.ceil(canvas.scrollHeight)}`); svg.setAttribute('width', String(Math.ceil(canvas.scrollWidth))); svg.setAttribute('height', String(Math.ceil(canvas.scrollHeight))); svg.innerHTML = links;
   }
   function drawGanttDependencies() {

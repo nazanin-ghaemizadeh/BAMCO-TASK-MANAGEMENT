@@ -136,12 +136,34 @@ test('enterprise pages keep a stable shared shell and persist the project, part 
   assert.equal(tables.project_items[1].planned_end, '2026-10-01');
   await until(() => /۵۰٪/.test(d.querySelector('#projectFeatureRoot').textContent));
   assert.match(d.querySelector('#projectFeatureRoot').textContent, /۵۰٪/, 'پیشرفت پروژه از برگ‌های ساختار محاسبه می‌شود');
+  d.querySelector('[data-project-action="item"]').click();
+  projectItemForm = d.querySelector('#projectItemForm');
+  field(projectItemForm, 'item_type', 'activity');
+  field(projectItemForm, 'parent_item_id', '1000');
+  field(projectItemForm, 'title', 'بررسی وضعیت');
+  field(projectItemForm, 'item_planned_start', '2026-09-22');
+  field(projectItemForm, 'item_planned_end', '2026-09-26');
+  submit(w, projectItemForm);
+  await until(() => tables.project_items.length === 3);
+
+  d.querySelector('[data-project-action="item"]').click();
+  projectItemForm = d.querySelector('#projectItemForm');
+  field(projectItemForm, 'item_type', 'activity');
+  field(projectItemForm, 'parent_item_id', '1002');
+  field(projectItemForm, 'title', 'بررسی جزئیات');
+  field(projectItemForm, 'item_planned_start', '2026-09-23');
+  field(projectItemForm, 'item_planned_end', '2026-09-24');
+  submit(w, projectItemForm);
+  await until(() => tables.project_items.length === 4);
+
   assert.match(d.querySelector('#projectFeatureRoot').textContent, /نمای گانت/);
   d.querySelector('[data-project-view="wbs"]').click();
   assert.match(d.querySelector('.project-wbs-tree').textContent, /تحویل اولیه/);
   assert.ok(d.querySelector('.project-wbs-forest'), 'ساختار شکست از ریشه به شاخه‌های عمودی تقسیم می‌شود');
   assert.equal(d.querySelector('.project-wbs-root-card').dataset.wbsNode, 'project-root');
   assert.ok(d.querySelector('.project-wbs-connectors'), 'اتصال‌های درخت در یک لایهٔ اندازه‌گیری‌شده رسم می‌شوند');
+  assert.match(d.querySelector('[data-wbs-node="1002"]').getAttribute('style'), /--wbs-shift:52px/, 'فعالیت یک سطح تورفتگی واضح دارد');
+  assert.match(d.querySelector('[data-wbs-node="1003"]').getAttribute('style'), /--wbs-shift:104px/, 'زیرفعالیت از فعالیت مادر بیشتر تورفتگی دارد');
   d.querySelector('[data-project-item-open="1000"]').dispatchEvent(new w.MouseEvent('dblclick', { bubbles: true }));
   assert.equal(d.querySelector('#projectItemDialog').open, true, 'دوبارکلیک ساختار شکست، ویرایش فعالیت را باز می‌کند');
   assert.ok(d.querySelector('#projectItemDialog [data-project-item-delete="1000"]'), 'حذف در همان پنجرهٔ ویرایش فعالیت موجود است');
