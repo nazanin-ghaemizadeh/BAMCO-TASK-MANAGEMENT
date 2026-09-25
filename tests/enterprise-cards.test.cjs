@@ -3,6 +3,13 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const {JSDOM}=require('jsdom');
 
+test('project summary is inset while diagram views remain full-bleed',()=>{
+ const css=fs.readFileSync('assets/css/enterprise-features.css','utf8');
+ assert.match(css,/#projectFeatureRoot>\.project-grid\.detail-open\.detail-summary\{align-items:flex-start;padding:16px;overflow:auto\}/);
+ assert.match(css,/#projectFeatureRoot>\.project-grid\.detail-open:not\(\.detail-summary\)\{padding:0;overflow:hidden\}/);
+ assert.match(css,/#projectFeatureRoot>\.project-grid\.detail-open\.detail-summary>\.project-detail\{height:auto;overflow:visible\}/);
+});
+
 for(const [route,script,dialog,create,table] of [
  ['projects','project-management.js','projectDialog','افزودن پروژه','projects'],
  ['invoices','financial-obligations.js','invoiceDialog','صورتحساب جدید','invoices']
@@ -18,6 +25,14 @@ for(const [route,script,dialog,create,table] of [
  const root=w.document.querySelector(`#${route==='projects'?'project':'invoice'}FeatureRoot`);
  assert(!root.querySelector('.enterprise-grid').classList.contains('detail-open'));
  root.querySelector('[data-'+(route==='projects'?'project':'invoice')+'-select]').click();assert(root.querySelector('.enterprise-grid').classList.contains('detail-open'));
+ if(route==='projects'){
+  const grid=root.querySelector('.project-grid');
+  assert(grid.classList.contains('detail-summary'),'the project summary keeps its standard inset layout');
+  root.querySelector('[data-project-view="gantt"]').click();
+  assert(root.querySelector('.project-grid').classList.contains('detail-gantt'),'the Gantt keeps the full-bleed diagram layout');
+  root.querySelector('[data-project-view="wbs"]').click();
+  assert(root.querySelector('.project-grid').classList.contains('detail-wbs'),'the WBS keeps the full-bleed diagram layout');
+ }
  root.querySelector('[data-'+(route==='projects'?'project':'invoice')+'-action="back"]').click();
  assert(!root.querySelector('.enterprise-grid').classList.contains('detail-open'));
  [...root.querySelectorAll('button')].find(b=>b.textContent.includes(create)).click();

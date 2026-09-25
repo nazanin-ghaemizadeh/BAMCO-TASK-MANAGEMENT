@@ -234,8 +234,12 @@ html body #appView#appView #projectsView:not(.hidden){height:calc(100dvh - var(-
 #projectFeatureRoot{display:flex;flex-direction:column;height:100%;min-height:0;overflow:hidden}
 #projectFeatureRoot>.feature-toolbar,#projectFeatureRoot>.project-top-command-row{flex:0 0 auto}
 #projectFeatureRoot>.project-grid{flex:1 1 0;min-height:0;overflow:auto}
-#projectFeatureRoot>.project-grid.detail-open{display:flex;min-height:0;padding:0;overflow:hidden}
-#projectFeatureRoot>.project-grid.detail-open>.project-detail{display:block;flex:1 1 0;width:100%;height:100%;min-height:0;overflow:hidden}
+#projectFeatureRoot>.project-grid.detail-open{display:flex;min-height:0}
+#projectFeatureRoot>.project-grid.detail-open.detail-summary{align-items:flex-start;padding:16px;overflow:auto}
+#projectFeatureRoot>.project-grid.detail-open:not(.detail-summary){padding:0;overflow:hidden}
+#projectFeatureRoot>.project-grid.detail-open>.project-detail{display:block;flex:1 1 0;width:100%;min-height:0;box-sizing:border-box}
+#projectFeatureRoot>.project-grid.detail-open.detail-summary>.project-detail{height:auto;overflow:visible}
+#projectFeatureRoot>.project-grid.detail-open:not(.detail-summary)>.project-detail{height:100%;overflow:hidden}
 #projectFeatureRoot .wbs-direct{width:100%;height:100%;min-height:0;max-height:100%;box-sizing:border-box;padding:0;overflow:hidden;background:#fff;direction:rtl}
 #projectFeatureRoot .project-wbs-scroll{width:100%;height:100%;min-width:0;min-height:0;box-sizing:border-box;padding:24px 28px 42px;overflow:auto;direction:rtl;overscroll-behavior:contain;scrollbar-gutter:stable;isolation:isolate}
 #projectFeatureRoot .project-wbs-canvas{min-height:100%}
