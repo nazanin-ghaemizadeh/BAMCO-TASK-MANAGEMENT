@@ -95,6 +95,19 @@ async function fixture(options={}){
    }
    if(endpoint==='task_status_view')data=actor.role==='manager'?(tables.tasks||[]):(tables.tasks||[]).filter(t=>t.owner_id===actor.id);
    if(endpoint==='request_workflow_snapshot')data=workflowSnapshot();
+   if(endpoint==='save_project_activity'){
+    const direct=actor.role==='manager';let projectItemId=body.p_item_id==null?null:Number(body.p_item_id);
+    if(direct){
+     if(projectItemId!=null){const row=(tables.project_items||[]).find(item=>Number(item.id)===projectItemId);if(row)Object.assign(row,body.p_payload,{project_id:Number(body.p_project_id),item_type:'activity',updated_at:new Date().toISOString()})}
+     else{projectItemId=1000+(tables.project_items||[]).length;(tables.project_items||=[]).push({id:projectItemId,project_id:Number(body.p_project_id),item_type:'activity',weight:1,created_by:actor.id,...body.p_payload})}
+    }
+    data={project_item_id:projectItemId,request_id:direct?null:1000,applied_directly:direct,request_context:'project_activity'};
+   }
+   if(endpoint==='delete_project_activity'){
+    const direct=actor.role==='manager';
+    if(direct){const index=(tables.project_items||[]).findIndex(item=>Number(item.id)===Number(body.p_item_id));if(index>=0)tables.project_items.splice(index,1)}
+    data={project_item_id:Number(body.p_item_id),request_id:direct?null:1000,applied_directly:direct,request_context:'project_activity'};
+   }
    // Mirror the canonical migration baseline rather than treating the new
    // authorization RPC as an empty endpoint.  Individual tests can still
    // override this through fetchResult to exercise grant/revoke states.
@@ -118,7 +131,7 @@ async function fixture(options={}){
    if(endpoint==='chat_ensure_public')data='test-room';
    if(endpoint==='chat_directory'||endpoint==='chat_directory_v2')data=profiles;
    if(endpoint==='chat_threads')data=filter(threads).filter(t=>t.is_active);
-   if(endpoint==='chat_conversation_list')data=threads.filter(t=>(t.is_active||t.participant_deleted_at)&&(t.thread_type==='public'||members.some(m=>m.thread_id===t.id&&m.user_id===actor.id))).map(t=>{const peer=members.find(m=>m.thread_id===t.id&&m.user_id!==actor.id),p=profiles.find(p=>p.id===peer?.user_id);return{...t,title:t.thread_type==='direct'&&!t.system_recipient_id?p?.full_name||t.title:t.title,person_id:t.thread_type==='direct'?p?.id:null,last_message:messages.filter(m=>m.thread_id===t.id&&!m.deleted_at).at(-1)?.body,unread_count:0}});
+   if(endpoint==='chat_conversation_list')data=threads.filter(t=>(t.is_active||t.participant_deleted_at)&&(t.thread_type==='public'||members.some(m=>m.thread_id===t.id&&m.user_id===actor.id))).map(t=>{const peer=members.find(m=>m.thread_id===t.id&&m.user_id!==actor.id),self=members.find(m=>m.thread_id===t.id&&m.user_id===actor.id),p=profiles.find(p=>p.id===peer?.user_id);return{...t,title:t.thread_type==='direct'&&!t.system_recipient_id?p?.full_name||t.title:t.title,person_id:t.thread_type==='direct'?p?.id:null,last_message:messages.filter(m=>m.thread_id===t.id&&!m.deleted_at).at(-1)?.body,last_read_at:self?.last_read_at||null,unread_count:0}});
 
    if(endpoint==='chat_members')data=filter(members);
    if(endpoint==='chat_messages')data=filter(messages).filter(m=>!m.deleted_at);
@@ -132,6 +145,7 @@ async function fixture(options={}){
    if(endpoint==='chat_send_message'){data=messages.length+1;messages.push({id:data,thread_id:body.p_thread_id,sender_id:actor.id,body:body.p_body,reply_to:body.p_reply_to,created_at:new Date().toISOString()})}
    if(endpoint==='chat_edit_message'){const m=messages.find(m=>m.id===body.p_message_id);m.body=body.p_body;m.edited_at=new Date().toISOString()}
    if(endpoint==='chat_delete_message')messages.find(m=>m.id===body.p_message_id).deleted_at=new Date().toISOString();
+   if(endpoint==='chat_mark_read'){let member=members.find(m=>m.thread_id===body.p_thread_id&&m.user_id===actor.id);if(!member){member={thread_id:body.p_thread_id,user_id:actor.id,member_role:'member'};members.push(member)}member.last_read_at=new Date().toISOString();data=true}
    if(url.pathname.includes('/storage/v1/object/')){if(method==='POST'){uploads.push({url:url.href,file:body});data={Key:url.pathname}}else if(method==='GET')return new Response('fixture attachment content',{headers:{'Content-Type':'application/octet-stream'}})}
    if(endpoint==='session-audit')data=body.action==='start'?{ok:true,session:{id:'test-current-session'}}:{ok:true,ended:body.action==='end'};
    if(options.fetchResult){const result=await options.fetchResult({endpoint,method,body,url,data,tables});if(result!==undefined)data=result}

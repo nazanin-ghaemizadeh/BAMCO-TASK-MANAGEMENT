@@ -13,11 +13,14 @@ test('profile refresh updates both header and settings avatars through one canon
  assert.match(final,/BamcoData\?\.select\?\.\('profiles'/);
 });
 
-test('performance report derives the two task-definition columns from canonical web tasks and task ownership',()=>{
+test('performance report derives task-definition columns from canonical requests and direct web/project tasks',()=>{
  const report=fs.readFileSync('assets/js/reports.js','utf8');
- assert.match(report,/definitionTasks=tasks\.filter\(t=>String\(t\?\.source\|\|''\)\.toLowerCase\(\)==='web'/);
- assert.match(report,/forSelf=definitions\.filter\(t=>String\(t\.owner_id\)===String\(id\)\)\.length/);
- assert.match(report,/forOthers=definitions\.filter\(t=>t\.owner_id&&String\(t\.owner_id\)!==String\(id\)\)\.length/);
+ assert.match(report,/metrics\?\.definitionEvents\?metrics\.definitionEvents\(\{tasks,requests/);
+ assert.match(report,/taskSources:\['web','project'\]/);
+ assert.match(report,/forSelf=definitions\.filter\(event=>String\(event\.ownerId\|\|event\.actorId\)===String\(event\.actorId\)\)\.length/);
+ assert.match(report,/forOthers=definitions\.length-forSelf/);
+ assert.match(report,/requests=workflowRows\(\)/);
+ assert.match(report,/refreshWorkflowRows\(\)/);
  assert.match(report,/2026-09-06T00:00:00Z/);
  assert.match(report,/\.\.\.scopedTasks\.map\(t=>t\.created_by\)/);
  assert.match(report,/تعریف وظیفه در بازه انتخاب‌شده \(برای دیگران\)/);

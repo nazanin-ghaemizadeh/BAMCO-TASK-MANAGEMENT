@@ -22,7 +22,7 @@ function taskGroups(snapshot){
   warning:tasks.filter(t=>warningIds.has(String(t.id))||['warning','دوره هشدار'].includes(t.due_state)),
   overdue:tasks.filter(t=>overdueIds.has(String(t.id))||['overdue','دیرکرد'].includes(t.due_state)),
   waiting:tasks.filter(t=>waitingIds.has(String(t.id))||t.status_kind==='waiting'||normalizeTaskStatus(t.status_key)==='waiting'||normalizeTaskStatus(t.status)==='منتظر پاسخ'),
-  registered:tasks.filter(t=>t.status_kind==='registered'||normalizeTaskStatus(t.status_key)==='registered'||normalizeTaskStatus(t.status)==='ثبت‌شده')
+  registered:tasks.filter(t=>t.status_kind==='registered'||normalizeTaskStatus(t.status_key)==='registered'||normalizeTaskStatus(t.status)==='ثبت شده')
  }
 }
 function tableShell(rows,{kind,head,soft,soft2,border,columns}){

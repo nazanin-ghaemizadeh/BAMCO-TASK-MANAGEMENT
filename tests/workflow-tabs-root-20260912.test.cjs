@@ -20,7 +20,8 @@ test('response report has requested command order, month defaults and filtered t
  const f=await fixture({tables:{message_response_tracking:[{delivery_id:21,recipient_id:'test-owner',recipient_name:'متولی آزمایشی',channel:'portal',subject:'گزارش آزمایشی',sent_at:now,delivery_status:'sent',response_status:'awaiting',reminder_count:0}]}});t.after(()=>f.dispose());
  await f.open('responseReport');await until(()=>f.d.querySelector('#responseReportView .response-command-row'));
  const bar=f.d.querySelector('#responseReportView .response-command-row'),texts=directTexts(bar);
- assert.match(texts[0],/بازگشت به خانه/);assert.match(texts[1],/از تاریخ/);assert.match(texts[2],/تازه‌سازی/);assert.match(texts[3],/خروجی اکسل/);assert.match(texts[4],/حذف رکورد/);
+ assert.match(texts[0],/بازگشت به خانه/);assert.match(texts[1],/از تاریخ/);assert.match(texts[2],/تازه‌سازی/);assert.match(texts[3],/مدیریت دسترسی/);assert.match(texts[4],/خروجی اکسل/);assert.match(texts[5],/حذف رکورد/);
+ assert.ok(bar.classList.contains('bamco-command-bar'));assert.equal(bar.querySelector('[data-response-access]').previousElementSibling?.textContent.trim(),'تازه‌سازی');assert.equal(bar.querySelectorAll('[data-response-access],#featureAccessControl').length,1);
  assert.ok(f.d.querySelector('#canonicalResponseFrom').value);assert.ok(f.d.querySelector('#canonicalResponseTo').value);
  assert.ok(f.d.querySelector('#responseReportBody tr[data-delivery-id="21"]'));
  const css=f.d.querySelector('#bamcoCanonicalReportCss').textContent;assert.match(css,/data-response-bulk-delete[^}]*color:#b54040/);
@@ -33,6 +34,7 @@ test('message center command row is home, excel, refresh, green send and local r
  const bar=f.d.querySelector('#messageCenterView .message-command-row'),texts=directTexts(bar);
  assert.deepEqual([...bar.querySelectorAll(':scope > button')].map(b=>b.textContent.trim()),['بازگشت به خانه','خروجی اکسل','تازه‌سازی','مدیریت دسترسی','ارسال']);assert.equal(bar.querySelectorAll('#messageChannel option').length,3);
  assert.match(f.d.querySelector('#bamcoMessageCenterCommandCss').textContent,/sendSelectedMessages[^}]*background:#218764/);
+ assert.match(f.d.querySelector('#bamcoMessageCenterCommandCss').textContent,/messageCenterError:empty\{display:none\}/);assert.match(f.d.querySelector('#bamcoMessageCenterCommandCss').textContent,/message-command-row\{[^}]*margin:0;/);assert.equal(f.d.querySelector('#messageCenterError').textContent,'');
  const row=f.d.querySelector('#messageCenterBody tr[data-id="test-owner"]'),send=f.d.querySelector('#sendSelectedMessages');assert.ok(row);assert.equal(send.disabled,true);row.click();await pause(20);assert.equal(row.classList.contains('suite-selected'),true);assert.equal(send.disabled,false);assert.match(f.d.querySelector('#messageSelectionCount').textContent,/۱ نفر/);
  assert.equal(f.errors.length,0,f.errors.join('\n'));
 });

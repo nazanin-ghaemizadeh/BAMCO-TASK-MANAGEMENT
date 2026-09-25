@@ -16,7 +16,7 @@ const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const fa=n=>String(n??'').replace(/\d/g,d=>'۰۱۲۳۴۵۶۷۸۹'[d]);
 const en=n=>String(n??'').replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d));
 const norm=s=>String(s??'').replace(/ي/g,'ی').replace(/ك/g,'ک').replace(/\u200c/g,' ').replace(/\s+/g,' ').trim();
-const state=globalThis.Bamco.state=Object.assign(globalThis.Bamco.state||{}, {token:'',user:null,profile:null,profiles:[],tasks:[],requests:[],requestHistory:[],definitionRequests:[],requestRoutes:[],organizationScope:{loaded:false,rows:[],positionIds:[],ownPositionIds:[],directReportUserIds:[],descendantUserIds:[],hasSubordinates:false},dashboardMonitoringStart:window.bamcoDashboardMetrics?.DEFAULT_MONITORING_START||'2026-09-14T00:00:00Z',view:'dashboard',editing:null,reviewing:null,reviewEdit:null,resubmitting:null,amendingRequest:null,dateInput:null,selected:{kanban:null,archive:null}});
+const state=globalThis.Bamco.state=Object.assign(globalThis.Bamco.state||{}, {token:'',user:null,profile:null,profiles:[],tasks:[],requests:[],requestHistory:[],definitionRequests:[],requestRoutes:[],organizationScope:{loaded:false,rows:[],positionIds:[],ownPositionIds:[],directReportUserIds:[],descendantUserIds:[],hasSubordinates:false},dashboardMonitoringStart:window.bamcoDashboardMetrics?.DEFAULT_MONITORING_START||'2026-09-06T00:00:00Z',view:'dashboard',editing:null,reviewing:null,reviewEdit:null,resubmitting:null,amendingRequest:null,dateInput:null,selected:{kanban:null,archive:null}});
 // Remove the former profile-shaped organization projection on hot reloads too.
 delete state.organizationScope?.people;
 
@@ -336,7 +336,7 @@ function showLogin(){
   window.BamcoAccess?.clear?.();
   window.bamcoConversations?.close();window.bamcoChat?.close();
   sessionStorage.removeItem('bamco_session');
-  Object.assign(state,{workspaceRefreshPromise:null,token:'',user:null,profile:null,profiles:[],tasks:[],requests:[],requestHistory:[],definitionRequests:[],requestRoutes:[],organizationScope:{loaded:false,rows:[],positionIds:[],ownPositionIds:[],directReportUserIds:[],descendantUserIds:[],hasSubordinates:false},dashboardMonitoringStart:window.bamcoDashboardMetrics?.DEFAULT_MONITORING_START||'2026-09-14T00:00:00Z',view:'dashboard',editing:null,reviewing:null,reviewEdit:null,resubmitting:null,amendingRequest:null,dateInput:null,selected:{kanban:null,archive:null}});
+  Object.assign(state,{workspaceRefreshPromise:null,token:'',user:null,profile:null,profiles:[],tasks:[],requests:[],requestHistory:[],definitionRequests:[],requestRoutes:[],organizationScope:{loaded:false,rows:[],positionIds:[],ownPositionIds:[],directReportUserIds:[],descendantUserIds:[],hasSubordinates:false},dashboardMonitoringStart:window.bamcoDashboardMetrics?.DEFAULT_MONITORING_START||'2026-09-06T00:00:00Z',view:'dashboard',editing:null,reviewing:null,reviewEdit:null,resubmitting:null,amendingRequest:null,dateInput:null,selected:{kanban:null,archive:null}});
   $('#appView').classList.add('hidden');
   $('#loginView').classList.remove('hidden');
 }
@@ -434,25 +434,37 @@ function newestRequestRows(rows){
   const stamp=r=>{const value=Date.parse(r.created_at);return Number.isFinite(value)?value:0};
   return [...(rows||[])].sort((a,b)=>stamp(b)-stamp(a)||String(b.id).localeCompare(String(a.id),'en',{numeric:true}));
 }
+const requestTypeLabels={create:'تعریف فعالیت جدید',update:'ویرایش وظیفه',status:'تغییر وضعیت',priority:'تغییر اولویت',description:'تغییر توضیحات',complete:'اعلام انجام',delete:'درخواست حذف',due_date:'تغییر تاریخ پایان'};
+function requestTypeLabel(row){
+  const type=row?.request_type||row;
+  if(row?.proposed_data?.request_context==='project_activity'){
+    if(type==='create')return'تعریف فعالیت در پروژه';
+    if(type==='delete')return'حذف فعالیت پروژه';
+    return'ویرایش فعالیت پروژه';
+  }
+  return requestTypeLabels[type]||type||'—';
+}
+globalThis.bamcoRequestTypeLabel=requestTypeLabel;
 function workbenchRequestRows(){return[...(state.requests||[])];}
 function renderRequests(){
-  const types={create:'تعریف فعالیت جدید',update:'ویرایش وظیفه',status:'تغییر وضعیت',priority:'تغییر اولویت',description:'تغییر توضیحات',complete:'اعلام انجام',delete:'درخواست حذف',due_date:'تغییر تاریخ پایان'},statuses={pending:'در انتظار بررسی',in_review:'در زنجیره تأیید',needs_revision:'برگشت جهت اصلاح',approved:'تأیید',rejected:'رد',cancelled:'لغوشده'},routeById=new Map((state.requestRoutes||[]).map(x=>[String(x.request_id),x])),rows=newestRequestRows(workbenchRequestRows()),actionable=(state.requests||[]).filter(request=>routeById.get(String(request.id))?.actionable===true);
+  const statuses={pending:'در انتظار بررسی',in_review:'در زنجیره تأیید',needs_revision:'در انتظار اصلاح',approved:'تأیید',rejected:'رد',cancelled:'لغوشده'},routeById=new Map((state.requestRoutes||[]).map(x=>[String(x.request_id),x])),rows=newestRequestRows(workbenchRequestRows()),actionable=(state.requests||[]).filter(request=>routeById.get(String(request.id))?.actionable===true||(request.request_status==='needs_revision'&&String(request.requested_by)===String(state.user?.id)));
   $('#approvalBadge').textContent=fa(actionable.length);$('#approvalBadge').classList.toggle('hidden',!actionable.length);
   $('#approvalBody').innerHTML=rows.length?rows.map((r,index)=>{
-    const route=routeById.get(String(r.id)),terminal=['approved','rejected','cancelled'].includes(r.request_status),mine=String(r.requested_by)===String(state.user?.id),routeText=route?.approver_names?`در انتظار تأیید ${safe(route.approver_names)}`:statuses[r.request_status]||'در انتظار تعیین تأییدکننده';
-    let action=route?.approver_names?`در انتظار تأیید ${safe(route.approver_names)}`:'در انتظار تعیین تأییدکننده';
+    const route=routeById.get(String(r.id)),terminal=['approved','rejected','cancelled'].includes(r.request_status),mine=String(r.requested_by)===String(state.user?.id),task=state.tasks.find(t=>String(t.id)===String(r.task_id)),revisionOwner=profileLabel(r.proposed_data?.owner_id||task?.owner_id||r.requested_by,r.requester_name_snapshot||'متولی'),revisionText=`<span class="request-revision-state"><i aria-hidden="true"></i>در انتظار اصلاح ${safe(revisionOwner)}</span>`,routeText=r.request_status==='needs_revision'?revisionText:route?.approver_names?`در انتظار تأیید ${safe(route.approver_names)}`:statuses[r.request_status]||'در انتظار تعیین تأییدکننده';
+    let action=r.request_status==='needs_revision'?revisionText:route?.approver_names?`در انتظار تأیید ${safe(route.approver_names)}`:'در انتظار تعیین تأییدکننده';
     if(terminal)action='—';
-    else if(route?.actionable===true&&featureAllowed('approvals','edit'))action=`<button class="primary" data-review-request="${r.id}">بررسی</button>`;
     else if(r.request_status==='needs_revision'&&mine)action=`<button class="primary" data-revise-request="${r.id}">اصلاح و ارسال مجدد</button>`;
+    else if(r.request_status==='needs_revision')action=revisionText;
+    else if(route?.actionable===true&&featureAllowed('approvals','edit'))action=`<button class="primary" data-review-request="${r.id}">بررسی</button>`;
     else if(mine)action=`<button class="ghost" data-amend-request="${r.id}">ویرایش</button> <button class="ghost danger" data-cancel-request="${r.id}">لغو درخواست</button>`;
-    return`<tr data-request-id="${r.id}"><td>${fa(rows.length-index)}</td><td>${safe(profileLabel(r.requested_by,r.requester_name_snapshot||'—'))}</td><td>${types[r.request_type]||r.request_type}</td><td>${safe(r.proposed_data?.title||state.tasks.find(t=>String(t.id)===String(r.task_id))?.title||'—')}</td><td>${jalaliDateTime(r.created_at)}</td><td>${routeText}</td><td>${action}</td></tr>`;
+    return`<tr data-request-id="${r.id}"><td>${fa(rows.length-index)}</td><td>${safe(profileLabel(r.requested_by,r.requester_name_snapshot||'—'))}</td><td>${safe(requestTypeLabel(r))}</td><td>${safe(r.proposed_data?.title||state.tasks.find(t=>String(t.id)===String(r.task_id))?.title||'—')}</td><td>${jalaliDateTime(r.created_at)}</td><td>${routeText}</td><td>${action}</td></tr>`;
   }).join(''):'<tr><td colspan="7" class="empty">موردی در این بخش وجود ندارد.</td></tr>';
   window.bamcoApprovalCenter?.sync?.();
 }
 $('#approvalBody').addEventListener('click',e=>{const revise=e.target.closest('[data-revise-request]'),review=e.target.closest('[data-review-request]'),amend=e.target.closest('[data-amend-request]'),cancel=e.target.closest('[data-cancel-request]');if(revise)reviseRequest(revise.dataset.reviseRequest);if(review)openReview(review.dataset.reviewRequest);if(amend)amendRequest(amend.dataset.amendRequest);if(cancel)cancelRequest(cancel.dataset.cancelRequest)});
 function requestManagerNote(row){const note=String(row?.manager_note||'').trim();if(row?.request_status==='cancelled'&&(String(row?.reviewed_by||'')===String(row?.requested_by||'')||/^لغو(?:\s+شده)?\s+توسط\s+ثبت[‌ ]?کننده$/.test(note)))return'';return note}
 window.bamcoRequestManagerNote=requestManagerNote;
-function renderRequestHistory(){const types={create:'تعریف فعالیت جدید',update:'ویرایش وظیفه',status:'تغییر وضعیت',priority:'تغییر اولویت',description:'تغییر توضیحات',complete:'اعلام انجام',delete:'درخواست حذف',due_date:'تغییر تاریخ پایان'},statuses={approved:'تأیید',rejected:'رد',cancelled:'لغوشده'},terminal=new Set(Object.keys(statuses)),rows=newestRequestRows(state.requestHistory).filter(r=>terminal.has(r.request_status));$('#requestHistoryBody').innerHTML=rows.length?rows.map((r,index)=>`<tr data-request-id="${r.id}"><td>${fa(rows.length-index)}</td><td>${safe(profileLabel(r.requested_by,r.requester_name_snapshot||'—'))}</td><td>${types[r.request_type]||r.request_type}</td><td>${safe(r.proposed_data?.title||state.tasks.find(t=>String(t.id)===String(r.task_id))?.title||'—')}</td><td>${jalaliDateTime(r.reviewed_at||r.created_at)}</td><td>${statuses[r.request_status]}</td><td>${safe(requestManagerNote(r)||'—')}</td></tr>`).join(''):'<tr><td colspan="7" class="empty">سابقه‌ای وجود ندارد.</td></tr>'}
+function renderRequestHistory(){const statuses={approved:'تأیید',rejected:'رد',cancelled:'لغوشده'},terminal=new Set(Object.keys(statuses)),rows=newestRequestRows(state.requestHistory).filter(r=>terminal.has(r.request_status));$('#requestHistoryBody').innerHTML=rows.length?rows.map((r,index)=>`<tr data-request-id="${r.id}"><td>${fa(rows.length-index)}</td><td>${safe(profileLabel(r.requested_by,r.requester_name_snapshot||'—'))}</td><td>${safe(requestTypeLabel(r))}</td><td>${safe(r.proposed_data?.title||state.tasks.find(t=>String(t.id)===String(r.task_id))?.title||'—')}</td><td>${jalaliDateTime(r.reviewed_at||r.created_at)}</td><td>${statuses[r.request_status]}</td><td>${safe(requestManagerNote(r)||'—')}</td></tr>`).join(''):'<tr><td colspan="7" class="empty">سابقه‌ای وجود ندارد.</td></tr>'}
 const titles={dashboard:'داشبورد',kanban:'کانبان وظایف',archive:'آرشیو وظایف',approvals:'تأیید درخواست‌ها',requestHistory:'سوابق درخواست‌ها',projects:'مدیریت پروژه‌ها',parts:'مدیریت قطعات',invoices:'صورتحساب‌ها و تعهدات مالی',organization:'ساختار سازمانی',accessMatrix:'دسترسی‌ها',vehiclePermanent:'تحویل دائم خودرو',vehicleTemporary:'تحویل موقت خودرو',tools:'مدیریت ابزار',lettersIncoming:'نامه‌های ورودی',lettersOutgoing:'نامه‌های خروجی',userGuide:'راهنمای استفاده سامانه',sentMessages:'پیام‌های ارسال‌شده'};globalThis.BamcoNavigation?.configure?.({state,titles});
 function showView(view){if(typeof BamcoNavigation!=='undefined'&&typeof BamcoNavigation.navigate==='function')return BamcoNavigation.navigate(view);const target=typeof view==='string'&&/^[A-Za-z][A-Za-z0-9]*$/.test(view)?document.getElementById(view+'View'):null;if(!target)return false;globalThis.bamcoLeaveHome?.();state.view=view;$$('.view').forEach(x=>x.classList.add('hidden'));target.classList.remove('hidden');$$('#nav button').forEach(x=>x.classList.toggle('active',x.dataset.view===view));$('#viewTitle').textContent=titles[view]||'';$('#addTaskBtn').classList.toggle('hidden',view!=='kanban');return true}
 $('#nav').addEventListener('click',e=>{const button=e.target.closest('button[data-view]');if(button&&!button.disabled)showView(button.dataset.view)});$$('[data-go]').forEach(b=>b.addEventListener('click',()=>showView(b.dataset.go)));
@@ -553,6 +565,9 @@ $('#taskForm').addEventListener('submit',async e=>{
   e.preventDefault();
   const f=e.currentTarget;
   const data=Object.fromEntries(new FormData(f));
+  // Disabled controls are omitted by FormData. During revision/amendment the
+  // owner is intentionally locked, but it must still be resubmitted.
+  if(!Object.hasOwn(data,'owner_id')&&f.elements.owner_id)data.owner_id=f.elements.owner_id.value;
   delete data.start_date_j;delete data.done_date_j;delete data.due_date_j;
   for(const k of ['start_date','done_date','due_date'])if(!data[k])data[k]=null;
   data.reminder_days=Number(data.reminder_days||0);
@@ -568,16 +583,23 @@ $('#taskForm').addEventListener('submit',async e=>{
     f.elements.status.dataset.archiveConfirmed='1';
   }
   if(completing&&!data.done_date)data.done_date=new Date().toISOString().slice(0,10);
+  const activeRequest=state.reviewEdit||state.resubmitting||state.amendingRequest;
+  // Project activity requests carry immutable WBS linkage alongside the task
+  // fields shown in this dialog. Preserve that server-validated context when
+  // the requester or reviewer edits/resubmits the visible task fields.
+  const requestPayload=activeRequest?.proposed_data?.request_context==='project_activity'
+    ?{...activeRequest.proposed_data,...data,request_context:'project_activity'}
+    :data;
 
   try{
     if($('#saveTaskBtn').disabled)return;
     $('#saveTaskBtn').disabled=true;
     if(state.reviewEdit){
-      await rpc('review_request_stage',{p_request_id:state.reviewEdit.id,p_decision:'approved',p_note:state.reviewEdit.managerNote||null,p_final_data:data});
+      await rpc('review_request_stage',{p_request_id:state.reviewEdit.id,p_decision:'approved',p_note:state.reviewEdit.managerNote||null,p_final_data:requestPayload});
     }else if(state.resubmitting){
-      await rpc('resubmit_change_request',{p_request_id:state.resubmitting.id,p_proposed_data:data});
+      await rpc('resubmit_change_request',{p_request_id:state.resubmitting.id,p_proposed_data:requestPayload});
     }else if(state.amendingRequest){
-      await rpc('amend_change_request',{p_request_id:state.amendingRequest.id,p_proposed_data:data});
+      await rpc('amend_change_request',{p_request_id:state.amendingRequest.id,p_proposed_data:requestPayload});
     }else if(directMutation){
       if(completing){data.archived=true;data.archived_at=new Date().toISOString()}
       if(state.editing?._restoring){await update('tasks',`id=eq.${state.editing.id}`,{...data,archived:true,archived_at:state.editing.archived_at||new Date().toISOString()});await rpc('restore_tasks_to_kanban_and_resequence',{p_task_ids:[Number(state.editing.id)]})}
@@ -611,9 +633,9 @@ window.openReview=id=>{
   const request=state.requests.find(row=>String(row.id)===String(id));
   if(!canReviewRequest(request)){toast('این درخواست اکنون در کارتابل اقدام شما نیست.',true);return}
   state.reviewing=request;
-  const r=state.reviewing,types={create:'تعریف فعالیت جدید',update:'ویرایش وظیفه',status:'تغییر وضعیت',priority:'تغییر اولویت',description:'تغییر توضیحات',complete:'اعلام انجام',delete:'درخواست حذف',due_date:'تغییر تاریخ پایان'},task=state.tasks.find(t=>String(t.id)===String(r.task_id));
+  const r=state.reviewing,task=state.tasks.find(t=>String(t.id)===String(r.task_id));
   const proposed=r.proposed_data||{},before=r.before_data||{},value=(key)=>proposed[key]??task?.[key]??before[key],shown=v=>v===null||v===undefined||v===''?'—':v;
-  $('#reviewDetails').innerHTML=`<p><b>نوع درخواست:</b> ${types[r.request_type]||r.request_type}</p><p><b>مرحله:</b> ${fa(r.current_stage||1)}</p><p><b>شناسه وظیفه:</b> ${fa(task?.legacy_id||before.legacy_id||r.task_id||'—')}</p><p><b>عنوان:</b> ${safe(shown(value('title')))}</p><p><b>متولی:</b> ${safe(profileLabel(value('owner_id'),ownerName(task||before)))}</p><p><b>وضعیت:</b> ${safe(shown(value('status')))}</p><p><b>توضیحات:</b> ${safe(shown(value('description')))}</p><p><b>یادآور (روز):</b> ${fa(value('reminder_days')??0)}</p><p><b>اولویت:</b> ${safe(shown(value('priority')))}</p><p><b>تاریخ شروع:</b> ${jalaliText(value('start_date'))}</p><p><b>تاریخ پایان:</b> ${jalaliText(value('due_date'))}</p><p><b>تاریخ انجام:</b> ${jalaliText(value('done_date'))}</p>`;
+  $('#reviewDetails').innerHTML=`<p><b>نوع درخواست:</b> ${safe(requestTypeLabel(r))}</p><p><b>مرحله:</b> ${fa(r.current_stage||1)}</p><p><b>شناسه وظیفه:</b> ${fa(task?.legacy_id||before.legacy_id||r.task_id||'—')}</p><p><b>عنوان:</b> ${safe(shown(value('title')))}</p><p><b>متولی:</b> ${safe(profileLabel(value('owner_id'),ownerName(task||before)))}</p><p><b>وضعیت:</b> ${safe(shown(value('status')))}</p><p><b>توضیحات:</b> ${safe(shown(value('description')))}</p><p><b>یادآور (روز):</b> ${fa(value('reminder_days')??0)}</p><p><b>اولویت:</b> ${safe(shown(value('priority')))}</p><p><b>تاریخ شروع:</b> ${jalaliText(value('start_date'))}</p><p><b>تاریخ پایان:</b> ${jalaliText(value('due_date'))}</p><p><b>تاریخ انجام:</b> ${jalaliText(value('done_date'))}</p>`;
   $('#managerNote').value='';$('#reviewDialog').showModal();
 };
 async function review(decision){
@@ -621,7 +643,7 @@ async function review(decision){
   if(!canReviewRequest(request)){toast('این درخواست دیگر در مرحله اقدام شما نیست.',true);$('#reviewDialog').close();return}
   try{const result=await rpc('review_request_stage',{p_request_id:request.id,p_decision:decision,p_note:$('#managerNote').value.trim()||null,p_final_data:null});$('#reviewDialog').close();toast(decision==='approved'?(result==='next_stage'?'مرحله اول تأیید شد و درخواست به مرحله بعد رفت.':'درخواست تأیید و اعمال شد.'):decision==='needs_revision'?'درخواست جهت اصلاح به متولی برگشت.':'درخواست رد شد.');await refresh()}catch(err){toast(err.message,true)}
 }
-window.reviseRequest=id=>{const r=state.requests.find(row=>String(row.id)===String(id));if(!r||r.request_status!=='needs_revision'||String(r.requested_by)!==String(state.user?.id)){toast('این درخواست برای اصلاح شما در دسترس نیست.',true);return}state.resubmitting=r;const task=state.tasks.find(t=>String(t.id)===String(r.task_id))||{};openTask({...task,...r.proposed_data,owner_id:state.profile.id})};
+window.reviseRequest=id=>{const r=state.requests.find(row=>String(row.id)===String(id));if(!r||r.request_status!=='needs_revision'||String(r.requested_by)!==String(state.user?.id)){toast('این درخواست برای اصلاح شما در دسترس نیست.',true);return}state.resubmitting=r;const task=state.tasks.find(t=>String(t.id)===String(r.task_id))||{},ownerId=r.proposed_data?.owner_id||task.owner_id||r.requested_by||state.profile.id;openTask({...task,...r.proposed_data,owner_id:ownerId})};
 window.amendRequest=id=>{const r=state.requests.find(row=>String(row.id)===String(id));if(!r||!['pending','in_review'].includes(r.request_status)||String(r.requested_by)!==String(state.user?.id)){toast('این درخواست برای ویرایش شما در دسترس نیست.',true);return}state.amendingRequest=r;const task=state.tasks.find(t=>String(t.id)===String(r.task_id))||{};openTask({...task,...r.proposed_data,owner_id:r.proposed_data?.owner_id||state.profile.id})};
 window.cancelRequest=async id=>{const r=state.requests.find(row=>String(row.id)===String(id));if(!r||String(r.requested_by)!==String(state.user?.id)){toast('این درخواست برای لغو شما در دسترس نیست.',true);return}if(!await window.bamcoConfirm('این درخواست لغو و به سوابق منتقل شود؟'))return;try{await rpc('cancel_change_request',{p_request_id:r.id,p_note:null});toast('درخواست لغو و به سوابق منتقل شد.');await refresh()}catch(error){toast(error.message,true)}};
 $('#approveBtn').addEventListener('click',()=>review('approved'));$('#rejectBtn').addEventListener('click',()=>review('rejected'));$('#revisionBtn').addEventListener('click',()=>review('needs_revision'));$('#editRequestBtn').addEventListener('click',()=>{const r=state.reviewing;if(!canReviewRequest(r)){toast('این درخواست دیگر در مرحله اقدام شما نیست.',true);return}const task=state.tasks.find(t=>String(t.id)===String(r.task_id))||{};state.reviewEdit={...r,managerNote:$('#managerNote').value.trim()};$('#reviewDialog').close();openTask({...task,...r.proposed_data,owner_id:r.proposed_data?.owner_id||task.owner_id||r.requested_by})});

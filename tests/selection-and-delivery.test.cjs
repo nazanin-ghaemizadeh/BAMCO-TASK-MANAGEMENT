@@ -62,7 +62,7 @@ test('current Persian month completion and create-request counts use the agreed 
  f.tables.tasks.push({id:1,title:'فعال',owner_id:'test-owner',status:'در حال انجام',archived:false,due_date:from},{id:2,title:'تکمیل این ماه',owner_id:'test-owner',status:'انجام شده',archived:true,done_date:'2025-01-01',due_date:from},{id:3,title:'تکمیل قدیمی',owner_id:'test-owner',status:'انجام شده',archived:true,done_date:from,due_date:'2025-01-01'},{id:4,title:'در انتظار',owner_id:'test-owner',status:'منتظر پاسخ',archived:false});
  f.tables.change_requests.push({requested_by:'test-owner',request_type:'create',created_at:from+'T12:00:00Z'},{requested_by:'test-owner',request_type:'create',created_at:'2025-01-01T12:00:00Z'},{requested_by:'test-owner',request_type:'update',created_at:from+'T12:00:00Z'});
  await w.eval('refresh()');await f.open('performanceReport');await until(()=>d.querySelector('#performanceReportView tbody tr[data-workspace-index]'));
- const values=[...d.querySelector('#performanceReportView tbody tr').cells].map(c=>c.textContent.trim());assert.equal(values[1],'۲');assert.equal(values[5],'۲');assert.equal(values[6],'۱');assert.equal(values[7],'۵۰٪');assert.equal(values[8],'۰');assert.equal(values[9],'۰');assert.equal(d.querySelector('#performanceReportView .workspace-metrics'),null);
+ const values=[...d.querySelector('#performanceReportView tbody tr').cells].map(c=>c.textContent.trim());assert.equal(values[1],'۲');assert.equal(values[5],'۲');assert.equal(values[6],'۱');assert.equal(values[7],'۵۰٪');assert.equal(values[8],'۰');assert.equal(values[9],'۱');assert.equal(d.querySelector('#performanceReportView .workspace-metrics'),null);
 });
 
 test('performance report separates task-definition requests for self from requests for others',async t=>{

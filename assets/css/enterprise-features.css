@@ -251,4 +251,3 @@ html body #appView#appView #projectsView:not(.hidden){height:calc(100dvh - var(-
 #projectFeatureRoot .gantt-direct .gantt-pro-label-row.subactivity-row,#projectFeatureRoot .gantt-direct .gantt-pro-track.subactivity-row{height:58px;min-height:58px}
 #projectFeatureRoot .gantt-direct .gantt-dependencies{top:0;height:auto;z-index:8}
 @media(max-width:700px){#projectFeatureRoot .project-wbs-scroll{padding:18px 10px 32px}#projectFeatureRoot .gantt-direct .gantt-pro{grid-template-columns:250px var(--gantt-timeline-width);width:calc(250px + var(--gantt-timeline-width))}#projectFeatureRoot .gantt-direct .gantt-pro-labels{width:250px;min-width:250px}}
-.invoice-detail-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 14px;padding:10px 0;border-top:1px solid #dce7e2;border-bottom:1px solid #dce7e2}

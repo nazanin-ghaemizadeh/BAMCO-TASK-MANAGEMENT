@@ -90,3 +90,16 @@ test('database contract separates cancellation notes and keeps project status ca
   assert.match(sql, /status = v_task_status/);
 });
 
+test('revision, unread watermark and manager registered-work contracts are enforced in SQL', () => {
+  const sql = read('supabase/migrations/20260925011606_revision_chat_and_manager_message_root_fix.sql');
+  assert.match(sql, /request_status='needs_revision'/);
+  assert.match(sql, /jsonb_set\([\s\S]*?'\{owner_id\}'[\s\S]*?v_request\.requested_by/);
+  assert.match(sql, /when request\.request_status='needs_revision' then null/);
+  assert.match(sql, /when request\.request_status='needs_revision' then false/);
+  assert.match(sql, /member\.last_read_at/);
+  assert.match(sql, /role_row\.role_key='manager'/);
+  assert.match(sql, /private\.message_recipient_receives_registered\(v_recipient_id\)/);
+  assert.match(sql, /raise exception 'prepare_workflow_messages registered-task predicate was not found'/);
+  const eventSql = read('supabase/migrations/20260925012311_change_request_amended_event_contract.sql');
+  assert.match(eventSql, /'resubmitted','amended','applied'/);
+});

@@ -6,6 +6,9 @@ begin
   select id into mid from public.profiles where role='manager' and active order by id limit 1;
   if mid is null then raise exception 'A manager is required';end if;
   perform set_config('request.jwt.claim.sub',mid::text,true);
+  -- Fixture construction exercises historical/service-owned references and
+  -- therefore runs with the same trusted role as the deletion RPC itself.
+  perform set_config('request.jwt.claim.role','service_role',true);
   insert into auth.users(id,aud,role,email,raw_app_meta_data,raw_user_meta_data,created_at,updated_at)
   values(uid,'authenticated','authenticated','people-qa-'||uid::text||'@example.invalid','{"provider":"email","providers":["email"]}',jsonb_build_object('full_name','__PEOPLE_DELETE_QA__'),now(),now());
   update public.profiles set active=true,messaging_enabled=true where id=uid;
@@ -29,12 +32,14 @@ begin
   bid:=public.prepare_workflow_messages(array[uid],jsonb_build_object(uid::text,'portal'),'__PEOPLE_QA__','__PEOPLE_QA__');
   update public.message_batches set created_by=uid where id=bid;
   update public.message_deliveries set status='queued' where batch_id=bid;
+  perform set_config('request.jwt.claim.role','authenticated',true);
   execute 'set local role authenticated';
   denied:=false;begin perform public.delete_person_account(uid,mid);exception when insufficient_privilege then denied:=true;end;
   if not denied then raise exception 'Browser role can call privileged account deletion';end if;
   denied:=false;begin update public.tasks set owner_id=null,owner_deleted_at=now(),former_owner_name='forged' where id=tid;exception when raise_exception then denied:=true;end;
   if not denied then raise exception 'Manual owner-removal marker was accepted';end if;
   execute 'reset role';execute 'set local role service_role';
+  perform set_config('request.jwt.claim.role','service_role',true);
   denied:=false;begin perform public.delete_person_account(mid,mid);exception when raise_exception then denied:=true;end;
   if not denied then raise exception 'Self deletion accepted';end if;
   denied:=false;begin perform public.delete_person_account(mid,uid);exception when insufficient_privilege then denied:=true;end;
@@ -50,19 +55,23 @@ begin
   if not exists(select 1 from public.change_requests where id=reqid and request_status='pending' and requested_by is null and requester_name_snapshot='__PEOPLE_DELETE_QA__') then raise exception 'Open request was decided automatically or history was lost';end if;
   if exists(select 1 from public.message_deliveries where batch_id=bid and (recipient_id is not null or status<>'cancelled')) then raise exception 'Queued recipient delivery not cancelled';end if;
   if not exists(select 1 from public.chat_messages where thread_id=gid and sender_id is null and sender_name_snapshot='__PEOPLE_DELETE_QA__') then raise exception 'Conversation history lost';end if;
-  perform set_config('request.jwt.claim.sub',uid::text,true);execute 'set local role authenticated';
+  perform set_config('request.jwt.claim.sub',uid::text,true);
+  perform set_config('request.jwt.claim.role','authenticated',true);
+  execute 'set local role authenticated';
   -- Simulates the old signed access-token subject after physical Auth deletion.
   for r in select c.oid::regclass tab from pg_class c join pg_namespace ns on ns.oid=c.relnamespace where ns.nspname='public' and c.relkind='r' and c.relrowsecurity loop
    begin execute format('select count(*) from %s',r.tab) into n;exception when insufficient_privilege then n:=0;end;if n<>0 then raise exception 'Deleted identity can still read %',r.tab;end if;
   end loop;
   select count(*) into n from storage.objects;if n<>0 then raise exception 'Deleted identity can read Storage';end if;
-  denied:=false;begin perform public.chat_send_message(gid,'__DENIED__',null);exception when raise_exception then denied:=true;end;if not denied then raise exception 'Deleted identity sent chat';end if;
+  denied:=false;begin perform public.chat_send_message(gid,'__DENIED__',null);exception when raise_exception or insufficient_privilege then denied:=true;end;if not denied then raise exception 'Deleted identity sent chat';end if;
   denied:=false;begin insert into storage.objects(bucket_id,name) values('avatars',uid::text||'/unauthorized.png');exception when insufficient_privilege then denied:=true;end;if not denied then raise exception 'Deleted identity uploaded avatar';end if;
   execute 'reset role';perform set_config('request.jwt.claim.sub',mid::text,true);execute 'set local role authenticated';
   if not exists(select 1 from public.chat_threads where id=did and is_active=false and deleted_participant_name='__PEOPLE_DELETE_QA__') or not exists(select 1 from public.chat_messages where thread_id=did and body='__DIRECT_HISTORY_QA__' and sender_name_snapshot='__PEOPLE_DELETE_QA__') then raise exception 'Surviving member cannot read archived direct conversation';end if;
   update public.tasks set owner_id=mid where id=tid;
   if not exists(select 1 from public.tasks where id=tid and owner_id=mid and owner_deleted_at is null and former_owner_name is null) or not exists(select 1 from public.tasks where id=aid and owner_id is null and owner_deleted_at is not null) then raise exception 'Individual transfer changed another task or retained obsolete marker';end if;
-  execute 'reset role';execute 'set local role service_role';outcome:=public.delete_person_account(uid,mid);if outcome->>'already_deleted'<>'true' then raise exception 'Retry is not idempotent';end if;
+  execute 'reset role';execute 'set local role service_role';
+  perform set_config('request.jwt.claim.role','service_role',true);
+  outcome:=public.delete_person_account(uid,mid);if outcome->>'already_deleted'<>'true' then raise exception 'Retry is not idempotent';end if;
   execute 'reset role';
   raise exception 'rollback fixtures' using errcode='ZX001';
  exception when sqlstate 'ZX001' then null;

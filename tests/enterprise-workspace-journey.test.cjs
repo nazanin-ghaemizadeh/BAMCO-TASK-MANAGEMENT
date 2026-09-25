@@ -248,8 +248,8 @@ test('enterprise pages keep a stable shared shell and persist the project, part 
   submit(w, invoiceForm);
   await until(() => tables.invoices.length === 1);
   assertActiveRoute('invoices');
-  assert.deepEqual([...d.querySelectorAll('#invoiceFeatureRoot .invoice-top-command-row > button')].map(button => button.textContent.trim()), ['بازگشت به کارت‌ها']);
-  assert.deepEqual([...d.querySelectorAll('#invoiceFeatureRoot .invoice-detail-actions > button')].map(button => button.textContent.trim()), ['ثبت مرحله پرداخت', 'ویرایش', 'حذف']);
+  assert.deepEqual([...d.querySelectorAll('#invoiceFeatureRoot .invoice-top-command-row > button')].map(button => button.textContent.trim()), ['بازگشت به کارت‌ها', 'ثبت مرحله پرداخت', 'ویرایش', 'حذف']);
+  assert.equal(d.querySelector('#invoiceFeatureRoot .invoice-detail-actions'), null);
   assert.equal(d.querySelector('#invoiceFeatureRoot .invoice-top-command-row [data-home-action]'), null);
   assert.equal(d.querySelector('#invoiceFeatureRoot .invoice-detail > [data-invoice-action="back"]'), null);
   assert.equal(d.querySelector('#invoiceFeatureRoot .invoice-detail .project-actions [data-invoice-action="payment"]'), null);

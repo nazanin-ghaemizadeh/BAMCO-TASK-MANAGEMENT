@@ -3,7 +3,7 @@
 const q=s=>document.querySelector(s),months=['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
 const faDigits=value=>String(value??'').replace(/\d/g,d=>'۰۱۲۳۴۵۶۷۸۹'[d]);
 const requestTypes={create:'تعریف فعالیت جدید',update:'ویرایش وظیفه',status:'تغییر وضعیت',priority:'تغییر اولویت',description:'تغییر توضیحات',complete:'اعلام انجام',delete:'درخواست حذف',due_date:'تغییر تاریخ پایان'};
-const requestStatuses={pending:'در انتظار بررسی',in_review:'در زنجیره تأیید',needs_revision:'برگشت جهت اصلاح',approved:'تأیید',rejected:'رد',cancelled:'لغوشده'};
+const requestStatuses={pending:'در انتظار بررسی',in_review:'در زنجیره تأیید',needs_revision:'در انتظار اصلاح',approved:'تأیید',rejected:'رد',cancelled:'لغوشده'};
 function important(el,name,value){el?.style?.setProperty(name,value,'important')}
 function fixFilterSelects(){
  document.querySelectorAll('#kanbanView .column-filters select,#archiveView .column-filters select,#kanbanView .suite-filters select,#archiveView .suite-filters select').forEach(select=>{
