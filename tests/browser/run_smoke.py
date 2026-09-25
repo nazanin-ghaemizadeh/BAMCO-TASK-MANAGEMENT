@@ -122,7 +122,7 @@ async def manager_checks(page,result):
     controls=await command_texts(page,'#responseReportView .response-command-row')
     assert controls[0]=='بازگشت به خانه','response report home order'
     assert 'از تاریخ' in controls[1] and 'تا تاریخ' in controls[1],'response report date order'
-    assert controls[2:5]==['تازه‌سازی','خروجی اکسل','حذف رکورد'],'response report action order'
+    assert controls[2:6]==['تازه‌سازی','مدیریت دسترسی','خروجی اکسل','حذف رکورد'],'response report action order'
     assert await page.locator('#canonicalResponseFrom').input_value() and await page.locator('#canonicalResponseTo').input_value(),'response report current-month defaults missing'
     rows=page.locator('#responseReportBody tr[data-delivery-id]')
     await expect(rows).to_have_count(3)
