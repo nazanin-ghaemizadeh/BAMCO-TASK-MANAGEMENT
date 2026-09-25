@@ -23,3 +23,13 @@ test('owner tasks, Persian IDs, system sender identity and notification-to-threa
  assert.match(d.querySelector('[data-notification="91"]').textContent,/گزارش وضعیت امور روزانه/);d.querySelector('[data-notification="91"]').click();
  await until(()=>!d.querySelector('#directMessagesView').classList.contains('hidden')&&d.querySelector('#directMessagesView .chat-sender')?.textContent==='سامانه');assert(f.tables.notifications[0].read_at);assert.equal(d.querySelector('#messageBadge').textContent,'');assert.deepEqual(f.errors,[]);
 });
+
+test('system conversation preview always shows task identifiers with Persian digits',async t=>{
+ const f=await fixture(),{d}=f;t.after(()=>f.dispose());
+ f.threads.push({id:'system-preview',thread_type:'direct',title:'پیام‌های خودکار سامانه',system_recipient_id:'test-manager',is_active:true});
+ f.members.push({thread_id:'system-preview',user_id:'test-manager',member_role:'member'});
+ f.messages.push({id:801,thread_id:'system-preview',sender_id:null,is_system:true,body:'وظیفه 1430 «طراحی دیتابیس» حذف شد.',created_at:new Date().toISOString()});
+ await f.open('directMessages');await until(()=>d.querySelector('[data-thread="system-preview"] .conversation-preview'));
+ const preview=d.querySelector('[data-thread="system-preview"] .conversation-preview').textContent;
+ assert.match(preview,/وظیفه ۱۴۳۰/);assert.doesNotMatch(preview,/1430/);assert.deepEqual(f.errors,[]);
+});

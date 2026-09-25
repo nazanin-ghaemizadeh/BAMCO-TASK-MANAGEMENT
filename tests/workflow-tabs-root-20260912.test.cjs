@@ -50,6 +50,20 @@ test('sent messages uses unified log, has no overview cards and requested contro
  assert.equal(f.errors.length,0,f.errors.join('\n'));
 });
 
+test('sent messages keeps its final toolbar mounted while the first dataset is loading',async t=>{
+ let release;
+ const row={log_key:'portal:stable',source_type:'portal_event',source_id:2,recipient_id:'test-owner',recipient_name:'متولی آزمایشی',subject:'پیام پایدار',channel:'portal',delivery_status:'sent',sent_at:new Date().toISOString(),attempt_count:0,sender_name:'سامانه',snapshot_id:null,portal_message_id:2};
+ const f=await fixture({tables:{sent_message_log:[row]},fetchResult:({endpoint,data})=>endpoint==='sent_message_log'?new Promise(resolve=>{release=()=>resolve(data)}):undefined});t.after(()=>f.dispose());
+ const initialBar=f.d.querySelector('#sentMessagesView .sent-command-row');assert.ok(initialBar,'نوار نهایی باید پیش از ورود به صفحه آماده باشد');
+ const opening=f.open('sentMessages');await until(()=>release);await opening;
+ assert.strictEqual(f.d.querySelector('#sentMessagesView .sent-command-row'),initialBar,'نوار هنگام دریافت داده نباید تعویض شود');
+ assert.deepEqual(directTexts(initialBar).slice(0,4),['بازگشت به خانه','خروجی اکسل','تازه‌سازی','مدیریت دسترسی']);
+ assert.ok(f.d.querySelector('#sentMessagesView .sent-table .workspace-loading'));assert.equal(f.d.querySelector('#sentMessagesView .bamco-management-toolbar'),null);
+ release();await until(()=>f.d.querySelector('#sentMessagesView tr[data-sent-key="portal:stable"]'));
+ assert.strictEqual(f.d.querySelector('#sentMessagesView .sent-command-row'),initialBar,'نوار پس از دریافت داده نیز باید همان عنصر قبلی بماند');
+ assert.equal(f.d.querySelector('#sentMessagesView .workspace-loading'),null);assert.equal(f.errors.length,0,f.errors.join('\n'));
+});
+
 test('task history resolves deleted owner from task snapshot instead of UUID',async t=>{
  const f=await fixture();t.after(()=>f.dispose());await until(()=>f.w.bamcoTaskHistory?.ownerValue);
  const row={old_value:'"00000000-0000-0000-0000-000000000001"',new_value:null,old_data:{owner_id:'00000000-0000-0000-0000-000000000001'},new_data:{owner_id:null,former_owner_name:'متولی سابق'}};
