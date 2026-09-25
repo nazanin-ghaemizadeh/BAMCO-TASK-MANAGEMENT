@@ -450,7 +450,9 @@ function renderRequests(){
   window.bamcoApprovalCenter?.sync?.();
 }
 $('#approvalBody').addEventListener('click',e=>{const revise=e.target.closest('[data-revise-request]'),review=e.target.closest('[data-review-request]'),amend=e.target.closest('[data-amend-request]'),cancel=e.target.closest('[data-cancel-request]');if(revise)reviseRequest(revise.dataset.reviseRequest);if(review)openReview(review.dataset.reviewRequest);if(amend)amendRequest(amend.dataset.amendRequest);if(cancel)cancelRequest(cancel.dataset.cancelRequest)});
-function renderRequestHistory(){const types={create:'تعریف فعالیت جدید',update:'ویرایش وظیفه',status:'تغییر وضعیت',priority:'تغییر اولویت',description:'تغییر توضیحات',complete:'اعلام انجام',delete:'درخواست حذف',due_date:'تغییر تاریخ پایان'},statuses={approved:'تأیید',rejected:'رد',cancelled:'لغوشده'},terminal=new Set(Object.keys(statuses)),rows=newestRequestRows(state.requestHistory).filter(r=>terminal.has(r.request_status));$('#requestHistoryBody').innerHTML=rows.length?rows.map((r,index)=>`<tr data-request-id="${r.id}"><td>${fa(rows.length-index)}</td><td>${safe(profileLabel(r.requested_by,r.requester_name_snapshot||'—'))}</td><td>${types[r.request_type]||r.request_type}</td><td>${safe(r.proposed_data?.title||state.tasks.find(t=>String(t.id)===String(r.task_id))?.title||'—')}</td><td>${jalaliDateTime(r.reviewed_at||r.created_at)}</td><td>${statuses[r.request_status]}</td><td>${safe(r.manager_note||'—')}</td></tr>`).join(''):'<tr><td colspan="7" class="empty">سابقه‌ای وجود ندارد.</td></tr>'}
+function requestManagerNote(row){const note=String(row?.manager_note||'').trim();if(row?.request_status==='cancelled'&&(String(row?.reviewed_by||'')===String(row?.requested_by||'')||/^لغو(?:\s+شده)?\s+توسط\s+ثبت[‌ ]?کننده$/.test(note)))return'';return note}
+window.bamcoRequestManagerNote=requestManagerNote;
+function renderRequestHistory(){const types={create:'تعریف فعالیت جدید',update:'ویرایش وظیفه',status:'تغییر وضعیت',priority:'تغییر اولویت',description:'تغییر توضیحات',complete:'اعلام انجام',delete:'درخواست حذف',due_date:'تغییر تاریخ پایان'},statuses={approved:'تأیید',rejected:'رد',cancelled:'لغوشده'},terminal=new Set(Object.keys(statuses)),rows=newestRequestRows(state.requestHistory).filter(r=>terminal.has(r.request_status));$('#requestHistoryBody').innerHTML=rows.length?rows.map((r,index)=>`<tr data-request-id="${r.id}"><td>${fa(rows.length-index)}</td><td>${safe(profileLabel(r.requested_by,r.requester_name_snapshot||'—'))}</td><td>${types[r.request_type]||r.request_type}</td><td>${safe(r.proposed_data?.title||state.tasks.find(t=>String(t.id)===String(r.task_id))?.title||'—')}</td><td>${jalaliDateTime(r.reviewed_at||r.created_at)}</td><td>${statuses[r.request_status]}</td><td>${safe(requestManagerNote(r)||'—')}</td></tr>`).join(''):'<tr><td colspan="7" class="empty">سابقه‌ای وجود ندارد.</td></tr>'}
 const titles={dashboard:'داشبورد',kanban:'کانبان وظایف',archive:'آرشیو وظایف',approvals:'تأیید درخواست‌ها',requestHistory:'سوابق درخواست‌ها',projects:'مدیریت پروژه‌ها',parts:'مدیریت قطعات',invoices:'صورتحساب‌ها و تعهدات مالی',organization:'ساختار سازمانی',accessMatrix:'دسترسی‌ها',vehiclePermanent:'تحویل دائم خودرو',vehicleTemporary:'تحویل موقت خودرو',tools:'مدیریت ابزار',lettersIncoming:'نامه‌های ورودی',lettersOutgoing:'نامه‌های خروجی',userGuide:'راهنمای استفاده سامانه',sentMessages:'پیام‌های ارسال‌شده'};globalThis.BamcoNavigation?.configure?.({state,titles});
 function showView(view){if(typeof BamcoNavigation!=='undefined'&&typeof BamcoNavigation.navigate==='function')return BamcoNavigation.navigate(view);const target=typeof view==='string'&&/^[A-Za-z][A-Za-z0-9]*$/.test(view)?document.getElementById(view+'View'):null;if(!target)return false;globalThis.bamcoLeaveHome?.();state.view=view;$$('.view').forEach(x=>x.classList.add('hidden'));target.classList.remove('hidden');$$('#nav button').forEach(x=>x.classList.toggle('active',x.dataset.view===view));$('#viewTitle').textContent=titles[view]||'';$('#addTaskBtn').classList.toggle('hidden',view!=='kanban');return true}
 $('#nav').addEventListener('click',e=>{const button=e.target.closest('button[data-view]');if(button&&!button.disabled)showView(button.dataset.view)});$$('[data-go]').forEach(b=>b.addEventListener('click',()=>showView(b.dataset.go)));
@@ -1155,12 +1157,14 @@ document.addEventListener('bamco:domain-invalidated',event=>{
   renderTasks=function(archived){
     const scope=archived?'archive':'kanban';
     const searchEl=archived?qs('#archiveSearch'):qs('#kanbanSearch');
-    const query=(searchEl?.value||'').trim().toLowerCase();
+    const normalizeDigits=value=>String(value??'').replace(/[۰-۹]/g,d=>String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d))).replace(/[٠-٩]/g,d=>String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)));
+    const query=normalizeDigits(searchEl?.value||'').trim().toLowerCase(),focusId=!archived?String(searchEl?.dataset.taskFocusId||''):'';
     const allRows=state.tasks.filter(t=>!!t.archived===archived&&(archived||!window.bamcoTaskTransfer||window.bamcoTaskTransfer.includes(t))).sort((a,b)=>Number(displayId(a))-Number(displayId(b)));
     if(!archived)window.bamcoTaskTransfer?.sync();
     const filters=tableFilters[scope];
     updateColumnFilters(scope,allRows,archived);
-    const rows=allRows.filter(t=>!query||[t.title,t.description,ownerName(t),t.status,t.priority,displayId(t)].some(v=>String(v??'').toLowerCase().includes(query)))
+    const rows=allRows.filter(t=>!focusId||String(t.id)===focusId)
+      .filter(t=>!query||[t.title,t.description,ownerName(t),t.status,t.priority,displayId(t)].some(v=>normalizeDigits(v).toLowerCase().includes(query)))
       .filter(t=>!Object.values(filters).some(Boolean)||taskColumnValues(t,archived).every((v,index)=>!filters[index]||String(v??'')===filters[index]));
     const sort=window.BAMCO_TASK_SORT?.[scope];
     if(sort&&window.BAMCO_COMPARE_VALUES)rows.sort((a,b)=>sort.direction*window.BAMCO_COMPARE_VALUES(taskColumnValues(a,archived)[sort.index],taskColumnValues(b,archived)[sort.index]));
@@ -1190,13 +1194,20 @@ document.addEventListener('bamco:domain-invalidated',event=>{
   };
   renderTasks.__ascendingWrapped=true;
 
-  // Message links must reveal the target even when table filters hide it.
+  const kanbanSearch=qs('#kanbanSearch');
+  kanbanSearch?.addEventListener('input',()=>{delete kanbanSearch.dataset.taskFocusId},{capture:true});
+
+  // Every cross-view task link opens a one-row Kanban filtered by its exact ID.
   window.bamcoFocusMessageTask=function(id){
-    if(!state.tasks.some(t=>!t.archived&&String(t.id)===String(id)))return false;
+    const target=state.tasks.find(t=>!t.archived&&String(t.id)===String(id));if(!target)return false;
     const all=qs('#showAllKanbanTasks');if(all&&!all.closest('[hidden]'))all.click();
-    const search=qs('#kanbanSearch');if(search)search.value='';
+    const search=qs('#kanbanSearch');if(search){search.value=fa(displayId(target));search.dataset.taskFocusId=String(target.id)}
     Object.keys(tableFilters.kanban).forEach(key=>delete tableFilters.kanban[key]);
     state.selected.kanban=Number(id);renderTasks(false);if(window.bamcoTaskSelection){window.bamcoTaskSelection.clear('kanban');window.bamcoTaskSelection.toggle('kanban',id)}window.bamcoRevealTask?.(id);return true;
+  };
+  window.bamcoOpenTaskInKanban=function(id){
+    const target=state.tasks.find(t=>!t.archived&&String(t.id)===String(id));if(!target)return false;
+    qs('#nav [data-view="kanban"]')?.click();let tries=0;const apply=()=>{if(window.bamcoFocusMessageTask(id)){requestAnimationFrame(()=>{const row=qs(`#kanbanBody tr[data-task-id="${CSS.escape(String(id))}"]`);row?.scrollIntoView?.({block:'center',inline:'nearest',behavior:'auto'});row?.focus?.({preventScroll:true})});return true}return false};if(apply())return true;const timer=setInterval(()=>{if(apply()||++tries>30)clearInterval(timer)},100);return true;
   };
 
   function renderArchivePager(total,start,shown,pageCount){

@@ -12,6 +12,7 @@
   const count=state.tasks.filter(includes).length;
   q('#peopleTransferText').textContent=`${fa(scope.people.length)} حساب حذف شد؛ سوابق و ${fa(scope.retained)} وظیفه حفظ شد. `+(count?`${fa(count)} کار فعال ${scope.people.map(p=>p.full_name).join('، ')} نیازمند متولی است. هر ردیف را انتخاب کنید و «تغییر متولی» را بزنید.`:'همه کارهای فعال تعیین تکلیف شده‌اند؛ کاری برای واگذاری باقی نمانده است.');
   const button=q('#transferOwnerBtn');if(button)button.disabled=!count||!canTransfer();
+  if(!count&&!scope.completionNotified){scope.completionNotified=true;toast(scope.people.length===1?'فرد با موفقیت حذف شد و وظایفش منتقل شد.':'افراد با موفقیت حذف شدند و وظایفشان منتقل شد.');}
  }
  function open(people,activeTasks,retained){
   const former=new Map(people.map(p=>[p.id,p])),serverRows=new Map(activeTasks.map(t=>[String(t.id),t]));
@@ -22,7 +23,7 @@
    if(active(t))ids.add(String(t.id));
    return {...t,owner_id:null,former_owner_name:person.full_name,owner_deleted_at:new Date().toISOString()};
   });
-  state.tasks.push(...serverRows.values());scope={ids,people,retained};
+  state.tasks.push(...serverRows.values());scope={ids,people,retained,completionNotified:false};
   let banner=q('#peopleTransferBanner');if(!banner){
    banner=document.createElement('div');banner.id='peopleTransferBanner';banner.className='manager-note people-transfer-banner';
    banner.innerHTML='<p id="peopleTransferText" role="status"></p><div class="manager-toolbar"><button id="transferOwnerBtn" type="button" class="ghost" data-feature-key="kanban" data-feature-action="edit">تغییر متولی</button><button id="showAllKanbanTasks" type="button" class="ghost">نمایش همه کارهای کانبان</button></div>';
@@ -30,7 +31,7 @@
    q('#transferOwnerBtn').onclick=editOwner;
    q('#showAllKanbanTasks').onclick=()=>{scope=null;banner.hidden=true;window.bamcoSelection.clear('#kanbanBody');renderTasks(false)};
   }
-  banner.hidden=false;tableFilters.kanban={};q('#kanbanSearch').value='';
+  banner.hidden=false;tableFilters.kanban={};q('#kanbanSearch').value='';delete q('#kanbanSearch').dataset.taskFocusId;
   q('#nav [data-view="kanban"]').click();window.bamcoSelection.clear('#kanbanBody');renderTasks(false);sync();
  }
  function editOwner(){

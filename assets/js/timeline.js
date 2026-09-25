@@ -29,15 +29,8 @@
     return activeTasks().filter(t=>(!filters.owner||t.owner_id===filters.owner)&&(!filters.status||String(t.status)===filters.status)&&(!filters.priority||String(t.priority)===filters.priority)&&(!term||[taskId(t),t.title,t.description,ownerNameLocal(t),t.status,t.priority].some(v=>String(v??'').toLowerCase().includes(term))));
   }
   function openKanban(t){
-    q('#nav button[data-view="kanban"]')?.click();
-    window.bamcoClearTaskSelection?.();
-    if(typeof tableFilters!=='undefined')tableFilters.kanban={};
-    const search=q('#kanbanSearch');if(search){search.value='';search.dispatchEvent(new Event('input',{bubbles:true}))}
-    if(typeof chooseTask==='function')chooseTask('kanban',t.id);
-    requestAnimationFrame(()=>requestAnimationFrame(()=>{
-      window.bamcoRevealTask?.(t.id);
-      const row=q(`#kanbanBody tr[data-task-id="${t.id}"]`);row?.scrollIntoView({block:'center',behavior:'smooth'});row?.focus({preventScroll:true});
-    }));
+    if(window.bamcoOpenTaskInKanban?.(t.id))return;
+    q('#nav button[data-view="kanban"]')?.click();window.bamcoFocusMessageTask?.(t.id);
   }
 
   function ensure(){

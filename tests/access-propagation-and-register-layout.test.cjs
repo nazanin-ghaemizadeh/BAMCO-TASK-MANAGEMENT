@@ -26,7 +26,7 @@ test('every standalone task tab has a distinct feature grant and target grants u
   const navigation = read('assets/js/navigation-registry.js');
   const timeline = read('assets/js/timeline.js');
   const migration = read('supabase/migrations/20260923093000_access_propagation_and_timeline_scope.sql');
-  assert.match(navigation, /\['taskTimeline', 'taskTimeline', 'زمان‌بندی وظایف'\]/);
+  assert.match(navigation, /\['taskTimeline', 'taskTimeline', 'تقویم و گانت'\]/);
   assert.match(timeline, /registerView\?\.\('taskTimeline',\{activate:activateView\}\)/);
   assert.match(migration, /update public\.feature_access_grants/);
   assert.match(migration, /public\.can_access_feature\('taskTimeline','view'\)/);

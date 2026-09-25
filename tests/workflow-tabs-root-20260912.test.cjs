@@ -45,6 +45,8 @@ test('sent messages uses unified log, has no overview cards and requested contro
  const access=bar.querySelector('[data-sent-access]');assert.ok(access);assert.equal(access.previousElementSibling?.textContent.trim(),'تازه‌سازی');
  assert.equal(f.d.querySelectorAll('#sentMessagesView .sent-overview,#sentMessagesView .sent-log-summary').length,0);
  assert.equal([...f.d.querySelectorAll('#sentMessagesView thead th')].some(th=>th.textContent.trim()==='خطا'),false);
+ assert.equal([...f.d.querySelectorAll('#sentMessagesView thead th')].some(th=>th.textContent.trim()==='تلاش'),false);
+ assert.equal(f.d.querySelectorAll('#sentMessagesView thead tr:first-child th').length,9);
  assert.match(f.d.querySelector('#sentMessagesView tbody').textContent,/پیام داخل سامانه/);assert.match(f.d.querySelector('#sentMessagesView tbody').textContent,/به‌روزرسانی وظیفه/);
  assert.ok(f.calls.some(c=>c.endpoint==='sent_message_log'));
  assert.equal(f.errors.length,0,f.errors.join('\n'));
