@@ -38,6 +38,10 @@ function loginIdentityCandidates(value){
   const legacy=at>0&&!entered.endsWith('@no-email.invalid')?entered.slice(0,at)+'@no-email.invalid':null;
   return [...new Set([primary,legacy].filter(Boolean))];
 }
+function isInvalidCredentialError(error){
+  const detail=[error?.code,error?.message].filter(Boolean).join(' ').toLowerCase();
+  return detail.includes('invalid_credentials')||detail.includes('invalid login credentials')||detail.includes('invalid credentials')||detail.includes('نام کاربری یا رمز اشتباه است');
+}
 async function signInWithLogin(value,password){
   const candidates=loginIdentityCandidates(value);let lastError;
   for(let index=0;index<candidates.length;index++){
@@ -46,7 +50,7 @@ async function signInWithLogin(value,password){
       lastError=error;
       // Never mask a service, rate-limit or validation error with a second
       // request. The fallback is solely for a legacy identity mismatch.
-      if(error?.code!=='invalid_credentials'||index===candidates.length-1)throw error;
+      if(!isInvalidCredentialError(error)||index===candidates.length-1)throw error;
     }
   }
   throw lastError;

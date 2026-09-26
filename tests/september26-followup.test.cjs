@@ -65,6 +65,13 @@ test('legacy email identity is retried only after an invalid-credential response
  assert.equal(result.access_token,'ok');assert.deepEqual(calls,['ahmadi@armanmotorarg.com','ahmadi@no-email.invalid']);
 });
 
+test('legacy email identity is also retried when Auth returns only its translated message',async()=>{
+ const source=fs.readFileSync('assets/js/app.js','utf8'),start=source.indexOf('function loginEmail('),end=source.indexOf('function apiErrorMessage(',start),calls=[];
+ const context={api:async(_path,{body})=>{calls.push(body.email);if(calls.length===1)throw new Error('نام کاربری یا رمز اشتباه است.');return {access_token:'ok'}}};vm.createContext(context);vm.runInContext(source.slice(start,end),context);
+ await context.signInWithLogin('ghaemizadeh@bamco.ir','secret');
+ assert.deepEqual(calls,['ghaemizadeh@bamco.ir','ghaemizadeh@no-email.invalid']);
+});
+
 test('product engineering entry opens the sign-in form in one click',async t=>{
  const dom=new JSDOM('<body class="department-pending"><section id="departmentEntry"><header></header><button data-department="product">مهندسی محصول</button></section><section id="loginView" class="hidden"><form id="loginForm"><input id="email"></form></section><section id="appView" class="hidden"></section></body>',{runScripts:'outside-only',pretendToBeVisual:true});
  t.after(()=>dom.window.close());dom.window.eval(fs.readFileSync('assets/js/department-entry.js','utf8'));
