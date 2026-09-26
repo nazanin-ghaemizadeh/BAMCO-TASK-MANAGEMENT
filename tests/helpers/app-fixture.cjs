@@ -163,6 +163,7 @@ async function fixture(options={}){
  }});
  const w=dom.window,d=w.document;await new Promise(resolve=>w.addEventListener('load',resolve,{once:true}));
  if(!options.realNotices){w.bamcoConfirm=async message=>{calls.push({endpoint:'ui-confirm',body:message});return true};w.bamcoToast=(message,error=false)=>w.bamcoNotice(message,{error});w.bamcoNotice=async(message,options)=>{calls.push({endpoint:'ui-notice',body:message,options});return true}}
+ if(!w.Bamco?.state||typeof w.enterApp!=='function')throw new Error('Fixture startup failed: '+JSON.stringify({scripts:[...d.scripts].map(s=>s.src).slice(-5),errors:errors.slice(0,5)}));
  w.__fixtureProfile=actor;await w.eval("state.token='test-token';state.user={id:window.__fixtureProfile.id};state.profile=window.__fixtureProfile;enterApp()");
  d.body.classList.remove('department-pending');d.querySelector('#departmentEntry')?.setAttribute('hidden','');w.bamcoShowHome();await pause(250);d.querySelector('.home-welcome-dialog')?.close();
  return{w,d,profiles,calls,errors,downloads,tables,threads,members,messages,uploads,failures,setFailSave:v=>failSave=v,
