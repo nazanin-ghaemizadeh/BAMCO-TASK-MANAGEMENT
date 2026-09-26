@@ -47,7 +47,10 @@ test('smart assistant rigs the exact status sticker and starts a fresh conversat
  await f.open('voiceAssistant');
  const view=f.d.querySelector('#voiceAssistantView');
  assert(view.querySelector('.assistant-avatar-rig[role="img"] .assistant-state-sticker[src="assets/images/assistant-status1-female.png"]'));
- assert(view.querySelector('.assistant-avatar-overlays .avatar-jaw'));assert.equal(view.querySelector('.assistant-prompts'),null);
+ for(const part of ['head','eye-left','eye-right','pupil-left','pupil-right','brow-left','brow-right','lids','jaw','shoulder-left','shoulder-right','arm-left','arm-right','hand-left','hand-right'])assert(view.querySelector('.assistant-avatar-overlays .avatar-'+part),part+' layer');
+ assert.equal(view.querySelector('.assistant-prompts'),null);
+ view.querySelector('.assistant-state-sticker').dispatchEvent(new f.w.Event('error'));
+ assert.equal(view.querySelector('.assistant-avatar-error').hidden,false,'avatar loading failure leaves chat available');
  assert.equal(createHash('sha256').update(fs.readFileSync('assets/images/assistant-status1-female.png')).digest('hex'),'bb9d3ac1b2096138ac1e0cd8ec69e409c741ca6f28c3fee9f1a6d53fb7ffccc0');
  assert.match(view.querySelector('.assistant-messages').textContent,/سلام/);
  assert.equal(view.querySelectorAll('.assistant-message').length,1);

@@ -44,10 +44,13 @@ html body #appView [data-feature-access-control="local"],html body #appView .veh
 #voiceAssistantView.is-thinking .assistant-avatar-visual{transform:rotate(-.8deg) translateY(1px)}
 #voiceAssistantView.is-listening .assistant-avatar-visual{transform:rotate(.35deg) translateY(-1px)}
 #voiceAssistantView.is-speaking .assistant-avatar-visual{transform:translateY(calc(-2px * var(--assistant-audio-level,0)))}
-#voiceAssistantView .avatar-eye-left,#voiceAssistantView .avatar-eye-right,#voiceAssistantView .avatar-brow-left,#voiceAssistantView .avatar-brow-right{transform-box:view-box;transition:transform .45s ease}
-#voiceAssistantView .avatar-eye-left,#voiceAssistantView .avatar-eye-right{transform:translateX(var(--avatar-gaze,0px))}
+#voiceAssistantView .avatar-head,#voiceAssistantView .avatar-shoulder-left,#voiceAssistantView .avatar-shoulder-right,#voiceAssistantView .avatar-eye-left,#voiceAssistantView .avatar-eye-right,#voiceAssistantView .avatar-pupil-left,#voiceAssistantView .avatar-pupil-right,#voiceAssistantView .avatar-brow-left,#voiceAssistantView .avatar-brow-right{transform-box:view-box;transition:transform .45s ease}
+#voiceAssistantView .avatar-pupil-left,#voiceAssistantView .avatar-pupil-right{transform:translateX(var(--avatar-gaze,0px))}
+#voiceAssistantView.is-thinking .avatar-head{transform:rotate(-.25deg);transform-origin:400px 440px}
+#voiceAssistantView.is-listening .avatar-shoulder-right{transform:translateY(1px)}
 #voiceAssistantView.is-listening .avatar-brow-left{transform:translateY(-2px)}
 #voiceAssistantView.is-thinking .avatar-brow-right{transform:translateY(-2px)}
+#voiceAssistantView.is-success .avatar-brow-left,#voiceAssistantView.is-success .avatar-brow-right{transform:translateY(-1px)}
 #voiceAssistantView.is-warning .avatar-brow-left,#voiceAssistantView.is-error .avatar-brow-left{transform:translateY(2px)}
 #voiceAssistantView .avatar-lids{opacity:0;transition:opacity .06s}
 #voiceAssistantView .avatar-lids ellipse{fill:#f4ad83;filter:blur(2px)}
@@ -66,7 +69,9 @@ html body #appView [data-feature-access-control="local"],html body #appView .veh
 #voiceAssistantView[data-avatar-viseme="fv"]{--viseme-x:1.05;--viseme-y:.33}
 #voiceAssistantView[data-avatar-viseme="l"]{--viseme-x:.92;--viseme-y:.68}
 #voiceAssistantView[data-avatar-viseme="sz"]{--viseme-x:1.08;--viseme-y:.26}
-#voiceAssistantView .avatar-hand-left,#voiceAssistantView .avatar-hand-right{transform-box:view-box;transition:transform .6s ease}
+#voiceAssistantView .avatar-arm-left,#voiceAssistantView .avatar-arm-right,#voiceAssistantView .avatar-hand-left,#voiceAssistantView .avatar-hand-right{transform-box:view-box;transition:transform .6s ease}
+#voiceAssistantView[data-avatar-gesture="emphasis"] .avatar-arm-left{transform:rotate(-.5deg);transform-origin:260px 530px}
+#voiceAssistantView[data-avatar-gesture="acknowledge"] .avatar-arm-right{transform:rotate(.5deg);transform-origin:510px 590px}
 #voiceAssistantView[data-avatar-gesture="emphasis"] .avatar-hand-left{transform:rotate(-3deg) translate(-2px,-2px);transform-origin:268px 530px}
 #voiceAssistantView[data-avatar-gesture="acknowledge"] .avatar-hand-right{transform:rotate(3deg) translateY(-2px);transform-origin:500px 650px}
 #voiceAssistantView .assistant-chat-panel{display:grid;grid-template-rows:auto minmax(0,1fr) auto;overflow:hidden}
@@ -114,4 +119,4 @@ html body #appView [data-feature-access-control="local"],html body #appView .veh
  #voiceAssistantView .assistant-chat-head button{font-size:12px;padding:3px 6px}
 }
 @media(max-height:500px) and (max-width:900px){#voiceAssistantView .assistant-stage{grid-template-rows:76px minmax(0,1fr)}}
-@media(prefers-reduced-motion:reduce){#voiceAssistantView .assistant-avatar-visual,#voiceAssistantView .avatar-eye-left,#voiceAssistantView .avatar-eye-right,#voiceAssistantView .avatar-brow-left,#voiceAssistantView .avatar-brow-right,#voiceAssistantView .avatar-jaw,#voiceAssistantView .avatar-hand-left,#voiceAssistantView .avatar-hand-right{animation:none!important;transition:none!important}}
+@media(prefers-reduced-motion:reduce){#voiceAssistantView .assistant-avatar-visual,#voiceAssistantView .avatar-head,#voiceAssistantView .avatar-shoulder-left,#voiceAssistantView .avatar-shoulder-right,#voiceAssistantView .avatar-pupil-left,#voiceAssistantView .avatar-pupil-right,#voiceAssistantView .avatar-brow-left,#voiceAssistantView .avatar-brow-right,#voiceAssistantView .avatar-jaw,#voiceAssistantView .avatar-arm-left,#voiceAssistantView .avatar-arm-right,#voiceAssistantView .avatar-hand-left,#voiceAssistantView .avatar-hand-right{animation:none!important;transition:none!important}}
