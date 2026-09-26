@@ -38,15 +38,25 @@ async def login(page,role):
     await expect(page.locator('#homeView')).to_be_visible()
     await expect(page.locator('#appView > .card-topbar')).to_have_count(1)
 
+async def click_route(page,tab):
+    # Let Playwright wait for the responsive home grid to finish moving before
+    # sending a real user click.  A forced click can target the old card during
+    # the mobile transition even though the visible button is already current.
+    launcher=await page.evaluate("() => { const h=document.querySelector('#homeView'); return h&&!h.classList.contains('hidden')&&['launcher','custom'].includes(h.dataset.layout) }")
+    if launcher:
+        group=await page.evaluate("route => window.BamcoNavigationCatalog?.routeFor(route)?.groupKey",tab)
+        assert group,f'{tab} has no home card'
+        await page.locator(f'#homeView [data-group="{group}"] .home-group-trigger').click()
+        await page.locator(f'.home-launcher-dialog [data-route="{tab}"]').click()
+    else:
+        await page.locator('#nav [data-view="'+tab+'"]').click()
+
 async def open_tab(page,tab):
     print('open',tab,flush=True)
     start=time.monotonic()
     if tab=='messages':
         await page.evaluate("""() => { window.__messageTrace=[]; const original=window.bamcoShowHome; window.bamcoShowHome=function(){window.__messageTrace.push('showHome: '+new Error().stack); return original.apply(this,arguments)}; document.addEventListener('bamco:navigation-after',e=>window.__messageTrace.push('navigation: '+e.detail.to)); document.addEventListener('click',e=>{if(e.target.closest('#nav [data-view=messages]'))window.__messageTrace.push('document-capture')},true); document.querySelector('#nav').addEventListener('click',e=>{if(e.target.closest('[data-view=messages]'))window.__messageTrace.push('nav-bubble')}); }""")
-    # Let Playwright wait for the responsive home grid to finish moving before
-    # sending a real user click.  A forced click can target the old card during
-    # the mobile transition even though the visible button is already current.
-    await page.locator('#nav [data-view="'+tab+'"]').click()
+    await click_route(page,tab)
     try:
         await settled(page,tab)
     except Exception as exc:

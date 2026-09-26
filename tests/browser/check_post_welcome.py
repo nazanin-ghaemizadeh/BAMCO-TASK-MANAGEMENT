@@ -19,12 +19,18 @@ async def one_case(browser,base,width,role):
         return await page.evaluate('''()=>{
           const rect=s=>{const n=document.querySelector(s);if(!n)return null;const r=n.getBoundingClientRect(),cs=getComputedStyle(n);return {x:Math.round(r.x),y:Math.round(r.y),width:Math.round(r.width),height:Math.round(r.height),display:cs.display,visibility:cs.visibility}};
           const groups=Object.fromEntries([...document.querySelectorAll('#homeView #nav>.nav-group')].map(g=>[g.dataset.group,rect('#homeView #nav>.nav-group[data-group="'+g.dataset.group+'"]')]));
-          return {groups,people:rect('#homeView #nav [data-view="people"]'),access:rect('#homeView #nav [data-view="accessMatrix"]'),ready:document.body.classList.contains('home-layout-ready')};
+          return {groups,people:rect('#homeView #nav [data-view="people"]'),access:rect('#homeView #nav [data-view="accessMatrix"]'),trigger:rect('#homeView #nav [data-group="people"] .home-group-trigger'),mode:document.querySelector('#homeView').dataset.layout,ready:document.body.classList.contains('home-layout-ready')};
         }''')
     layout_before=await home_layout();await page.wait_for_timeout(900);layout_after=await home_layout()
     assert layout_before==layout_after,{'width':width,'role':role,'before':layout_before,'after':layout_after}
     assert layout_after['ready'],{'width':width,'role':role,'layout':layout_after}
+    assert layout_after['mode']=='launcher',{'width':width,'role':role,'layout':layout_after}
+    assert layout_after['trigger'] and layout_after['trigger']['width']>0,layout_after
     if width>=1000 and role=='manager':
+        await page.locator('#homeView [data-group="people"] .home-group-trigger').click()
+        assert await page.locator('.home-launcher-dialog').evaluate('(node)=>node.open')
+        assert await page.locator('.home-launcher-route').filter(has_text='دسترسی‌ها').count()==1
+        await page.locator('.home-launcher-close').click()
         await page.evaluate('''()=>{
           const access=document.querySelector('#homeView #nav [data-view="accessMatrix"]');
           if(access)access.classList.add('hidden');
@@ -37,10 +43,13 @@ async def one_case(browser,base,width,role):
         }''')
         await page.evaluate('()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))')
         revealed=await home_layout()
-        assert revealed['people'] and revealed['access'],revealed
-        assert revealed['people']['x']==revealed['access']['x'],revealed
-        assert revealed['access']['y']>revealed['people']['y'],revealed
         assert revealed['groups']==groups_before,{'before':groups_before,'after':revealed['groups']}
+        await page.evaluate("window.bamcoHomeLayout.set('cards')")
+        cards=await home_layout()
+        assert cards['people'] and cards['access'] and cards['mode']=='cards',cards
+        assert cards['people']['x']==cards['access']['x'],cards
+        assert cards['access']['y']>cards['people']['y'],cards
+        await page.evaluate("window.bamcoHomeLayout.set('launcher')")
     diag=await page.evaluate('''()=>{
       const box=s=>{const n=document.querySelector(s);if(!n)return null;const r=n.getBoundingClientRect(),c=getComputedStyle(n);return {top:Math.round(r.top),left:Math.round(r.left),width:Math.round(r.width),height:Math.round(r.height),display:c.display,visibility:c.visibility,opacity:c.opacity}};
       const groups=[...document.querySelectorAll('#homeView #nav>.nav-group')].filter(n=>{const c=getComputedStyle(n),r=n.getBoundingClientRect();return c.display!=='none'&&c.visibility!=='hidden'&&r.width>0&&r.height>0});

@@ -103,6 +103,7 @@ async def one_case(browser, base, width, role):
     }''')
     await frame_settle(page)
     after_cleanup = await photo_state(page)
+    await page.evaluate("window.bamcoHomeLayout.set('cards')")
     await page.locator('#nav [data-view="settings"]').click()
     await page.wait_for_timeout(800)
     preview = await page.locator('#profileAvatarPreview img').evaluate_all('(items) => items.length===1 && items[0].complete && items[0].naturalWidth>0')

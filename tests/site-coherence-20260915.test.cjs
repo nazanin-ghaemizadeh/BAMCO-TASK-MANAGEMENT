@@ -54,7 +54,7 @@ test('letters use the same shared toggle selection as other workspace tables',()
 test('home self-repair does not repeatedly reset scroll or reorder cards',()=>{
  const source=read('assets/js/card-home.js');
  assert.match(source,/function repairHome\(\{reset=false,sync=false\}=\{\}\)/);
- assert.match(source,/function showHome\(\)\{repairHome\(\{reset:true,sync:true\}\);void prepareHomeLayout\(\)\}/);
+ assert.match(source,/function showHome\(\)\{repairHome\(\{reset:true,sync:true\}\);renderLayout\(\);void prepareHomeLayout\(\)\}/);
  assert.match(source,/homeBroken\(\)\)repairHome\(\)/);
  assert.doesNotMatch(source,/homeBroken\(\)\)showHome\(\)/);
 });

@@ -2,7 +2,7 @@
 import asyncio, functools, http.server, json, threading, time
 from pathlib import Path
 from playwright.async_api import async_playwright, expect
-from run_smoke import FIXTURE, login, home, settled, heartbeat
+from run_smoke import FIXTURE, login, home, settled, heartbeat, click_route
 
 ROOT=Path(__file__).resolve().parents[2]
 OUT=ROOT/'test-results'/'tab-performance'
@@ -28,7 +28,7 @@ async def open_measure(page,tab):
     view=page.locator('#'+tab+'View')
     before=await view.evaluate("v=>({html:v.innerHTML.length,cls:v.className})") if await view.count() else {}
     start=time.monotonic()
-    await page.locator('#nav button[data-view="'+tab+'"]').click()
+    await click_route(page,tab)
     await settled(page,tab,10000)
     settle_ms=round((time.monotonic()-start)*1000)
     await heartbeat(page)
@@ -61,7 +61,7 @@ async def assert_mobile_toolbar(page,tab):
     assert data['sw'] <= data['w'] + 2, f'{tab} actions overflow: {data}'
 
 async def assert_dashboard_mobile(page):
-    await home(page);await page.locator('#nav button[data-view="dashboard"]').click();await settled(page,'dashboard')
+    await home(page);await click_route(page,'dashboard');await settled(page,'dashboard')
     await page.evaluate('()=>window.renderDashboard?.()')
     await page.wait_for_timeout(150)
     data=await page.evaluate('''()=>{
@@ -87,7 +87,7 @@ async def assert_dashboard_mobile(page):
     assert len(tracks) == 1, f"dashboard is not one column: {data}"
 
 async def assert_automated_message_route(page):
-    await home(page);await page.locator('#nav button[data-view="directMessages"]').click();await settled(page,'directMessages')
+    await home(page);await click_route(page,'directMessages');await settled(page,'directMessages')
     system=page.locator('#directMessagesView [data-kind="system"]').first
     await expect(system).to_be_visible();await system.click()
     await page.locator('#directMessagesView .system-message-open').first.click()
