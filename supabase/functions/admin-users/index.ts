@@ -59,7 +59,7 @@ Deno.serve(async(req)=>{
     if(req.method==='GET'){
       if(!await canUsePeople('view'))return json({error:'دسترسی مشاهده افراد و نقش‌ها لازم است.'},403);
       const ids=systemManager?null:new Set([user.id,...await callerDescendants()]);
-      const params=new URLSearchParams({select:'id,email,login_name,must_change_password,password_changed_at,full_name,display_name,role,gender,salutation,active,default_message_channel,messaging_enabled,avatar_path,updated_at',order:'full_name.asc'});
+      const params=new URLSearchParams({select:'id,email,login_name,must_change_password,password_changed_at,full_name,display_name,role,gender,mobile_phone,internal_extension,salutation,active,default_message_channel,messaging_enabled,avatar_path,updated_at',order:'full_name.asc'});
       if(ids)params.set('id',`in.(${[...ids].join(',')})`);
       const listed=await fetch(`${url}/rest/v1/profiles?${params.toString()}`,{headers:{apikey:service,Authorization:`Bearer ${service}`}}),profiles=await listed.json().catch(()=>null);
       if(!listed.ok||!Array.isArray(profiles))return json({error:profiles?.message||profiles?.error||'فهرست افراد دریافت نشد.'},listed.status||500);
@@ -140,7 +140,10 @@ Deno.serve(async(req)=>{
     }
     if(!String(b.full_name||"").trim())return json({error:"نام فرد الزامی است."},400);
     const publicEmail=normalizeEmail(b.email)||null,hasEmail=!!publicEmail,channel=safeChannel(b.default_message_channel,hasEmail);
-    const profileBody:Record<string,unknown>={email:publicEmail,full_name:String(b.full_name).trim(),display_name:String(b.full_name).trim(),gender:b.gender||null,salutation:b.salutation||null,messaging_enabled:true,default_message_channel:channel};
+    const mobilePhone=String(b.mobile_phone||'').replace(/\s+/g,'').trim()||null,internalExtension=String(b.internal_extension||'').replace(/\s+/g,'').trim()||null;
+    if(mobilePhone&&!/^\+?[0-9۰-۹]{8,16}$/.test(mobilePhone))return json({error:'شماره همراه معتبر نیست.'},400);
+    if(internalExtension&&!/^[0-9۰-۹]{1,12}$/.test(internalExtension))return json({error:'شماره داخلی معتبر نیست.'},400);
+    const profileBody:Record<string,unknown>={email:publicEmail,full_name:String(b.full_name).trim(),display_name:String(b.full_name).trim(),gender:b.gender||null,mobile_phone:mobilePhone,internal_extension:internalExtension,salutation:b.salutation||null,messaging_enabled:true,default_message_channel:channel};
     if(systemManager){profileBody.role=b.role==="manager"?"manager":"owner";profileBody.active=b.active!==false;if(Array.isArray(b.cc_emails))profileBody.cc_emails=b.cc_emails}
     if(b.user_id){
       const oldRes=await fetch(`${url}/rest/v1/profiles?id=eq.${encodeURIComponent(b.user_id)}&select=email,must_change_password`,{headers:{apikey:service,Authorization:`Bearer ${service}`}}),oldRows=await oldRes.json(),old=oldRows?.[0];if(!old)return json({error:"فرد پیدا نشد."},404);

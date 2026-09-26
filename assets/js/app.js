@@ -399,7 +399,7 @@ async function enterApp(){
 }
 async function refresh(){
   try{
-    const profiles=isManager()?await select('profiles','select=id,email,login_name,must_change_password,password_changed_at,full_name,display_name,gender,excel_name,role,active,default_message_channel,messaging_enabled,avatar_path,updated_at&order=full_name'):scopedTaskProfiles();
+    const profiles=isManager()?await select('profiles','select=id,email,login_name,must_change_password,password_changed_at,full_name,display_name,gender,mobile_phone,internal_extension,excel_name,role,active,default_message_channel,messaging_enabled,avatar_path,updated_at&order=full_name'):scopedTaskProfiles();
     syncCanonicalProfiles(profiles,{replaceAll:isManager()});
     state.tasks=await selectAll('task_status_view','select=*&order=id.desc');
     const workflow=await window.bamcoLoadRequestWorkflow();
@@ -1283,7 +1283,7 @@ document.addEventListener('bamco:domain-invalidated',event=>{
     try{
       const optionsPromise=window.bamcoOptions.load();
       const scopePromise=refreshOrganizationScope({silent:true});
-      const profilesPromise=scopePromise.then(()=>isManager()?select('profiles','select=id,email,login_name,must_change_password,password_changed_at,full_name,display_name,gender,excel_name,role,active,default_message_channel,messaging_enabled,avatar_path,updated_at&order=full_name'):scopedTaskProfiles());
+      const profilesPromise=scopePromise.then(()=>isManager()?select('profiles','select=id,email,login_name,must_change_password,password_changed_at,full_name,display_name,gender,mobile_phone,internal_extension,excel_name,role,active,default_message_channel,messaging_enabled,avatar_path,updated_at&order=full_name'):scopedTaskProfiles());
       const tasksPromise=selectAll('task_status_view','select=*&order=id.desc');
       const workflowPromise=window.bamcoLoadRequestWorkflow();
       const monitoringStartPromise=selectAll('app_settings','select=key,value&key=eq.performance_monitoring_started_at&limit=1').then(rows=>{const raw=rows?.[0]?.value,value=String(raw?.value||raw||'').trim();if(value)state.dashboardMonitoringStart=value;return value}).catch(()=>state.dashboardMonitoringStart);

@@ -192,6 +192,13 @@
   function syncManageControl() {
     if (!document?.querySelector) return;
     document.querySelectorAll(LOCAL_MANAGE_CONTROL_SELECTOR).forEach(retireManageControl);
+    // Access grants are administered solely in the administrator matrix.  A
+    // few legacy feature renderers create an unmarked local shortcut, so use
+    // its visible label as a final compatibility guard as well.
+    document.querySelectorAll('button').forEach(button => {
+      if (button.closest('#accessMatrixView')) return;
+      if (/^مدیریت\s+دسترسی/.test(String(button.textContent || '').trim())) retireManageControl(button);
+    });
     document.getElementById('featureAccessControl')?.remove();
   }
   function scheduleManageControl() {

@@ -6,26 +6,37 @@ const {fixture}=require('./helpers/app-fixture.cjs');
 
 const read=path=>fs.readFileSync(path,'utf8');
 
-test('login offers one split secondary box with disabled one-time password',()=>{
+test('login offers two separate normal-looking secondary buttons and an inert one-time password',()=>{
  const source=read('assets/js/auth-ui.js');
  assert.match(source,/class="login-secondary-actions"/);
  assert.match(source,/class="department-back"[^>]*>بازگشت به انتخاب مدیریت/);
- assert.match(source,/class="login-otp"[^>]*disabled[^>]*>ورود با رمز یکبارمصرف/);
+ assert.match(source,/class="login-otp"[^>]*aria-disabled="true"[^>]*>ورود با رمز یکبارمصرف/);
+  assert.doesNotMatch(source,/class="login-otp"[^>]*\sdisabled(?:\s|>)/);
+ assert.match(source,/login-otp[^\n]+preventDefault\(\)/);
  const css=read('assets/css/department-entry.css');
- assert.match(css,/\.login-secondary-actions\{display:grid;grid-template-columns:1fr 1fr/);
+ assert.match(css,/\.login-secondary-actions\{display:grid;grid-template-columns:1fr 1fr;gap:10px/);
+ assert.match(css,/login-secondary-actions button\{min-width:0!important;height:48px!important/);
+});
+
+test('personal tabs are grantable only through the administrator access matrix',()=>{
+ const source=read('assets/js/navigation-registry.js');
+ const accessRows=source.slice(source.indexOf('const accessMatrixRoutes'),source.indexOf('const routeDefinitions'));
+ assert.match(accessRows,/'notes', 'voiceAssistant'/);
+ assert.doesNotMatch(source,/PERSONAL_FEATURES/);
 });
 
 test('notes are pinned, editable and can move between active and inactive lists',async t=>{
  const f=await fixture();t.after(()=>f.dispose());
  await f.open('notes');
  const view=f.d.querySelector('#notesView');
- assert.deepEqual([...view.querySelectorAll('.personal-command-row>button')].map(button=>button.textContent.trim()),['بازگشت به خانه','یادداشت جدید','ویرایش','حذف','یادداشت‌های غیرفعال']);
+ assert.deepEqual([...view.querySelectorAll('.personal-command-row>button')].map(button=>button.textContent.trim()),['بازگشت به خانه','یادداشت جدید','ویرایش','حذف']);
+ assert.deepEqual([...view.querySelectorAll('[data-note-tab]')].map(button=>button.textContent.trim()),['یادداشت‌های فعال','یادداشت‌های غیرفعال']);
  view.querySelector('[data-note-new]').click();
  const form=view.querySelector('.personal-note-dialog form');
  form.elements.title.value='کارهای امروز';form.elements.body.value='پیگیری پروپوزال';form.requestSubmit();
  const note=view.querySelector('.sticky-note');assert(note);assert.match(note.textContent,/📌/);assert.match(note.textContent,/کارهای امروز/);assert.match(note.textContent,/پیگیری پروپوزال/);
  note.querySelector('[data-note-toggle]').click();assert.equal(view.querySelector('.sticky-note'),null);
- view.querySelector('[data-note-inactive]').click();assert.match(view.querySelector('.sticky-note').textContent,/کارهای امروز/);
+ view.querySelector('[data-note-tab="inactive"]').click();assert.match(view.querySelector('.sticky-note').textContent,/کارهای امروز/);
  assert.deepEqual(f.errors,[]);
 });
 
