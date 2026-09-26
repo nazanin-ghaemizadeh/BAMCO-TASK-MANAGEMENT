@@ -42,7 +42,7 @@ test('enterprise pages keep a stable shared shell and persist the project, part 
   };
 
   await f.open('organization');
-  assert.deepEqual([...d.querySelectorAll('#organizationFeatureRoot .enterprise-toolbar button')].map(button => button.textContent.trim()), ['بازگشت به خانه', '＋ جایگاه جدید', 'مدیریت دسترسی']);
+  assert.deepEqual([...d.querySelectorAll('#organizationFeatureRoot .enterprise-toolbar button')].filter(button=>!button.classList.contains('hidden')).map(button => button.textContent.trim()), ['بازگشت به خانه', '＋ جایگاه جدید']);
   assert.equal(d.querySelector('[data-org-action="unit"]'), null);
   assert.equal(d.querySelector('[data-org-action="refresh"]'), null);
   d.querySelector('[data-org-action="position"]').click();
@@ -234,8 +234,8 @@ test('enterprise pages keep a stable shared shell and persist the project, part 
   assert.equal(tables.part_handovers[0].delivery_type, 'temporary');
 
   await f.open('invoices');
-  await until(() => !d.querySelector('#invoiceFeatureRoot [data-invoice-action="access"]').classList.contains('hidden'));
-  assert.deepEqual([...d.querySelectorAll('#invoiceFeatureRoot .invoice-top-command-row > button')].filter(button => !button.classList.contains('hidden')).map(button => button.textContent.trim()), ['بازگشت به خانه', 'صورتحساب جدید', 'تازه‌سازی', 'مدیریت دسترسی']);
+  assert.equal(d.querySelector('#invoiceFeatureRoot [data-invoice-action="access"]'),null);
+  assert.deepEqual([...d.querySelectorAll('#invoiceFeatureRoot .invoice-top-command-row > button')].filter(button => !button.classList.contains('hidden')).map(button => button.textContent.trim()), ['بازگشت به خانه', 'صورتحساب جدید', 'تازه‌سازی']);
   d.querySelector('[data-invoice-action="new"]').click();
   const invoiceForm = d.querySelector('#invoiceForm');
   field(invoiceForm, 'invoice_number', 'INV-500');

@@ -21,22 +21,14 @@ test('feature access refresh never opens inactive pages over the card home',asyn
   assert.deepEqual(f.errors,[]);
 });
 
-test('access management is a normal action beside the current page controls',async t=>{
+test('access management is available only from the admin access page',async t=>{
   const f=await fixture(),{d}=f;t.after(()=>f.dispose());
   await f.open('responseTracking');
-  await until(()=>{
-    const button=d.querySelector('#responseTrackingView [data-response-access]');
-    return button&&!button.classList.contains('hidden')&&button.closest('#responseTrackingView')&&button.parentElement?.classList.contains('bamco-command-bar');
-  });
-  const button=d.querySelector('#responseTrackingView [data-response-access]');
-  assert(button.classList.contains('ghost'));
-  assert.equal(button.textContent.trim(),'مدیریت دسترسی');
-  assert(button.parentElement.classList.contains('bamco-command-bar'));
-  assert(button.closest('#responseTrackingView'));
-  assert.equal(d.querySelector('#responseTrackingView #featureAccessControl'),null,'کنترل عمومی نباید کنار کنترل محلی تکرار شود');
-
-  const css=fs.readFileSync(path.join(__dirname,'../assets/css/access-editor.css'),'utf8');
-  assert.doesNotMatch(css,/body\.content-only[\s\S]*?#featureAccessControl/,'access management must not return to the old floating fixed-position layout');
+  assert.equal(d.querySelector('#responseTrackingView #featureAccessControl'),null);
+  assert(d.querySelector('#responseTrackingView [data-response-access]').classList.contains('hidden'));
+  await f.open('accessMatrix');
+  assert.equal(d.querySelector('#accessMatrixView').classList.contains('hidden'),false);
+  assert.match(d.querySelector('#accessMatrixView').textContent,/دسترسی/);
   assert.deepEqual(f.errors,[]);
 });
 
@@ -58,7 +50,7 @@ test('an RLS-filtered realtime access change refreshes the recipient portal imme
   assert.match(source,/void invalidate\(\)/);
 });
 
-test('people usernames use organizational email and the access editor shows names only', async t => {
+test('people usernames use organizational email and local access buttons stay absent', async t => {
   const f = await fixture({ fetchResult: ({ endpoint }) => {
     if (endpoint === 'feature_access_manage_snapshot') return {
       schema: 'bamco.feature-access.v1', feature: { feature_key: 'letters' },
@@ -77,11 +69,7 @@ test('people usernames use organizational email and the access editor shows name
   assert.equal(owner.cells[7].textContent.trim(), 'owner@example.test');
 
   await f.open('lettersIncoming');
-  f.d.querySelector('#lettersIncomingView [data-letter-action="access"]').click();
-  await until(() => f.d.querySelector('#letterAccessDialog .permission-person'));
-  const dialog = f.d.querySelector('#letterAccessDialog');
-  assert.equal(dialog.querySelector('.permission-person-identity small'), null);
-  assert.equal(dialog.querySelector('.permission-actions'), null);
-  assert(!dialog.textContent.includes('برداشتن مشاهده، یک منع صریح ایجاد می‌کند'));
+  assert(f.d.querySelector('#lettersIncomingView [data-letter-action="access"]').classList.contains('hidden'));
+  assert.equal(f.d.querySelector('#lettersIncomingView #featureAccessControl'),null);
   assert.deepEqual(f.errors, []);
 });

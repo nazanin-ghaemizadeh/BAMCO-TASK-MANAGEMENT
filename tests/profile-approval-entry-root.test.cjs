@@ -64,7 +64,7 @@ test('default request ordering is newest first, deterministic for ties and non-m
 test('entry first-paint styles are generated from the canonical layout, and home buttons reserve slots',()=>{
  const css=read('assets/css/department-entry.css').split('/* Other small forms')[0].replace(/@import[^;]+;\s*/,'').replaceAll('../fonts/','assets/fonts/').trim();
  assert.ok(read('index.html').includes(css));
- assert.ok(read('assets/css/home-stable.css').includes('grid-auto-rows:max(164px,calc(3 * var(--home-row-height,34px) + 68px))'));
+ assert.ok(read('assets/css/home-stable.css').includes('grid-auto-rows:max(196px,calc(6 * var(--home-row-height,34px) + 68px))'));
  assert.ok(!read('assets/js/runtime.js').includes('html body #departmentEntry'));
  assert.ok(read('.github/workflows/release-version.yml').includes("'assets/js/department-entry.js'"));
 });

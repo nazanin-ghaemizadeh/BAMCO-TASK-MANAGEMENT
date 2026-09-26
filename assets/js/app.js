@@ -435,14 +435,23 @@ function newestRequestRows(rows){
   return [...(rows||[])].sort((a,b)=>stamp(b)-stamp(a)||String(b.id).localeCompare(String(a.id),'en',{numeric:true}));
 }
 const requestTypeLabels={create:'تعریف فعالیت جدید',update:'ویرایش وظیفه',status:'تغییر وضعیت',priority:'تغییر اولویت',description:'تغییر توضیحات',complete:'اعلام انجام',delete:'درخواست حذف',due_date:'تغییر تاریخ پایان'};
+const requestFieldLabels={title:'عنوان',description:'توضیحات',owner_id:'متولی',status:'وضعیت',priority:'اولویت',start_date:'تاریخ شروع',due_date:'تاریخ پایان',done_date:'تاریخ انجام',reminder_days:'یادآور',manager_notes:'توضیحات مدیر',archived:'آرشیو'};
+function requestChangedFields(row){
+  if(!row||row.request_type!=='update')return[];
+  const data=row.proposed_data||{},task=state.tasks.find(item=>String(item.id)===String(row.task_id)),before=data.original_data||task||{};
+  const normalized=value=>value==null?'':String(value);
+  if(Array.isArray(data.changed_fields))return data.changed_fields.map(key=>requestFieldLabels[key]||key).filter(Boolean);
+  return Object.keys(requestFieldLabels).filter(key=>Object.prototype.hasOwnProperty.call(data,key)&&normalized(data[key])!==normalized(before[key])).map(key=>requestFieldLabels[key]);
+}
 function requestTypeLabel(row){
   const type=row?.request_type||row;
   if(row?.proposed_data?.request_context==='project_activity'){
     if(type==='create')return'تعریف فعالیت در پروژه';
     if(type==='delete')return'حذف فعالیت پروژه';
-    return'ویرایش فعالیت پروژه';
+    const fields=requestChangedFields(row);return`ویرایش فعالیت پروژه${fields.length?' - '+fields.join('، '):''}`;
   }
-  return requestTypeLabels[type]||type||'—';
+  const label=requestTypeLabels[type]||type||'—',fields=requestChangedFields(row);
+  return type==='update'&&fields.length?`${label} - ${fields.join('، ')}`:label;
 }
 globalThis.bamcoRequestTypeLabel=requestTypeLabel;
 function workbenchRequestRows(){return[...(state.requests||[])];}

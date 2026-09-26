@@ -15,7 +15,8 @@ const catalogGroups=[
  ['delivery',['pettyCash','invoices']],
  ['vehicle',['vehiclePermanent','vehicleTemporary','parts','tools']],
  ['conversations',['groupChat','directMessages','taskChats']],
- ['resources',['documents','sitesAccess','lettersIncoming','lettersOutgoing','userGuide']]
+ ['resources',['documents','sitesAccess','lettersIncoming','lettersOutgoing','userGuide']],
+ ['personal',['notes','voiceAssistant']]
 ].map(([key,routes])=>({key,routes}));
 
 // A deliberately small navigation model: no browser, network, session or real data.
@@ -41,7 +42,7 @@ function fixture(){
   querySelector(s){return this.querySelectorAll(s)[0]||null}
  }
  const nav=new Element('nav'),boxes={};
- for(const key of ['conversations','vehicle','delivery','tasks','configuration','reports','messages','people','resources']){
+ for(const key of ['personal','resources','conversations','vehicle','delivery','tasks','configuration','reports','messages','people']){
   const group=new Element('div',['nav-group'],{group:key}),box=new Element('div',['nav-group-items']);
   group.insertBefore(new Element('h3',['nav-group-toggle']),null);group.insertBefore(box,null);nav.insertBefore(group,null);boxes[key]=box;
  }
@@ -53,13 +54,14 @@ function fixture(){
 
 test('home cards keep people structure and enterprise modules in their approved groups',()=>{
  const f=fixture();for(const [,ids] of f.order)for(const id of [...ids].reverse())f.button(id);
- f.sync();assert.deepEqual(f.nav.children.map(x=>x.dataset.group),['people','messages','reports','configuration','tasks','delivery','vehicle','conversations','resources']);
+ f.sync();assert.deepEqual(f.nav.children.map(x=>x.dataset.group),['people','messages','reports','configuration','tasks','delivery','vehicle','conversations','resources','personal']);
  for(const [key,ids] of f.order)assert.deepEqual(f.boxes[key].children.map(x=>x.dataset.view),Array.from(ids));
  assert.deepEqual(f.boxes.people.children.map(x=>x.dataset.view),['people','accessMatrix','organization','activeSessions','loginActivity']);
  assert.deepEqual(f.boxes.reports.children.map(x=>x.dataset.view),['dashboard','performanceReport','responseReport']);
  assert.deepEqual(f.boxes.tasks.children.map(x=>x.dataset.view),['kanban','archive','taskTimeline','projects','approvals','requestHistory']);
  assert.deepEqual(f.boxes.delivery.children.map(x=>x.dataset.view),['pettyCash','invoices']);
  assert.deepEqual(f.boxes.configuration.children.map(x=>x.dataset.view),['systemOptions','settings','alertSettings','emailSettings']);
+ assert.deepEqual(f.boxes.personal.children.map(x=>x.dataset.view),['notes','voiceAssistant']);
 });
 
 test('only duplicate shortcuts disappear; bound actions and unique routes survive',()=>{
@@ -93,13 +95,9 @@ test('home styles have one owner, loaded last; phase modules load once',()=>{
  assert.deepEqual(sheets,[`assets/css/bamco.bundle.css?v=${release}`]);
  assert.ok(cssBundle.indexOf('source: assets/css/home-stable.css')<cssBundle.indexOf('source: assets/css/home-welcome.css'));
  for(const file of ['card-home','interface-refinement','visual-system','stability'])assert.doesNotMatch(read('assets/css/'+file+'.css'),/#homeView|\.card-topbar|\.card-home-active/);
- const home=read('assets/css/home-stable.css');assert.match(home,/grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);assert.match(home,/grid-auto-rows:var\(--home-row-height/);
+ const home=read('assets/css/home-stable.css');assert.match(home,/grid-template-columns:repeat\(5,minmax\(0,1fr\)\)/);assert.match(home,/grid-template-rows:repeat\(2,minmax\(0,1fr\)\)/);assert.match(home,/grid-template-columns:minmax\(0,1fr\)!important;grid-template-rows:none/);assert.match(home,/grid-auto-rows:var\(--home-row-height/);
  assert.match(home,/card-navigation\.card-home-active #appView #homeView #nav \.nav-group-items>\[data-view\]\.hidden\{display:none!important\}/);
- assert.match(home,/\[data-view="responseReport"\]\{grid-column:1!important;grid-row:2!important\}/);
- assert.match(home,/\[data-view="projects"\]\{grid-column:2!important;grid-row:2!important\}/);
- assert.match(home,/data-group="delivery"[^\n]+\[data-view="pettyCash"\]\{grid-column:1!important;grid-row:1!important\}/);
- assert.match(home,/\[data-view="systemOptions"\]\{grid-column:1!important;grid-row:1!important\}/);
- assert.match(home,/\[data-view="settings"\]\{grid-column:2!important;grid-row:1!important\}/);
+ assert.match(home,/nav \.nav-group-items>\[data-view\]\{grid-column:auto!important;grid-row:auto!important\}/);
  assert.match(home,/card-home-active:not\(\.home-layout-ready\)[^\n]+#homeView #nav\{visibility:hidden!important\}/);
  assert.match(source,/prepareHomeLayout\(\)[\s\S]*document\.fonts\?\.ready[\s\S]*logo\?\.decode[\s\S]*home-layout-ready/);
  for(const module of ['phase1-workflow','phase2-message-engine','phase3-response-tracking'])assert.equal(bundle.split('source: assets/js/'+module+'.js').length-1,1);

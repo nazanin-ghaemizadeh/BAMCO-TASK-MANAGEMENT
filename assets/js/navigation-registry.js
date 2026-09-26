@@ -19,7 +19,8 @@
     { key: 'delivery', title: 'مدیریت مالی', icon: '▰', routes: ['pettyCash', 'invoices'] },
     { key: 'vehicle', title: 'مدیریت منابع', icon: '◇', routes: ['vehiclePermanent', 'vehicleTemporary', 'parts', 'tools'] },
     { key: 'conversations', title: 'گفتگوها', icon: '☵', routes: ['groupChat', 'directMessages', 'taskChats'] },
-    { key: 'resources', title: 'منابع', icon: '▧', routes: ['documents', 'sitesAccess', 'lettersIncoming', 'lettersOutgoing', 'userGuide'] }
+    { key: 'resources', title: 'منابع', icon: '▧', routes: ['documents', 'sitesAccess', 'lettersIncoming', 'lettersOutgoing', 'userGuide'] },
+    { key: 'personal', title: 'همراه هوشمند', icon: '✦', routes: ['notes', 'voiceAssistant'] }
   ]);
 
   // The access matrix mirrors the grantable cards/tabs shown on the application
@@ -79,7 +80,9 @@
     ['sitesAccess', 'sitesAccess', 'سایت‌ها و دسترسی‌ها'],
     ['lettersIncoming', 'letters', 'نامه‌های ورودی'],
     ['lettersOutgoing', 'letters', 'نامه‌های خروجی'],
-    ['userGuide', 'userGuide', 'راهنمای استفاده سامانه']
+    ['userGuide', 'userGuide', 'راهنمای استفاده سامانه'],
+    ['notes', 'notes', 'یادداشت‌ها'],
+    ['voiceAssistant', 'voiceAssistant', 'دستیار صوتی هوشمند']
   ].map(([route, featureKey, title]) => Object.freeze({ route, featureKey, title, groupKey: null })));
 
   const byKey = Object.freeze(Object.fromEntries(groups.map(group => [group.key, group])));
@@ -113,6 +116,7 @@
     bypass_approval: 'can_bypass_approval'
   });
   const SAFE_WHEN_UNAVAILABLE = new Set(['settings']);
+  const PERSONAL_FEATURES = new Set(['notes', 'voiceAssistant']);
   let grants = new Map();
   let loaded = false;
   let loading = null;
@@ -170,113 +174,26 @@
     if (!feature) return false;
     if (systemManager()) return true;
     if (!state().token) return false;
+    if (PERSONAL_FEATURES.has(feature)) return true;
     if (!loaded) return false;
     if (unavailable && SAFE_WHEN_UNAVAILABLE.has(feature) && action === 'view') return true;
     return grants.get(feature)?.[actionField(action)] === true;
   }
-  const canManageFeature = featureKey => systemManager()
-    || can(featureKey, 'manage_access')
-    || can('settings', 'manage_access');
-  const ACTION_HOST_SELECTOR = [
-    '.bamco-command-bar',
-    '.feature-toolbar-actions',
-    '.vehicle-toolbar',
-    '.people-actions',
-    '.manager-toolbar',
-    '.task-toolbar',
-    '.workspace-actions',
-    '.workspace-report-tools',
-    '.suite-toolbar',
-    '.sticker-toolbar',
-    '.message-center-actions',
-    '.message-command-row',
-    '.sent-command-row',
-    '.response-command-row',
-    '.response-quick',
-    '.tt-switch',
-    '.desktop-template-fieldset',
-    '.letter-toolbar',
-    '.cash-toolbar',
-    '.bamco-management-toolbar'
-  ].join(',');
   const LOCAL_MANAGE_CONTROL_SELECTOR = '.vehicle-access-button,[data-feature-access-control="local"]';
   let manageControlQueued = false;
 
-  // Keep access management beside the feature's native command row; never float it over the app shell.
-  function actionHostFor(route) {
-    if (!route || route === 'home') return null;
-    const view = document.getElementById(`${route}View`);
-    if (!view) return null;
-    const host = [...view.querySelectorAll(ACTION_HOST_SELECTOR)]
-      .find(node => !node.closest('form,dialog,details') && !node.classList.contains('hidden'));
-    if (host) {
-      host.classList.add('bamco-command-bar');
-      return host;
-    }
-    const bar = document.createElement('div');
-    bar.className = 'bamco-management-toolbar bamco-command-bar';
-    const heading = view.querySelector(':scope > .bamco-page-heading');
-    const panel = view.querySelector(':scope > .panel');
-    if (heading) heading.after(bar);
-    else if (panel) panel.prepend(bar);
-    else view.prepend(bar);
-    return bar;
-  }
-
-  function configureManageControl(button, featureKey, allowed, { generic = false } = {}) {
+  function retireManageControl(button) {
     if (!button) return;
     button.classList.add('ghost', 'feature-access-control');
-    button.dataset.featureKey = featureKey || '';
-    button.classList.toggle('hidden', !allowed);
-    button.disabled = !allowed;
-    button.setAttribute('aria-hidden', allowed ? 'false' : 'true');
-    if (generic && button.dataset.featureAccessBound !== '1') {
-      button.dataset.featureAccessBound = '1';
-      button.addEventListener('click', () => {
-        const key = button.dataset.featureKey;
-        if (!key || !canManageFeature(key)) return denied(key || 'settings', 'manage_access');
-        window.bamcoAccessEditor?.open?.({ featureKey: key, title: `مدیریت دسترسی ${catalog.featureTitle(key)}` });
-      });
-    }
+    button.classList.add('hidden');
+    button.disabled = true;
+    button.setAttribute('aria-hidden', 'true');
   }
 
   function syncManageControl() {
     if (!document?.querySelector) return;
-    const route = state().view;
-    const featureKey = catalog.featureForRoute(route);
-    const allowed = !!featureKey && canManageFeature(featureKey);
-    const view = route && route !== 'home' ? document.getElementById(`${route}View`) : null;
-    const local = view?.querySelector(LOCAL_MANAGE_CONTROL_SELECTOR) || null;
-    const generic = document.getElementById('featureAccessControl');
-
-    // A selected record can deliberately suppress feature-level access controls while
-    // retaining its record actions.  The list view remains the only access entry point.
-    if (view?.querySelector('[data-feature-access-suppressed="true"]')) {
-      if (generic) configureManageControl(generic, '', false, { generic: true });
-      return;
-    }
-
-    if (local) {
-      if (generic) configureManageControl(generic, '', false, { generic: true });
-      configureManageControl(local, featureKey, allowed);
-      return;
-    }
-    if (!allowed) {
-      if (generic) configureManageControl(generic, featureKey || '', false, { generic: true });
-      return;
-    }
-
-    const host = actionHostFor(route);
-    if (!host) return;
-    let button = generic;
-    if (!button) {
-      button = document.createElement('button');
-      button.id = 'featureAccessControl';
-      button.type = 'button';
-      button.textContent = 'مدیریت دسترسی';
-    }
-    if (button.parentElement !== host) host.append(button);
-    configureManageControl(button, featureKey, true, { generic: true });
+    document.querySelectorAll(LOCAL_MANAGE_CONTROL_SELECTOR).forEach(retireManageControl);
+    document.getElementById('featureAccessControl')?.remove();
   }
   function scheduleManageControl() {
     if (manageControlQueued) return;
@@ -402,9 +319,9 @@
   window.Bamco?.lifecycle?.on?.('navigation-after', scheduleManageControl);
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', scheduleManageControl, { once: true });
   else scheduleManageControl();
-  // A number of feature pages redraw their native toolbar after navigation
-  // (notably Parts and Invoices).  Reconcile the control after that redraw so
-  // the authoritative access editor is never silently removed from the page.
+  // A number of feature pages redraw their native toolbar after navigation.
+  // Retire any local access shortcut introduced by those redraws; access is
+  // managed exclusively from the administrator access matrix.
   if (document.body && typeof MutationObserver !== 'undefined') {
     new MutationObserver(() => scheduleManageControl())
       .observe(document.body, { attributes: true, attributeFilter: ['class'] });
@@ -414,9 +331,9 @@
       if (!view) return;
       const relevant = node => node?.nodeType === 1 && (
         node.id === 'featureAccessControl'
-        || node.matches?.(ACTION_HOST_SELECTOR)
+        || node.matches?.(LOCAL_MANAGE_CONTROL_SELECTOR)
         || node.querySelector?.('#featureAccessControl')
-        || node.querySelector?.(ACTION_HOST_SELECTOR)
+        || node.querySelector?.(LOCAL_MANAGE_CONTROL_SELECTOR)
       );
       if (records.some(record => view.contains(record.target)
         && ([...record.addedNodes, ...record.removedNodes].some(relevant)))) {

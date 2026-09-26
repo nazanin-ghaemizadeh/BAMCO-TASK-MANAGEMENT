@@ -37,9 +37,12 @@ function boot(){
  };
  const product=view.querySelector('[data-department="product"]');
  if(product&&!product.dataset.entryBound){product.dataset.entryBound='1';product.addEventListener('click',showLogin)}
- let back=login.querySelector('.department-back');
- if(!back){back=document.createElement('button');back.type='button';back.className='department-back';back.textContent='بازگشت به انتخاب مدیریت';login.append(back)}
- if(!back.dataset.entryBound){back.dataset.entryBound='1';back.addEventListener('click',showDepartments)}
+ const bindBack=()=>{
+  let back=login.querySelector('.department-back');
+  if(!back){back=document.createElement('button');back.type='button';back.className='department-back';back.textContent='بازگشت به انتخاب مدیریت';login.querySelector('#loginForm')?.append(back)}
+  if(back&&!back.dataset.entryBound){back.dataset.entryBound='1';back.addEventListener('click',showDepartments)}
+ };
+ bindBack();document.addEventListener('bamco:login-ui-ready',bindBack);
  new MutationObserver(()=>{const signedIn=!app.classList.contains('hidden');if(signedIn!==lastSignedIn)sync()}).observe(app,{attributes:true,attributeFilter:['class']});
  new MutationObserver(()=>{if(view.hidden&&!app.classList.contains('hidden'))return;if(view.hidden&&document.body.classList.contains('department-pending'))showLogin()}).observe(view,{attributes:true,attributeFilter:['hidden']});
  sync();

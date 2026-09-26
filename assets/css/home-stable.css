@@ -31,13 +31,13 @@ html body.card-navigation #appView .card-topbar :is(#logoutBtn,#notificationBell
 html body.card-navigation #appView .card-topbar button svg{width:17px!important;height:17px!important;fill:none!important;stroke:currentColor!important;stroke-width:1.8!important;stroke-linecap:round!important;stroke-linejoin:round!important}
 html body.card-navigation #appView .home-return{display:none!important}
 
-/* Seven sections, RTL order in card-home.js; two equal columns within every card. */
-html body.card-navigation #appView #homeView #nav{position:static!important;inset:auto!important;display:grid!important;direction:rtl!important;flex:1 1 0!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;grid-template-rows:repeat(3,minmax(0,1fr))!important;grid-auto-flow:row!important;gap:12px!important;align-items:stretch!important;width:100%!important;height:100%!important;min-height:0!important;margin:0!important;padding:0!important;background:transparent!important;border:0!important;overflow:visible!important;transform:none!important}
+/* Ten compact cards: five on each desktop row, with one vertical route list. */
+html body.card-navigation #appView #homeView #nav{position:static!important;inset:auto!important;display:grid!important;direction:rtl!important;flex:1 1 0!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;grid-template-rows:repeat(2,minmax(0,1fr))!important;grid-auto-flow:row!important;gap:10px!important;align-items:stretch!important;width:100%!important;height:100%!important;min-height:0!important;margin:0!important;padding:0!important;background:transparent!important;border:0!important;overflow:visible!important;transform:none!important}
 html body.card-navigation #appView #homeView #nav>.nav-group{position:relative!important;grid-column:auto!important;grid-row:auto!important;display:flex!important;flex-direction:column!important;gap:8px!important;min-width:0!important;min-height:0!important;width:100%!important;height:100%!important;margin:0!important;padding:8px!important;border:1px solid #d9e3de!important;border-radius:15px!important;background:#fff!important;box-shadow:0 2px 6px #103e2903!important;box-sizing:border-box!important}
 html body.card-navigation #appView #homeView #nav .nav-group-toggle{position:static!important;display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:flex-start!important;flex:0 0 28px!important;gap:8px!important;width:100%!important;height:28px!important;min-height:28px!important;margin:0!important;padding:0!important;border:0!important;background:transparent!important;color:#235941!important;font-size:18px!important;line-height:1.4!important;text-align:right!important;text-align-last:right!important;cursor:default!important}
 html body.card-navigation #appView #homeView #nav .nav-group-icon{display:grid!important;place-items:center!important;flex:0 0 28px!important;width:28px!important;height:28px!important;margin:0!important;border-radius:7px!important;background:#eaf4ee!important;color:#4e8570!important}
 html body.card-navigation #appView #homeView #nav .nav-group-icon svg{width:22px!important;height:22px!important}
-html body.card-navigation #appView #homeView #nav .nav-group-items{position:static!important;inset:auto!important;display:grid!important;direction:rtl!important;flex:0 0 auto!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;grid-template-rows:repeat(3,var(--home-row-height,30px))!important;grid-auto-rows:var(--home-row-height,30px)!important;gap:4px!important;align-content:start!important;width:100%!important;height:auto!important;min-width:0!important;min-height:0!important;max-height:none!important;margin:0!important;padding:0!important;border:0!important;background:transparent!important;box-shadow:none!important;visibility:visible!important;opacity:1!important;overflow:visible!important;transform:none!important}
+html body.card-navigation #appView #homeView #nav .nav-group-items{position:static!important;inset:auto!important;display:grid!important;direction:rtl!important;flex:0 0 auto!important;grid-template-columns:minmax(0,1fr)!important;grid-template-rows:none!important;grid-auto-rows:var(--home-row-height,30px)!important;gap:4px!important;align-content:start!important;width:100%!important;height:auto!important;min-width:0!important;min-height:0!important;max-height:none!important;margin:0!important;padding:0!important;border:0!important;background:transparent!important;box-shadow:none!important;visibility:visible!important;opacity:1!important;overflow:visible!important;transform:none!important}
 html body.card-navigation #appView #homeView #nav [data-view]{display:flex!important;direction:rtl!important;align-items:center!important;justify-content:flex-start!important;gap:6px!important;width:100%!important;height:var(--home-row-height,30px)!important;min-height:var(--home-row-height,30px)!important;margin:0!important;padding:2px 8px!important;border:1px solid transparent!important;border-radius:6px!important;background:#f1f6f3!important;color:#365c4b!important;font-family:var(--fa-font,'B Nazanin','B Zar',Yas,serif)!important;font-size:15px!important;line-height:1.5!important;text-align:right!important;text-align-last:right!important;white-space:nowrap!important;box-sizing:border-box!important;cursor:pointer!important;transform:none!important;transition:background-color .12s,border-color .12s!important}
 html body.card-navigation #appView #homeView #nav [data-view]>b{display:grid!important;place-items:center!important;flex:0 0 18px!important;width:18px!important;height:18px!important;margin:0!important;background:transparent!important;color:#598a76!important}
 html body.card-navigation #appView #homeView #nav [data-view]>b svg{width:16px!important;height:16px!important}
@@ -60,15 +60,15 @@ html body.card-navigation #appView #homeFixedFooter a:focus-visible{outline:2px 
 html body.content-only #appView .card-topbar,html body.content-only #appView #homeFixedFooter{display:none!important}
 
 /* Small screens retain all routes instead of clipping them to the viewport. */
-@media(max-width:1000px),(max-height:620px){
+@media(max-width:1200px),(max-height:680px){
  html body.card-home-active{height:auto!important;overflow:auto!important}
  html body.card-home-active #appView.app{height:auto!important;min-height:100dvh!important;padding:0!important;overflow:visible!important}
  html body.card-home-active #appView.app .workspace,html body.card-home-active #appView.app:has(.sidebar.collapsed) .workspace{flex:1 0 auto!important;overflow:visible!important}
- html body.card-navigation #appView #homeView #nav{grid-template-rows:none!important;grid-auto-rows:max(164px,calc(3 * var(--home-row-height,34px) + 68px))!important;height:auto!important;flex:1 0 auto!important}
+ html body.card-navigation #appView #homeView #nav{grid-template-rows:none!important;grid-auto-rows:max(196px,calc(6 * var(--home-row-height,34px) + 68px))!important;height:auto!important;flex:1 0 auto!important}
  html body.card-navigation #appView #homeFixedFooter{position:static!important;flex:none!important}
 }
-@media(max-width:1000px){
- html body.card-navigation #appView #homeView #nav{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+@media(max-width:1200px){
+ html body.card-navigation #appView #homeView #nav{grid-template-columns:repeat(3,minmax(0,1fr))!important}
  html body.card-navigation #appView .card-topbar{grid-template-columns:150px minmax(0,1fr) 160px!important;gap:12px!important;padding:6px 14px!important}
  html body.card-navigation #appView .card-topbar>img{width:150px!important}
  html body.card-navigation #appView .card-topbar>strong{font-size:19px!important}
@@ -91,80 +91,6 @@ html body.card-navigation.card-home-active #appView #homeView #nav .nav-group-it
 /* Keep access-gated groups in their grid slot for the entire home session; access resolution must never reflow cards. */
 html body.card-home-active #homeView #nav>.nav-group.hidden{display:flex!important;visibility:hidden!important;pointer-events:none!important}
 html body.card-home-active #homeView,html body.card-home-active #homeView #nav,html body.card-home-active #homeView #nav>.nav-group{contain:layout!important;overflow-anchor:none!important}
-/* Each card owns a permanent grid slot; late-created permission groups cannot push another card away. */
-html body.card-home-active #homeView #nav>.nav-group[data-group="people"]{grid-column:1!important;grid-row:1!important}
-html body.card-home-active #homeView #nav>.nav-group[data-group="messages"]{grid-column:2!important;grid-row:1!important}
-html body.card-home-active #homeView #nav>.nav-group[data-group="reports"]{grid-column:3!important;grid-row:1!important}
-html body.card-home-active #homeView #nav>.nav-group[data-group="configuration"]{grid-column:1!important;grid-row:2!important}
-html body.card-home-active #homeView #nav>.nav-group[data-group="tasks"]{grid-column:2!important;grid-row:2!important}
-html body.card-home-active #homeView #nav>.nav-group[data-group="delivery"]{grid-column:3!important;grid-row:2!important}
-html body.card-home-active #homeView #nav>.nav-group[data-group="vehicle"]{grid-column:1!important;grid-row:3!important}
-html body.card-home-active #homeView #nav>.nav-group[data-group="conversations"]{grid-column:2!important;grid-row:3!important}
-html body.card-home-active #homeView #nav>.nav-group[data-group="resources"]{grid-column:3!important;grid-row:3!important}
-@media(max-width:1000px){
- html body.card-home-active #homeView #nav>.nav-group[data-group="people"]{grid-column:1!important;grid-row:1!important}
- html body.card-home-active #homeView #nav>.nav-group[data-group="messages"]{grid-column:2!important;grid-row:1!important}
- html body.card-home-active #homeView #nav>.nav-group[data-group="reports"]{grid-column:1!important;grid-row:2!important}
- html body.card-home-active #homeView #nav>.nav-group[data-group="configuration"]{grid-column:2!important;grid-row:2!important}
- html body.card-home-active #homeView #nav>.nav-group[data-group="tasks"]{grid-column:1!important;grid-row:3!important}
- html body.card-home-active #homeView #nav>.nav-group[data-group="delivery"]{grid-column:2!important;grid-row:3!important}
- html body.card-home-active #homeView #nav>.nav-group[data-group="vehicle"]{grid-column:1!important;grid-row:4!important}
- html body.card-home-active #homeView #nav>.nav-group[data-group="conversations"]{grid-column:2!important;grid-row:4!important}
- html body.card-home-active #homeView #nav>.nav-group[data-group="resources"]{grid-column:1!important;grid-row:5!important}
-}
-@media(max-width:620px){
- html body.card-home-active #homeView #nav>.nav-group[data-group]{grid-column:1!important}
- html body.card-home-active #homeView #nav>.nav-group[data-group="people"]{grid-row:1!important}
- html body.card-home-active #homeView #nav>.nav-group[data-group="messages"]{grid-row:2!important}
- html body.card-home-active #homeView #nav>.nav-group[data-group="reports"]{grid-row:3!important}
- html body.card-home-active #homeView #nav>.nav-group[data-group="configuration"]{grid-row:4!important}
- html body.card-home-active #homeView #nav>.nav-group[data-group="tasks"]{grid-row:5!important}
- html body.card-home-active #homeView #nav>.nav-group[data-group="delivery"]{grid-row:6!important}
- html body.card-home-active #homeView #nav>.nav-group[data-group="vehicle"]{grid-row:7!important}
- html body.card-home-active #homeView #nav>.nav-group[data-group="conversations"]{grid-row:8!important}
- html body.card-home-active #homeView #nav>.nav-group[data-group="resources"]{grid-row:9!important}
-}
-
-/* A late permission result may reveal a button, but cannot move another button. */
-html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="people"]{grid-column:1!important;grid-row:1!important}
-html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="accessMatrix"]{grid-column:2!important;grid-row:1!important}
-html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="organization"]{grid-column:1!important;grid-row:2!important}
-html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="activeSessions"]{grid-column:2!important;grid-row:2!important}
-html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="loginActivity"]{grid-column:1!important;grid-row:3!important}
-html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="messages"]{grid-column:1!important;grid-row:1!important}
-html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="messageCenter"]{grid-column:2!important;grid-row:1!important}
-html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="sentMessages"]{grid-column:1!important;grid-row:2!important}
-html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="responseTracking"]{grid-column:2!important;grid-row:2!important}
-html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="stickers"]{grid-column:1!important;grid-row:3!important}
-html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="dashboard"]{grid-column:1!important;grid-row:1!important}
-html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="performanceReport"]{grid-column:2!important;grid-row:1!important}
-html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="responseReport"]{grid-column:1!important;grid-row:2!important}
-html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="systemOptions"]{grid-column:1!important;grid-row:1!important}
-html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="settings"]{grid-column:2!important;grid-row:1!important}
-html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="alertSettings"]{grid-column:1!important;grid-row:2!important}
-html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="emailSettings"]{grid-column:2!important;grid-row:2!important}
-html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="kanban"]{grid-column:1!important;grid-row:1!important}
-html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="archive"]{grid-column:2!important;grid-row:1!important}
-html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="taskTimeline"]{grid-column:1!important;grid-row:2!important}
-html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="projects"]{grid-column:2!important;grid-row:2!important}
-html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="approvals"]{grid-column:1!important;grid-row:3!important}
-html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="requestHistory"]{grid-column:2!important;grid-row:3!important}
-html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="approvalChains"]{grid-column:2!important;grid-row:3!important}
-html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="vehiclePermanent"]{grid-column:1!important;grid-row:1!important}
-html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="vehicleTemporary"]{grid-column:2!important;grid-row:1!important}
-html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="parts"]{grid-column:1!important;grid-row:2!important}
-html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="tools"]{grid-column:2!important;grid-row:2!important}
-html body.card-navigation #appView #homeView #nav>.nav-group[data-group="delivery"] .nav-group-items>[data-view="pettyCash"]{grid-column:1!important;grid-row:1!important}
-html body.card-navigation #appView #homeView #nav>.nav-group[data-group="delivery"] .nav-group-items>[data-view="invoices"]{grid-column:2!important;grid-row:1!important}
-html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="groupChat"]{grid-column:1!important;grid-row:1!important}
-html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="directMessages"]{grid-column:2!important;grid-row:1!important}
-html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="taskChats"]{grid-column:1!important;grid-row:2!important}
-html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="documents"]{grid-column:1!important;grid-row:1!important}
-html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="sitesAccess"]{grid-column:2!important;grid-row:1!important}
-html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="letters"]{grid-column:1!important;grid-row:2!important}
-html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view="userGuide"]{grid-column:2!important;grid-row:2!important}
-
-/* Permission-aware compact layout: unavailable routes leave no empty cells.
-   Catalog/DOM order remains canonical, while every visible route stays inside
-   its own group card. */
+/* Catalog order is canonical. Hidden routes leave no blank row and every group
+   keeps one stable card position during permission resolution. */
 html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view]{grid-column:auto!important;grid-row:auto!important}

@@ -31,7 +31,9 @@ function buildLogin(){
   <label class="login-field" for="email"><span class="login-field-title bamco-fa">نام کاربری</span><span class="login-input-shell"><input id="email" class="english" type="text" autocomplete="username" required placeholder="name@bamco.ir" dir="ltr"><span class="login-leading-icon">${USER_ICON}</span></span></label>
   <label class="login-field" for="password"><span class="login-field-title bamco-fa">رمز عبور</span><span class="login-input-shell"><input id="password" class="english" type="password" autocomplete="current-password" required placeholder="••••••" dir="ltr"><span class="login-leading-icon">${LOCK_ICON}</span><button type="button" class="login-password-toggle" aria-label="نمایش رمز عبور" title="نمایش رمز عبور">${EYE_ICON}</button></span></label>
   <div class="login-field login-verification-field"><span class="login-field-title bamco-fa">تأیید عددی</span><div id="loginVerification" class="login-verification-box"><div id="loginVerifyDisplay" class="login-code-display" aria-label="کد تأیید"></div><input id="loginVerifyCode" type="hidden"><div class="verification-digits" role="group" aria-label="کد تأیید چهار رقمی" dir="ltr">${[0,1,2,3].map(i=>`<input class="verification-digit english" type="text" inputmode="numeric" autocomplete="off" maxlength="4" aria-label="رقم ${i+1} کد تأیید" required>`).join('')}</div><button type="button" id="refreshLoginVerify" class="login-refresh-code" title="ساخت کد جدید" aria-label="ساخت کد جدید">${REFRESH_ICON}</button></div><div id="loginVerifyError" class="login-code-error bamco-fa" aria-live="polite"></div></div>
-  </div><button class="primary wide login-submit" type="submit">ورود به سامانه</button><p id="loginError" class="form-error" aria-live="polite"></p>`;
+  </div><button class="primary wide login-submit" type="submit">ورود به سامانه</button>
+  <div class="login-secondary-actions" aria-label="روش‌های دیگر ورود"><button class="department-back" type="button">بازگشت به انتخاب مدیریت</button><button class="login-otp" type="button" disabled aria-disabled="true" title="این روش ورود به‌زودی فعال می‌شود">ورود با رمز یکبارمصرف</button></div>
+  <p id="loginError" class="form-error" aria-live="polite"></p>`;
   q('#email').value=email;q('#password').value=password;return form;
 }
 
@@ -82,6 +84,7 @@ function install(){
     // parallel request with a duplicate session/profile path.
     delegatedBusy=true;verifyError.textContent='';error.textContent='';
   },true);
+  document.dispatchEvent(new CustomEvent('bamco:login-ui-ready'));
 }
 
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
