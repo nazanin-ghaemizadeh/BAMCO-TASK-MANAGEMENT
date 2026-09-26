@@ -9,6 +9,7 @@ on:
       - '.github/workflows/release-version.yml'
       - '.github/workflows/profile-approval-entry-regression.yml'
       - 'scripts/profile-approval-entry/**'
+      - 'tests/browser/**'
   workflow_dispatch:
 
 permissions:

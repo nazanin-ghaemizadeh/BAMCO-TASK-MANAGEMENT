@@ -38,8 +38,8 @@ async def one_case(browser,base,width,role):
         await page.evaluate('()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))')
         revealed=await home_layout()
         assert revealed['people'] and revealed['access'],revealed
-        assert revealed['people']['y']==revealed['access']['y'],revealed
-        assert revealed['people']['x']!=revealed['access']['x'],revealed
+        assert revealed['people']['x']==revealed['access']['x'],revealed
+        assert revealed['access']['y']>revealed['people']['y'],revealed
         assert revealed['groups']==groups_before,{'before':groups_before,'after':revealed['groups']}
     diag=await page.evaluate('''()=>{
       const box=s=>{const n=document.querySelector(s);if(!n)return null;const r=n.getBoundingClientRect(),c=getComputedStyle(n);return {top:Math.round(r.top),left:Math.round(r.left),width:Math.round(r.width),height:Math.round(r.height),display:c.display,visibility:c.visibility,opacity:c.opacity}};
