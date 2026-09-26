@@ -40,7 +40,7 @@ test('personal workspace keeps one command row and defaults to active notes',()=
  const css=read('assets/css/personal-workspace.css');
  assert.match(source,/data-note-tab="active"/);
  assert.match(source,/data-note-tab="inactive"/);
- assert.match(source,/inactiveMode=false;selectedNote='';loadNotes\(\);renderNotes\(\)/);
+ assert.match(source,/inactiveMode=false;selectedNote='';void loadNotes\(\)/);
  assert.doesNotMatch(source,/data-note-inactive/);
  assert.match(css,/flex-wrap:wrap/);
  assert.match(css,/assistant-wave-right/);
