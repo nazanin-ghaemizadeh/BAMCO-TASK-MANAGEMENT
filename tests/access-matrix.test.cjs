@@ -28,8 +28,8 @@ test('people access matrix mirrors aliases and saves through the canonical acces
     await until(() => f.d.querySelector('.access-matrix-table'));
     const expectedTabs = [
       'افراد و نقش‌ها', 'ساختار سازمانی', 'نشست‌های فعال', 'ورود و خروج',
-      'پیام‌ها', 'ارسال پیام', 'پیام‌های ارسال‌شده', 'پیگیری پاسخ', 'مدیریت استیکرها',
-      'داشبورد', 'گزارش عملکرد', 'گزارش پاسخ‌ها',
+      'پیام‌ها', 'ارسال پیام', 'پیام‌های ارسال‌شده', 'مدیریت استیکرها',
+      'داشبورد', 'گزارش عملکرد',
       'وضعیت‌ها و اولویت‌ها', 'تنظیمات کاربری',
       'کانبان', 'آرشیو', 'تقویم و گانت', 'پروژه‌ها', 'تأیید درخواست‌ها', 'سوابق درخواست‌ها',
       'گزارش تنخواه', 'صورتحساب‌ها و تعهدات مالی',
@@ -38,7 +38,7 @@ test('people access matrix mirrors aliases and saves through the canonical acces
       'فرم‌ها و مستندات', 'سایت‌ها و دسترسی‌ها', 'نامه‌های ورودی', 'نامه‌های خروجی', 'راهنمای استفاده سامانه', 'یادداشت‌ها', 'دستیار هوشمند'
     ];
     const actualTabs = [...f.d.querySelectorAll('.access-matrix-route > th > span')].map(cell => cell.textContent.trim());
-    assert.equal(actualTabs.length, 36, 'ماتریس همهٔ تب‌های قابل‌واگذاری را دارد و دسترسی مدیر سامانه را فهرست نمی‌کند');
+    assert.equal(actualTabs.length, 34, 'ماتریس همهٔ تب‌های قابل‌واگذاری را دارد و دسترسی مدیر سامانه را فهرست نمی‌کند');
     assert.deepEqual(actualTabs, expectedTabs, 'عنوان و ترتیب تب‌های قابل‌واگذاری دقیقاً با صفحهٔ اصلی یکسان است');
     assert.equal(actualTabs.includes('دسترسی‌ها'), false, 'تب دسترسی مدیر سامانه داخل ماتریس قابل‌واگذاری نیست');
     assert.equal(f.d.querySelector('.access-matrix-table').textContent.includes('قالب‌ها'), false);

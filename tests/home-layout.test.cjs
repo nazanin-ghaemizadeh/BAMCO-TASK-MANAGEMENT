@@ -8,8 +8,8 @@ const source=read('assets/js/card-home.js');
 const reconciliation=source.slice(source.indexOf(' const catalog=window.BamcoNavigationCatalog;'),source.indexOf('\n syncGroups();')).replace(' if(!catalog)return;','');
 const catalogGroups=[
  ['people',['people','accessMatrix','organization','activeSessions','loginActivity']],
- ['messages',['messages','messageCenter','sentMessages','responseTracking','templates','stickers']],
- ['reports',['dashboard','performanceReport','responseReport']],
+ ['messages',['messages','messageCenter','sentMessages','templates','stickers']],
+ ['reports',['dashboard','performanceReport']],
  ['configuration',['systemOptions','settings','alertSettings','emailSettings']],
  ['tasks',['kanban','archive','taskTimeline','projects','approvals','requestHistory']],
  ['delivery',['pettyCash','invoices']],
@@ -57,7 +57,7 @@ test('home cards keep people structure and enterprise modules in their approved 
  f.sync();assert.deepEqual(f.nav.children.map(x=>x.dataset.group),['people','messages','reports','configuration','tasks','delivery','vehicle','conversations','resources','personal']);
  for(const [key,ids] of f.order)assert.deepEqual(f.boxes[key].children.map(x=>x.dataset.view),Array.from(ids));
  assert.deepEqual(f.boxes.people.children.map(x=>x.dataset.view),['people','accessMatrix','organization','activeSessions','loginActivity']);
- assert.deepEqual(f.boxes.reports.children.map(x=>x.dataset.view),['dashboard','performanceReport','responseReport']);
+ assert.deepEqual(f.boxes.reports.children.map(x=>x.dataset.view),['dashboard','performanceReport']);
  assert.deepEqual(f.boxes.tasks.children.map(x=>x.dataset.view),['kanban','archive','taskTimeline','projects','approvals','requestHistory']);
  assert.deepEqual(f.boxes.delivery.children.map(x=>x.dataset.view),['pettyCash','invoices']);
  assert.deepEqual(f.boxes.configuration.children.map(x=>x.dataset.view),['systemOptions','settings','alertSettings','emailSettings']);
@@ -100,7 +100,8 @@ test('home styles have one owner, loaded last; phase modules load once',()=>{
  assert.match(home,/nav \.nav-group-items>\[data-view\]\{grid-column:auto!important;grid-row:auto!important\}/);
  assert.match(home,/card-home-active:not\(\.home-layout-ready\)[^\n]+#homeView #nav\{visibility:hidden!important\}/);
  assert.match(source,/prepareHomeLayout\(\)[\s\S]*document\.fonts\?\.ready[\s\S]*logo\?\.decode[\s\S]*home-layout-ready/);
- for(const module of ['phase1-workflow','phase2-message-engine','phase3-response-tracking'])assert.equal(bundle.split('source: assets/js/'+module+'.js').length-1,1);
+ for(const module of ['phase1-workflow','phase2-message-engine'])assert.equal(bundle.split('source: assets/js/'+module+'.js').length-1,1);
+ assert.doesNotMatch(bundle,/source: assets\/js\/phase3-response-tracking\.js/);
  assert.doesNotMatch(read('assets/js/sidebar.js'),/load\('assets\/js\/phase/);
 });
 

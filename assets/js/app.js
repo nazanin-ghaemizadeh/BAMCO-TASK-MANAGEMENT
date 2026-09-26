@@ -6,7 +6,7 @@ const SB_KEY=BAMCO_STAGING?'sb_publishable_UasmuRBTVQyAyPMI0TEydg_1FyX8be7':'sb_
 function clearTransientCaches(){
  const marker='bamco.cache-reset.workspace-20260910-2';
  try{if(localStorage.getItem(marker))return;for(const storage of [localStorage,sessionStorage]){
-  for(const key of Object.keys(storage))if(/^bamco[._-]/i.test(key)&&!/(sticker|auth|session|login|password|department)/i.test(key))storage.removeItem(key);
+  for(const key of Object.keys(storage))if(/^bamco[._-]/i.test(key)&&!/(sticker|auth|session|login|password|department|personal-notes)/i.test(key))storage.removeItem(key);
  }localStorage.setItem(marker,'1')}catch{}
  if(typeof caches!=='undefined')caches.keys().then(async names=>{for(const name of names){if(!/bamco/i.test(name)||/sticker/i.test(name))continue;const cache=await caches.open(name);for(const request of await cache.keys())if(!/sticker/i.test(request.url))await cache.delete(request)}}).catch(()=>{});
 }

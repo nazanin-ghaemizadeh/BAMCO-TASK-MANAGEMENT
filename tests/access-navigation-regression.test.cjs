@@ -12,20 +12,21 @@ test('feature access refresh never opens inactive pages over the card home',asyn
   const visibleHome=[...d.querySelectorAll('.workspace > .view')].filter(view=>!view.classList.contains('hidden')).map(view=>view.id);
   assert.deepEqual(visibleHome,['homeView'],'access grants must not unhide every granted view while home is active');
 
-  await f.open('responseTracking');
+  await f.open('messages');
   w.BamcoAccess.applyNavigation();
   await pause(40);
   const visibleRoute=[...d.querySelectorAll('.workspace > .view')].filter(view=>!view.classList.contains('hidden')).map(view=>view.id);
-  assert.deepEqual(visibleRoute,['responseTrackingView'],'opening one route must leave exactly one workspace page visible');
-  assert.equal(w.eval('state.view'),'responseTracking');
+  assert.deepEqual(visibleRoute,['messagesView'],'opening one route must leave exactly one workspace page visible');
+  assert.equal(w.eval('state.view'),'messages');
   assert.deepEqual(f.errors,[]);
 });
 
 test('access management is available only from the admin access page',async t=>{
   const f=await fixture(),{d}=f;t.after(()=>f.dispose());
-  await f.open('responseTracking');
-  assert.equal(d.querySelector('#responseTrackingView #featureAccessControl'),null);
-  assert(d.querySelector('#responseTrackingView [data-response-access]').classList.contains('hidden'));
+  assert.equal(d.querySelector('#nav [data-view="responseTracking"]'),null);
+  assert.equal(d.querySelector('#nav [data-view="responseReport"]'),null);
+  assert.equal(d.querySelector('#responseTrackingView'),null);
+  assert.equal(d.querySelector('#responseReportView'),null);
   await f.open('accessMatrix');
   assert.equal(d.querySelector('#accessMatrixView').classList.contains('hidden'),false);
   assert.match(d.querySelector('#accessMatrixView').textContent,/دسترسی/);

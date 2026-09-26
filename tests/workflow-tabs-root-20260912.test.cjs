@@ -4,28 +4,14 @@ const {fixture,until,pause}=require('./helpers/app-fixture.cjs');
 
 function directTexts(node){return [...node.children].map(el=>el.textContent.replace(/\s+/g,' ').trim()).filter(Boolean)}
 
-test('response tracking owns requested command order, current-month dates, selection and has no tracking id',async t=>{
- const f=await fixture({tables:{message_response_tracking:[{delivery_id:11,recipient_id:'test-owner',recipient_name:'متولی آزمایشی',recipient_email:'owner@example.test',channel:'portal',subject:'پیام آزمایشی',sent_at:new Date().toISOString(),delivery_status:'sent',response_status:'awaiting',reminder_count:0}]}});t.after(()=>f.dispose());
- await f.open('responseTracking');
- const bar=f.d.querySelector('#responseTrackingView .response-command-row');assert.ok(bar);
- const texts=directTexts(bar);assert.match(texts[0],/بازگشت به خانه/);assert.match(texts[1],/از تاریخ/);assert.match(texts[2],/تازه‌سازی/);assert.match(texts[3],/مدیریت دسترسی/);assert.match(texts[4],/خروجی اکسل/);assert.match(bar.querySelector('#sendResponseReminder').textContent,/ارسال یادآوری/);assert.equal(bar.querySelectorAll('select option').length,3);
- assert.ok(f.d.querySelector('#responseFrom').value);assert.ok(f.d.querySelector('#responseTo').value);
- assert.doesNotMatch(f.d.querySelector('#responseTrackingView table').textContent,/شناسه پیگیری/);
- const row=f.d.querySelector('#responseTrackingBody tr[data-delivery="11"]');assert.ok(row);assert.equal(f.d.querySelector('#sendResponseReminder').disabled,true);row.click();await pause(20);assert.equal(f.d.querySelector('#responseTrackingBody tr[data-delivery="11"]').getAttribute('aria-selected'),'true');assert.equal(f.d.querySelector('#sendResponseReminder').disabled,false);
- assert.equal(f.errors.length,0,f.errors.join('\n'));
-});
-
-test('response report has requested command order, month defaults and filtered table source',async t=>{
- const now=new Date().toISOString();
- const f=await fixture({tables:{message_response_tracking:[{delivery_id:21,recipient_id:'test-owner',recipient_name:'متولی آزمایشی',channel:'portal',subject:'گزارش آزمایشی',sent_at:now,delivery_status:'sent',response_status:'awaiting',reminder_count:0}]}});t.after(()=>f.dispose());
- await f.open('responseReport');await until(()=>f.d.querySelector('#responseReportView .response-command-row'));
- const bar=f.d.querySelector('#responseReportView .response-command-row'),texts=directTexts(bar);
- assert.match(texts[0],/بازگشت به خانه/);assert.match(texts[1],/از تاریخ/);assert.match(texts[2],/تازه‌سازی/);assert.match(texts[3],/مدیریت دسترسی/);assert.match(texts[4],/خروجی اکسل/);assert.match(texts[5],/حذف رکورد/);
- assert.ok(bar.classList.contains('bamco-command-bar'));assert.equal(bar.querySelector('[data-response-access]').previousElementSibling?.textContent.trim(),'تازه‌سازی');assert.equal(bar.querySelectorAll('[data-response-access],#featureAccessControl').length,1);
- assert.ok(f.d.querySelector('#canonicalResponseFrom').value);assert.ok(f.d.querySelector('#canonicalResponseTo').value);
- assert.ok(f.d.querySelector('#responseReportBody tr[data-delivery-id="21"]'));
- const css=f.d.querySelector('#bamcoCanonicalReportCss').textContent;assert.match(css,/data-response-bulk-delete[^}]*color:#b54040/);
- assert.equal(f.errors.length,0,f.errors.join('\n'));
+test('removed response screens cannot appear in the portal',async t=>{
+ const f=await fixture();t.after(()=>f.dispose());
+ for(const route of ['responseTracking','responseReport']){
+  assert.equal(f.d.querySelector(`#nav [data-view="${route}"]`),null);
+  assert.equal(f.d.querySelector(`#${route}View`),null);
+  assert.equal(f.w.BamcoNavigationCatalog.routeFor(route),null);
+  assert.equal(f.w.bamcoTabs.owns(route),false);
+ }
 });
 
 test('message center command row is home, excel, refresh, green send and local row selection enables send',async t=>{
