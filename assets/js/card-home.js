@@ -91,12 +91,14 @@ function install(){
   const original=[...group.querySelectorAll('.nav-group-items>button[data-view]')].filter(available);
   if(!original.length)return false;
   groupDialog.querySelector('#homeLauncherTitle').textContent=entry.title;
-  groupDialog.querySelector('.home-launcher-symbol').textContent=entry.icon;
+  const groupSymbol=groupDialog.querySelector('.home-launcher-symbol');
+  const groupIcon=window.BamcoIcons?.forGroup(key);if(groupIcon)groupSymbol.innerHTML=groupIcon;else groupSymbol.textContent=entry.icon;
   const routes=groupDialog.querySelector('.home-launcher-routes');routes.replaceChildren();
   for(const source of original){
    const shortcut=document.createElement('button');shortcut.type='button';shortcut.className='home-launcher-route';shortcut.dataset.route=source.dataset.view;
    const icon=document.createElement('span');icon.className='home-launcher-route-icon';icon.setAttribute('aria-hidden','true');
-   const sourceIcon=source.querySelector('b');if(sourceIcon)icon.append(sourceIcon.cloneNode(true));
+   const routeIcon=window.BamcoIcons?.forRoute(source.dataset.view),sourceIcon=source.querySelector('b');
+   if(routeIcon)icon.innerHTML=routeIcon;else if(sourceIcon)icon.append(sourceIcon.cloneNode(true));
    const name=document.createElement('span');name.textContent=source.querySelector('span')?.textContent?.trim()||source.textContent.trim();
    shortcut.append(icon,name);shortcut.addEventListener('click',()=>{
     if(!available(source)||!group.isConnected)return fillGroup(group);
@@ -122,7 +124,8 @@ function install(){
    const entry=catalog?.byKey?.[key];if(!entry)continue;
    const button=document.createElement('button');button.type='button';button.className='home-group-trigger';
    button.setAttribute('aria-label',`باز کردن ${entry.title}`);
-   const symbol=document.createElement('span');symbol.className='home-group-symbol';symbol.setAttribute('aria-hidden','true');symbol.textContent=entry.icon;
+   const symbol=document.createElement('span');symbol.className='home-group-symbol';symbol.setAttribute('aria-hidden','true');
+   const groupIcon=window.BamcoIcons?.forGroup(key);if(groupIcon)symbol.innerHTML=groupIcon;else symbol.textContent=entry.icon;
    const label=document.createElement('span');label.className='home-group-label';label.textContent=entry.title;
    button.append(symbol,label);button.addEventListener('click',()=>openGroup(group));
    group.prepend(button);
