@@ -65,7 +65,7 @@ function create(view,{session,loadSticker}){
  }
  function showActions(article,actions){
   if(!Array.isArray(actions))return;
-  const permitted=actions.filter(action=>ROUTES.has(action.route)&&window.BamcoAccess?.can?.(action.route,'view')!==false);
+  const permitted=actions.filter(action=>ROUTES.has(action.route)&&window.BamcoAccess?.can?.(action.route,'view')===true);
   if(!permitted.length)return;
   const holder=document.createElement('div');holder.className='assistant-actions';
   for(const action of permitted){const button=document.createElement('button');button.type='button';button.className='ghost';button.textContent=action.label;button.onclick=()=>window.BamcoNavigation?.navigate?.(action.route);holder.append(button)}
@@ -126,8 +126,9 @@ function create(view,{session,loadSticker}){
    waiting.remove();const answer=String(data.text||'پاسخی دریافت نشد.');const article=append('assistant',answer);showActions(article,data.actions);
    history.push({role:'assistant',text:answer});history=history.slice(-8);busy=false;
    const gestureKind=/\d|[۰-۹]|فوری|اولویت/.test(answer)?'emphasis':/تأیید|تایید|انجام شد/.test(answer)?'acknowledge':'neutral';
+   avatar.set('success','پاسخ آماده است');
    if(!muted&&data.speech_token)void playSpeech(answer,data.issued,data.speech_token,turn,gestureKind);
-   else{gesture(gestureKind);avatar.set(active?'listening':'idle')}
+   else{gesture(gestureKind);setTimeout(()=>{if(turn===generation&&avatar.state==='success'&&valid())avatar.set(active?'listening':'idle')},700)}
   }catch(error){
    if(turn!==generation||error.name==='AbortError')return;
    waiting.classList.remove('pending','assistant');waiting.classList.add('error','assistant');$('p',waiting).textContent=error.message||'اطلاعات در دسترس نیست.';
