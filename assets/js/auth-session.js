@@ -58,4 +58,5 @@
   state.profile.must_change_password=false;return state.profile;
  }
  window.bamcoAuth={snapshot,isCurrent,accept,ensureFresh,clear,signOut,changePassword};
+ if(typeof document!=='undefined')document.dispatchEvent(new Event('bamco:auth-core-ready'));
 })();

@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const VERSION='20260922-login-core-readiness-1';
+const VERSION='20260926-login-core-readiness-2';
 if(window.__bamcoAuthUiInstalled===VERSION)return;
 window.__bamcoAuthUiInstalled=VERSION;
 
@@ -32,7 +32,7 @@ function buildLogin(){
   <label class="login-field" for="password"><span class="login-field-title bamco-fa">رمز عبور</span><span class="login-input-shell"><input id="password" class="english" type="password" autocomplete="current-password" required placeholder="••••••" dir="ltr"><span class="login-leading-icon">${LOCK_ICON}</span><button type="button" class="login-password-toggle" aria-label="نمایش رمز عبور" title="نمایش رمز عبور">${EYE_ICON}</button></span></label>
   <div class="login-field login-verification-field"><span class="login-field-title bamco-fa">تأیید عددی</span><div id="loginVerification" class="login-verification-box"><div id="loginVerifyDisplay" class="login-code-display" aria-label="کد تأیید"></div><input id="loginVerifyCode" type="hidden"><div class="verification-digits" role="group" aria-label="کد تأیید چهار رقمی" dir="ltr">${[0,1,2,3].map(i=>`<input class="verification-digit english" type="text" inputmode="numeric" autocomplete="off" maxlength="4" aria-label="رقم ${i+1} کد تأیید" required>`).join('')}</div><button type="button" id="refreshLoginVerify" class="login-refresh-code" title="ساخت کد جدید" aria-label="ساخت کد جدید">${REFRESH_ICON}</button></div><div id="loginVerifyError" class="login-code-error bamco-fa" aria-live="polite"></div></div>
   </div><button class="primary wide login-submit" type="submit">ورود به سامانه</button>
-  <div class="login-secondary-actions" aria-label="روش‌های دیگر ورود"><button class="department-back" type="button">بازگشت به انتخاب مدیریت</button><button class="login-otp" type="button" disabled aria-disabled="true" title="این روش ورود به‌زودی فعال می‌شود">ورود با رمز یکبارمصرف</button></div>
+  <div class="login-secondary-actions" aria-label="روش‌های دیگر ورود"><button class="department-back" type="button">بازگشت به انتخاب مدیریت</button><button class="login-otp" type="button" aria-disabled="true">ورود با رمز یکبارمصرف</button></div>
   <p id="loginError" class="form-error" aria-live="polite"></p>`;
   q('#email').value=email;q('#password').value=password;return form;
 }
@@ -56,9 +56,13 @@ function install(){
   // auth-ui intentionally owns only the visual preflight.  App.js owns the
   // actual authentication request and session transition.  The controls load
   // before the bundle, so never reach into its lexical bindings here.
-  const coreReady=()=>typeof window.bamcoAuth?.accept==='function'&&typeof window.loginEmail==='function'&&typeof window.enterApp==='function';
+  // The sign-in functions are deliberately lexical to app.js.  Their global
+  // presence was an invalid readiness check and made a healthy login kernel
+  // look unavailable after the UI had rendered.  bamcoAuth is the canonical
+  // public session contract and is published only when the bundled core is up.
+  const coreReady=()=>typeof window.bamcoAuth?.accept==='function';
   let coreTimer=null,delegatedBusy=false;
-  const setCoreMessage=(message,state)=>{error.textContent=message;error.dataset.bamcoCoreState=state};
+  const setCoreMessage=(message,phase)=>{error.textContent=message;error.dataset.bamcoCoreState=phase};
   const clearCoreMessage=()=>{if(error.dataset.bamcoCoreState){error.textContent='';delete error.dataset.bamcoCoreState}};
   const syncCoreReadiness=(final=false)=>{
     const ready=coreReady();form.dataset.bamcoCoreReady=ready?'1':'0';btn.disabled=!ready;
@@ -69,11 +73,15 @@ function install(){
   };
   const observer=typeof MutationObserver==='function'?new MutationObserver(()=>{if(!btn.disabled)delegatedBusy=false}):null;
   observer?.observe(btn,{attributes:true,attributeFilter:['disabled']});
+  document.addEventListener('bamco:auth-core-ready',()=>syncCoreReadiness(),{once:true});
   syncCoreReadiness();
   window.addEventListener('load',()=>syncCoreReadiness(true),{once:true});
   coreTimer=window.setTimeout(()=>syncCoreReadiness(true),15000);
   verify.addEventListener('input',()=>{normalize();verifyError.textContent=''});verify.addEventListener('paste',()=>setTimeout(normalize,0));
   refreshCode.addEventListener('click',()=>{renew();focusDigit()});
+  // OTP is intentionally a visual placeholder for the forthcoming flow.  It
+  // keeps the same normal button styling but never submits or changes the form.
+  form.querySelector('.login-otp')?.addEventListener('click',event=>{event.preventDefault();event.stopImmediatePropagation()});
   toggle.addEventListener('click',()=>{const showing=password.type==='text';password.type=showing?'password':'text';toggle.innerHTML=showing?EYE_ICON:EYE_OFF_ICON;toggle.title=showing?'نمایش رمز عبور':'مخفی کردن رمز عبور';toggle.setAttribute('aria-label',toggle.title);password.focus()});
   form.addEventListener('submit',event=>{
     if(delegatedBusy){event.preventDefault();event.stopImmediatePropagation();return}

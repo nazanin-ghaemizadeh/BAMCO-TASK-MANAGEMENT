@@ -36,7 +36,8 @@
     'pettyCash', 'invoices',
     'vehiclePermanent', 'vehicleTemporary', 'parts', 'tools',
     'groupChat', 'directMessages', 'taskChats',
-    'documents', 'sitesAccess', 'lettersIncoming', 'lettersOutgoing', 'userGuide'
+    'documents', 'sitesAccess', 'lettersIncoming', 'lettersOutgoing', 'userGuide',
+    'notes', 'voiceAssistant'
   ]);
 
   // A few legacy route names deliberately share a feature. Every visible
@@ -116,7 +117,6 @@
     bypass_approval: 'can_bypass_approval'
   });
   const SAFE_WHEN_UNAVAILABLE = new Set(['settings']);
-  const PERSONAL_FEATURES = new Set(['notes', 'voiceAssistant']);
   let grants = new Map();
   let loaded = false;
   let loading = null;
@@ -174,7 +174,6 @@
     if (!feature) return false;
     if (systemManager()) return true;
     if (!state().token) return false;
-    if (PERSONAL_FEATURES.has(feature)) return true;
     if (!loaded) return false;
     if (unavailable && SAFE_WHEN_UNAVAILABLE.has(feature) && action === 'view') return true;
     return grants.get(feature)?.[actionField(action)] === true;
