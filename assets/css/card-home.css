@@ -38,6 +38,7 @@ html body.content-only{height:100dvh!important;overflow:hidden!important}
 html body.content-only #appView.app{height:100dvh!important;min-height:0!important;padding:0!important}
 html body.content-only #appView .workspace>header{display:none!important}
 html body.content-only #appView.app .workspace,html body.content-only #appView.app:has(.sidebar.collapsed) .workspace{height:100dvh!important;width:100%!important;margin:0!important;padding:0!important;overflow:auto!important}
+html body.content-only #appView.app .workspace:has(#voiceAssistantView:not(.hidden)){overflow:hidden!important}
 html body.content-only #appView .workspace>:is(#kanbanView,#archiveView,.view.focus-table-view):not(.hidden){width:100%!important;min-height:100%!important;margin:0!important;padding:0!important}
 html body.content-only #appView .workspace>:is(#kanbanView,#archiveView,.view.focus-table-view):not(.hidden){height:100dvh!important;min-height:0!important;display:flex!important;flex-direction:column!important;overflow:hidden!important}
 html body.content-only #appView :is(#kanbanView,#archiveView,.focus-table-view)>.panel{flex:1!important;display:flex!important;flex-direction:column!important;min-height:0!important;height:100%!important;max-height:none!important}
