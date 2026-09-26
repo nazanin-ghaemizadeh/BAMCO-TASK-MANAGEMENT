@@ -31,3 +31,11 @@ test('personal workspace keeps one command row and defaults to active notes',()=
  assert.match(css,/assistant-wave-right/);
  assert.match(css,/assistant-blink/);
 });
+
+test('task discussion recipients and registered-task edits use the same server authorization boundary',()=>{
+ const migration=read('supabase/migrations/20260926113231_task_edit_and_chat_recipient_scope.sql');
+ const conversation=read('assets/js/conversations.js');
+ assert.match(migration,/status='ثبت شده'/);
+ assert.match(migration,/organization_actor_can_access_task_chat\(profile\.id,p_task_id,'view'\)/);
+ assert.match(conversation,/chat_task_recipient_ids/);
+});
