@@ -39,6 +39,7 @@ async def main():
                 await login(page)
 
                 # Performance report: home -> real report nav click.
+                await page.evaluate("window.bamcoHomeLayout.set('cards')")
                 await page.locator('#nav [data-view="performanceReport"]').click(force=True)
                 await expect(page.locator('#performanceReportView')).to_be_visible()
                 await expect(page.locator('#performanceReportView .canonical-report')).to_have_count(1)

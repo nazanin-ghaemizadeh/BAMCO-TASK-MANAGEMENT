@@ -54,6 +54,134 @@ function install(){
   }finally{groupObserver.observe(nav,{childList:true,subtree:true,attributes:true,attributeFilter:['class']})}
  }
  syncGroups();
+ // The home uses the existing navigation buttons as its only route source.
+ // The launcher renders temporary proxies, never a second route or access list.
+ const layoutModes=new Set(['launcher','cards','custom']);
+ const defaultOrder=groups.map(([key])=>key);
+ let loadedFor='',layout={mode:'launcher',order:[...defaultOrder]},draggedKey='';
+ const layoutKey=user=>`bamco.home.layout.v1.${user}`;
+ const currentUser=()=>typeof state!=='undefined'?String(state.user?.id||''):'';
+ function normalizeLayout(value){
+  const mode=layoutModes.has(value?.mode)?value.mode:'launcher';
+  const order=[...new Set(Array.isArray(value?.order)?value.order.filter(key=>defaultOrder.includes(key)):[])];
+  return{mode,order:[...order,...defaultOrder.filter(key=>!order.includes(key))]};
+ }
+ function readLayout(){
+  const user=currentUser();if(user===loadedFor)return layout;
+  loadedFor=user;layout=normalizeLayout(null);
+  if(user)try{layout=normalizeLayout(JSON.parse(localStorage.getItem(layoutKey(user))||'null'))}catch{}
+  return layout;
+ }
+ function saveLayout(next){
+  const user=currentUser();if(!user)return;
+  layout=normalizeLayout(next);loadedFor=user;
+  try{localStorage.setItem(layoutKey(user),JSON.stringify(layout))}catch{}
+  renderLayout();
+ }
+ const groupDialog=document.createElement('dialog');
+ groupDialog.className='home-launcher-dialog';
+ groupDialog.setAttribute('aria-labelledby','homeLauncherTitle');
+ groupDialog.innerHTML='<div class="home-launcher-head"><div><span class="home-launcher-symbol" aria-hidden="true"></span><h2 id="homeLauncherTitle"></h2></div><button type="button" class="home-launcher-close" aria-label="بستن پنجره">×</button></div><div class="home-launcher-routes"></div>';
+ document.body.append(groupDialog);
+ let openGroupKey='',lastTrigger=null;
+ const available=button=>button&&button.hidden!==true&&!button.classList.contains('hidden')&&!button.disabled;
+ function fillGroup(group){
+  const key=group?.dataset.group,entry=catalog?.byKey?.[key];
+  if(!entry)return false;
+  const original=[...group.querySelectorAll('.nav-group-items>button[data-view]')].filter(available);
+  if(!original.length)return false;
+  groupDialog.querySelector('#homeLauncherTitle').textContent=entry.title;
+  groupDialog.querySelector('.home-launcher-symbol').textContent=entry.icon;
+  const routes=groupDialog.querySelector('.home-launcher-routes');routes.replaceChildren();
+  for(const source of original){
+   const shortcut=document.createElement('button');shortcut.type='button';shortcut.className='home-launcher-route';shortcut.dataset.route=source.dataset.view;
+   const icon=document.createElement('span');icon.className='home-launcher-route-icon';icon.setAttribute('aria-hidden','true');
+   const sourceIcon=source.querySelector('b');if(sourceIcon)icon.append(sourceIcon.cloneNode(true));
+   const name=document.createElement('span');name.textContent=source.querySelector('span')?.textContent?.trim()||source.textContent.trim();
+   shortcut.append(icon,name);shortcut.addEventListener('click',()=>{
+    if(!available(source)||!group.isConnected)return fillGroup(group);
+    groupDialog.close();source.click();
+   });routes.append(shortcut);
+  }
+  return true;
+ }
+ function openGroup(group){
+  if(!group||group.classList.contains('hidden')||!fillGroup(group))return;
+  openGroupKey=group.dataset.group;lastTrigger=group.querySelector('.home-group-trigger');
+  groupDialog.showModal();groupDialog.querySelector('.home-launcher-route')?.focus();
+ }
+ groupDialog.querySelector('.home-launcher-close').addEventListener('click',()=>groupDialog.close());
+ groupDialog.addEventListener('click',event=>{if(event.target===groupDialog)groupDialog.close()});
+ groupDialog.addEventListener('close',()=>{
+  openGroupKey='';if(!home.classList.contains('hidden')&&!app.classList.contains('hidden'))lastTrigger?.focus({preventScroll:true});
+ });
+ function ensureTriggers(){
+  for(const [key] of groups){
+   const group=nav.querySelector(`.nav-group[data-group="${key}"]`);
+   if(!group||group.querySelector('.home-group-trigger'))continue;
+   const entry=catalog?.byKey?.[key];if(!entry)continue;
+   const button=document.createElement('button');button.type='button';button.className='home-group-trigger';
+   button.setAttribute('aria-label',`باز کردن ${entry.title}`);
+   const symbol=document.createElement('span');symbol.className='home-group-symbol';symbol.setAttribute('aria-hidden','true');symbol.textContent=entry.icon;
+   const label=document.createElement('span');label.className='home-group-label';label.textContent=entry.title;
+   button.append(symbol,label);button.addEventListener('click',()=>openGroup(group));
+   group.prepend(button);
+  }
+ }
+ function visibleGroupKeys(){return layout.order.filter(key=>{const group=nav.querySelector(`.nav-group[data-group="${key}"]`);return group&&!group.classList.contains('hidden')})}
+ function renderSettings(){
+  const settings=q('#homeLayoutSettings');if(!settings)return;
+  settings.querySelectorAll('input[name="homeLayoutMode"]').forEach(input=>input.checked=input.value===layout.mode);
+  const list=settings.querySelector('#homeLayoutOrder'),keys=visibleGroupKeys();list.replaceChildren();
+  keys.forEach((key,index)=>{
+   const row=document.createElement('li'),label=document.createElement('span');label.textContent=catalog.byKey[key].title;
+   row.append(label);
+   for(const [direction,caption,disabled] of [[-1,'بالاتر',index===0],[1,'پایین‌تر',index===keys.length-1]]){
+    const control=document.createElement('button');control.type='button';control.className='ghost';control.dataset.homeMove=String(direction);control.dataset.group=key;
+    control.textContent=caption;control.disabled=disabled;control.setAttribute('aria-label',`${caption}: ${catalog.byKey[key].title}`);row.append(control);
+   }list.append(row);
+  });
+  settings.querySelector('.home-layout-order-panel').hidden=layout.mode!=='custom';
+ }
+ function renderLayout(){
+  readLayout();ensureTriggers();home.dataset.layout=layout.mode;
+  for(const group of nav.querySelectorAll('.nav-group')){
+   group.style.order=layout.mode==='custom'?String(layout.order.indexOf(group.dataset.group)):'';
+   const trigger=group.querySelector('.home-group-trigger');if(trigger)trigger.draggable=layout.mode==='custom';
+  }
+  if(groupDialog.open){const group=nav.querySelector(`.nav-group[data-group="${openGroupKey}"]`);if(!group||group.classList.contains('hidden')||!fillGroup(group))groupDialog.close()}
+  renderSettings();
+ }
+ function moveGroup(key,target){
+  if(!layout.order.includes(key)||!layout.order.includes(target)||key===target)return;
+  const order=[...layout.order],from=order.indexOf(key),to=order.indexOf(target);
+  [order[from],order[to]]=[order[to],order[from]];saveLayout({...layout,mode:'custom',order});
+ }
+ const settings=q('#settingsView');
+ settings?.addEventListener('change',event=>{
+  const input=event.target.closest('input[name="homeLayoutMode"]');if(input&&layoutModes.has(input.value))saveLayout({...layout,mode:input.value});
+ });
+ settings?.addEventListener('click',event=>{
+  const button=event.target.closest('[data-home-move]');if(!button)return;
+  const keys=visibleGroupKeys(),index=keys.indexOf(button.dataset.group),target=keys[index+Number(button.dataset.homeMove)];
+  if(target)moveGroup(button.dataset.group,target);
+ });
+ nav.addEventListener('dragstart',event=>{
+  const trigger=event.target.closest('.home-group-trigger'),group=trigger?.closest('.nav-group');
+  if(layout.mode!=='custom'||!group||group.classList.contains('hidden'))return event.preventDefault();
+  draggedKey=group.dataset.group;event.dataTransfer?.setData('text/plain',draggedKey);
+  if(event.dataTransfer)event.dataTransfer.effectAllowed='move';
+ });
+ nav.addEventListener('dragover',event=>{if(layout.mode==='custom'&&draggedKey&&event.target.closest('.nav-group'))event.preventDefault()});
+ nav.addEventListener('drop',event=>{
+  const target=event.target.closest('.nav-group')?.dataset.group;
+  if(layout.mode==='custom'&&draggedKey&&target){event.preventDefault();moveGroup(draggedKey,target)}draggedKey='';
+ });
+ nav.addEventListener('dragend',()=>draggedKey='');
+ window.addEventListener('storage',event=>{if(event.key===layoutKey(currentUser())){loadedFor='';renderLayout()}});
+ window.addEventListener('bamco:feature-access-changed',renderLayout);
+ window.bamcoHomeLayout=Object.freeze({get:()=>({...readLayout(),order:[...layout.order]}),set:mode=>{if(layoutModes.has(mode))saveLayout({...readLayout(),mode})},refresh:renderLayout});
+ renderLayout();
  window.addEventListener('bamco:feature-access-changed',()=>{syncGroups();window.BamcoAccess?.applyNavigation?.()});
  const dialog=document.createElement('dialog');dialog.className='home-welcome-dialog';dialog.setAttribute('aria-labelledby','homeWelcomeTitle');dialog.innerHTML='<button class="welcome-dismiss" type="button" aria-label="بستن خوشامدگویی" autofocus><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button><div class="home-welcome-copy"><p class="welcome-person"></p><h2 id="homeWelcomeTitle">به سامانه مدیریت، پایش و پیگیری امور خوش آمدید</h2></div><img class="home-sticker female" alt="استیکر زن در وضعیت مطلوب"><img class="home-sticker male" alt="استیکر مرد در وضعیت مطلوب">';document.body.append(dialog);
  let welcomeStickerPromise=null,welcomeStickerGeneration=0,welcomeStickerReadyUser=null;
@@ -100,7 +228,7 @@ function install(){
   homeLayoutReady=true;document.body.classList.add('home-layout-ready');
  }
  function leaveHome(){
-  homeExpected=false;homeEpoch++;document.body.classList.remove('home-access-settled');
+  homeExpected=false;homeEpoch++;document.body.classList.remove('home-access-settled');if(groupDialog.open)groupDialog.close();
   if(repairFrame){cancelAnimationFrame(repairFrame);repairFrame=0}
   if(homeSettleFrame){cancelAnimationFrame(homeSettleFrame);homeSettleFrame=0}
  }
@@ -127,7 +255,7 @@ function install(){
   if(sync)syncGroups();
   if(reset)resetHomeScroll();
  }
- function showHome(){repairHome({reset:true,sync:true});void prepareHomeLayout()}
+ function showHome(){repairHome({reset:true,sync:true});renderLayout();void prepareHomeLayout()}
 function homeBroken(){
   if(!homeExpected||dialog.open||app.classList.contains('hidden'))return false;
   // A delayed observer from the home screen must never reclaim the workspace
@@ -173,7 +301,7 @@ function homeBroken(){
  });
  dialog.addEventListener('cancel',()=>{if(homeExpected)requestAnimationFrame(settleHome)});
  top.querySelector('.home-return').addEventListener('click',()=>{settleHome();home.focus({preventScroll:true})});
- new MutationObserver(()=>{if(app.classList.contains('hidden')){leaveHome();homeLayoutReady=false;homeReadyGeneration++;welcomed=false;welcomeStickerGeneration++;welcomeStickerPromise=null;welcomeStickerReadyUser=null;dialog.querySelectorAll('.home-sticker').forEach(img=>{img.removeAttribute('src');img.style.visibility='hidden'});if(dialog.open)dialog.close();document.body.classList.remove('card-home-active','content-only','home-welcome-open','home-layout-ready')}else if(homeExpected&&!dialog.open)scheduleHomeRepair()}).observe(app,{attributes:true,attributeFilter:['class']});
+ new MutationObserver(()=>{if(app.classList.contains('hidden')){leaveHome();loadedFor='';homeLayoutReady=false;homeReadyGeneration++;welcomed=false;welcomeStickerGeneration++;welcomeStickerPromise=null;welcomeStickerReadyUser=null;dialog.querySelectorAll('.home-sticker').forEach(img=>{img.removeAttribute('src');img.style.visibility='hidden'});if(dialog.open)dialog.close();document.body.classList.remove('card-home-active','content-only','home-welcome-open','home-layout-ready')}else if(homeExpected&&!dialog.open)scheduleHomeRepair()}).observe(app,{attributes:true,attributeFilter:['class']});
  addEventListener('pageshow',()=>{if(homeExpected&&!dialog.open&&!app.classList.contains('hidden'))settleHome()});
  if(!app.classList.contains('hidden'))window.bamcoOpenHomeWelcome();
 }

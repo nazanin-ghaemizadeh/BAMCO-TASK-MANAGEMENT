@@ -94,3 +94,101 @@ html body.card-home-active #homeView,html body.card-home-active #homeView #nav,h
 /* Catalog order is canonical. Hidden routes leave no blank row and every group
    keeps one stable card position during permission resolution. */
 html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view]{grid-column:auto!important;grid-row:auto!important}
+
+/* The same authorized navigation supports three home presentations. */
+html body.card-navigation #appView #homeView #nav .home-group-trigger{display:none!important}
+html body.card-navigation #appView #homeView[data-layout="launcher"] #nav,
+html body.card-navigation #appView #homeView[data-layout="custom"] #nav{
+  grid-template-columns:repeat(5,minmax(0,1fr))!important;
+  grid-template-rows:repeat(2,minmax(0,1fr))!important;
+  gap:clamp(10px,2vw,28px)!important;
+  padding:clamp(8px,2vh,24px) clamp(12px,3vw,48px)!important;
+  align-items:center!important;
+  overflow:auto!important;
+  box-sizing:border-box!important;
+}
+html body.card-navigation #appView #homeView[data-layout="launcher"] #nav>.nav-group,
+html body.card-navigation #appView #homeView[data-layout="custom"] #nav>.nav-group{
+  display:grid!important;place-items:center!important;align-content:center!important;gap:8px!important;
+  padding:8px!important;border:0!important;background:transparent!important;box-shadow:none!important;
+}
+html body.card-navigation #appView #homeView[data-layout="launcher"] #nav>.nav-group.hidden,
+html body.card-navigation #appView #homeView[data-layout="custom"] #nav>.nav-group.hidden{display:none!important;visibility:hidden!important}
+html body.card-navigation #appView #homeView[data-layout="launcher"] #nav .nav-group-toggle,
+html body.card-navigation #appView #homeView[data-layout="custom"] #nav .nav-group-toggle,
+html body.card-navigation #appView #homeView[data-layout="launcher"] #nav .nav-group-items,
+html body.card-navigation #appView #homeView[data-layout="custom"] #nav .nav-group-items{display:none!important}
+html body.card-navigation #appView #homeView[data-layout="launcher"] #nav .home-group-trigger,
+html body.card-navigation #appView #homeView[data-layout="custom"] #nav .home-group-trigger{
+  display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;
+  gap:11px!important;width:100%!important;height:100%!important;min-height:120px!important;
+  padding:8px!important;border:0!important;border-radius:22px!important;background:transparent!important;
+  color:#195039!important;font:700 20px/1.4 var(--fa-font,'B Nazanin','B Zar',serif)!important;
+  cursor:pointer!important;transition:background .2s,transform .2s!important;
+}
+html body.card-navigation #appView #homeView #nav .home-group-trigger:hover{background:#e5f0e9!important;transform:translateY(-3px)!important}
+html body.card-navigation #appView #homeView #nav .home-group-trigger:focus-visible{outline:3px solid #1f8059!important;outline-offset:2px!important}
+html body.card-navigation #appView #homeView #nav .home-group-symbol{
+  display:grid;place-items:center;width:clamp(76px,8vw,104px);height:clamp(76px,8vw,104px);
+  border:2px solid #d4e8db;border-radius:50%;background:linear-gradient(145deg,#fff,#e4f1e9);
+  color:#126c4b;font:700 clamp(36px,4vw,50px)/1 var(--fa-font,'B Nazanin',serif);
+  box-shadow:0 10px 26px #0b51331b, inset 0 2px 0 #fff;
+}
+html body.card-navigation #appView #homeView #nav .home-group-label{display:block;text-align:center;white-space:normal}
+html body.card-navigation #appView #homeView[data-layout="custom"] #nav .home-group-trigger{cursor:grab!important}
+html body.card-navigation #appView #homeView[data-layout="custom"] #nav .home-group-trigger:active{cursor:grabbing!important}
+
+.home-launcher-dialog{
+  position:fixed;inset:0;margin:auto;width:min(820px,calc(100vw - 32px));max-height:min(78dvh,760px);
+  padding:24px;border:1px solid #c2dacb;border-radius:26px;background:#f8fcf9;color:#164d36;
+  box-shadow:0 28px 90px #062e1c55;font-family:var(--fa-font,'B Nazanin','B Zar',serif);
+  overflow:auto;animation:home-dialog-in .22s ease-out both;
+}
+.home-launcher-dialog::backdrop{background:#0b2f226b;backdrop-filter:blur(9px)}
+@keyframes home-dialog-in{from{opacity:0;transform:translateY(16px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+.home-launcher-head{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-bottom:16px;border-bottom:1px solid #d9e9de}
+.home-launcher-head>div{display:flex;align-items:center;gap:12px}
+.home-launcher-head h2{margin:0;font-size:26px}
+.home-launcher-symbol{display:grid;place-items:center;width:50px;height:50px;border-radius:50%;background:#e0efe5;color:#126c4b;font-size:28px}
+.home-launcher-close{display:grid;place-items:center;flex:none;width:42px;height:42px;border:0;border-radius:50%;background:#e6f0ea;color:#194e38;font-size:32px;line-height:1;cursor:pointer}
+.home-launcher-routes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding-top:20px}
+.home-launcher-route{display:flex;align-items:center;gap:12px;min-height:72px;padding:12px;border:1px solid #d5e6dc;border-radius:16px;background:#fff;color:#255a41;text-align:right;font:700 18px/1.5 var(--fa-font,'B Nazanin',serif);cursor:pointer;transition:background .15s,transform .15s}
+.home-launcher-route:hover{background:#e9f4ed;transform:translateY(-2px)}
+.home-launcher-route-icon{display:grid;place-items:center;flex:none;width:42px;height:42px;border-radius:12px;background:#e6f2ea;color:#287050;font-size:24px}
+.home-launcher-route-icon svg{width:24px;height:24px;fill:none;stroke:currentColor}
+.home-launcher-dialog :is(button:focus-visible){outline:3px solid #1f8059;outline-offset:2px}
+
+.home-layout-settings{margin:22px 0;padding:20px;border:1px solid #d4e6dc;border-radius:18px;background:#f8fcf9}
+.home-layout-settings-head h4{margin:0 0 4px;font-size:22px;color:#194e38}
+.home-layout-settings-head p,.home-layout-order-panel p{margin:0 0 14px;color:#52705e}
+.home-layout-choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.home-layout-choices label{display:flex;align-items:flex-start;gap:10px;padding:14px;border:1px solid #d5e4da;border-radius:14px;background:white;cursor:pointer}
+.home-layout-choices label:has(input:checked){border-color:#25835b;background:#e9f5ed;box-shadow:0 0 0 1px #25835b}
+.home-layout-choices input{flex:none;width:18px;height:18px;margin:4px 0 0;accent-color:#16704b}
+.home-layout-choices b,.home-layout-choices small{display:block}.home-layout-choices small{line-height:1.6;color:#5f7667}
+.home-layout-order-panel{margin-top:18px}.home-layout-order-panel[hidden]{display:none!important}
+.home-layout-order-panel ol{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:0;padding:0;list-style:none}
+.home-layout-order-panel li{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid #dbe8df;border-radius:12px;background:#fff}
+.home-layout-order-panel li span{flex:1;min-width:0}.home-layout-order-panel li button{padding:5px 8px}
+.home-layout-storage-note{display:block;margin-top:12px;color:#668072}
+@media(max-width:1200px){
+ html body.card-navigation #appView #homeView[data-layout="launcher"] #nav,
+ html body.card-navigation #appView #homeView[data-layout="custom"] #nav{grid-template-columns:repeat(4,minmax(0,1fr))!important;grid-template-rows:none!important;grid-auto-rows:160px!important;height:auto!important}
+}
+@media(max-width:820px){
+ html body.card-navigation #appView #homeView[data-layout="launcher"] #nav,
+ html body.card-navigation #appView #homeView[data-layout="custom"] #nav{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+ .home-launcher-routes{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .home-layout-choices{grid-template-columns:1fr}
+}
+@media(max-width:620px){
+ html body.card-navigation #appView #homeView[data-layout="launcher"] #nav,
+ html body.card-navigation #appView #homeView[data-layout="custom"] #nav{grid-template-columns:repeat(2,minmax(0,1fr))!important;grid-auto-rows:148px!important}
+ html body.card-navigation #appView #homeView #nav .home-group-symbol{width:78px;height:78px}
+ .home-launcher-dialog{padding:16px;max-height:calc(100dvh - 32px)}
+ .home-launcher-routes{grid-template-columns:1fr}
+ .home-layout-order-panel ol{grid-template-columns:1fr}
+}
+@media(prefers-reduced-motion:reduce){
+ .home-launcher-dialog{animation:none}.home-launcher-route,html body.card-navigation #appView #homeView #nav .home-group-trigger{transition:none!important}
+}
