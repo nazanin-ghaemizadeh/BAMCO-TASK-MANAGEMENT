@@ -1,5 +1,7 @@
 const test=require('node:test');
 const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
 const {fixture,until}=require('./helpers/app-fixture.cjs');
 
 test('home launcher opens only visible routes and keeps account-specific layout choices',async()=>{
@@ -44,6 +46,8 @@ test('home launcher opens only visible routes and keeps account-specific layout 
 });
 
 test('every home category and subroute has its own centered vector icon',async()=>{
+ const bundle=fs.readFileSync(path.join(__dirname,'../assets/js/bamco.bundle.js'),'utf8');
+ assert(bundle.indexOf('/* source: assets/js/visual-system.js */')<bundle.indexOf('/* source: assets/js/card-home.js */'),'production icons must load before the home launcher installs');
  const f=await fixture();
  try{
   const {d,w}=f,icons=w.BamcoIcons,seen=new Map();
