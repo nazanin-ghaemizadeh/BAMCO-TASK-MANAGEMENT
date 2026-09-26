@@ -1,6 +1,7 @@
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
+const vm=require('node:vm');
 const {JSDOM}=require('jsdom');
 const metrics=require('../assets/js/dashboard-metrics.js');
 const {fixture,until}=require('./helpers/app-fixture.cjs');
@@ -49,10 +50,19 @@ test('microphone records, transcribes and sends speech through the authenticated
  assert.equal(button.getAttribute('aria-pressed'),'false');assert.deepEqual(f.errors,[]);
 });
 
-test('email login is sent unchanged to Auth, bare login gets the internal suffix',async t=>{
+test('email login accepts both current and legacy internal Auth identities',async t=>{
  const f=await fixture();t.after(()=>f.dispose());
  assert.equal(f.w.loginEmail('Ahmadi@armanmotora rg.com'.replace(' ','')),'ahmadi@armanmotorarg.com');
  assert.equal(f.w.loginEmail('ahmadi'),'ahmadi@no-email.invalid');
+ assert.deepEqual(Array.from(f.w.loginIdentityCandidates('ahmadi@armanmotorarg.com')),['ahmadi@armanmotorarg.com','ahmadi@no-email.invalid']);
+ assert.deepEqual(Array.from(f.w.loginIdentityCandidates('ahmadi')),['ahmadi@no-email.invalid']);
+});
+
+test('legacy email identity is retried only after an invalid-credential response',async()=>{
+ const source=fs.readFileSync('assets/js/app.js','utf8'),start=source.indexOf('function loginEmail('),end=source.indexOf('function apiErrorMessage(',start),calls=[];
+ const context={api:async(_path,{body})=>{calls.push(body.email);if(calls.length===1){const error=new Error('invalid');error.code='invalid_credentials';throw error}return {access_token:'ok'}}};vm.createContext(context);vm.runInContext(source.slice(start,end),context);
+ const result=await context.signInWithLogin('ahmadi@armanmotorarg.com','secret');
+ assert.equal(result.access_token,'ok');assert.deepEqual(calls,['ahmadi@armanmotorarg.com','ahmadi@no-email.invalid']);
 });
 
 test('product engineering entry opens the sign-in form in one click',async t=>{

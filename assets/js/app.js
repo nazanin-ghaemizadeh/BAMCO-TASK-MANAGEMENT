@@ -28,6 +28,29 @@ function loginEmail(value){
   else if(login.includes('@'))return login;
   return login+'@no-email.invalid';
 }
+// Accounts created before email usernames were supported still have the
+// stable internal Auth identity (<local-part>@no-email.invalid).  Let them
+// continue to sign in with the email now shown in the people directory, but
+// try that legacy identity only after the supplied email is rejected.
+function loginIdentityCandidates(value){
+  const entered=String(value||'').trim().toLowerCase();
+  const primary=loginEmail(entered),at=entered.indexOf('@');
+  const legacy=at>0&&!entered.endsWith('@no-email.invalid')?entered.slice(0,at)+'@no-email.invalid':null;
+  return [...new Set([primary,legacy].filter(Boolean))];
+}
+async function signInWithLogin(value,password){
+  const candidates=loginIdentityCandidates(value);let lastError;
+  for(let index=0;index<candidates.length;index++){
+    try{return await api('/auth/v1/token?grant_type=password',{method:'POST',auth:false,body:{email:candidates[index],password}})}
+    catch(error){
+      lastError=error;
+      // Never mask a service, rate-limit or validation error with a second
+      // request. The fallback is solely for a legacy identity mismatch.
+      if(error?.code!=='invalid_credentials'||index===candidates.length-1)throw error;
+    }
+  }
+  throw lastError;
+}
 
 function apiErrorMessage(data,status){
   const code=data?.code||data?.error_code;
@@ -340,7 +363,7 @@ function showLogin(){
 }
 
 $('#loginForm').addEventListener('submit',async e=>{e.preventDefault();$('#loginError').textContent='';const submit=e.currentTarget.querySelector('button[type="submit"]');submit.disabled=true;
-  try{const data=await api('/auth/v1/token?grant_type=password',{method:'POST',auth:false,body:{email:loginEmail($('#email').value),password:$('#password').value}});window.bamcoAuth.accept(data);await enterApp()}
+  try{const data=await signInWithLogin($('#email').value,$('#password').value);window.bamcoAuth.accept(data);await enterApp()}
   catch(err){showLogin();$('#loginError').textContent=err.message}
   finally{submit.disabled=false}
 });
