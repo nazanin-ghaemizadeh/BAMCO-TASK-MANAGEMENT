@@ -24,7 +24,7 @@ test('project activity requests and direct subordinate tasks form one canonical 
  assert.equal(metrics.definitionCountForSelection({ownerId:null,tasks,requests,baseline,from:'2026-09-01',to:'2026-09-30',taskSources:['web','project']}),5);
 });
 
-test('dashboard and performance report include pending project requests and direct assignments without double counting',async t=>{
+test('dashboard counts submitted requests while performance includes direct project assignments',async t=>{
  const now=new Date(),month=new Intl.DateTimeFormat('fa-IR-u-nu-latn',{year:'numeric',month:'numeric',timeZone:'Asia/Tehran'}).formatToParts(now),y=Number(month.find(part=>part.type==='year').value),m=Number(month.find(part=>part.type==='month').value);
  const f=await fixture({tables:{tasks:[],change_requests:[],app_settings:[]}}),{w,d}=f;t.after(()=>f.dispose());
  const from=w.jalaliToISO(y,m,1),createdAt=from+'T09:00:00Z';
@@ -38,8 +38,8 @@ test('dashboard and performance report include pending project requests and dire
   {id:30,title:'فعالیت تأییدشده',owner_id:'test-manager',created_by:'test-manager',created_at:createdAt,source:'project',status:'در حال انجام',priority:'متوسط',archived:false,due_date:from},
   {id:31,title:'فعالیت مستقیم زیردست',owner_id:'test-owner',created_by:'test-manager',created_at:createdAt,source:'project',status:'در حال انجام',priority:'متوسط',archived:false,due_date:from}
  );
- await w.eval('refresh()');await f.open('dashboard');await until(()=>d.querySelector('#dashboardCards article[data-key="create_requests"] strong')?.textContent.trim()==='۴');
- assert.equal(d.querySelector('#dashboardCards article[data-key="create_requests"] strong').textContent.trim(),'۴');
+ await w.eval('refresh()');await f.open('dashboard');await until(()=>d.querySelector('#dashboardCards article[data-key="create_requests"] strong')?.textContent.trim()==='۳');
+ assert.equal(d.querySelector('#dashboardCards article[data-key="create_requests"] strong').textContent.trim(),'۳');
  await f.open('performanceReport');await until(()=>[...d.querySelectorAll('#performanceReportView tbody tr[data-workspace-index]')].some(row=>row.cells[0].textContent.includes('مدیر')));
  const row=[...d.querySelectorAll('#performanceReportView tbody tr[data-workspace-index]')].find(item=>item.cells[0].textContent.includes('مدیر'));
  assert.equal(row.querySelector('[data-definition-metric="for-self"]').textContent.trim(),'۲');

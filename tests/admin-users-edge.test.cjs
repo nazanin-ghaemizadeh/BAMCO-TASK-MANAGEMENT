@@ -73,12 +73,25 @@ test('owners can only change their own username and cannot change another user o
  const forbidden=service({role:'owner'}),r2=await forbidden.save({action:'save_credentials',login_name:'other.login'});assert.equal(r2.status,403);
 });
 
-test('a legacy corporate Auth email is never accepted as an unchanged login identity',async()=>{
+test('an existing email login stays valid and can be replaced with a bare username',async()=>{
  const f=service({role:'owner'}),legacy=await f.save({action:'save_own_login',login_name:'manager@example.test'});
- assert.equal(legacy.status,400);assert(!f.calls.some(c=>c.url.pathname==='/auth/v1/admin/users/manager-id'&&c.method==='PUT'));
+ assert.equal(legacy.status,200);assert(!f.calls.some(c=>c.url.pathname==='/auth/v1/admin/users/manager-id'&&c.method==='PUT'));
  const repaired=await f.save({action:'save_own_login',login_name:'manager.login'});assert.equal(repaired.status,200,JSON.stringify(repaired.body));
  const update=f.calls.find(c=>c.url.pathname==='/auth/v1/admin/users/manager-id'&&c.method==='PUT');
  assert.deepEqual(update.body,{email:'manager.login@no-email.invalid',email_confirm:true});
+});
+
+test('a new user can sign in with their corporate email and receives a temporary password',async()=>{
+ const f=service(),r=await f.save({user_id:null,email:'person@bamco.ir'});assert.equal(r.status,200,JSON.stringify(r.body));
+ const create=f.calls.find(c=>c.url.pathname==='/auth/v1/admin/users'&&c.method==='POST');
+ assert.equal(create.body.email,'person@bamco.ir');assert.equal(r.body.login_name,'person@bamco.ir');
+ assert.equal(f.stored.must_change_password,true);assert(r.body.temporary_password?.length>=12);
+});
+
+test('a manager can change a login to a full email without appending the internal domain',async()=>{
+ const f=service(),r=await f.save({action:'save_credentials',login_name:'new.person@bamco.ir'});assert.equal(r.status,200,JSON.stringify(r.body));
+ const update=f.calls.find(c=>c.url.pathname==='/auth/v1/admin/users/person-id'&&c.method==='PUT');
+ assert.equal(update.body.email,'new.person@bamco.ir');
 });
 
 test('new accounts use the same manager profile-write context',async()=>{
@@ -121,6 +134,12 @@ test('no-email users retain internal delivery and removing an email preserves th
 test('an empty profile update or database rejection cannot report successful saving',async()=>{
  for(const options of [{emptyWrite:true},{patchError:true}]){const f=service(options),r=await f.save();assert(r.status>=400);assert(!r.body.ok);assert(r.body.error);}
  const f=service({patchError:true}),r=await f.save();assert.match(r.body.error,/ایمیل تکراری/);
+});
+
+test('failed profile completion removes the newly created Auth account',async()=>{
+ const f=service({patchError:true}),r=await f.save({user_id:null,email:'new@bamco.ir'});
+ assert(r.status>=400);assert(!r.body.ok);
+ assert(f.calls.some(call=>call.url.pathname==='/auth/v1/admin/users/person-id'&&call.method==='DELETE'));
 });
 
 test('unauthenticated, inactive and nonmanager callers cannot reach privileged account writes',async()=>{

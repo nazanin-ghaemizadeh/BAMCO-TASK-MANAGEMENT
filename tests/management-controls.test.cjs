@@ -24,12 +24,12 @@ test('people credential action edits an emailed user and the Excel export contai
  view.querySelector('[data-person-credentials="test-owner"]').click();await until(()=>d.querySelector('#initialCredentials')?.open);
  const form=d.querySelector('#initialCredentials form');assert.equal(form.elements.login_name.value,'owner@example.test');assert.equal(form.elements.temporary_password.value,'');
  form.elements.login_name.value='owner.updated';form.elements.temporary_password.value='Fixture-temporary9!';form.requestSubmit();
- await until(()=>f.profiles.find(person=>person.id==='test-owner').login_name==='owner.updated');assert(view.textContent.includes('owner@example.test'));assert(!view.textContent.includes('owner.updated'));assert(view.textContent.includes('رمز موقت؛ نیازمند تغییر'));assert(!view.textContent.includes('Fixture-temporary9!'));
+ await until(()=>f.profiles.find(person=>person.id==='test-owner').login_name==='owner.updated');assert(view.textContent.includes('owner@example.test'));assert(view.textContent.includes('owner.updated'));assert(view.textContent.includes('رمز موقت؛ نیازمند تغییر'));assert(!view.textContent.includes('Fixture-temporary9!'));
  form.querySelector('[type=button]').click();assert.equal(d.querySelector('#initialCredentials').childElementCount,0);
  w.bamcoSelection.clear('#peopleBody');view.querySelector('[data-management-export]').click();await until(()=>f.downloads.length);
  const bytes=await f.downloads[0].blob.arrayBuffer(),book=w.XLSX.read(new Uint8Array(bytes),{type:'array'}),rows=w.XLSX.utils.sheet_to_json(book.Sheets[book.SheetNames[0]],{header:1,defval:''}),headers=Array.from(view.querySelectorAll('thead tr:first-child th'),x=>x.textContent.trim()),exported=rows.find(row=>row[0]==='متولی آزمایشی');
  assert.deepEqual(Array.from(rows[0]),headers,'Excel headers must exactly match the visible table order');
- assert.deepEqual(Array.from(exported),['متولی آزمایشی','بدون تصویر','بدون نقش سازمانی','بدون جایگاه','کاربر سامانه','—','—','—','owner@example.test','owner@example.test','رمز موقت؛ نیازمند تغییر','—','بله'],'Excel row must use the same central people columns as the UI');
+ assert.deepEqual(Array.from(exported),['متولی آزمایشی','بدون تصویر','بدون نقش سازمانی','بدون جایگاه','کاربر سامانه','—','—','—','owner@example.test','owner.updated','رمز موقت؛ نیازمند تغییر','—','بله'],'Excel row must use the same central people columns as the UI');
  assert(!rows.flat().includes('Fixture-temporary9!'));
  w.bamcoSelection.set('#peopleBody',['test-owner']);view.querySelector('[data-management-export]').click();await until(()=>f.downloads.length===2);
  const selectedBook=w.XLSX.read(new Uint8Array(await f.downloads[1].blob.arrayBuffer()),{type:'array'}),selectedRows=w.XLSX.utils.sheet_to_json(selectedBook.Sheets[selectedBook.SheetNames[0]],{header:1,defval:''});

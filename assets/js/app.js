@@ -16,18 +16,16 @@ const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const fa=n=>String(n??'').replace(/\d/g,d=>'۰۱۲۳۴۵۶۷۸۹'[d]);
 const en=n=>String(n??'').replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d));
 const norm=s=>String(s??'').replace(/ي/g,'ی').replace(/ك/g,'ک').replace(/\u200c/g,' ').replace(/\s+/g,' ').trim();
-const state=globalThis.Bamco.state=Object.assign(globalThis.Bamco.state||{}, {token:'',user:null,profile:null,profiles:[],tasks:[],requests:[],requestHistory:[],definitionRequests:[],requestRoutes:[],organizationScope:{loaded:false,rows:[],positionIds:[],ownPositionIds:[],directReportUserIds:[],descendantUserIds:[],hasSubordinates:false},dashboardMonitoringStart:window.bamcoDashboardMetrics?.DEFAULT_MONITORING_START||'2026-09-06T00:00:00Z',view:'dashboard',editing:null,reviewing:null,reviewEdit:null,resubmitting:null,amendingRequest:null,dateInput:null,selected:{kanban:null,archive:null}});
+const state=globalThis.Bamco.state=Object.assign(globalThis.Bamco.state||{}, {token:'',user:null,profile:null,profiles:[],tasks:[],requests:[],requestHistory:[],definitionRequests:[],requestRoutes:[],organizationScope:{loaded:false,rows:[],positionIds:[],ownPositionIds:[],directReportUserIds:[],descendantUserIds:[],hasSubordinates:false},dashboardMonitoringStart:window.bamcoDashboardMetrics?.DEFAULT_MONITORING_START||'2026-09-05T20:30:00Z',view:'dashboard',editing:null,reviewing:null,reviewEdit:null,resubmitting:null,amendingRequest:null,dateInput:null,selected:{kanban:null,archive:null}});
 // Remove the former profile-shaped organization projection on hot reloads too.
 delete state.organizationScope?.people;
 
-// Authentication is always addressed by the internal login identity.  A
-// corporate profile email is not an Auth credential and must never be sent to
-// GoTrue as though it were one.  Legacy email-like logins retain their local
-// part during the one-time credential migration.
+// Bare login names use the internal identity; a complete email explicitly
+// chosen as the login is already an Auth credential.
 function loginEmail(value){
   let login=String(value||'').trim().toLowerCase();
   if(login.endsWith('@no-email.invalid'))login=login.slice(0,-'@no-email.invalid'.length);
-  else if(login.includes('@'))login=login.slice(0,login.indexOf('@'));
+  else if(login.includes('@'))return login;
   return login+'@no-email.invalid';
 }
 
@@ -336,7 +334,7 @@ function showLogin(){
   window.BamcoAccess?.clear?.();
   window.bamcoConversations?.close();window.bamcoChat?.close();
   sessionStorage.removeItem('bamco_session');
-  Object.assign(state,{workspaceRefreshPromise:null,token:'',user:null,profile:null,profiles:[],tasks:[],requests:[],requestHistory:[],definitionRequests:[],requestRoutes:[],organizationScope:{loaded:false,rows:[],positionIds:[],ownPositionIds:[],directReportUserIds:[],descendantUserIds:[],hasSubordinates:false},dashboardMonitoringStart:window.bamcoDashboardMetrics?.DEFAULT_MONITORING_START||'2026-09-06T00:00:00Z',view:'dashboard',editing:null,reviewing:null,reviewEdit:null,resubmitting:null,amendingRequest:null,dateInput:null,selected:{kanban:null,archive:null}});
+  Object.assign(state,{workspaceRefreshPromise:null,token:'',user:null,profile:null,profiles:[],tasks:[],requests:[],requestHistory:[],definitionRequests:[],requestRoutes:[],organizationScope:{loaded:false,rows:[],positionIds:[],ownPositionIds:[],directReportUserIds:[],descendantUserIds:[],hasSubordinates:false},dashboardMonitoringStart:window.bamcoDashboardMetrics?.DEFAULT_MONITORING_START||'2026-09-05T20:30:00Z',view:'dashboard',editing:null,reviewing:null,reviewEdit:null,resubmitting:null,amendingRequest:null,dateInput:null,selected:{kanban:null,archive:null}});
   $('#appView').classList.add('hidden');
   $('#loginView').classList.remove('hidden');
 }
@@ -466,14 +464,14 @@ function renderRequests(){
     else if(r.request_status==='needs_revision')action=revisionText;
     else if(route?.actionable===true&&featureAllowed('approvals','edit'))action=`<button class="primary" data-review-request="${r.id}">بررسی</button>`;
     else if(mine)action=`<button class="ghost" data-amend-request="${r.id}">ویرایش</button> <button class="ghost danger" data-cancel-request="${r.id}">لغو درخواست</button>`;
-    return`<tr data-request-id="${r.id}"><td>${fa(rows.length-index)}</td><td>${safe(profileLabel(r.requested_by,r.requester_name_snapshot||'—'))}</td><td>${safe(requestTypeLabel(r))}</td><td>${safe(r.proposed_data?.title||state.tasks.find(t=>String(t.id)===String(r.task_id))?.title||'—')}</td><td>${jalaliDateTime(r.created_at)}</td><td>${routeText}</td><td>${action}</td></tr>`;
+    return`<tr data-request-id="${r.id}"><td>${fa(r.id)}</td><td>${safe(profileLabel(r.requested_by,r.requester_name_snapshot||'—'))}</td><td>${safe(requestTypeLabel(r))}</td><td>${safe(r.proposed_data?.title||state.tasks.find(t=>String(t.id)===String(r.task_id))?.title||'—')}</td><td>${jalaliDateTime(r.created_at)}</td><td>${routeText}</td><td>${action}</td></tr>`;
   }).join(''):'<tr><td colspan="7" class="empty">موردی در این بخش وجود ندارد.</td></tr>';
   window.bamcoApprovalCenter?.sync?.();
 }
 $('#approvalBody').addEventListener('click',e=>{const revise=e.target.closest('[data-revise-request]'),review=e.target.closest('[data-review-request]'),amend=e.target.closest('[data-amend-request]'),cancel=e.target.closest('[data-cancel-request]');if(revise)reviseRequest(revise.dataset.reviseRequest);if(review)openReview(review.dataset.reviewRequest);if(amend)amendRequest(amend.dataset.amendRequest);if(cancel)cancelRequest(cancel.dataset.cancelRequest)});
 function requestManagerNote(row){const note=String(row?.manager_note||'').trim();if(row?.request_status==='cancelled'&&(String(row?.reviewed_by||'')===String(row?.requested_by||'')||/^لغو(?:\s+شده)?\s+توسط\s+ثبت[‌ ]?کننده$/.test(note)))return'';return note}
 window.bamcoRequestManagerNote=requestManagerNote;
-function renderRequestHistory(){const statuses={approved:'تأیید',rejected:'رد',cancelled:'لغوشده'},terminal=new Set(Object.keys(statuses)),rows=newestRequestRows(state.requestHistory).filter(r=>terminal.has(r.request_status));$('#requestHistoryBody').innerHTML=rows.length?rows.map((r,index)=>`<tr data-request-id="${r.id}"><td>${fa(rows.length-index)}</td><td>${safe(profileLabel(r.requested_by,r.requester_name_snapshot||'—'))}</td><td>${safe(requestTypeLabel(r))}</td><td>${safe(r.proposed_data?.title||state.tasks.find(t=>String(t.id)===String(r.task_id))?.title||'—')}</td><td>${jalaliDateTime(r.reviewed_at||r.created_at)}</td><td>${statuses[r.request_status]}</td><td>${safe(requestManagerNote(r)||'—')}</td></tr>`).join(''):'<tr><td colspan="7" class="empty">سابقه‌ای وجود ندارد.</td></tr>'}
+function renderRequestHistory(){const statuses={approved:'تأیید',rejected:'رد',cancelled:'لغوشده'},terminal=new Set(Object.keys(statuses)),rows=newestRequestRows(state.requestHistory).filter(r=>terminal.has(r.request_status));$('#requestHistoryBody').innerHTML=rows.length?rows.map((r,index)=>`<tr data-request-id="${r.id}"><td>${fa(r.id)}</td><td>${safe(profileLabel(r.requested_by,r.requester_name_snapshot||'—'))}</td><td>${safe(requestTypeLabel(r))}</td><td>${safe(r.proposed_data?.title||state.tasks.find(t=>String(t.id)===String(r.task_id))?.title||'—')}</td><td>${jalaliDateTime(r.reviewed_at||r.created_at)}</td><td>${statuses[r.request_status]}</td><td>${safe(requestManagerNote(r)||'—')}</td></tr>`).join(''):'<tr><td colspan="7" class="empty">سابقه‌ای وجود ندارد.</td></tr>'}
 const titles={dashboard:'داشبورد',kanban:'کانبان وظایف',archive:'آرشیو وظایف',approvals:'تأیید درخواست‌ها',requestHistory:'سوابق درخواست‌ها',projects:'مدیریت پروژه‌ها',parts:'مدیریت قطعات',invoices:'صورتحساب‌ها و تعهدات مالی',organization:'ساختار سازمانی',accessMatrix:'دسترسی‌ها',vehiclePermanent:'تحویل دائم خودرو',vehicleTemporary:'تحویل موقت خودرو',tools:'مدیریت ابزار',lettersIncoming:'نامه‌های ورودی',lettersOutgoing:'نامه‌های خروجی',userGuide:'راهنمای استفاده سامانه',sentMessages:'پیام‌های ارسال‌شده'};globalThis.BamcoNavigation?.configure?.({state,titles});
 function showView(view){if(typeof BamcoNavigation!=='undefined'&&typeof BamcoNavigation.navigate==='function')return BamcoNavigation.navigate(view);const target=typeof view==='string'&&/^[A-Za-z][A-Za-z0-9]*$/.test(view)?document.getElementById(view+'View'):null;if(!target)return false;globalThis.bamcoLeaveHome?.();state.view=view;$$('.view').forEach(x=>x.classList.add('hidden'));target.classList.remove('hidden');$$('#nav button').forEach(x=>x.classList.toggle('active',x.dataset.view===view));$('#viewTitle').textContent=titles[view]||'';$('#addTaskBtn').classList.toggle('hidden',view!=='kanban');return true}
 $('#nav').addEventListener('click',e=>{const button=e.target.closest('button[data-view]');if(button&&!button.disabled)showView(button.dataset.view)});$$('[data-go]').forEach(b=>b.addEventListener('click',()=>showView(b.dataset.go)));
@@ -787,7 +785,7 @@ document.addEventListener('bamco:domain-invalidated',event=>{
   function selectedDashboardOwnerId(){const selected=$id('dashOwner')?.value||'همه';return selected==='همه'?null:selected}
   function renderCards(kanban,archive){
     const active=kanban.filter(t=>!window.bamcoOptions.terminal(t)),ownerId=selectedDashboardOwnerId(),allRequests=window.bamcoDashboardMetrics?.uniqueRequests?.([...(state.definitionRequests||[]),...(state.requests||[]),...(state.requestHistory||[])])||[...(state.definitionRequests||[]),...(state.requests||[]),...(state.requestHistory||[])],metrics=window.bamcoDashboardMetrics;
-    const definitionCount=metrics?.definitionCountForSelection?metrics.definitionCountForSelection({ownerId,profiles:state.profiles,tasks:state.tasks,requests:allRequests,baseline:state.dashboardMonitoringStart}):allRequests.filter(r=>r.request_type==='create').length;
+    const definitionCount=metrics?.requestDefinitionCountForSelection?metrics.requestDefinitionCountForSelection({ownerId,requests:allRequests,baseline:state.dashboardMonitoringStart}):allRequests.filter(r=>r.request_type==='create').length;
     const pendingCount=metrics?.pendingReviewCount?metrics.pendingReviewCount({ownerId,requests:allRequests}):(state.requests||[]).filter(r=>['pending','in_review'].includes(r.request_status)).length;
     const unscheduledCount=metrics?.unscheduledCount?metrics.unscheduledCount({ownerId,tasks:active,isTerminal:t=>window.bamcoOptions.terminal(t)}):active.filter(t=>!t.start_date&&!t.due_date).length;
     const spec=[['total','کل کارهای فعال',active.length],['in_progress','در حال انجام',active.filter(t=>window.bamcoOptions.kind(t)==='active').length],['waiting','منتظر پاسخ',active.filter(t=>window.bamcoOptions.kind(t)==='waiting').length],['overdue','دارای دیرکرد',active.filter(t=>bucketOf(t)==='دیرکرد').length],['warning','در دوره هشدار',active.filter(t=>bucketOf(t)==='دوره هشدار').length],['archive_total','کل کارهای آرشیو شده',archive.length],['pending_requests','درخواست‌های منتظر بررسی',pendingCount],['create_requests','درخواست تعریف وظیفه',definitionCount],['unscheduled','کارهای بدون زمان‌بندی',unscheduledCount]];

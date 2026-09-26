@@ -16,7 +16,7 @@ test('approval workbench lists every active request and limits review to the ser
  const f=await fixture({fetchResult:({endpoint})=>endpoint==='request_workflow_snapshot'?{current_requests:current,history_requests:[current[0],approved],routes}:undefined}),{d}=f;t.after(()=>f.dispose());
  await f.open('approvals');await until(()=>d.querySelectorAll('#approvalBody tr[data-request-id]').length===3);
  const rows=[...d.querySelectorAll('#approvalBody tr[data-request-id]')];
- assert.deepEqual(rows.map(row=>row.dataset.requestId),['38','37','36']);assert.deepEqual(rows.map(row=>row.cells[0].textContent),['۳','۲','۱']);
+ assert.deepEqual(rows.map(row=>row.dataset.requestId),['38','37','36']);assert.deepEqual(rows.map(row=>row.cells[0].textContent),['۳۸','۳۷','۳۶']);
  assert(rows.every(row=>row.cells[5].textContent.includes('در انتظار تأیید سرپرست آزمایشی')));assert.equal(d.querySelectorAll('#approvalBody [data-review-request]').length,1);
  assert(d.querySelector('#approvalBody [data-request-id="36"]'));assert(d.querySelector('#approvalBody [data-request-id="37"]'));
  await f.open('requestHistory');await until(()=>d.querySelectorAll('#requestHistoryBody tr[data-request-id]').length===1);

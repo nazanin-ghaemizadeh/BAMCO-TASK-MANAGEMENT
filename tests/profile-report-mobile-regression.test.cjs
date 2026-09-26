@@ -21,7 +21,7 @@ test('performance report derives task-definition columns from canonical requests
  assert.match(report,/forOthers=definitions\.length-forSelf/);
  assert.match(report,/requests=workflowRows\(\)/);
  assert.match(report,/refreshWorkflowRows\(\)/);
- assert.match(report,/2026-09-06T00:00:00Z/);
+ assert.match(report,/2026-09-05T20:30:00Z/);
  assert.match(report,/\.\.\.scopedTasks\.map\(t=>t\.created_by\)/);
  assert.match(report,/تعریف وظیفه در بازه انتخاب‌شده \(برای دیگران\)/);
  assert.match(report,/تعریف وظیفه در بازه انتخاب‌شده \(برای خود\)/);

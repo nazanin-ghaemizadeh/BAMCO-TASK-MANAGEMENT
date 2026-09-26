@@ -358,6 +358,10 @@
       // table while the user was working and reset its scroll position.
       if (!matrix.saving && state().view !== ROUTE) matrix.loaded = false;
     });
+    document.addEventListener('bamco:profiles-updated', () => {
+      matrix.loaded = false;
+      if (state().view === ROUTE && !matrix.saving) void loadMatrix({ force: true });
+    });
     window.bamcoAccessMatrix = Object.freeze({ load: () => loadMatrix({ force: true }), state: matrix });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true }); else boot();

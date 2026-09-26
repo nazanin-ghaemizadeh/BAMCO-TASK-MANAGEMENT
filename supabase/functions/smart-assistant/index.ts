@@ -23,11 +23,20 @@ Deno.serve(async request=>{
     const client=createClient(url,anon,{global:{headers:{Authorization:auth}},auth:{persistSession:false}})
     const {data:{user},error:userError}=await client.auth.getUser()
     if(userError||!user)return reply({error:'نشست کاربری معتبر نیست.'},401)
-    const body=await request.json().catch(()=>({})),message=String(body.message||'').trim().slice(0,4000)
-    if(!message)return reply({error:'پیام خالی است.'},400)
     const apiKey=Deno.env.get('OPENAI_API_KEY')
     if(!apiKey)return reply({error:'کلید OpenAI هنوز روی سرور تنظیم نشده است.'},503)
-    const {data:tasks,error:taskError}=await client.from('task_status_view').select('legacy_id,title,status,priority,start_date,due_date,done_date,archived,owner_name').eq('archived',false).order('due_date',{ascending:true,nullsFirst:false}).limit(100)
+    if(request.headers.get('Content-Type')?.includes('multipart/form-data')){
+      const form=await request.formData(),file=form.get('audio')
+      if(!(file instanceof File)||!file.size||file.size>10*1024*1024||!['audio/webm','audio/ogg','audio/mp4','audio/mpeg','audio/wav','audio/x-wav'].includes(file.type))return reply({error:'فایل صدای معتبر تا ۱۰ مگابایت ارسال کنید.'},400)
+      const payload=new FormData();payload.append('file',file,file.name||'voice.webm');payload.append('model','whisper-1');payload.append('language','fa')
+      const transcription=await fetch('https://api.openai.com/v1/audio/transcriptions',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`},body:payload,signal:AbortSignal.timeout(45000)})
+      const result=await transcription.json().catch(()=>({}))
+      if(!transcription.ok)return reply({error:result?.error?.message||'تبدیل صدا به متن انجام نشد.'},transcription.status)
+      return reply({transcript:String(result.text||'').trim().slice(0,4000)})
+    }
+    const body=await request.json().catch(()=>({})),message=String(body.message||'').trim().slice(0,4000)
+    if(!message)return reply({error:'پیام خالی است.'},400)
+    const {data:tasks,error:taskError}=await client.from('task_status_view').select('legacy_id,title,status,priority,start_date,due_date,done_date,archived').eq('archived',false).order('due_date',{ascending:true,nullsFirst:false}).limit(100)
     if(taskError)return reply({error:'دریافت امن وظایف شما انجام نشد.'},500)
     const taskContext=(tasks||[]).map((task:any)=>`- شناسه ${task.legacy_id??'—'} | ${task.title||'بدون عنوان'} | وضعیت: ${task.status||'—'} | اولویت: ${task.priority||'—'} | شروع: ${task.start_date||'—'} | پایان: ${task.due_date||'—'}`).join('\n')||'وظیفه بازی برای این کاربر ثبت نشده است.'
     const payload:any={

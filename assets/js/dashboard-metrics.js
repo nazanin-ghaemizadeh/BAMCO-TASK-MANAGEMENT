@@ -4,7 +4,8 @@
   if(typeof module==='object'&&module.exports)module.exports=api;
   if(root)root.bamcoDashboardMetrics=api;
 })(typeof globalThis!=='undefined'?globalThis:null,function(){
-  const DEFAULT_MONITORING_START='2026-09-06T00:00:00Z';
+  // 15 Shahrivar 1405, midnight in Tehran (UTC+03:30).
+  const DEFAULT_MONITORING_START='2026-09-05T20:30:00Z';
   const asId=value=>String(value??'');
   const day=value=>String(value||'').slice(0,10);
   function within(value,from,to){
@@ -72,11 +73,14 @@
     }
     return definitionEvents({tasks,requests,baseline,from,to,taskSources}).length;
   }
+  function requestDefinitionCountForSelection({ownerId=null,requests=[],baseline=DEFAULT_MONITORING_START,from,to}={}){
+    return uniqueRequests(requests).filter(request=>definitionRequest(request)&&afterBaseline(request.created_at,baseline)&&within(request.created_at,from,to)&&matchesOwner(requestOwner(request),ownerId)).length;
+  }
   function pendingReviewCount({ownerId=null,requests=[]}={}){
     return uniqueRequests(requests).filter(request=>['pending','in_review','needs_revision'].includes(request.request_status)&&matchesOwner(request.requested_by,ownerId)).length;
   }
   function unscheduledCount({ownerId=null,tasks=[],isTerminal=()=>false}={}){
     return (tasks||[]).filter(task=>!task.archived&&!isTerminal(task)&&matchesOwner(task.owner_id,ownerId)&&!task.start_date&&!task.due_date).length;
   }
-  return {DEFAULT_MONITORING_START,within,afterBaseline,uniqueRequests,definitionRequest,requestOwner,definitionEvents,definitionBreakdown,definitionCount,definitionCountForSelection,pendingReviewCount,unscheduledCount};
+  return {DEFAULT_MONITORING_START,within,afterBaseline,uniqueRequests,definitionRequest,requestOwner,definitionEvents,definitionBreakdown,definitionCount,definitionCountForSelection,requestDefinitionCountForSelection,pendingReviewCount,unscheduledCount};
 });

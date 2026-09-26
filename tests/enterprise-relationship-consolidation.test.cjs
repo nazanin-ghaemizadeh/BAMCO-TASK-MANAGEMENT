@@ -55,8 +55,8 @@ test('profiles have one client-side canonical registry and account concepts stay
   assert.match(profiles,/new Map\(/,'identity cache must be keyed by immutable user id');
   assert.doesNotMatch(shell,/<input id="profileEmail"[^>]*\breadonly\b/,'organizational email is a canonical profile field that the account page can edit');
   assert.match(edge,/const internalEmail=\(login:string\)=>`\$\{login\}@no-email\.invalid`/);
-  assert.match(edge,/const authEmail=internalEmail\(login\)/);
-  assert.doesNotMatch(edge,/const authEmail=publicEmail\|\|/,'corporate email must never become the Auth identifier');
+  assert.match(edge,/const authEmail=authIdentity\(login\)/);
+  assert.match(edge,/const login=requestedLogin\(b.login_name\)\|\|publicEmail\|\|generatedLogin\(\)/,'an email can be the chosen login');
 });
 
 test('people controls and directory use feature grants, with credentials kept system-manager-only',()=>{

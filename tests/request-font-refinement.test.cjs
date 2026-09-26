@@ -3,27 +3,27 @@ const {test}=require('node:test'),assert=require('node:assert/strict'),fs=requir
 const {JSDOM}=require('jsdom');
 const {fixture,until}=require('./helpers/app-fixture.cjs');
 const request=(id,day,status='in_review')=>({id,task_id:500+id,requested_by:'test-owner',request_type:'update',request_status:status,created_at:`2026-09-${day}T09:00:00Z`,proposed_data:{title:`ECU-${id} تست`}});
-test('descending labels survive refresh and history filtering while action IDs stay real',async t=>{
+test('stable request IDs match notifications across refresh, sorting and history',async t=>{
  const current=[request(12,17),request(91,19),request(35,18)];
  const history=[request(8,16,'approved'),request(6,15,'rejected'),request(10,17,'cancelled'),request(99,19)];
  const f=await fixture({fetchResult:({endpoint})=>endpoint==='request_workflow_snapshot'?{current_requests:current,history_requests:history,routes:current.map(r=>({request_id:r.id,stage_no:1,stage_title:'سرپرست',actionable:true}))}:undefined});t.after(()=>f.dispose());
  await f.open('approvals');await until(()=>f.d.querySelectorAll('#approvalBody tr[data-request-id]').length===3);
  const rows=id=>[...f.d.querySelectorAll(`#${id} tr[data-request-id]`)];
- assert.deepEqual(rows('approvalBody').map(r=>r.cells[0].textContent),['۳','۲','۱']);
+ assert.deepEqual(rows('approvalBody').map(r=>r.cells[0].textContent),['۹۱','۳۵','۱۲']);
  assert.deepEqual(rows('approvalBody').map(r=>r.dataset.requestId),['91','35','12']);
  assert.deepEqual(rows('approvalBody').map(r=>r.querySelector('[data-review-request]').dataset.reviewRequest),['91','35','12']);
  const table=rows('approvalBody')[0].closest('table'),titleHead=table.tHead.rows[0].cells[3];
  titleHead.click();await until(()=>titleHead.getAttribute('aria-sort')==='ascending');
  const labelsById=Object.fromEntries(rows('approvalBody').map(r=>[r.dataset.requestId,r.cells[0].textContent]));
- assert.deepEqual(labelsById,{'91':'۳','35':'۲','12':'۱'});
+ assert.deepEqual(labelsById,{'91':'۹۱','35':'۳۵','12':'۱۲'});
  f.d.querySelector('#approvalsView .suite-clear-sort').click();
  await until(()=>rows('approvalBody')[0].dataset.requestId==='91');
- assert.deepEqual(rows('approvalBody').map(r=>r.cells[0].textContent),['۳','۲','۱']);
+ assert.deepEqual(rows('approvalBody').map(r=>r.cells[0].textContent),['۹۱','۳۵','۱۲']);
  current.push(request(115,20));await f.w.bamcoRequestSync.refresh();await until(()=>rows('approvalBody').length===4);
- assert.deepEqual(rows('approvalBody').map(r=>r.cells[0].textContent),['۴','۳','۲','۱']);
+ assert.deepEqual(rows('approvalBody').map(r=>r.cells[0].textContent),['۱۱۵','۹۱','۳۵','۱۲']);
  assert.equal(rows('approvalBody')[0].dataset.requestId,'115');
  await f.open('requestHistory');await until(()=>rows('requestHistoryBody').length===3);
- assert.deepEqual(rows('requestHistoryBody').map(r=>r.cells[0].textContent),['۳','۲','۱']);
+ assert.deepEqual(rows('requestHistoryBody').map(r=>r.cells[0].textContent),['۱۰','۸','۶']);
  assert.deepEqual(rows('requestHistoryBody').map(r=>r.dataset.requestId),['10','8','6']);
  assert(rows('requestHistoryBody').every(r=>!r.querySelector('.request-timeline-btn')));
 });

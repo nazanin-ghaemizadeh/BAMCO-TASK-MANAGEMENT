@@ -3,14 +3,17 @@ const json=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,
 const normalizeEmail=(value:unknown)=>String(value||"").trim().toLowerCase();
 const temporaryPassword=()=>'A9!'+Array.from(crypto.getRandomValues(new Uint8Array(17)),n=>'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_'[n%64]).join('');
 const loginPattern=/^[a-z0-9][a-z0-9._-]{2,63}$/;
+const emailPattern=/^[a-z0-9](?:[a-z0-9._+-]{0,62}[a-z0-9])?@[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$/;
 const internalEmail=(login:string)=>`${login}@no-email.invalid`;
+const authIdentity=(login:string)=>emailPattern.test(login)?login:internalEmail(login);
 const generatedLogin=()=>`person-${crypto.randomUUID()}`;
 // Existing accounts created before the split can still have a normal email in
 // Auth.  We only use that representation to display/repair the account; every
 // new or changed credential is stored as <login_name>@no-email.invalid.
 const loginLabel=(email:string)=>email.endsWith('@no-email.invalid')?email.slice(0,-'@no-email.invalid'.length):email;
 const requestedLogin=(value:unknown)=>normalizeEmail(value);
-const validLogin=(value:string)=>loginPattern.test(value);
+const validLogin=(value:string)=>loginPattern.test(value)||value.length<=254&&emailPattern.test(value);
+const loginError='نام کاربری باید ۳ تا ۶۴ کاراکتر انگلیسی و عددی باشد یا یک ایمیل معتبر وارد شود.';
 const safeChannel=(value:unknown,hasEmail:boolean)=>hasEmail&&["portal","email","both"].includes(String(value))?String(value):"portal";
 
 Deno.serve(async(req)=>{
@@ -47,12 +50,12 @@ Deno.serve(async(req)=>{
       const ownRes=await fetch(`${url}/rest/v1/profiles?id=eq.${user.id}&select=must_change_password`,{headers:{apikey:service,Authorization:`Bearer ${service}`}}),own=await ownRes.json();
       if(!ownRes.ok||!own?.[0]||own[0].must_change_password)return json({error:'ابتدا رمز عبور موقت خود را تغییر دهید.'},403);
       const login=requestedLogin(b.login_name),current=loginLabel(normalizeEmail(user.email));
-      if(!validLogin(login))return json({error:'نام کاربری باید ۳ تا ۶۴ کاراکتر و شامل حروف انگلیسی، عدد، نقطه یا خط تیره باشد.'},400);
+      if(!validLogin(login))return json({error:loginError},400);
       // A legacy corporate Auth email is not a valid login identity.  Even if
       // it happens to match a submitted string, do not report a no-op: force
       // the account through the canonical internal login representation.
-      if(login===current&&normalizeEmail(user.email)===internalEmail(login))return json({ok:true,id:user.id,login_name:current});
-      const changed=await fetch(`${url}/auth/v1/admin/users/${encodeURIComponent(user.id)}`,{method:'PUT',headers:{apikey:service,Authorization:`Bearer ${service}`,'Content-Type':'application/json'},body:JSON.stringify({email:internalEmail(login),email_confirm:true})}),result=await changed.json().catch(()=>({}));
+      if(login===current&&normalizeEmail(user.email)===authIdentity(login))return json({ok:true,id:user.id,login_name:current});
+      const changed=await fetch(`${url}/auth/v1/admin/users/${encodeURIComponent(user.id)}`,{method:'PUT',headers:{apikey:service,Authorization:`Bearer ${service}`,'Content-Type':'application/json'},body:JSON.stringify({email:authIdentity(login),email_confirm:true})}),result=await changed.json().catch(()=>({}));
       if(!changed.ok)return json({error:['email_exists','user_already_exists'].includes(result.code||result.error_code)?'این نام کاربری قبلاً استفاده شده است.':result.msg||result.message||'نام کاربری ذخیره نشد.'},changed.status);
       return json({ok:true,id:user.id,login_name:login});
     }
@@ -115,13 +118,13 @@ Deno.serve(async(req)=>{
       const current=String(profile.login_name||'').trim().toLowerCase()||loginLabel(normalizeEmail(account.email));
       if(b.action==='get_credentials')return json({ok:true,id:account.id,login_name:current,credential_editable:true});
       const login=requestedLogin(b.login_name),password=String(b.temporary_password||'');
-      if(!login||!validLogin(login))return json({error:'نام کاربری باید ۳ تا ۶۴ کاراکتر و شامل حروف انگلیسی، عدد، نقطه یا خط تیره باشد.'},400);
+      if(!login||!validLogin(login))return json({error:loginError},400);
       if(password&&(password.length<12||/^(.)\1+$/.test(password)||/^(123456|password|qwerty)/i.test(password)))return json({error:'رمز موقت باید حداقل ۱۲ کاراکتر و غیرقابل حدس باشد.'},400);
       const changes:Record<string,unknown>={};
       // Compare the actual Auth identity as well.  This repairs a legacy
       // corporate-email Auth record even when its mirrored login_name already
       // has the requested value.
-      if(normalizeEmail(account.email)!==internalEmail(login)){changes.email=internalEmail(login);changes.email_confirm=true}
+      if(normalizeEmail(account.email)!==authIdentity(login)){changes.email=authIdentity(login);changes.email_confirm=true}
       if(password)changes.password=password;
       const gate=password&&!profile.must_change_password;
       if(gate){const saved=await saveProfile(account.id,{must_change_password:true},'تنظیم رمز موقت انجام نشد.');if(!saved.ok)return saved}
@@ -155,11 +158,11 @@ Deno.serve(async(req)=>{
     // Corporate email is deliberately not an Auth credential.  When a caller
     // does not provide a login name (older clients), generate one first; Auth
     // and the auth->profile trigger will then derive the same canonical value.
-    const login=requestedLogin(b.login_name)||generatedLogin();
-    if(!validLogin(login))return json({error:'نام کاربری باید ۳ تا ۶۴ کاراکتر و شامل حروف انگلیسی، عدد، نقطه یا خط تیره باشد.'},400);
-    const authEmail=internalEmail(login),initialPassword=temporaryPassword(),created=await fetch(`${url}/auth/v1/admin/users`,{method:"POST",headers:{apikey:service,Authorization:`Bearer ${service}`,"Content-Type":"application/json"},body:JSON.stringify({email:authEmail,password:initialPassword,email_confirm:true,user_metadata:{full_name:profileBody.full_name}})}),account=await created.json();if(!created.ok)return json({error:account.msg||account.message||"ساخت حساب انجام نشد."},created.status);
+    const login=requestedLogin(b.login_name)||publicEmail||generatedLogin();
+    if(!validLogin(login))return json({error:loginError},400);
+    const authEmail=authIdentity(login),initialPassword=temporaryPassword(),created=await fetch(`${url}/auth/v1/admin/users`,{method:"POST",headers:{apikey:service,Authorization:`Bearer ${service}`,"Content-Type":"application/json"},body:JSON.stringify({email:authEmail,password:initialPassword,email_confirm:true,user_metadata:{full_name:profileBody.full_name}})}),account=await created.json();if(!created.ok)return json({error:account.msg||account.message||"ساخت حساب انجام نشد."},created.status);
     const saved=await saveProfile(account.id,{...profileBody,must_change_password:true},"حساب ساخته شد اما اطلاعات فرد کامل ذخیره نشد.");
-    if(!saved.ok)return saved;
+    if(!saved.ok){await fetch(`${url}/auth/v1/admin/users/${encodeURIComponent(account.id)}`,{method:'DELETE',headers:{apikey:service,Authorization:`Bearer ${service}`}}).catch(()=>{});return saved}
     return json({...await saved.json(),temporary_password:initialPassword,login_name:login,credential_editable:true});
   }catch(e){return json({error:e instanceof Error?e.message:"خطای ناشناخته"},500)}
 });

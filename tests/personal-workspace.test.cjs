@@ -40,11 +40,11 @@ test('notes are pinned, editable and can move between active and inactive lists'
  assert.deepEqual(f.errors,[]);
 });
 
-test('smart assistant starts a fresh animated task-aware conversation on each entry',async t=>{
+test('smart assistant keeps only the female status sticker and starts a fresh conversation on each entry',async t=>{
  const f=await fixture();t.after(()=>f.dispose());
  await f.open('voiceAssistant');
  const view=f.d.querySelector('#voiceAssistantView');
- assert(view.querySelector('.assistant-character'));
+ assert(view.querySelector('.assistant-state-sticker[alt="استیکر خانم، وضعیت مطلوب"]'));assert.equal(view.querySelector('.assistant-prompts'),null);
  assert.match(view.querySelector('.assistant-messages').textContent,/سلام/);
  assert.equal(view.querySelectorAll('.assistant-message').length,1);
  view.querySelector('.assistant-messages').insertAdjacentHTML('beforeend','<article class="assistant-message user">موقت</article>');

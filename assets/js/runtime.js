@@ -158,7 +158,7 @@ function postprocessDashboard(){
   if(manager){
     const ownerId=filters.owner==='همه'?null:String(filters.owner),metrics=window.bamcoDashboardMetrics,requests=metrics?.uniqueRequests?.([...(state.definitionRequests||[]),...(state.requests||[]),...(state.requestHistory||[])])||[...(state.definitionRequests||[]),...(state.requests||[]),...(state.requestHistory||[])];
     const pending=metrics?.pendingReviewCount?metrics.pendingReviewCount({ownerId,requests}):(state.requests||[]).filter(r=>['pending','in_review'].includes(r.request_status)&&requestMatchesDashboard(r,filters)).length;
-    const created=metrics?.definitionCountForSelection?metrics.definitionCountForSelection({ownerId,profiles:state.profiles,tasks:state.tasks,requests,baseline:state.dashboardMonitoringStart}):requests.filter(r=>r.request_type==='create'&&requestMatchesDashboard(r,filters)).length;
+    const created=metrics?.requestDefinitionCountForSelection?metrics.requestDefinitionCountForSelection({ownerId,requests,baseline:state.dashboardMonitoringStart}):requests.filter(r=>r.request_type==='create'&&requestMatchesDashboard(r,filters)).length;
     const active=(state.tasks||[]).filter(t=>!t.archived&&!window.bamcoOptions?.terminal(t)&&taskMatchesDashboard(t,filters));
     const unscheduled=metrics?.unscheduledCount?metrics.unscheduledCount({ownerId,tasks:active,isTerminal:t=>window.bamcoOptions?.terminal(t)}):active.filter(t=>!t.start_date&&!t.due_date).length;
     for(const [key,value] of [['pending_requests',pending],['create_requests',created],['unscheduled',unscheduled]]){const strong=q(`article[data-key="${key}"] strong`,cards);if(strong)strong.textContent=fa(value)}
