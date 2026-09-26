@@ -21,8 +21,12 @@ test('task discussion exposes source, owner and Persian calendar, and permits an
  const view=f.d.querySelector('#taskChatsView');
  assert(!view.textContent.includes('وظیفه را انتخاب کنید؛ سپس مخاطب گفت‌وگو را مشخص کنید.'));
  assert(view.querySelector('[data-task-owner]'));assert.equal(view.querySelector('[data-task-from]').type,'text');
- view.querySelector('[data-task-from]').click();assert(f.d.querySelector('#conversationJalaliDialog').open);
- const calendar=f.d.querySelector('#conversationJalaliDialog');assert(calendar.querySelector('select[name="year"]'));calendar.querySelector('[data-jalali-close]').click();
+ view.querySelector('[data-task-from]').click();const calendar=f.d.querySelector('#calendarDialog');assert(calendar.open);
+ assert.equal(f.d.querySelector('#calYear').value,String(f.w.currentJalali().y));
+ assert.equal(f.d.querySelector('#calMonth').value,String(f.w.currentJalali().m));
+ f.d.querySelector('#setDateBtn').click();assert.match(view.querySelector('[data-task-from]').value,/[۰-۹]/);
+ assert.match(view.querySelector('[data-task-from-iso]').value,/^\d{4}-\d{2}-\d{2}$/);
+ view.querySelector('[data-task-date-clear]').click();assert.equal(view.querySelector('[data-task-from-iso]').value,'');
  view.querySelector('[data-task-choice="71"]').click();await until(()=>view.querySelector('[data-person="test-colleague"]'));
  view.querySelector('[data-person="test-colleague"]').click();await until(()=>view.querySelector('.messenger-compose'));
  assert.equal(f.calls.findLast(call=>call.endpoint==='chat_ensure_task_direct').body.p_other_user,'test-colleague');
