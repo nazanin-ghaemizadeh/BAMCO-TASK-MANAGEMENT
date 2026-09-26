@@ -65,8 +65,8 @@ test('people usernames use organizational email and local access buttons stay ab
   await f.open('people');
   await until(() => f.d.querySelector('#peopleBody [data-id="test-owner"]'));
   const owner = f.d.querySelector('#peopleBody [data-id="test-owner"]');
-  assert.equal(owner.cells[6].textContent.trim(), 'owner@example.test');
-  assert.equal(owner.cells[7].textContent.trim(), 'owner@example.test');
+  assert.equal(owner.cells[8].textContent.trim(), 'owner@example.test');
+  assert.equal(owner.cells[9].textContent.trim(), 'owner@example.test');
 
   await f.open('lettersIncoming');
   assert(f.d.querySelector('#lettersIncomingView [data-letter-action="access"]').classList.contains('hidden'));

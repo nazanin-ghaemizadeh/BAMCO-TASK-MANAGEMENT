@@ -1,4 +1,13 @@
 /* Personal workspace: colorful pinned notes and the animated task assistant. */
+@font-face{font-family:BamcoContact;src:url('../fonts/BNazanin.woff2') format('woff2');font-weight:400;font-display:swap}
+#peopleView .people-contact{font-family:BamcoContact,'B Nazanin',Tahoma,sans-serif!important;text-align:center;unicode-bidi:isolate}
+.personal-command-row{flex-wrap:nowrap!important;overflow-x:auto!important;overflow-y:hidden!important;scrollbar-width:thin}
+.personal-command-row .notes-state-tabs{display:flex;flex:0 0 auto;white-space:nowrap}
+.people-transfer-dialog{width:min(760px,94vw);max-height:82vh;direction:rtl}
+.people-transfer-list{display:grid;gap:10px;max-height:55vh;overflow:auto}
+.people-transfer-item{display:grid;grid-template-columns:minmax(180px,1fr) minmax(150px,200px) auto;align-items:center;gap:10px;padding:10px;border:1px solid #d4e1d9;border-radius:10px}
+.people-transfer-item>div{display:grid;gap:2px}.people-transfer-item label{display:grid;gap:3px}.people-transfer-item .form-error{grid-column:1/-1;margin:0}
+@media(max-width:650px){.people-transfer-item{grid-template-columns:1fr}.people-transfer-item .form-error{grid-column:1}}
 html body #appView [data-feature-access-control="local"],html body #appView .vehicle-access-button,html body #appView #featureAccessControl{display:none!important}
 .personal-command-row{display:flex;align-items:center;justify-content:flex-start;gap:8px;min-height:54px;margin:0 0 12px;padding:7px 0;border-block:1px solid #cdded5;flex-wrap:wrap;overflow:visible}
 .personal-command-row button{display:inline-flex;align-items:center;gap:7px}.personal-command-row svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}

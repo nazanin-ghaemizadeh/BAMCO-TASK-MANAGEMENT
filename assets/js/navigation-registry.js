@@ -20,7 +20,7 @@
     { key: 'vehicle', title: 'مدیریت منابع', icon: '◇', routes: ['vehiclePermanent', 'vehicleTemporary', 'parts', 'tools'] },
     { key: 'conversations', title: 'گفتگوها', icon: '☵', routes: ['groupChat', 'directMessages', 'taskChats'] },
     { key: 'resources', title: 'منابع', icon: '▧', routes: ['documents', 'sitesAccess', 'lettersIncoming', 'lettersOutgoing', 'userGuide'] },
-    { key: 'personal', title: 'همراه هوشمند', icon: '✦', routes: ['notes', 'voiceAssistant'] }
+    { key: 'personal', title: 'میز شخصی', icon: '✦', routes: ['notes', 'voiceAssistant'] }
   ]);
 
   // The access matrix mirrors the grantable cards/tabs shown on the application
@@ -83,7 +83,7 @@
     ['lettersOutgoing', 'letters', 'نامه‌های خروجی'],
     ['userGuide', 'userGuide', 'راهنمای استفاده سامانه'],
     ['notes', 'notes', 'یادداشت‌ها'],
-    ['voiceAssistant', 'voiceAssistant', 'دستیار صوتی هوشمند']
+    ['voiceAssistant', 'voiceAssistant', 'دستیار هوشمند']
   ].map(([route, featureKey, title]) => Object.freeze({ route, featureKey, title, groupKey: null })));
 
   const byKey = Object.freeze(Object.fromEntries(groups.map(group => [group.key, group])));

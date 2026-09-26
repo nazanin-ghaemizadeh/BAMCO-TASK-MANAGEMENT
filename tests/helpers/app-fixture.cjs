@@ -129,6 +129,7 @@ async function fixture(options={}){
    if(endpoint==='can_access_vehicle')data=actor.active!==false&&(actor.role==='manager'||(tables.vehicle_access||[]).some(g=>g.user_id===actor.id&&g.scope===body.p_scope));
    if(endpoint==='can_access_letters')data=actor.active!==false&&(actor.role==='manager'||(tables.letter_access||[]).some(g=>g.user_id===actor.id));
    if(endpoint==='chat_ensure_public')data='test-room';
+   if(endpoint==='chat_task_recipient_ids')data=profiles.filter(p=>p.id!==actor.id&&p.active!==false).map(p=>({user_id:p.id}));
    if(endpoint==='chat_directory'||endpoint==='chat_directory_v2')data=profiles;
    if(endpoint==='chat_threads')data=filter(threads).filter(t=>t.is_active);
    if(endpoint==='chat_conversation_list')data=threads.filter(t=>(t.is_active||t.participant_deleted_at)&&(t.thread_type==='public'||members.some(m=>m.thread_id===t.id&&m.user_id===actor.id))).map(t=>{const peer=members.find(m=>m.thread_id===t.id&&m.user_id!==actor.id),self=members.find(m=>m.thread_id===t.id&&m.user_id===actor.id),p=profiles.find(p=>p.id===peer?.user_id);return{...t,title:t.thread_type==='direct'&&!t.system_recipient_id?p?.full_name||t.title:t.title,person_id:t.thread_type==='direct'?p?.id:null,last_message:messages.filter(m=>m.thread_id===t.id&&!m.deleted_at).at(-1)?.body,last_read_at:self?.last_read_at||null,unread_count:0}});

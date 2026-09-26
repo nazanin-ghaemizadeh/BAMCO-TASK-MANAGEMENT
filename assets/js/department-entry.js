@@ -35,8 +35,12 @@ function boot(){
   if(selected){if(!view.hidden)view.hidden=true;document.body.classList.remove('department-pending');login.classList.remove('hidden');lastSignedIn=false;return}
   if(view.hidden)view.hidden=false;document.body.classList.add('department-pending');lastSignedIn=false;
  };
+ let chooser=document.querySelector('#departmentChoiceDialog');
+ if(!chooser){chooser=document.createElement('dialog');chooser.id='departmentChoiceDialog';chooser.className='modal department-choice-dialog';chooser.innerHTML='<div class="modal-head"><h3>مهندسی توسعه و تکوین محصول</h3><button type="button" data-choice-close aria-label="بستن">×</button></div><p>ورود به سامانه مدیریت، پایش و پیگیری امور</p><div class="modal-actions"><button type="button" class="ghost" data-choice-close>انصراف</button><button type="button" class="primary" data-choice-enter>انتخاب و ورود</button></div>';document.body.append(chooser)}
+ chooser.querySelectorAll('[data-choice-close]').forEach(button=>button.addEventListener('click',()=>chooser.close()));
+ chooser.querySelector('[data-choice-enter]').addEventListener('click',()=>{chooser.close();showLogin()});
  const product=view.querySelector('[data-department="product"]');
- if(product&&!product.dataset.entryBound){product.dataset.entryBound='1';product.addEventListener('click',showLogin)}
+ if(product&&!product.dataset.entryBound){product.dataset.entryBound='1';product.addEventListener('click',()=>chooser.showModal())}
  const bindBack=()=>{
   let back=login.querySelector('.department-back');
   if(!back){back=document.createElement('button');back.type='button';back.className='department-back';back.textContent='بازگشت به انتخاب مدیریت';login.querySelector('#loginForm')?.append(back)}

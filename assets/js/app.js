@@ -635,12 +635,7 @@ async function restoreTask(id){const task=state.tasks.find(t=>String(t.id)===Str
 window.restoreTask=restoreTask;
 $('#kanbanEditBtn').addEventListener('click',()=>{const t=selectedTask('kanban');if(t)openTask(t)});$('#archiveEditBtn').addEventListener('click',()=>{const t=selectedTask('archive');if(t)openTask(t)});
 $('#kanbanArchiveBtn').addEventListener('click',()=>{const t=selectedTask('kanban');if(t)archiveTask(t.id)});$('#archiveRestoreBtn').addEventListener('click',()=>{const t=selectedTask('archive');if(t)restoreTask(t.id)});
-$('#kanbanDeleteBtn').addEventListener('click',()=>{const t=selectedTask('kanban');if(t)deleteTask(t.id)});$('#archiveDeleteBtn').addEventListener('click',()=>{const t=selectedTask('archive');if(t)deleteTask(t.id)});
-function requestRoute(id){return(state.requestRoutes||[]).find(route=>String(route.request_id)===String(id))||null}
-function canReviewRequest(request){return !!request&&requestRoute(request.id)?.actionable===true&&featureAllowed('approvals','edit')}
-window.openReview=id=>{
-  const request=state.requests.find(row=>String(row.id)===String(id));
-  if(!canReviewRequest(request)){toast('این درخواست اکنون در کارتابل اقدام شما نیست.',true);return}
+$('#kanbanDeleteBtn').addEventListener('click',()=>{const t=selectedTask('kanban');if(t)deleteTask(t.id)});$('#archiveDeleteBtn').addEventListener('click',()=>{const t=sel…124 tokens truncated…ام شما نیست.',true);return}
   state.reviewing=request;
   const r=state.reviewing,task=state.tasks.find(t=>String(t.id)===String(r.task_id));
   const proposed=r.proposed_data||{},before=r.before_data||{},value=(key)=>proposed[key]??task?.[key]??before[key],shown=v=>v===null||v===undefined||v===''?'—':v;
@@ -1227,6 +1222,22 @@ document.addEventListener('bamco:domain-invalidated',event=>{
 
   const kanbanSearch=qs('#kanbanSearch');
   kanbanSearch?.addEventListener('input',()=>{delete kanbanSearch.dataset.taskFocusId},{capture:true});
+  let crossViewTaskFocusCleared=false;
+  const clearCrossViewTaskFocus=()=>{
+    if(!kanbanSearch?.dataset.taskFocusId)return;
+    kanbanSearch.value='';delete kanbanSearch.dataset.taskFocusId;
+    state.selected.kanban=null;
+    crossViewTaskFocusCleared=true;
+  };
+  window.Bamco?.lifecycle?.on?.('navigation-before',({from,to})=>{
+    if(from==='kanban'&&to!=='kanban')clearCrossViewTaskFocus();
+  });
+  window.Bamco?.lifecycle?.on?.('navigation-after',({to})=>{
+    if(to==='kanban'&&crossViewTaskFocusCleared){crossViewTaskFocusCleared=false;renderTasks(false)}
+  });
+  document.addEventListener('click',event=>{
+    if(event.target.closest('.home-return,.content-back')&&!event.target.closest('#kanbanView [data-task-id]'))clearCrossViewTaskFocus();
+  },true);
 
   // Every cross-view task link opens a one-row Kanban filtered by its exact ID.
   window.bamcoFocusMessageTask=function(id){

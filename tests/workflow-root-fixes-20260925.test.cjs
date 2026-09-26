@@ -63,19 +63,19 @@ test('calendar and Gantt task routes open an exact one-row Kanban filter', async
   assert.equal(f.d.querySelector('#kanbanSearch').dataset.taskFocusId, '91');
   assert.equal(f.d.querySelector('#kanbanBody tr[data-task-id]').dataset.taskId, '91');
   assert.equal(f.d.querySelector('#kanbanBody tr[data-task-id="91"]').getAttribute('aria-selected'), 'true');
+  await f.open('people');await f.open('kanban');
+  assert.equal(f.d.querySelector('#kanbanSearch').value,'');
+  assert.equal(f.d.querySelector('#kanbanSearch').dataset.taskFocusId,undefined);
+  assert.equal(f.d.querySelectorAll('#kanbanBody tr[data-task-id]').length,2);
   assert.deepEqual(f.errors, []);
 });
 
-test('finishing deleted-person task transfer emits one explicit completion notification', async t => {
-  const task = { id: 301, legacy_id: 10, title: 'وظیفه انتقالی', description: '', owner_id: null, former_owner_name: 'فرد حذف‌شده', owner_deleted_at: new Date().toISOString(), status: 'در حال انجام', priority: 'متوسط', start_date: '2026-09-01', due_date: '2026-09-30', archived: false };
+test('deleted-person transfer can be closed while unassigned work remains visible in its dialog', async t => {
+  const task = { id: 301, legacy_id: 10, title: 'وظیفه انتقالی', owner_id: null, former_owner_name: 'فرد حذف‌شده', owner_deleted_at: new Date().toISOString(), status: 'در حال انجام', archived: false };
   const f = await fixture({ tables: { tasks: [task] } }); t.after(() => f.dispose());
   f.w.bamcoTaskTransfer.open([{ id: 'deleted-user', full_name: 'فرد حذف‌شده' }], [task], 1);
-  await pause(30);
-  assert.equal(f.calls.some(call => call.endpoint === 'ui-notice' && /با موفقیت حذف شد/.test(call.body)), false);
-  f.w.eval("state.tasks[0].owner_id='test-manager';state.tasks[0].owner_deleted_at=null;bamcoTaskTransfer.sync()");
-  await until(() => f.calls.some(call => call.endpoint === 'ui-notice' && /فرد با موفقیت حذف شد و وظایفش منتقل شد/.test(call.body)));
-  f.w.bamcoTaskTransfer.sync();
-  assert.equal(f.calls.filter(call => call.endpoint === 'ui-notice' && /وظایفش منتقل شد/.test(call.body)).length, 1);
+  const dialog=f.d.querySelector('#peopleTransferDialog');assert(dialog.open);assert.match(dialog.textContent,/شناسه ۱۰/);
+  dialog.querySelector('[data-close-transfer]').click();assert(!dialog.open);assert.equal(f.d.querySelector('#kanbanView').classList.contains('hidden'),true);
   assert.deepEqual(f.errors, []);
 });
 

@@ -17,20 +17,20 @@ const ICONS={
 function installNavigation(){
  const nav=q('#nav'),workspace=q('.workspace');if(!nav||!workspace||q('#notesView'))return;
  const noteButton=document.createElement('button');noteButton.type='button';noteButton.dataset.view='notes';noteButton.innerHTML=`<b>${icon(ICONS.note)}</b><span>یادداشت‌ها</span>`;
- const assistantButton=document.createElement('button');assistantButton.type='button';assistantButton.dataset.view='voiceAssistant';assistantButton.innerHTML=`<b>${icon(ICONS.assistant)}</b><span>دستیار صوتی هوشمند</span>`;
+ const assistantButton=document.createElement('button');assistantButton.type='button';assistantButton.dataset.view='voiceAssistant';assistantButton.innerHTML=`<b>${icon(ICONS.assistant)}</b><span>دستیار هوشمند</span>`;
  nav.append(noteButton,assistantButton);
  const notesView=document.createElement('section');notesView.id='notesView';notesView.className='view hidden personal-notes-view';notesView.dataset.featureKey='notes';notesView.innerHTML=`
   <div class="personal-command-row bamco-command-bar">
-   <button type="button" class="ghost" data-personal-home>${icon(ICONS.home)}<span>بازگشت به خانه</span></button>
-   <button type="button" class="primary" data-note-new>${icon(ICONS.plus)}<span>یادداشت جدید</span></button>
-   <button type="button" class="ghost" data-note-edit disabled>${icon(ICONS.edit)}<span>ویرایش</span></button>
-   <button type="button" class="danger" data-note-delete disabled>${icon(ICONS.trash)}<span>حذف</span></button>
-   <div class="notes-state-tabs" role="tablist" aria-label="وضعیت یادداشت‌ها"><button type="button" class="active" role="tab" aria-selected="true" data-note-tab="active">${icon(ICONS.active)}<span>یادداشت‌های فعال</span></button><button type="button" role="tab" aria-selected="false" data-note-tab="inactive">${icon(ICONS.archive)}<span>یادداشت‌های غیرفعال</span></button></div>
+   <button type="button" class="ghost" data-personal-home>بازگشت به خانه</button>
+   <button type="button" class="primary" data-note-new>یادداشت جدید</button>
+   <button type="button" class="ghost" data-note-edit disabled>ویرایش</button>
+   <button type="button" class="danger" data-note-delete disabled>حذف</button>
+   <div class="notes-state-tabs" aria-label="وضعیت یادداشت‌ها"><button type="button" class="active" aria-pressed="true" data-note-tab="active">یادداشت‌های فعال</button><button type="button" aria-pressed="false" data-note-tab="inactive">یادداشت‌های غیرفعال</button></div>
   </div>
   <div class="sticky-note-board" aria-live="polite"></div>
   <dialog class="modal small personal-note-dialog"><form><div class="modal-head"><div><h3>یادداشت جدید</h3><p>عنوان کوتاه و متن یادداشت را وارد کنید.</p></div><button type="button" data-note-close>×</button></div><label>عنوان<input name="title" maxlength="120" required></label><label>متن<textarea name="body" rows="6" maxlength="4000" required></textarea></label><fieldset class="note-color-picker"><legend>رنگ یادداشت</legend>${noteColors.map((color,index)=>`<label class="note-color ${color}"><input type="radio" name="color" value="${color}" ${index===0?'checked':''}><span aria-label="رنگ ${fa(index+1)}"></span></label>`).join('')}</fieldset><div class="modal-actions"><button type="button" class="ghost" data-note-close>انصراف</button><button type="submit" class="primary">ذخیره یادداشت</button></div></form></dialog>`;
  const assistantView=document.createElement('section');assistantView.id='voiceAssistantView';assistantView.className='view hidden smart-assistant-view';assistantView.dataset.featureKey='voiceAssistant';assistantView.innerHTML=`
-  <div class="personal-command-row bamco-command-bar"><button type="button" class="ghost" data-personal-home>${icon(ICONS.home)}<span>بازگشت به خانه</span></button><button type="button" class="ghost" data-assistant-new>${icon(ICONS.refresh)}<span>گفت‌وگوی جدید</span></button></div>
+  <div class="personal-command-row bamco-command-bar"><button type="button" class="ghost" data-personal-home>بازگشت به خانه</button><button type="button" class="ghost" data-assistant-new>گفت‌وگوی جدید</button></div>
   <div class="assistant-stage">
    <aside class="assistant-character-panel">
     <div class="assistant-halo"><div class="assistant-orbit one"></div><div class="assistant-orbit two"></div><div class="assistant-character animated-character" role="img" aria-label="دستیار هوشمند متحرک"><div class="assistant-figure"><div class="assistant-hijab"></div><div class="assistant-face"><i class="assistant-eye right"></i><i class="assistant-eye left"></i><i class="assistant-smile"></i></div><div class="assistant-body"><i class="assistant-hand right"></i><i class="assistant-hand left"></i></div></div></div></div>
@@ -44,7 +44,7 @@ function installNavigation(){
    </section>
   </div>`;
  workspace.append(notesView,assistantView);
- window.BamcoNavigation?.configure?.({state,titles:{notes:'یادداشت‌ها',voiceAssistant:'دستیار صوتی هوشمند'}});
+ window.BamcoNavigation?.configure?.({state,titles:{notes:'یادداشت‌ها',voiceAssistant:'دستیار هوشمند'}});
  bindNotes(notesView);bindAssistant(assistantView);
  window.BamcoNavigation?.registerView?.('notes',{activate:()=>{inactiveMode=false;selectedNote='';loadNotes();renderNotes()}});
  window.BamcoNavigation?.registerView?.('voiceAssistant',{activate:()=>resetAssistant(),dispose:stopAssistantMedia});
@@ -59,7 +59,7 @@ function renderNotes(){
  const view=q('#notesView');if(!view)return;const board=q('.sticky-note-board',view),rows=notes.filter(note=>!!note.inactive===inactiveMode).sort((a,b)=>String(b.updatedAt).localeCompare(String(a.updatedAt)));
  board.innerHTML=rows.length?rows.map((note,index)=>`<article class="sticky-note ${esc(note.color||noteColors[index%noteColors.length])} ${String(note.id)===String(selectedNote)?'selected':''}" data-note-id="${esc(note.id)}"><button type="button" class="sticky-note-main"><span class="sticky-pin" aria-hidden="true">📌</span><strong>${esc(note.title)}</strong><p>${esc(note.body)}</p><small>${noteDate(note.updatedAt)}</small></button><button type="button" class="sticky-note-toggle" data-note-toggle="${esc(note.id)}" title="${note.inactive?'فعال‌سازی یادداشت':'غیرفعال‌سازی یادداشت'}" aria-label="${note.inactive?'فعال‌سازی یادداشت':'غیرفعال‌سازی یادداشت'}">${note.inactive?'↺':'○'}</button></article>`).join(''):`<div class="personal-empty"><span>${inactiveMode?'📂':'📝'}</span><b>${inactiveMode?'یادداشت غیرفعالی وجود ندارد.':'هنوز یادداشتی ثبت نشده است.'}</b><small>${inactiveMode?'یادداشت‌های غیرفعال‌شده در اینجا نگهداری می‌شوند.':'با «یادداشت جدید» اولین برگه را به میزتان سنجاق کنید.'}</small></div>`;
  const current=selected();q('[data-note-edit]',view).disabled=!current;q('[data-note-delete]',view).disabled=!current;
- qa('[data-note-tab]',view).forEach(button=>{const isCurrent=(button.dataset.noteTab==='inactive')===inactiveMode;button.classList.toggle('active',isCurrent);button.setAttribute('aria-selected',String(isCurrent))});
+ qa('[data-note-tab]',view).forEach(button=>{const isCurrent=(button.dataset.noteTab==='inactive')===inactiveMode;button.classList.toggle('active',isCurrent);button.setAttribute('aria-pressed',String(isCurrent))});
 }
 function openNoteDialog(note=null){const dialog=q('#notesView .personal-note-dialog'),form=q('form',dialog);form.reset();q('h3',dialog).textContent=note?'ویرایش یادداشت':'یادداشت جدید';form.dataset.noteId=note?.id||'';if(note){form.elements.title.value=note.title;form.elements.body.value=note.body;form.elements.color.value=note.color||'sun'}dialog.showModal();setTimeout(()=>form.elements.title.focus(),20)}
 function bindNotes(view){
