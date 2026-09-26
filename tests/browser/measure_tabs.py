@@ -2,7 +2,7 @@
 import asyncio, functools, http.server, json, threading, time
 from pathlib import Path
 from playwright.async_api import async_playwright, expect
-from run_smoke import FIXTURE, login, home, settled, heartbeat, click_route
+from run_smoke import FIXTURE, login, home, settled, heartbeat, click_route, assert_letters_home_access
 
 ROOT=Path(__file__).resolve().parents[2]
 OUT=ROOT/'test-results'/'tab-performance'
@@ -105,8 +105,7 @@ async def one_case(browser,base,width,role):
     page=await ctx.new_page();page.set_default_timeout(10000);errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
     await page.add_init_script(FIXTURE);await page.goto(base,wait_until='load',timeout=15000);await login(page,role)
     if mobile: await assert_mobile_geometry(page)
-    await expect(page.locator('#lettersIncomingNav')).to_be_visible() if role=='manager' else await expect(page.locator('#lettersIncomingNav')).to_be_hidden()
-    await expect(page.locator('#lettersOutgoingNav')).to_be_visible() if role=='manager' else await expect(page.locator('#lettersOutgoingNav')).to_be_hidden()
+    await assert_letters_home_access(page,role)
     views=await page.locator('#nav button[data-view]').evaluate_all("(els,role)=>els.filter(b=>!b.disabled&&!b.classList.contains('hidden')&&(role==='manager'||!b.classList.contains('manager-only'))).map(b=>b.dataset.view)",role)
     metrics={};seen=[]
     for tab in views:

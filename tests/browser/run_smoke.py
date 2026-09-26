@@ -70,6 +70,14 @@ async def home(page):
     await expect(page.locator('#homeView')).to_be_visible()
     await page.wait_for_function("() => window.Bamco?.state?.view === 'home' && !document.querySelector('#homeView')?.classList.contains('bamco-view-settling')")
 
+async def assert_letters_home_access(page,role):
+    await page.locator('#homeView [data-group="resources"] .home-group-trigger').click()
+    for route in ('lettersIncoming','lettersOutgoing'):
+        option=page.locator(f'.home-launcher-dialog [data-route="{route}"]')
+        if role=='manager': await expect(option).to_be_visible()
+        else: await expect(option).to_have_count(0)
+    await page.locator('.home-launcher-close').click()
+
 async def command_texts(page,selector):
     return [re.sub(r'\s+',' ',x).strip() for x in await page.locator(selector+' > *').all_text_contents()]
 
@@ -211,12 +219,7 @@ async def manager_checks(page,result):
 
 async def sweep_tabs(page,role,result):
     await home(page)
-    if role=='manager':
-        await expect(page.locator('#lettersIncomingNav')).to_be_visible()
-        await expect(page.locator('#lettersOutgoingNav')).to_be_visible()
-    else:
-        await expect(page.locator('#lettersIncomingNav')).to_be_hidden()
-        await expect(page.locator('#lettersOutgoingNav')).to_be_hidden()
+    await assert_letters_home_access(page,role)
     views=await page.locator('#nav button[data-view]').evaluate_all("(els,role)=>els.filter(b=>!b.disabled&&!b.classList.contains('hidden')&&(role==='manager'||!b.classList.contains('manager-only'))).map(b=>b.dataset.view)",role)
     seen=[]; times={}
     for tab in views:
