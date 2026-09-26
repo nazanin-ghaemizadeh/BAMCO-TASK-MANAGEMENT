@@ -2,6 +2,7 @@ const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const vm=require('node:vm');
+const {createHash}=require('node:crypto');
 const {fixture,until}=require('./helpers/app-fixture.cjs');
 
 const read=path=>fs.readFileSync(path,'utf8');
@@ -41,11 +42,13 @@ test('notes are pinned, editable and can move between active and inactive lists'
  assert.deepEqual(f.errors,[]);
 });
 
-test('smart assistant keeps only the female status sticker and starts a fresh conversation on each entry',async t=>{
+test('smart assistant rigs the exact status sticker and starts a fresh conversation on each entry',async t=>{
  const f=await fixture();t.after(()=>f.dispose());
  await f.open('voiceAssistant');
  const view=f.d.querySelector('#voiceAssistantView');
- assert(view.querySelector('.assistant-state-sticker[alt="استیکر خانم، وضعیت مطلوب"]'));assert.equal(view.querySelector('.assistant-prompts'),null);
+ assert(view.querySelector('.assistant-avatar-rig[role="img"] .assistant-state-sticker[src="assets/images/assistant-status1-female.png"]'));
+ assert(view.querySelector('.assistant-avatar-overlays .avatar-jaw'));assert.equal(view.querySelector('.assistant-prompts'),null);
+ assert.equal(createHash('sha256').update(fs.readFileSync('assets/images/assistant-status1-female.png')).digest('hex'),'bb9d3ac1b2096138ac1e0cd8ec69e409c741ca6f28c3fee9f1a6d53fb7ffccc0');
  assert.match(view.querySelector('.assistant-messages').textContent,/سلام/);
  assert.equal(view.querySelectorAll('.assistant-message').length,1);
  const history=view.querySelector('.assistant-messages');
@@ -59,8 +62,27 @@ test('smart assistant keeps only the female status sticker and starts a fresh co
  assert.equal(view.querySelectorAll('.assistant-message').length,1);
  assert.doesNotMatch(view.querySelector('.assistant-messages').textContent,/موقت/);
  const edge=read('supabase/functions/smart-assistant/index.ts');
- assert.match(edge,/client\.from\('task_status_view'\)/);assert.match(edge,/OPENAI_API_KEY/);assert.match(edge,/previous_response_id/);assert.match(edge,/safety_identifier/);
+ assert.match(edge,/client\.from\('task_status_view'\)/);assert.match(edge,/OPENAI_API_KEY/);assert.match(edge,/effective_feature_access/);assert.match(edge,/store:false/);
  assert.deepEqual(f.errors,[]);
+});
+
+test('assistant voice state starts on demand and stops when the page closes',async t=>{
+ const f=await fixture();t.after(()=>f.dispose());
+ let recognizer;
+ f.w.SpeechRecognition=class{
+  constructor(){recognizer=this}
+  start(){this.onstart?.()}
+  abort(){this.onend?.()}
+ };
+ await f.open('voiceAssistant');const view=f.d.querySelector('#voiceAssistantView');
+ assert.equal(view.dataset.avatarState,'idle');assert.equal(recognizer,undefined);
+ const mic=view.querySelector('.assistant-mic');mic.click();
+ assert.equal(view.dataset.avatarState,'listening');assert.equal(mic.getAttribute('aria-pressed'),'true');
+ recognizer.onresult({resultIndex:0,results:[Object.assign([{transcript:'وظایف من چیست؟'}],{isFinal:true})]});
+ assert.equal(view.dataset.avatarState,'thinking');
+ await until(()=>view.querySelectorAll('.assistant-message').length>=3);
+ mic.click();assert.equal(mic.getAttribute('aria-pressed'),'false');
+ await f.open('kanban');assert.equal(view.dataset.avatarState,'idle');assert.deepEqual(f.errors,[]);
 });
 
 test('update request labels include the fields that actually changed',()=>{
