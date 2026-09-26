@@ -48,6 +48,12 @@ test('smart assistant keeps only the female status sticker and starts a fresh co
  assert(view.querySelector('.assistant-state-sticker[alt="استیکر خانم، وضعیت مطلوب"]'));assert.equal(view.querySelector('.assistant-prompts'),null);
  assert.match(view.querySelector('.assistant-messages').textContent,/سلام/);
  assert.equal(view.querySelectorAll('.assistant-message').length,1);
+ const history=view.querySelector('.assistant-messages');
+ Object.defineProperty(history,'scrollHeight',{configurable:true,get:()=>history.children.length*120});
+ view.querySelector('.assistant-composer textarea').value='وظایف من چیست؟';
+ view.querySelector('.assistant-composer').dispatchEvent(new f.w.Event('submit',{bubbles:true,cancelable:true}));
+ await until(()=>history.children.length>=3);
+ assert.equal(history.scrollTop,history.scrollHeight,'new messages keep the history at its bottom');
  view.querySelector('.assistant-messages').insertAdjacentHTML('beforeend','<article class="assistant-message user">موقت</article>');
  await f.open('kanban');await f.open('voiceAssistant');
  assert.equal(view.querySelectorAll('.assistant-message').length,1);
