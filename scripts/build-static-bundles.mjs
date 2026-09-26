@@ -38,7 +38,6 @@ const javascript = [
   'assets/js/personal-workspace.js',
   'assets/js/sidebar.js',
   'assets/js/phase2-message-engine.js',
-  'assets/js/phase3-response-tracking.js',
   'assets/js/task-ui.js',
   'assets/js/ux.js',
   'assets/js/unified-ui.js',

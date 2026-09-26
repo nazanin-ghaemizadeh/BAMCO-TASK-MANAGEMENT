@@ -107,7 +107,7 @@
   button.disabled=true;
   try{const id=task?await rpc('chat_ensure_task_direct',{p_task_id:Number(task.id),p_other_user:userId}):await rpc('chat_ensure_direct',{p_other_user:userId});if(epoch!==serial||task!==selectedTask)return;
    if(route==='directMessages')selectItem(button,q('.conversation-list',view));
-   await window.bamcoChat.mount(host,{id,personId:userId,title,subtitle:task?`وظیفه ${digits(task.legacy_id||task.id)} · ${task.title}`:'خصوصی · فقط این گفت‌وگو',actions:[...(task?[{label:'انتخاب وظیفه دیگر',run:()=>newConversation(view)}]:[]),...(can(route,'delete')?[deleteAction(id,title,route)]:[])]});
+   await window.bamcoChat.mount(host,{id,personId:userId,title,subtitle:task?`وظیفه ${digits(task.legacy_id||task.id)} · ${task.title}`:'خصوصی · فقط این گفت‌وگو',actions:can(route,'delete')?[deleteAction(id,title,route)]:[]});
    await refreshThreads(view);
   }catch(error){failure(host,error)}finally{if(button.isConnected)button.disabled=false}
  }

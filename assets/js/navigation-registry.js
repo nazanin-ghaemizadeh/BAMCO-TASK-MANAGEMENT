@@ -12,8 +12,8 @@
 
   const groups = Object.freeze([
     { key: 'people', title: 'مدیریت افراد', icon: '♙', routes: ['people', 'accessMatrix', 'organization', 'activeSessions', 'loginActivity'] },
-    { key: 'messages', title: 'مدیریت پیام', icon: '✉', routes: ['messages', 'messageCenter', 'sentMessages', 'responseTracking', 'templates', 'stickers'] },
-    { key: 'reports', title: 'گزارش‌ها', icon: '▦', routes: ['dashboard', 'performanceReport', 'responseReport'] },
+    { key: 'messages', title: 'مدیریت پیام', icon: '✉', routes: ['messages', 'messageCenter', 'sentMessages', 'templates', 'stickers'] },
+    { key: 'reports', title: 'گزارش‌ها', icon: '▦', routes: ['dashboard', 'performanceReport'] },
     { key: 'configuration', title: 'تنظیمات', icon: '⚙', routes: ['systemOptions', 'settings', 'alertSettings', 'emailSettings'] },
     { key: 'tasks', title: 'مدیریت وظایف', icon: '☑', routes: ['kanban', 'archive', 'taskTimeline', 'projects', 'approvals', 'requestHistory'] },
     { key: 'delivery', title: 'مدیریت مالی', icon: '▰', routes: ['pettyCash', 'invoices'] },
@@ -29,8 +29,8 @@
   // compatibility without leaking into the user-facing matrix.
   const accessMatrixRoutes = Object.freeze([
     'people', 'organization', 'activeSessions', 'loginActivity',
-    'messages', 'messageCenter', 'sentMessages', 'responseTracking', 'stickers',
-    'dashboard', 'performanceReport', 'responseReport',
+    'messages', 'messageCenter', 'sentMessages', 'stickers',
+    'dashboard', 'performanceReport',
     'systemOptions', 'settings',
     'kanban', 'archive', 'taskTimeline', 'projects', 'approvals', 'requestHistory',
     'pettyCash', 'invoices',
@@ -52,12 +52,10 @@
     ['messages', 'messages', 'پیام‌ها'],
     ['messageCenter', 'messageCenter', 'ارسال پیام'],
     ['sentMessages', 'sentMessages', 'پیام‌های ارسال‌شده'],
-    ['responseTracking', 'responseTracking', 'پیگیری پاسخ'],
     ['templates', 'templates', 'قالب‌ها'],
     ['stickers', 'stickers', 'مدیریت استیکرها'],
     ['dashboard', 'dashboard', 'داشبورد'],
     ['performanceReport', 'performanceReport', 'گزارش عملکرد'],
-    ['responseReport', 'responseReport', 'گزارش پاسخ‌ها'],
     ['pettyCash', 'pettyCash', 'گزارش تنخواه'],
     ['invoices', 'invoices', 'صورتحساب‌ها و تعهدات مالی'],
     ['systemOptions', 'systemOptions', 'وضعیت‌ها و اولویت‌ها'],

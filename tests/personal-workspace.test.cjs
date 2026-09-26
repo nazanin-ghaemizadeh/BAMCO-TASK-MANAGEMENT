@@ -2,7 +2,7 @@ const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const vm=require('node:vm');
-const {fixture}=require('./helpers/app-fixture.cjs');
+const {fixture,until}=require('./helpers/app-fixture.cjs');
 
 const read=path=>fs.readFileSync(path,'utf8');
 
@@ -26,7 +26,7 @@ test('personal tabs are grantable only through the administrator access matrix',
 });
 
 test('notes are pinned, editable and can move between active and inactive lists',async t=>{
- const f=await fixture();t.after(()=>f.dispose());
+ const f=await fixture({tables:{personal_notes:[]}});t.after(()=>f.dispose());
  await f.open('notes');
  const view=f.d.querySelector('#notesView');
  assert.deepEqual([...view.querySelectorAll('.personal-command-row>button')].map(button=>button.textContent.trim()),['بازگشت به خانه','یادداشت جدید','ویرایش','حذف']);
@@ -34,8 +34,9 @@ test('notes are pinned, editable and can move between active and inactive lists'
  view.querySelector('[data-note-new]').click();
  const form=view.querySelector('.personal-note-dialog form');
  form.elements.title.value='کارهای امروز';form.elements.body.value='پیگیری پروپوزال';form.requestSubmit();
+ await until(()=>view.querySelector('.sticky-note'));
  const note=view.querySelector('.sticky-note');assert(note);assert.match(note.textContent,/📌/);assert.match(note.textContent,/کارهای امروز/);assert.match(note.textContent,/پیگیری پروپوزال/);
- note.querySelector('[data-note-toggle]').click();assert.equal(view.querySelector('.sticky-note'),null);
+ note.querySelector('[data-note-toggle]').click();await until(()=>!view.querySelector('.sticky-note'));
  view.querySelector('[data-note-tab="inactive"]').click();assert.match(view.querySelector('.sticky-note').textContent,/کارهای امروز/);
  assert.deepEqual(f.errors,[]);
 });
