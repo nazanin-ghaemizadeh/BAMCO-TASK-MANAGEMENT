@@ -100,3 +100,19 @@ test('project activity deletion uses the canonical approval RPC', () => {
   assert.match(source, /rpc\('delete_project_activity', \{ p_item_id: Number\(id\) \}\)/);
   assert.match(source, /درخواست حذف فعالیت از پروژه برای تأیید بالادست ارسال شد/);
 });
+
+test('project deletion submits one approval request and leaves its activities visible', async t => {
+  const f = await setup({
+    projects: [{ id: 15, title: 'پروژه گروهی', project_code: 'P-15', owner_id: 'expert', status: 'ثبت شده' }],
+    items: [{ id: 151, project_id: 15, item_type: 'activity', title: 'فعالیت اول', task_id: 500 }]
+  });
+  t.after(() => f.dom.window.close());
+  f.w.bamcoConfirm = async () => true;
+  f.d.querySelector('[data-project-select="15"]').click();
+  f.d.querySelector('[data-project-action="delete"]').click();
+  await pause();
+  assert.deepEqual(JSON.parse(JSON.stringify(f.calls)), [{ name: 'request_project_deletion', payload: { p_project_id: 15 } }]);
+  assert.equal(f.tables.projects.length, 1);
+  assert.equal(f.tables.project_items.length, 1);
+  assert.match(f.notices.at(-1).message, /برای تأیید بالادست ارسال شد/);
+});

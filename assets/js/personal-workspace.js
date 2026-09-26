@@ -25,7 +25,7 @@ function installNavigation(){
    <button type="button" class="primary" data-note-new>یادداشت جدید</button>
    <button type="button" class="ghost" data-note-edit disabled>ویرایش</button>
    <button type="button" class="danger" data-note-delete disabled>حذف</button>
-   <div class="notes-state-tabs" aria-label="وضعیت یادداشت‌ها"><button type="button" class="active" aria-pressed="true" data-note-tab="active">یادداشت‌های فعال</button><button type="button" aria-pressed="false" data-note-tab="inactive">یادداشت‌های غیرفعال</button></div>
+   <div class="notes-state-tabs" aria-label="وضعیت یادداشت‌ها"><button type="button" class="ghost active" aria-pressed="true" data-note-tab="active">یادداشت‌های فعال</button><button type="button" class="ghost" aria-pressed="false" data-note-tab="inactive">یادداشت‌های غیرفعال</button></div>
   </div>
   <div class="sticky-note-board" aria-live="polite"></div>
   <dialog class="modal small personal-note-dialog"><form><div class="modal-head"><div><h3>یادداشت جدید</h3><p>عنوان کوتاه و متن یادداشت را وارد کنید.</p></div><button type="button" data-note-close>×</button></div><label>عنوان<input name="title" maxlength="120" required></label><label>متن<textarea name="body" rows="6" maxlength="4000" required></textarea></label><fieldset class="note-color-picker"><legend>رنگ یادداشت</legend>${noteColors.map((color,index)=>`<label class="note-color ${color}"><input type="radio" name="color" value="${color}" ${index===0?'checked':''}><span aria-label="رنگ ${fa(index+1)}"></span></label>`).join('')}</fieldset><div class="modal-actions"><button type="button" class="ghost" data-note-close>انصراف</button><button type="submit" class="primary">ذخیره یادداشت</button></div></form></dialog>`;

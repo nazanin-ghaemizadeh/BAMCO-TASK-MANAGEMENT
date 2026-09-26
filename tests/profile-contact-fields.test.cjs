@@ -4,6 +4,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 const root=path.join(__dirname,'..');
 const read=file=>fs.readFileSync(path.join(root,file),'utf8');
+const {fixture,until}=require('./helpers/app-fixture.cjs');
 
 test('people directory exposes mobile and extension fields end to end',()=>{
  const shell=read('assets/js/shell.js');
@@ -18,6 +19,20 @@ test('people directory exposes mobile and extension fields end to end',()=>{
  assert.match(shell,/شماره داخلی/);
  assert.match(migration,/alter table public\.profiles/);
  assert.match(edge,/شماره همراه معتبر نیست/);
+});
+
+test('person contact numbers display Persian digits with blank placeholders and save normalized values',async t=>{
+ const f=await fixture(),{d,w}=f;t.after(()=>f.dispose());
+ const person=f.profiles.find(p=>p.id==='test-owner');person.mobile_phone='09193460031';person.internal_extension='7488';
+ await f.open('people');await until(()=>d.querySelector('#peopleBody [data-id="test-owner"]'));
+ w.bamcoSelection.set('#peopleBody',['test-owner']);d.querySelector('#editPersonBtn').click();
+ const form=d.querySelector('#personForm'),mobile=form.elements.mobile_phone,extension=form.elements.internal_extension;
+ assert.equal(mobile.getAttribute('placeholder'),null);assert.equal(extension.getAttribute('placeholder'),null);
+ assert.equal(mobile.value,'۰۹۱۹۳۴۶۰۰۳۱');assert.equal(extension.value,'۷۴۸۸');
+ mobile.value='091٢';mobile.dispatchEvent(new w.Event('input',{bubbles:true}));assert.equal(mobile.value,'۰۹۱۲');
+ extension.value='۵۴۳۲';form.requestSubmit();await until(()=>!d.querySelector('#personDialog').open);
+ const saved=f.calls.findLast(call=>call.endpoint==='admin-users'&&call.method==='POST').body;
+ assert.equal(saved.mobile_phone,'0912');assert.equal(saved.internal_extension,'5432');assert.deepEqual(f.errors,[]);
 });
 
 test('personal workspace keeps one command row and defaults to active notes',()=>{

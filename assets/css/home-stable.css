@@ -99,10 +99,11 @@ html body.card-navigation #appView #homeView #nav .nav-group-items>[data-view]{g
 html body.card-navigation #appView #homeView #nav .home-group-trigger{display:none!important}
 html body.card-navigation #appView #homeView[data-layout="launcher"] #nav,
 html body.card-navigation #appView #homeView[data-layout="custom"] #nav{
-  grid-template-columns:repeat(5,minmax(0,1fr))!important;
-  grid-template-rows:repeat(2,minmax(0,1fr))!important;
-  gap:clamp(10px,2vw,28px)!important;
-  padding:clamp(8px,2vh,24px) clamp(12px,3vw,48px)!important;
+  display:flex!important;flex-wrap:wrap!important;justify-content:center!important;align-content:center!important;
+  gap:clamp(18px,3vw,42px)!important;
+  width:min(100%,1050px)!important;max-width:1050px!important;
+  margin-inline:auto!important;
+  padding:clamp(12px,2vh,28px)!important;
   align-items:center!important;
   overflow:auto!important;
   box-sizing:border-box!important;
@@ -110,6 +111,7 @@ html body.card-navigation #appView #homeView[data-layout="custom"] #nav{
 html body.card-navigation #appView #homeView[data-layout="launcher"] #nav>.nav-group,
 html body.card-navigation #appView #homeView[data-layout="custom"] #nav>.nav-group{
   display:grid!important;place-items:center!important;align-content:center!important;gap:8px!important;
+  flex:0 0 156px!important;width:156px!important;height:160px!important;
   padding:8px!important;border:0!important;background:transparent!important;box-shadow:none!important;
 }
 html body.card-navigation #appView #homeView[data-layout="launcher"] #nav>.nav-group.hidden,
@@ -151,11 +153,12 @@ html body.card-navigation #appView #homeView[data-layout="custom"] #nav .home-gr
 .home-launcher-head h2{margin:0;font-size:26px}
 .home-launcher-symbol{display:grid;place-items:center;width:50px;height:50px;border-radius:50%;background:#e0efe5;color:#126c4b;font-size:28px}
 .home-launcher-close{display:grid;place-items:center;flex:none;width:42px;height:42px;border:0;border-radius:50%;background:#e6f0ea;color:#194e38;font-size:32px;line-height:1;cursor:pointer}
-.home-launcher-routes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding-top:20px}
-.home-launcher-route{display:flex;align-items:center;gap:12px;min-height:72px;padding:12px;border:1px solid #d5e6dc;border-radius:16px;background:#fff;color:#255a41;text-align:right;font:700 18px/1.5 var(--fa-font,'B Nazanin',serif);cursor:pointer;transition:background .15s,transform .15s}
-.home-launcher-route:hover{background:#e9f4ed;transform:translateY(-2px)}
-.home-launcher-route-icon{display:grid;place-items:center;flex:none;width:42px;height:42px;border-radius:12px;background:#e6f2ea;color:#287050;font-size:24px}
-.home-launcher-route-icon svg{width:24px;height:24px;fill:none;stroke:currentColor}
+.home-launcher-routes{display:flex;flex-wrap:wrap;justify-content:center;gap:16px 24px;padding-top:20px}
+.home-launcher-route{display:flex;flex:0 0 138px;flex-direction:column;align-items:center;justify-content:flex-start;gap:9px;min-height:132px;padding:8px;border:0;border-radius:16px;background:transparent;color:#255a41;text-align:center;font:700 18px/1.5 var(--fa-font,'B Nazanin',serif);cursor:pointer;transition:transform .15s}
+.home-launcher-route:hover{transform:translateY(-3px)}
+.home-launcher-route-icon{display:grid;place-items:center;flex:none;width:78px;height:78px;border:2px solid #d4e8db;border-radius:50%;background:linear-gradient(145deg,#fff,#e4f1e9);color:#126c4b;font-size:30px;box-shadow:0 9px 22px #0b51331b}
+.home-launcher-route:hover .home-launcher-route-icon{background:#e0f0e6;border-color:#7fb99b}
+.home-launcher-route-icon svg{width:33px;height:33px;fill:none;stroke:currentColor}
 .home-launcher-dialog :is(button:focus-visible){outline:3px solid #1f8059;outline-offset:2px}
 
 .home-layout-settings{margin:22px 0;padding:20px;border:1px solid #d4e6dc;border-radius:18px;background:#f8fcf9}
@@ -173,20 +176,20 @@ html body.card-navigation #appView #homeView[data-layout="custom"] #nav .home-gr
 .home-layout-storage-note{display:block;margin-top:12px;color:#668072}
 @media(max-width:1200px){
  html body.card-navigation #appView #homeView[data-layout="launcher"] #nav,
- html body.card-navigation #appView #homeView[data-layout="custom"] #nav{grid-template-columns:repeat(4,minmax(0,1fr))!important;grid-template-rows:none!important;grid-auto-rows:160px!important;height:auto!important}
+ html body.card-navigation #appView #homeView[data-layout="custom"] #nav{height:auto!important;min-height:calc(100dvh - 150px)!important}
 }
 @media(max-width:820px){
- html body.card-navigation #appView #homeView[data-layout="launcher"] #nav,
- html body.card-navigation #appView #homeView[data-layout="custom"] #nav{grid-template-columns:repeat(3,minmax(0,1fr))!important}
- .home-launcher-routes{grid-template-columns:repeat(2,minmax(0,1fr))}
  .home-layout-choices{grid-template-columns:1fr}
 }
 @media(max-width:620px){
  html body.card-navigation #appView #homeView[data-layout="launcher"] #nav,
- html body.card-navigation #appView #homeView[data-layout="custom"] #nav{grid-template-columns:repeat(2,minmax(0,1fr))!important;grid-auto-rows:148px!important}
+ html body.card-navigation #appView #homeView[data-layout="custom"] #nav{gap:8px!important;padding:16px 6px!important}
+ html body.card-navigation #appView #homeView[data-layout="launcher"] #nav>.nav-group,
+ html body.card-navigation #appView #homeView[data-layout="custom"] #nav>.nav-group{flex-basis:136px!important;width:136px!important;height:142px!important}
  html body.card-navigation #appView #homeView #nav .home-group-symbol{width:78px;height:78px}
  .home-launcher-dialog{padding:16px;max-height:calc(100dvh - 32px)}
- .home-launcher-routes{grid-template-columns:1fr}
+ .home-launcher-routes{gap:8px}
+ .home-launcher-route{flex-basis:120px}
  .home-layout-order-panel ol{grid-template-columns:1fr}
 }
 @media(prefers-reduced-motion:reduce){
