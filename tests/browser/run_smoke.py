@@ -120,30 +120,8 @@ async def manager_checks(page,result):
     result['message_text_removed']='pass'
     assert await page.locator('#nav [data-view="ownerPreview"],#ownerPreviewView').count()==0
     result['owner_workspace_preview_removed']='pass'
-    assert await page.locator('#nav [data-view="requestReport"],#requestReportView').count()==0,'removed request report returned'
-    result['removed_request_report_stays_removed']='pass'
-    await page.evaluate('__testApi.responseTrackingFixture=__testApi.deliveries.map(x=>({...x}))')
-
-    await open_tab(page,'responseReport')
-    controls=await command_texts(page,'#responseReportView .response-command-row')
-    assert controls[0]=='بازگشت به خانه','response report home order'
-    assert 'از تاریخ' in controls[1] and 'تا تاریخ' in controls[1],'response report date order'
-    assert controls[2:6]==['تازه‌سازی','مدیریت دسترسی','خروجی اکسل','حذف رکورد'],'response report action order'
-    assert await page.locator('#canonicalResponseFrom').input_value() and await page.locator('#canonicalResponseTo').input_value(),'response report current-month defaults missing'
-    rows=page.locator('#responseReportBody tr[data-delivery-id]')
-    await expect(rows).to_have_count(3)
-    delete=page.locator('[data-response-bulk-delete]')
-    await rows.first.click(); await expect(delete).to_be_enabled()
-    await delete.click(); await page.locator('[data-notice-cancel]').click(); await expect(rows).to_have_count(3)
-    await page.evaluate("__testApi.fail.push('cancel_message_deliveries')")
-    await delete.click(); await page.locator('[data-notice-ok]').click(); await expect(page.locator('.bamco-toast[data-kind=error]')).to_be_visible(); await page.locator('.bamco-toast[data-kind=error] button').click()
-    await page.evaluate('__testApi.fail=[]')
-    await delete.click(); await page.locator('[data-notice-ok]').click(); await expect(rows).to_have_count(2); await expect(page.locator('.bamco-toast[data-kind=success]')).to_be_visible(); await page.locator('.bamco-toast[data-kind=success] button').click()
-    await page.wait_for_timeout(400)
-    await rows.nth(0).click(); await rows.nth(1).click(modifiers=['Control']); await expect(delete).to_have_text('حذف ۲ رکورد')
-    await delete.click(); await page.locator('[data-notice-ok]').click(); await expect(rows).to_have_count(0); await expect(page.locator('.bamco-toast[data-kind=success]')).to_be_visible(); await page.locator('.bamco-toast[data-kind=success] button').click()
-    await home(page); result['response_report_root_controls_and_delete']='pass'
-    await page.evaluate('__testApi.deliveries=__testApi.responseTrackingFixture.map(x=>({...x}))')
+    assert await page.locator('#nav [data-view="requestReport"],#requestReportView,#nav [data-view="responseReport"],#responseReportView,#nav [data-view="responseTracking"],#responseTrackingView').count()==0,'removed response screens returned'
+    result['removed_response_screens_stay_removed']='pass'
 
     await open_tab(page,'performanceReport')
     await expect(page.locator('[data-performance-from]')).to_be_visible(); await expect(page.locator('[data-performance-to]')).to_be_visible()
@@ -181,19 +159,6 @@ async def manager_checks(page,result):
     assert await visible_count(page,'#sentMessagesView .suite-table-options')==0,'table settings leaked into sent messages'
     await home(page); result['sent_log_unified_without_cards']='pass'
 
-    await open_tab(page,'responseTracking')
-    controls=await command_texts(page,'#responseTrackingView .response-command-row')
-    assert controls[0]=='بازگشت به خانه','tracking home order'
-    assert 'از تاریخ' in controls[1] and 'تا تاریخ' in controls[1],'tracking date order'
-    assert controls[2:5]==['تازه‌سازی','مدیریت دسترسی','خروجی اکسل'],f'tracking controls: {controls!r}'
-    assert all(label in controls[5] for label in ('داخل سامانه','ایمیل','هر دو')),f'tracking channel control: {controls!r}'
-    assert controls[6]=='ارسال یادآوری',f'tracking reminder control: {controls!r}'
-    assert await page.locator('#responseFrom').input_value() and await page.locator('#responseTo').input_value(),'tracking current-month defaults missing'
-    assert 'شناسه پیگیری' not in ''.join(await page.locator('#responseTrackingView thead tr:first-child th').all_text_contents()),'tracking id still visible'
-    assert await visible_count(page,'#responseTrackingView .bamco-management-toolbar .content-back')==0,'duplicate tracking home button visible'
-    tracking=page.locator('#responseTrackingBody tr[data-delivery]').first
-    reminder=page.locator('#sendResponseReminder'); await expect(reminder).to_be_disabled(); await tracking.click(); await expect(tracking).to_have_attribute('aria-selected','true'); await expect(reminder).to_be_enabled()
-    await home(page); result['response_tracking_root_controls_and_selection']='pass'
 
     await open_tab(page,'directMessages')
     system=page.locator('#directMessagesView [data-kind="system"]'); await expect(system).to_have_count(1); await system.click()
