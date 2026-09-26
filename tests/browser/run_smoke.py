@@ -94,21 +94,9 @@ async def manager_checks(page,result):
     await expect(page.locator('#lettersOutgoingView [data-letters-table] tbody')).to_contain_text('نامه‌ای مطابق جست‌وجو پیدا نشد')
     await page.locator('#lettersOutgoingView [data-letter-search]').fill('')
     await expect(page.locator('#lettersOutgoingView [data-letters-table] tbody tr')).to_have_count(53)
-    await page.evaluate("window.__accessPeople=__testApi.profiles.slice();__testApi.profiles.push(...Array.from({length:25},(_,i)=>({id:'access-person-'+i,full_name:'متولی آزمایشی '+i,role:'owner',active:true})))")
-    await page.locator('#lettersOutgoingView [data-letter-action="access"]').click()
-    await expect(page.locator('#letterAccessDialog input[type=checkbox]')).to_have_count(27)
-    box=await page.locator('#letterAccessDialog').evaluate('e=>({w:e.getBoundingClientRect().width,h:e.getBoundingClientRect().height,screen:innerWidth,screenH:innerHeight})')
-    assert box['w']<=box['screen']-16 and box['h']<=box['screenH']-16,box
-    listing=page.locator('#letterAccessDialog .permission-list')
-    assert await listing.evaluate('e=>e.scrollHeight>e.clientHeight')
-    await listing.evaluate('e=>e.scrollTop=e.scrollHeight')
-    assert await listing.evaluate('e=>e.scrollTop')>0
-    await expect(page.locator('#letterAccessDialog footer button[type=submit]')).to_be_in_viewport()
-    await page.locator('#letterAccessDialog [data-search]').fill('متولی آزمایشی 24')
-    await expect(page.locator('#letterAccessDialog .permission-person:not([hidden])')).to_have_count(1)
-    await page.locator('#letterAccessDialog footer [data-close]').click()
-    await page.evaluate('__testApi.profiles=window.__accessPeople')
-    await home(page); result['letters_toolbar_search_and_scroll']='pass'; result['permission_dialog_mobile_scroll']='pass'
+    # Access grants are managed centrally; the legacy per-letter control is retired.
+    await expect(page.locator('#lettersOutgoingView [data-letter-action="access"]')).to_be_hidden()
+    await home(page); result['letters_toolbar_search_and_scroll']='pass'
 
     assert await page.locator('#nav [data-view="templates"],#nav [data-view="messageTemplates"],#templatesView,#messageTemplatesView').count()==0,'removed message-text UI returned'
     result['message_text_removed']='pass'
