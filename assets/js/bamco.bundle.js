@@ -4493,7 +4493,8 @@ function create(view,{session,loadSticker}){
  let conversation=conversationId(),history=[],generation=0,active=false,muted=false,busy=false,recognition=null,recorder=null,recordingStream=null,recordingContext=null,recordingTimer=0;
  let audio=null,audioUrl='',audioContext=null,audioFrame=0,answerAbort=null,speechAbort=null,recognitionRestart=0;
  let blinkTimer=0,blinkClose=0,gestureTimer=0,currentSpoken='',lastSpoken='',lastSpokenAt=0;
- const valid=()=>!view.classList.contains('hidden')&&!!session().token&&session().userId;
+ const visible=()=>!view.classList.contains('hidden');
+ const valid=()=>visible()&&!!session().token&&session().userId;
  const avatar={
   state:'idle',
   set(next,label){
@@ -4511,7 +4512,9 @@ function create(view,{session,loadSticker}){
   return !!reference&&normalized(phrase).length>3&&normalized(reference).includes(normalized(phrase));
  };
  function blinkLoop(){
-  clearTimeout(blinkTimer);if(!valid()||document.hidden)return;
+  // Blinking is a local visual behaviour.  It must not depend on a network
+  // session, otherwise a slow profile/session refresh leaves a static avatar.
+  clearTimeout(blinkTimer);if(!visible()||document.hidden)return;
   blinkTimer=setTimeout(()=>{
    view.style.setProperty('--avatar-gaze',[-2,-1,0,0,1,2][Math.floor(Math.random()*6)]+'px');
    const doubleBlink=Math.random()<.13;
@@ -4684,14 +4687,14 @@ function create(view,{session,loadSticker}){
  function dispose(){generation++;answerAbort?.abort();answerAbort=null;active=false;busy=false;stopListening();stopSpeech();clearTimeout(blinkTimer);clearTimeout(blinkClose);clearTimeout(gestureTimer);view.dataset.avatarBlink='false';view.dataset.avatarGesture='neutral';view.style.setProperty('--avatar-gaze','0px');avatar.set('idle')}
  function activate(){
   dispose();conversation=conversationId();history=[];messages.replaceChildren();append('assistant','سلام! من برای مرور وظایف، پروژه‌ها و درخواست‌های شما آماده‌ام. از کجا شروع کنیم؟');
-  input.value='';muted=false;mute.setAttribute('aria-pressed','false');avatar.set('idle');void loadSticker();blinkLoop();
+  input.value='';muted=false;mute.setAttribute('aria-pressed','false');view.dataset.avatarMotion='active';avatar.set('idle');gesture('greet');void loadSticker();blinkLoop();
  }
  mic.onclick=toggleMic;mute.onclick=()=>{muted=!muted;mute.setAttribute('aria-pressed',String(muted));mute.textContent=muted?'باصدا':'بی‌صدا';mute.setAttribute('aria-label',muted?'فعال کردن صدای دستیار':'بی‌صدا کردن دستیار');if(muted)stopSpeech()};
  stop.onclick=()=>{stopSpeech();avatar.set(active?'listening':'idle')};
  $('[data-assistant-new]',view).onclick=activate;$('[data-personal-home]',view).onclick=()=>window.bamcoShowHome?.();
  $('.assistant-composer',view).onsubmit=event=>{event.preventDefault();const text=input.value;input.value='';void send(text)};
  input.onkeydown=event=>{if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();event.currentTarget.form.requestSubmit()}};
- document.addEventListener('visibilitychange',()=>{if(document.hidden){stopListening();stopSpeech();clearTimeout(blinkTimer);clearTimeout(blinkClose);view.dataset.avatarBlink='false'}else if(valid()){blinkLoop();if(active)void beginListening()}});
+ document.addEventListener('visibilitychange',()=>{if(document.hidden){stopListening();stopSpeech();clearTimeout(blinkTimer);clearTimeout(blinkClose);view.dataset.avatarBlink='false'}else if(visible()){blinkLoop();if(active&&valid())void beginListening()}});
  window.addEventListener('beforeunload',dispose);
  return{activate,dispose,getState:()=>avatar.state,get voiceEnabled(){return active},get busy(){return busy}}
 }
@@ -4767,7 +4770,7 @@ function installNavigation(){
        <g class="avatar-brow-left"><image href="assets/images/assistant-status1-female.png" width="800" height="1000" clip-path="url(#assistant-brow-left-clip)"/></g>
        <g class="avatar-brow-right"><image href="assets/images/assistant-status1-female.png" width="800" height="1000" clip-path="url(#assistant-brow-right-clip)"/></g>
        <g class="avatar-lids"><ellipse cx="333" cy="338" rx="48" ry="38"/><ellipse cx="449" cy="331" rx="48" ry="39"/><path d="M290 338 Q334 360 377 336 M404 331 Q450 355 496 328"/></g>
-       <g class="avatar-mouth-rig"><ellipse class="avatar-mouth-cover" cx="393" cy="414" rx="64" ry="43" fill="url(#assistant-skin-cover)"/><g class="avatar-jaw"><image href="assets/images/assistant-status1-female.png" width="800" height="1000" clip-path="url(#assistant-mouth-clip)"/></g></g>
+       <g class="avatar-mouth-rig"><ellipse class="avatar-mouth-cover" cx="393" cy="414" rx="64" ry="43" fill="url(#assistant-skin-cover)"/><g class="avatar-jaw"><image href="assets/images/assistant-status1-female.png" width="800" height="1000" clip-path="url(#assistant-mouth-clip)"/></g><ellipse class="avatar-mouth-open" cx="393" cy="414" rx="28" ry="14"/><path class="avatar-mouth-highlight" d="M376 411 Q393 401 410 411"/></g>
        <g class="avatar-arm-left"><image href="assets/images/assistant-status1-female.png" width="800" height="1000" clip-path="url(#assistant-arm-left-clip)"/></g>
        <g class="avatar-arm-right"><image href="assets/images/assistant-status1-female.png" width="800" height="1000" clip-path="url(#assistant-arm-right-clip)"/></g>
        <g class="avatar-hand-left"><image href="assets/images/assistant-status1-female.png" width="800" height="1000" clip-path="url(#assistant-hand-left-clip)"/></g>
