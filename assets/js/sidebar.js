@@ -93,12 +93,6 @@
     new MutationObserver(refreshVisibility).observe(nav,{subtree:true,attributes:true,attributeFilter:['class']});
     window.addEventListener('bamco:feature-access-changed',()=>{window.BamcoAccess?.applyNavigation?.();refreshVisibility()});
 
-    [permanent,temporary].filter(Boolean).forEach(b=>b.addEventListener('click',()=>{
-      closeAllGroups();
-      document.body.classList.remove('welcome-active');q('#welcomeView')?.classList.add('hidden');
-      if(typeof showView==='function')showView(b.dataset.view);
-      const h=q('#viewTitle');if(h)h.textContent=b.dataset.view==='vehiclePermanent'?'تحویل دائم خودرو':'تحویل موقت خودرو';
-    }));
     document.addEventListener('click',e=>{if(!e.target.closest('#nav .nav-group'))closeAllGroups()});
     document.addEventListener('keydown',e=>{if(e.key==='Escape')closeAllGroups()});
     window.addEventListener('resize',()=>qa('#nav .nav-group.open').forEach(positionDropdown));

@@ -15,6 +15,18 @@
   function on(type,listener){const listeners=events.get(type)||new Set();listeners.add(listener);events.set(type,listeners);return()=>listeners.delete(listener)}
   function registerView(id,{activate,dispose}={}){if(!id||lifecycle.has(id))throw new Error(`View already registered: ${id}`);lifecycle.set(id,{activate,dispose});return()=>lifecycle.delete(id)}
   function disposeView(id){try{lifecycle.get(id)?.dispose?.()}catch(error){console.warn('BAMCO view dispose',id,error)}}
+  function activateView(id){
+    try{
+      const result=lifecycle.get(id)?.activate?.();
+      if(result&&typeof result.catch==='function')result.catch(error=>reportViewError(id,error));
+    }catch(error){reportViewError(id,error)}
+  }
+  function reportViewError(id,error){
+    console.error('BAMCO view activation failed',id,error);
+    emit('view-error',{view:id,error});
+    const message=error?.message||'باز کردن این بخش انجام نشد. دوباره تلاش کنید.';
+    if(typeof root.bamcoToast==='function')root.bamcoToast(message,true);
+  }
 
   const nativeFetch=typeof root.fetch==='function'?root.fetch.bind(root):null;
   const middleware=[];
@@ -53,7 +65,7 @@
       root.document?.querySelectorAll('#nav button').forEach(node=>node.classList.toggle('active',node.dataset.view===view));
       const title=root.document?.querySelector('#viewTitle');if(title&&titles[view])title.textContent=titles[view];
       const add=root.document?.querySelector('#addTaskBtn');if(add)add.classList.toggle('hidden',view!=='kanban');
-      lifecycle.get(view)?.activate?.();emit('navigation-after',{from:previous,to:view});return true;
+      activateView(view);emit('navigation-after',{from:previous,to:view});return true;
     }
   };
   Bamco.state=state;Bamco.lifecycle={registerView,disposeView,on};Bamco.network=network;Bamco.navigation=navigation;

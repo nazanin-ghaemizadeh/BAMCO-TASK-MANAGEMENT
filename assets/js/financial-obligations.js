@@ -3,7 +3,7 @@
   'use strict';
   const E = window.bamcoEnterprise; if (!E) return;
   const { q, esc, fa, money, date, fetchRows, insert, insertMinimal, update, removeRows, setBusy, notify, statusText } = E;
-  const model = { invoices: [], payments: [], selected: null, search: '', invoiceEditor: null, paymentEditor: null, paymentFormOpen: false };
+  const model = { invoices: [], payments: [], selected: null, search: '', searchOpen: false, invoiceEditor: null, paymentEditor: null, paymentFormOpen: false };
   let loadVersion = 0;
   const root = () => q('#invoiceFeatureRoot');
   const invoice = id => model.invoices.find(item => String(item.id) === String(id));
@@ -21,7 +21,8 @@
     const host = root(); if (!host) return;
     const visible = model.invoices.filter(item => !model.search || [item.invoice_number, item.title, item.account_party, item.company_name, item.status].some(value => String(value || '').toLowerCase().includes(model.search.toLowerCase())));
     const current = invoice(model.selected);
-    const search = `<input id="invoiceSearch" type="search" value="${esc(model.search)}" placeholder="شماره، عنوان یا شرکت/پیمانکار…">`;
+    const searchOpen = model.searchOpen || !!model.search;
+    const search = `<button type="button" class="ghost invoice-search-toggle ${searchOpen ? 'active' : ''}" data-invoice-action="search" aria-label="جست‌وجو" title="جست‌وجو" aria-pressed="${searchOpen ? 'true' : 'false'}">⌕</button><input id="invoiceSearch" class="invoice-search ${searchOpen ? 'search-open' : ''}" type="search" value="${esc(model.search)}" placeholder="شماره، عنوان یا شرکت/پیمانکار…">`;
     const commandBar = current
       ? '<div class="invoice-top-command-row bamco-command-bar"><span data-feature-access-suppressed="true" data-home-return-suppressed="true" hidden></span><button type="button" class="ghost" data-invoice-action="back">بازگشت به کارت‌ها</button><button type="button" class="primary" data-invoice-action="payment">ثبت مرحله پرداخت</button><button type="button" class="ghost" data-invoice-action="edit">ویرایش</button><button type="button" class="danger" data-invoice-action="delete">حذف</button></div>'
       : `<div class="invoice-top-command-row bamco-command-bar"><button type="button" class="ghost" data-home-action>بازگشت به خانه</button><button type="button" class="primary" data-invoice-action="new">صورتحساب جدید</button><button type="button" class="ghost" data-invoice-action="refresh">تازه‌سازی</button>${search}</div>`;
@@ -79,13 +80,31 @@
   function openInvoiceDate(button) { const form = button.closest('form'), name = button.dataset.invoiceDate, visible = form?.elements[`${name}_jalali`], hidden = form?.elements[name]; E.openJalaliPicker?.({ visible, hidden, label: button.getAttribute('aria-label') || 'انتخاب تاریخ' }); }
   function bind() {
     const host = root(); if (!host || host.dataset.bound === '1') return; host.dataset.bound = '1';
-    host.addEventListener('input', event => { if (event.target.id === 'invoiceSearch') { model.search = event.target.value; render(); q('#invoiceSearch')?.focus(); } });
+    host.addEventListener('input', event => {
+      if (event.target.id !== 'invoiceSearch') return;
+      const cursor = event.target.selectionStart;
+      model.search = event.target.value;
+      render();
+      const input = q('#invoiceSearch'); input?.focus({ preventScroll: true });
+      if (cursor != null) input?.setSelectionRange(cursor, cursor);
+    });
+    host.addEventListener('keydown', event => {
+      if (event.target.id !== 'invoiceSearch' || event.key !== 'Escape') return;
+      model.search = ''; model.searchOpen = false; render();
+    });
     host.addEventListener('click', event => {
       const action = event.target.closest('[data-invoice-action]')?.dataset.invoiceAction;
       if (action === 'new') return showInvoiceDialog(null);
       if (action === 'edit') return showInvoiceDialog(model.selected);
       if (action === 'delete') return void deleteInvoice();
       if (action === 'refresh') return void load();
+      if (action === 'search') {
+        model.searchOpen = !model.searchOpen;
+        if (!model.searchOpen) model.search = '';
+        render();
+        if (model.searchOpen) requestAnimationFrame(() => q('#invoiceSearch')?.focus());
+        return;
+      }
       if (action === 'access') return window.bamcoAccessEditor?.open?.({ featureKey: 'invoices', title: 'مدیریت دسترسی صورتحساب‌ها و تعهدات مالی' });
       if (action === 'back') { model.selected = null; model.paymentEditor = null; model.paymentFormOpen = false; return render(); }
       if (action === 'payment') return showPaymentDialog(null);
@@ -98,7 +117,7 @@
     host.addEventListener('submit', event => { if (event.target.id === 'invoiceForm') void saveInvoice(event); if (event.target.id === 'invoicePaymentForm') void savePayment(event); });
   }
   async function load({ cardsOnly = false } = {}) {
-    if (!root() || !state.profile) return; if (cardsOnly) { model.selected = null; model.paymentEditor = null; model.paymentFormOpen = false; }
+    if (!root() || !state.profile) return; if (cardsOnly) { model.selected = null; model.search = ''; model.searchOpen = false; model.paymentEditor = null; model.paymentFormOpen = false; }
     const request = ++loadVersion;
     try {
       const [invoices, paymentRows] = await Promise.all([fetchRows('invoices', 'select=*&order=updated_at.desc,id.desc'), fetchRows('invoice_payments', 'select=*&order=sequence_no.asc')]);
