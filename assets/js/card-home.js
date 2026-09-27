@@ -101,13 +101,15 @@ function install(){
    const routeIcon=window.BamcoIcons?.forRoute(source.dataset.view),sourceIcon=source.querySelector('b');
    if(routeIcon)icon.innerHTML=routeIcon;else if(sourceIcon)icon.append(sourceIcon.cloneNode(true));
    const name=document.createElement('span');name.textContent=source.querySelector('span')?.textContent?.trim()||source.textContent.trim();
+   const count=routeBadgeText(source.dataset.view);
+   if(count){const badge=document.createElement('b');badge.className='home-launcher-route-badge';badge.textContent=count;badge.setAttribute('aria-label',`${count} اعلان جدید`);shortcut.append(badge)}
    shortcut.append(icon,name);shortcut.addEventListener('click',()=>{
     if(!available(source)||!group.isConnected)return fillGroup(group);
     groupDialog.close();source.click();
    });routes.append(shortcut);
-  }
-  return true;
  }
+ return true;
+}
  function openGroup(group){
   if(!group||group.classList.contains('hidden')||!fillGroup(group))return;
   openGroupKey=group.dataset.group;lastTrigger=group.querySelector('.home-group-trigger');
@@ -132,6 +134,23 @@ function install(){
    group.prepend(button);
   }
  }
+ function routeBadgeText(view){
+  const selector={
+   approvals:'#approvalBadge',messages:'#messageBadge',
+   groupChat:'.conversation-nav-count',directMessages:'.conversation-nav-count',taskChats:'.conversation-nav-count'
+  }[String(view||'')];
+  return selector?(nav.querySelector(selector)?.textContent||'').trim().replace(/^۰$/,''):'';
+ }
+ function syncLauncherRouteBadges(){
+  if(!groupDialog.open)return;
+  groupDialog.querySelectorAll('.home-launcher-route').forEach(shortcut=>{
+   const value=routeBadgeText(shortcut.dataset.route),existing=shortcut.querySelector('.home-launcher-route-badge');
+   if(!value){existing?.remove();return}
+   const badge=existing||document.createElement('b');
+   badge.className='home-launcher-route-badge';badge.textContent=value;badge.setAttribute('aria-label',`${value} اعلان جدید`);
+   if(!existing)shortcut.prepend(badge);
+  });
+ }
  function syncLauncherBadges(){
   for(const [key,selector] of Object.entries(badgeSources)){
    const trigger=nav.querySelector(`.nav-group[data-group="${key}"] .home-group-trigger`),symbol=trigger?.querySelector('.home-group-symbol');if(!symbol)continue;
@@ -140,6 +159,7 @@ function install(){
    if(!badge){badge=document.createElement('b');badge.className='home-group-badge';badge.setAttribute('aria-hidden','true');symbol.append(badge)}
    if(badge.textContent!==value)badge.textContent=value;
   }
+  syncLauncherRouteBadges();
  }
  const badgeObserver=new MutationObserver(syncLauncherBadges);
  badgeObserver.observe(nav,{childList:true,characterData:true,subtree:true});
