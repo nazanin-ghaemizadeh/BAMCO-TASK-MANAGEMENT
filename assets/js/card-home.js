@@ -132,7 +132,16 @@ function install(){
    if(count){const badge=document.createElement('b');badge.className='home-launcher-route-badge';badge.textContent=count;badge.setAttribute('aria-label',`${count} اعلان جدید`);shortcut.append(badge)}
    shortcut.append(icon,name);shortcut.addEventListener('click',()=>{
     if(!available(source)||!group.isConnected)return fillGroup(group);
-    groupDialog.close();source.click();
+    const route=source.dataset.view;
+    groupDialog.close();
+    // Do not synchronously invoke another clickable control from inside this
+    // click handler.  Some browsers keep the original launcher click pending
+    // while the delegated navigation replaces the home view.  A new task
+    // preserves the real navigation event without trapping the user here.
+    setTimeout(()=>{
+     if(source.isConnected&&available(source))source.click();
+     else window.BamcoNavigation?.navigate?.(route);
+    },0);
    });routes.append(shortcut);
  }
  return true;
