@@ -6,7 +6,7 @@ const {webcrypto}=require('node:crypto');
 const {stripTypeScriptTypes}=require('node:module');
 
 const source=stripTypeScriptTypes(fs.readFileSync('supabase/functions/smart-assistant/index.ts','utf8').replace(/^import[^\n]*\n/,''));
-const grants=['voiceAssistant','kanban','projects','approvals','organization','messages'];
+const grants=['voiceAssistant','kanban','archive','projects','approvals','notes','organization','messages'];
 const access=allowed=>({schema:'bamco.feature-access.v1',grants:grants.map(feature_key=>({feature_key,can_view:allowed.includes(feature_key)}))});
 const post=(body,headers={})=>new Request('https://example.test',{method:'POST',headers:{Authorization:'Bearer token','Content-Type':'application/json',...headers},body:JSON.stringify(body)});
 
@@ -59,6 +59,22 @@ test('project follow-up retrieves fresh permitted activities and dependencies',a
   assert(h.queries.some(query=>query.table==='projects'));
   assert(h.queries.some(query=>query.table==='project_items'));
   assert(h.queries.some(query=>query.table==='project_dependencies'));
+});
+
+test('a personal briefing joins every granted workspace source without bypassing caller scope',async()=>{
+ const h=harness({allowed:[...grants,'archive','notes'],tables:{personal_notes:[{id:'n1',title:'یادداشت من',body:'پیگیری',inactive:false}]}});
+ assert.equal((await h.call(post({message:'یک مرور کامل از وضعیت کارهایم بده'}))).status,200);
+ for(const table of ['task_status_view','projects','project_items','project_dependencies','personal_notes'])assert(h.queries.some(query=>query.table===table),table);
+ assert(h.calls.includes('request_workflow_snapshot'));
+ const prompt=JSON.parse(h.upstream[0].options.body).input[0].content;
+ assert.match(prompt,/یادداشت من/);assert.match(prompt,/archive/);
+});
+
+test('a rejected deadline request is supplied to the assistant as factual request history',async()=>{
+ const h=harness({rpc:{request_workflow_snapshot:{schema:'bamco.workflow.v2',routes:[],current_requests:[],history_requests:[{id:12,request_type:'update',request_status:'rejected',task_id:7,proposed_data:{title:'وظیفه من',due_date:'2026-10-10'},review_note:'با تمدید موافقت نشد'}]}}});
+ assert.equal((await h.call(post({message:'درخواست تمدید زمانم چه شد؟'}))).status,200);
+ const prompt=JSON.parse(h.upstream[0].options.body).input[0].content;
+ assert.match(prompt,/rejected/);assert.match(prompt,/2026-10-10/);assert.match(prompt,/با تمدید موافقت نشد/);
 });
 
 test('today planning retrieves only granted work and organizational scope never expands on its own',async()=>{

@@ -46,11 +46,12 @@ test('smart assistant rigs the exact status sticker and starts a fresh conversat
  const f=await fixture();t.after(()=>f.dispose());
  await f.open('voiceAssistant');
  const view=f.d.querySelector('#voiceAssistantView');
- assert(view.querySelector('.assistant-avatar-rig[role="img"] .assistant-state-sticker[src="assets/images/assistant-status1-female.png"]'));
- for(const part of ['head','eye-left','eye-right','pupil-left','pupil-right','brow-left','brow-right','lids','jaw','shoulder-left','shoulder-right','arm-left','arm-right','hand-left','hand-right'])assert(view.querySelector('.assistant-avatar-overlays .avatar-'+part),part+' layer');
+ assert(view.querySelector('.assistant-avatar-rig[role="img"] .assistant-avatar-frame.waiting-grounded[src="assets/images/assistant-female-waiting-grounded.png"]'));
+ for(const state of ['waiting-tap','listening','thinking','speaking'])assert(view.querySelector('.assistant-avatar-frame.'+state),state+' frame');
+ assert.equal(view.querySelector('.assistant-state-sticker'),null,'the original fixed sticker is no longer the rendered avatar');
+ const css=read('assets/css/personal-workspace.css');
+ assert.match(css,/assistant-wait-tap/);assert.match(css,/assistant-speaking/);assert.match(css,/assistant-reduced-idle/);
  assert.equal(view.querySelector('.assistant-prompts'),null);
- view.querySelector('.assistant-state-sticker').dispatchEvent(new f.w.Event('error'));
- assert.equal(view.querySelector('.assistant-avatar-error').hidden,false,'avatar loading failure leaves chat available');
  assert.equal(createHash('sha256').update(fs.readFileSync('assets/images/assistant-status1-female.png')).digest('hex'),'bb9d3ac1b2096138ac1e0cd8ec69e409c741ca6f28c3fee9f1a6d53fb7ffccc0');
  assert.match(view.querySelector('.assistant-messages').textContent,/سلام/);
  assert.equal(view.querySelectorAll('.assistant-message').length,1);
@@ -79,6 +80,7 @@ test('assistant voice state starts on demand and stops when the page closes',asy
  };
  await f.open('voiceAssistant');const view=f.d.querySelector('#voiceAssistantView');
  assert.equal(view.dataset.avatarState,'idle');assert.equal(recognizer,undefined);
+ assert.equal(view.dataset.avatarGesture,'greet','entry begins with a visible greeting gesture');
  const mic=view.querySelector('.assistant-mic');mic.click();
  assert.equal(view.dataset.avatarState,'listening');assert.equal(mic.getAttribute('aria-pressed'),'true');
  recognizer.onresult({resultIndex:0,results:[Object.assign([{transcript:'وظایف من چیست؟'}],{isFinal:true})]});

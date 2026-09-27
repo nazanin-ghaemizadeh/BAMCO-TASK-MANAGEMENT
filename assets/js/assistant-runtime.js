@@ -3,7 +3,7 @@
 'use strict';
 const $=(selector,root)=>root.querySelector(selector);
 const STATES=new Set(['idle','listening','thinking','speaking','success','warning','error']);
-const ROUTES=new Set(['kanban','projects','approvals']);
+const ROUTES=new Set(['kanban','archive','projects','approvals','notes']);
 const escapeHtml=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 
 function create(view,{session,loadSticker}){
@@ -13,7 +13,8 @@ function create(view,{session,loadSticker}){
  let conversation=conversationId(),history=[],generation=0,active=false,muted=false,busy=false,recognition=null,recorder=null,recordingStream=null,recordingContext=null,recordingTimer=0;
  let audio=null,audioUrl='',audioContext=null,audioFrame=0,answerAbort=null,speechAbort=null,recognitionRestart=0;
  let blinkTimer=0,blinkClose=0,gestureTimer=0,currentSpoken='',lastSpoken='',lastSpokenAt=0;
- const valid=()=>!view.classList.contains('hidden')&&!!session().token&&session().userId;
+ const visible=()=>!view.classList.contains('hidden');
+ const valid=()=>visible()&&!!session().token&&session().userId;
  const avatar={
   state:'idle',
   set(next,label){
@@ -31,16 +32,9 @@ function create(view,{session,loadSticker}){
   return !!reference&&normalized(phrase).length>3&&normalized(reference).includes(normalized(phrase));
  };
  function blinkLoop(){
-  clearTimeout(blinkTimer);if(!valid()||document.hidden)return;
-  blinkTimer=setTimeout(()=>{
-   view.style.setProperty('--avatar-gaze',[-2,-1,0,0,1,2][Math.floor(Math.random()*6)]+'px');
-   const doubleBlink=Math.random()<.13;
-   view.dataset.avatarBlink='true';blinkClose=setTimeout(()=>{
-    view.dataset.avatarBlink='false';
-    if(doubleBlink)blinkTimer=setTimeout(()=>{view.dataset.avatarBlink='true';blinkClose=setTimeout(()=>{view.dataset.avatarBlink='false';blinkLoop()},130)},220);
-    else blinkLoop();
-   },145);
-  },2800+Math.random()*3700);
+  // The state images animate locally; this only keeps the visible view alive.
+  clearTimeout(blinkTimer);if(!visible()||document.hidden)return;
+  blinkTimer=setTimeout(blinkLoop,3000);
  }
  function gesture(kind){
   clearTimeout(gestureTimer);view.dataset.avatarGesture=kind;
@@ -159,7 +153,7 @@ function create(view,{session,loadSticker}){
   if(!window.MediaRecorder||!navigator.mediaDevices?.getUserMedia)throw Error('میکروفون در این مرورگر پشتیبانی نمی‌شود.');
   const current=session(),stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}});
   if(!active||!valid()||session().userId!==current.userId){stream.getTracks().forEach(track=>track.stop());return}
-  recordingStream=stream;const mime=['audio/webm','audio/mp4','audio/ogg'].find(type=>MediaRecorder.isTypeSupported(type))||'',chunks=[];
+  recordingStream=stream;const mime=['audio/webm','audio/mp4','audio/ogg'].find(type=>typeof MediaRecorder.isTypeSupported!=='function'||MediaRecorder.isTypeSupported(type))||'',chunks=[];
   recorder=new MediaRecorder(stream,mime?{mimeType:mime}:undefined);const instance=recorder;let heard=false,lastVoice=0,start=Date.now();
   instance.ondataavailable=event=>{if(event.data?.size)chunks.push(event.data)};
   instance.onstop=async()=>{
@@ -171,9 +165,9 @@ function create(view,{session,loadSticker}){
    catch(error){avatar.set('warning',error.message||'صدا تشخیص داده نشد.')}
    finally{if(active&&valid()&&!recorder&&!recognition)recognitionRestart=setTimeout(()=>void beginListening(),500)}
   };
-  instance.start();avatar.set('listening');mic.setAttribute('aria-pressed','true');
+  instance.start(250);avatar.set('listening');mic.setAttribute('aria-pressed','true');mic.title='در حال شنیدن؛ پس از پایان صحبت دوباره دکمه را بزنید.';
   const AudioContext=window.AudioContext||window.webkitAudioContext;
-  if(AudioContext){recordingContext=new AudioContext();const source=recordingContext.createMediaStreamSource(stream),analyser=recordingContext.createAnalyser();analyser.fftSize=1024;source.connect(analyser);const samples=new Uint8Array(analyser.fftSize);
+  if(AudioContext){recordingContext=new AudioContext();await recordingContext.resume().catch(()=>{});const source=recordingContext.createMediaStreamSource(stream),analyser=recordingContext.createAnalyser();analyser.fftSize=1024;source.connect(analyser);const samples=new Uint8Array(analyser.fftSize);
    const listen=()=>{if(instance.state!=='recording')return;analyser.getByteTimeDomainData(samples);let power=0;for(const sample of samples){const diff=(sample-128)/128;power+=diff*diff}const amplitude=Math.sqrt(power/samples.length);level(Math.min(1,amplitude*8));
     if(amplitude>.045){heard=true;lastVoice=Date.now();if(avatar.state==='speaking')stopSpeech()}
     if((heard&&Date.now()-lastVoice>1100)||(Date.now()-start>20000)){instance.stop();return}
@@ -184,7 +178,7 @@ function create(view,{session,loadSticker}){
  async function beginListening(){
   if(!active||!valid()||recognition||recorder)return;
   const Recognition=window.SpeechRecognition||window.webkitSpeechRecognition;
-  if(!Recognition){try{await recordFallback()}catch(error){active=false;mic.setAttribute('aria-pressed','false');avatar.set('warning',error.name==='NotAllowedError'?'اجازهٔ میکروفون داده نشد.':error.message)}return}
+  if(!Recognition){try{await recordFallback()}catch(error){active=false;mic.setAttribute('aria-pressed','false');mic.title='میکروفون فعال نشد؛ اجازهٔ مرورگر را بررسی کنید.';avatar.set('warning',error.name==='NotAllowedError'?'اجازهٔ میکروفون داده نشد؛ دسترسی میکروفون سایت را در مرورگر فعال کنید.':error.message)}return}
   const recognizer=new Recognition();recognition=recognizer;recognizer.lang='fa-IR';recognizer.continuous=true;recognizer.interimResults=true;
   recognizer.onstart=()=>{if(active){mic.setAttribute('aria-pressed','true');if(!audio)avatar.set('listening')}};
   recognizer.onresult=event=>{
@@ -196,22 +190,22 @@ function create(view,{session,loadSticker}){
     level(.45);
    }
   };
-  recognizer.onerror=event=>{if(event.error==='not-allowed'||event.error==='service-not-allowed'){active=false;avatar.set('warning','اجازهٔ میکروفون داده نشد.');mic.setAttribute('aria-pressed','false')}else if(active)avatar.set('warning','صدا دریافت نشد؛ دوباره تلاش کنید.')};
+  recognizer.onerror=event=>{if(event.error==='not-allowed'||event.error==='service-not-allowed'){active=false;avatar.set('warning','اجازهٔ میکروفون داده نشد؛ دسترسی میکروفون سایت را در مرورگر فعال کنید.');mic.setAttribute('aria-pressed','false');mic.title='میکروفون در مرورگر مجاز نیست.'}else if(active)avatar.set('warning','صدا دریافت نشد؛ دوباره تلاش کنید.')};
   recognizer.onend=()=>{if(recognition===recognizer)recognition=null;if(active&&valid())recognitionRestart=setTimeout(()=>void beginListening(),350)};
   try{recognizer.start()}catch(error){recognition=null;active=false;avatar.set('warning',error.message||'میکروفون فعال نشد.')}
  }
- function toggleMic(){active=!active;if(active){stopSpeech();void beginListening()}else{stopListening({finishRecording:true});if(avatar.state!=='thinking')avatar.set('idle')}}
+ function toggleMic(){active=!active;if(active){stopSpeech();mic.title='در حال فعال‌سازی میکروفون…';void beginListening()}else{stopListening({finishRecording:true});mic.title='گفت‌وگوی صوتی';if(avatar.state!=='thinking')avatar.set('idle')}}
  function dispose(){generation++;answerAbort?.abort();answerAbort=null;active=false;busy=false;stopListening();stopSpeech();clearTimeout(blinkTimer);clearTimeout(blinkClose);clearTimeout(gestureTimer);view.dataset.avatarBlink='false';view.dataset.avatarGesture='neutral';view.style.setProperty('--avatar-gaze','0px');avatar.set('idle')}
  function activate(){
   dispose();conversation=conversationId();history=[];messages.replaceChildren();append('assistant','سلام! من برای مرور وظایف، پروژه‌ها و درخواست‌های شما آماده‌ام. از کجا شروع کنیم؟');
-  input.value='';muted=false;mute.setAttribute('aria-pressed','false');avatar.set('idle');void loadSticker();blinkLoop();
+  input.value='';muted=false;mute.setAttribute('aria-pressed','false');view.dataset.avatarMotion='active';avatar.set('idle');gesture('greet');void loadSticker();blinkLoop();
  }
  mic.onclick=toggleMic;mute.onclick=()=>{muted=!muted;mute.setAttribute('aria-pressed',String(muted));mute.textContent=muted?'باصدا':'بی‌صدا';mute.setAttribute('aria-label',muted?'فعال کردن صدای دستیار':'بی‌صدا کردن دستیار');if(muted)stopSpeech()};
  stop.onclick=()=>{stopSpeech();avatar.set(active?'listening':'idle')};
  $('[data-assistant-new]',view).onclick=activate;$('[data-personal-home]',view).onclick=()=>window.bamcoShowHome?.();
  $('.assistant-composer',view).onsubmit=event=>{event.preventDefault();const text=input.value;input.value='';void send(text)};
  input.onkeydown=event=>{if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();event.currentTarget.form.requestSubmit()}};
- document.addEventListener('visibilitychange',()=>{if(document.hidden){stopListening();stopSpeech();clearTimeout(blinkTimer);clearTimeout(blinkClose);view.dataset.avatarBlink='false'}else if(valid()){blinkLoop();if(active)void beginListening()}});
+ document.addEventListener('visibilitychange',()=>{if(document.hidden){stopListening();stopSpeech();clearTimeout(blinkTimer);clearTimeout(blinkClose);view.dataset.avatarBlink='false'}else if(visible()){blinkLoop();if(active&&valid())void beginListening()}});
  window.addEventListener('beforeunload',dispose);
  return{activate,dispose,getState:()=>avatar.state,get voiceEnabled(){return active},get busy(){return busy}}
 }

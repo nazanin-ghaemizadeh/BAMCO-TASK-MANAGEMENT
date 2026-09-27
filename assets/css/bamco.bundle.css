@@ -788,47 +788,18 @@ html body #appView [data-feature-access-control="local"],html body #appView .veh
 #voiceAssistantView .assistant-character-panel,#voiceAssistantView .assistant-chat-panel{min-width:0;min-height:0;border:1px solid #d1e1d8;border-radius:18px;background:#fff;box-shadow:0 8px 26px #234d3910}
 #voiceAssistantView .assistant-character-panel{position:relative;display:grid;place-items:center;padding:16px;overflow:hidden;background:radial-gradient(circle at 50% 35%,#e8f8f0 0,#fff 65%)}
 #voiceAssistantView .assistant-avatar-rig{display:grid;place-items:center;width:100%;height:100%;min-height:0;overflow:hidden}
-#voiceAssistantView .assistant-avatar-visual{position:relative;flex:none;height:min(100%,540px);aspect-ratio:4/5;max-width:100%;transform-origin:50% 72%;transition:transform .55s ease;animation:assistant-breathe 7.8s ease-in-out infinite}
-#voiceAssistantView .assistant-state-sticker,#voiceAssistantView .assistant-avatar-overlays{display:block;position:absolute;inset:0;width:100%;height:100%}
-#voiceAssistantView .assistant-state-sticker{object-fit:contain}
-#voiceAssistantView .assistant-avatar-overlays{overflow:visible;pointer-events:none}
+#voiceAssistantView .assistant-avatar-scene{position:relative;width:min(100%,430px);height:100%;min-height:0;isolation:isolate}
+#voiceAssistantView .assistant-avatar-frame{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center bottom;opacity:0;transform:translateY(8px) scale(.985);transition:opacity .32s ease,transform .42s cubic-bezier(.2,.8,.2,1);will-change:opacity,transform;pointer-events:none}
+#voiceAssistantView[data-avatar-state="idle"] .assistant-avatar-frame.waiting-grounded,#voiceAssistantView[data-avatar-state="success"] .assistant-avatar-frame.waiting-grounded,#voiceAssistantView[data-avatar-state="warning"] .assistant-avatar-frame.waiting-grounded,#voiceAssistantView[data-avatar-state="error"] .assistant-avatar-frame.waiting-grounded{opacity:1;transform:translateY(0) scale(1);animation:assistant-wait-grounded 1.45s ease-in-out infinite}
+#voiceAssistantView[data-avatar-state="idle"] .assistant-avatar-frame.waiting-tap,#voiceAssistantView[data-avatar-state="success"] .assistant-avatar-frame.waiting-tap,#voiceAssistantView[data-avatar-state="warning"] .assistant-avatar-frame.waiting-tap,#voiceAssistantView[data-avatar-state="error"] .assistant-avatar-frame.waiting-tap{opacity:1;transform:translateY(0) scale(1);animation:assistant-wait-tap 1.45s ease-in-out infinite}
+#voiceAssistantView.is-listening .assistant-avatar-frame.listening,#voiceAssistantView.is-thinking .assistant-avatar-frame.thinking,#voiceAssistantView.is-speaking .assistant-avatar-frame.speaking{opacity:1;transform:translateY(0) scale(1);animation:assistant-state-presence 1.9s ease-in-out infinite}
+#voiceAssistantView.is-speaking .assistant-avatar-frame.speaking{animation:assistant-speaking 1s ease-in-out infinite}
+#voiceAssistantView .assistant-avatar-floor{position:absolute;z-index:-1;right:50%;bottom:4%;width:54%;height:5%;border-radius:50%;background:radial-gradient(ellipse,#2859443b,transparent 70%);transform:translateX(50%);filter:blur(5px)}
+#voiceAssistantView[data-avatar-state="idle"] .assistant-avatar-floor{animation:assistant-floor-tap 1.45s ease-in-out infinite}
 #voiceAssistantView .assistant-avatar-error{position:absolute;inset:auto 12px 12px;color:#884927;text-align:center;font-size:13px}
 #voiceAssistantView .assistant-voice-activity{position:absolute;bottom:16px;left:16px;z-index:2;width:12px;height:12px;border-radius:50%;background:#63ac87;opacity:.6;transform:scale(calc(1 + var(--assistant-audio-level,0)));transition:transform .1s,background .2s}
 #voiceAssistantView.is-listening .assistant-voice-activity{background:#1f9f72}
 #voiceAssistantView.is-speaking .assistant-voice-activity{background:#2675ad}
-#voiceAssistantView.is-thinking .assistant-avatar-visual{transform:rotate(-.8deg) translateY(1px)}
-#voiceAssistantView.is-listening .assistant-avatar-visual{transform:rotate(.35deg) translateY(-1px)}
-#voiceAssistantView.is-speaking .assistant-avatar-visual{transform:translateY(calc(-2px * var(--assistant-audio-level,0)))}
-#voiceAssistantView .avatar-head,#voiceAssistantView .avatar-shoulder-left,#voiceAssistantView .avatar-shoulder-right,#voiceAssistantView .avatar-eye-left,#voiceAssistantView .avatar-eye-right,#voiceAssistantView .avatar-pupil-left,#voiceAssistantView .avatar-pupil-right,#voiceAssistantView .avatar-brow-left,#voiceAssistantView .avatar-brow-right{transform-box:view-box;transition:transform .45s ease}
-#voiceAssistantView .avatar-pupil-left,#voiceAssistantView .avatar-pupil-right{transform:translateX(var(--avatar-gaze,0px))}
-#voiceAssistantView.is-thinking .avatar-head{transform:rotate(-.25deg);transform-origin:400px 440px}
-#voiceAssistantView.is-listening .avatar-shoulder-right{transform:translateY(1px)}
-#voiceAssistantView.is-listening .avatar-brow-left{transform:translateY(-2px)}
-#voiceAssistantView.is-thinking .avatar-brow-right{transform:translateY(-2px)}
-#voiceAssistantView.is-success .avatar-brow-left,#voiceAssistantView.is-success .avatar-brow-right{transform:translateY(-1px)}
-#voiceAssistantView.is-warning .avatar-brow-left,#voiceAssistantView.is-error .avatar-brow-left{transform:translateY(2px)}
-#voiceAssistantView .avatar-lids{opacity:0;transition:opacity .06s}
-#voiceAssistantView .avatar-lids ellipse{fill:#f4ad83;filter:blur(2px)}
-#voiceAssistantView .avatar-lids path{fill:none;stroke:#673c32;stroke-width:4;stroke-linecap:round}
-#voiceAssistantView[data-avatar-blink="true"] .avatar-lids{opacity:1}
-#voiceAssistantView .avatar-mouth-rig{opacity:0;transition:opacity .09s}
-#voiceAssistantView.is-speaking .avatar-mouth-rig{opacity:1}
-#voiceAssistantView .avatar-jaw{transform-box:view-box;transform-origin:393px 400px;transform:scale(var(--viseme-x,1),var(--viseme-y,.55));transition:transform .09s ease-out}
-#voiceAssistantView[data-avatar-viseme="rest"]{--viseme-x:1;--viseme-y:.16}
-#voiceAssistantView[data-avatar-viseme="aa"]{--viseme-x:1;--viseme-y:1}
-#voiceAssistantView[data-avatar-viseme="e"]{--viseme-x:1.12;--viseme-y:.55}
-#voiceAssistantView[data-avatar-viseme="i"]{--viseme-x:.96;--viseme-y:.36}
-#voiceAssistantView[data-avatar-viseme="o"]{--viseme-x:.69;--viseme-y:.9}
-#voiceAssistantView[data-avatar-viseme="u"]{--viseme-x:.58;--viseme-y:.57}
-#voiceAssistantView[data-avatar-viseme="mbp"]{--viseme-x:.92;--viseme-y:.17}
-#voiceAssistantView[data-avatar-viseme="fv"]{--viseme-x:1.05;--viseme-y:.33}
-#voiceAssistantView[data-avatar-viseme="l"]{--viseme-x:.92;--viseme-y:.68}
-#voiceAssistantView[data-avatar-viseme="sz"]{--viseme-x:1.08;--viseme-y:.26}
-#voiceAssistantView .avatar-arm-left,#voiceAssistantView .avatar-arm-right,#voiceAssistantView .avatar-hand-left,#voiceAssistantView .avatar-hand-right{transform-box:view-box;transition:transform .6s ease}
-#voiceAssistantView[data-avatar-gesture="emphasis"] .avatar-arm-left{transform:rotate(-.5deg);transform-origin:260px 530px}
-#voiceAssistantView[data-avatar-gesture="acknowledge"] .avatar-arm-right{transform:rotate(.5deg);transform-origin:510px 590px}
-#voiceAssistantView[data-avatar-gesture="emphasis"] .avatar-hand-left{transform:rotate(-3deg) translate(-2px,-2px);transform-origin:268px 530px}
-#voiceAssistantView[data-avatar-gesture="acknowledge"] .avatar-hand-right{transform:rotate(3deg) translateY(-2px);transform-origin:500px 650px}
 #voiceAssistantView .assistant-chat-panel{display:grid;grid-template-rows:auto minmax(0,1fr) auto;overflow:hidden}
 #voiceAssistantView .assistant-chat-head{display:flex;align-items:center;gap:8px;min-height:58px;padding:8px 14px;border-bottom:1px solid #d6e3dc;background:#fbfdfc}
 #voiceAssistantView .assistant-chat-head>div{display:grid;flex:1;min-width:0;gap:1px}
@@ -854,12 +825,16 @@ html body #appView [data-feature-access-control="local"],html body #appView .veh
 #voiceAssistantView .assistant-mic[aria-pressed="true"]{background:#cceada;box-shadow:0 0 0 2px #237456}
 #voiceAssistantView .assistant-send{background:#17684c;color:#fff}
 #voiceAssistantView .assistant-composer svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-@keyframes assistant-breathe{50%{scale:1.004;translate:0 -2px}}
+@keyframes assistant-wait-grounded{0%,45%,100%{opacity:1;transform:translateY(0) scale(1)}52%,75%{opacity:0;transform:translateY(2px) scale(.995)}}
+@keyframes assistant-wait-tap{0%,45%,100%{opacity:0;transform:translateY(3px) scale(.99)}52%,75%{opacity:1;transform:translateY(-1px) scale(1.008)}}
+@keyframes assistant-floor-tap{0%,45%,100%{opacity:.48;transform:translateX(50%) scale(1)}56%,72%{opacity:.86;transform:translateX(50%) scale(1.18,.72)}}
+@keyframes assistant-state-presence{0%,100%{transform:translateY(0) rotate(0) scale(1)}50%{transform:translateY(-4px) rotate(.35deg) scale(1.012)}}
+@keyframes assistant-speaking{0%,100%{transform:translateY(0) rotate(-.15deg) scale(1)}50%{transform:translateY(-5px) rotate(.28deg) scale(1.016)}}
 @keyframes assistant-pulse{50%{opacity:.25}}
 @media(max-width:900px){
  #voiceAssistantView .assistant-stage{grid-template-columns:minmax(0,1fr);grid-template-rows:clamp(108px,22dvh,208px) minmax(0,1fr);gap:8px}
  #voiceAssistantView .assistant-character-panel{padding:5px}
- #voiceAssistantView .assistant-avatar-visual{height:100%}
+ #voiceAssistantView .assistant-avatar-scene{height:100%;width:min(100%,310px)}
  #voiceAssistantView .assistant-message{max-width:94%}
 }
 @media(max-width:620px){
@@ -874,7 +849,8 @@ html body #appView [data-feature-access-control="local"],html body #appView .veh
  #voiceAssistantView .assistant-chat-head button{font-size:12px;padding:3px 6px}
 }
 @media(max-height:500px) and (max-width:900px){#voiceAssistantView .assistant-stage{grid-template-rows:76px minmax(0,1fr)}}
-@media(prefers-reduced-motion:reduce){#voiceAssistantView .assistant-avatar-visual,#voiceAssistantView .avatar-head,#voiceAssistantView .avatar-shoulder-left,#voiceAssistantView .avatar-shoulder-right,#voiceAssistantView .avatar-pupil-left,#voiceAssistantView .avatar-pupil-right,#voiceAssistantView .avatar-brow-left,#voiceAssistantView .avatar-brow-right,#voiceAssistantView .avatar-jaw,#voiceAssistantView .avatar-arm-left,#voiceAssistantView .avatar-arm-right,#voiceAssistantView .avatar-hand-left,#voiceAssistantView .avatar-hand-right{animation:none!important;transition:none!important}}
+@media(prefers-reduced-motion:reduce){#voiceAssistantView .assistant-avatar-frame{transition-duration:.01ms}#voiceAssistantView[data-avatar-state="idle"] .assistant-avatar-frame.waiting-grounded{animation:assistant-reduced-idle 5s ease-in-out infinite}#voiceAssistantView[data-avatar-state="idle"] .assistant-avatar-frame.waiting-tap{display:none}}
+@keyframes assistant-reduced-idle{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
 
 /* source: assets/css/card-home.css */
 /* Scoped final layout; legacy table and authorization logic are retained. */

@@ -34,43 +34,14 @@ function installNavigation(){
   <div class="personal-command-row bamco-command-bar"><button type="button" class="ghost" data-personal-home>بازگشت به خانه</button><button type="button" class="ghost" data-assistant-new>گفت‌وگوی جدید</button></div>
   <div class="assistant-stage">
    <aside class="assistant-character-panel">
-    <div class="assistant-avatar-rig" role="img" aria-label="استیکر خانم وضعیت مطلوب، دستیار متحرک">
-     <div class="assistant-avatar-visual">
-      <img class="assistant-state-sticker" src="assets/images/assistant-status1-female.png" alt="" width="800" height="1000" loading="lazy" decoding="async">
-      <svg class="assistant-avatar-overlays" viewBox="0 0 800 1000" aria-hidden="true" focusable="false">
-       <defs>
-       <clipPath id="assistant-eye-left-clip"><ellipse cx="333" cy="338" rx="44" ry="42"/></clipPath>
-       <clipPath id="assistant-eye-right-clip"><ellipse cx="449" cy="331" rx="45" ry="43"/></clipPath>
-        <clipPath id="assistant-pupil-left-clip"><ellipse cx="336" cy="343" rx="19" ry="25"/></clipPath>
-        <clipPath id="assistant-pupil-right-clip"><ellipse cx="450" cy="336" rx="19" ry="25"/></clipPath>
-        <clipPath id="assistant-brow-left-clip"><ellipse cx="324" cy="272" rx="37" ry="21"/></clipPath>
-        <clipPath id="assistant-brow-right-clip"><ellipse cx="441" cy="263" rx="47" ry="22"/></clipPath>
-        <clipPath id="assistant-head-clip"><path d="M167 97H637V486H167Z"/></clipPath>
-        <clipPath id="assistant-shoulder-left-clip"><path d="M301 472H386V589H301Z"/></clipPath>
-        <clipPath id="assistant-shoulder-right-clip"><path d="M443 473H549V587H443Z"/></clipPath>
-        <clipPath id="assistant-arm-left-clip"><path d="M204 474H312V588H204Z"/></clipPath>
-        <clipPath id="assistant-arm-right-clip"><path d="M495 508H586V645H495Z"/></clipPath>
-        <clipPath id="assistant-mouth-clip"><ellipse cx="393" cy="410" rx="49" ry="29"/></clipPath>
-        <clipPath id="assistant-hand-left-clip"><path d="M225 391H308V514H225Z"/></clipPath>
-        <clipPath id="assistant-hand-right-clip"><path d="M447 593H543V696H447Z"/></clipPath>
-        <radialGradient id="assistant-skin-cover"><stop offset="0" stop-color="#f5ae84"/><stop offset=".68" stop-color="#f4b48e" stop-opacity=".96"/><stop offset="1" stop-color="#f8bd99" stop-opacity="0"/></radialGradient>
-       </defs>
-       <g class="avatar-shoulder-left"><image href="assets/images/assistant-status1-female.png" width="800" height="1000" clip-path="url(#assistant-shoulder-left-clip)"/></g>
-       <g class="avatar-shoulder-right"><image href="assets/images/assistant-status1-female.png" width="800" height="1000" clip-path="url(#assistant-shoulder-right-clip)"/></g>
-       <g class="avatar-head"><image href="assets/images/assistant-status1-female.png" width="800" height="1000" clip-path="url(#assistant-head-clip)"/></g>
-       <g class="avatar-eye-left"><image href="assets/images/assistant-status1-female.png" width="800" height="1000" clip-path="url(#assistant-eye-left-clip)"/></g>
-       <g class="avatar-eye-right"><image href="assets/images/assistant-status1-female.png" width="800" height="1000" clip-path="url(#assistant-eye-right-clip)"/></g>
-       <g class="avatar-pupil-left"><image href="assets/images/assistant-status1-female.png" width="800" height="1000" clip-path="url(#assistant-pupil-left-clip)"/></g>
-       <g class="avatar-pupil-right"><image href="assets/images/assistant-status1-female.png" width="800" height="1000" clip-path="url(#assistant-pupil-right-clip)"/></g>
-       <g class="avatar-brow-left"><image href="assets/images/assistant-status1-female.png" width="800" height="1000" clip-path="url(#assistant-brow-left-clip)"/></g>
-       <g class="avatar-brow-right"><image href="assets/images/assistant-status1-female.png" width="800" height="1000" clip-path="url(#assistant-brow-right-clip)"/></g>
-       <g class="avatar-lids"><ellipse cx="333" cy="338" rx="48" ry="38"/><ellipse cx="449" cy="331" rx="48" ry="39"/><path d="M290 338 Q334 360 377 336 M404 331 Q450 355 496 328"/></g>
-       <g class="avatar-mouth-rig"><ellipse class="avatar-mouth-cover" cx="393" cy="414" rx="64" ry="43" fill="url(#assistant-skin-cover)"/><g class="avatar-jaw"><image href="assets/images/assistant-status1-female.png" width="800" height="1000" clip-path="url(#assistant-mouth-clip)"/></g></g>
-       <g class="avatar-arm-left"><image href="assets/images/assistant-status1-female.png" width="800" height="1000" clip-path="url(#assistant-arm-left-clip)"/></g>
-       <g class="avatar-arm-right"><image href="assets/images/assistant-status1-female.png" width="800" height="1000" clip-path="url(#assistant-arm-right-clip)"/></g>
-       <g class="avatar-hand-left"><image href="assets/images/assistant-status1-female.png" width="800" height="1000" clip-path="url(#assistant-hand-left-clip)"/></g>
-       <g class="avatar-hand-right"><image href="assets/images/assistant-status1-female.png" width="800" height="1000" clip-path="url(#assistant-hand-right-clip)"/></g>
-      </svg>
+    <div class="assistant-avatar-rig" role="img" aria-label="دستیار متحرک خانم وضعیت مطلوب">
+     <div class="assistant-avatar-scene" data-avatar-scene>
+      <img class="assistant-avatar-frame waiting-grounded" src="assets/images/assistant-female-waiting-grounded.png" alt="" width="1024" height="1280" decoding="async">
+      <img class="assistant-avatar-frame waiting-tap" src="assets/images/assistant-female-waiting.png" alt="" width="1024" height="1280" decoding="async">
+      <img class="assistant-avatar-frame listening" src="assets/images/assistant-female-listening.png" alt="" width="1024" height="1280" decoding="async">
+      <img class="assistant-avatar-frame thinking" src="assets/images/assistant-female-thinking.png" alt="" width="1024" height="1280" decoding="async">
+      <img class="assistant-avatar-frame speaking" src="assets/images/assistant-female-speaking.png" alt="" width="1024" height="1280" decoding="async">
+      <span class="assistant-avatar-floor" aria-hidden="true"></span>
      </div>
     </div>
     <span class="assistant-avatar-error" hidden>تصویر دستیار بارگذاری نشد؛ گفت‌وگو همچنان در دسترس است.</span>
@@ -146,9 +117,9 @@ function bindNotes(view){
 }
 
 async function loadAssistantSticker(){
- const image=q('#voiceAssistantView .assistant-state-sticker'),error=q('#voiceAssistantView .assistant-avatar-error');if(!image)return;
- image.loading='eager';image.onload=()=>{if(error)error.hidden=true};image.onerror=()=>{if(error)error.hidden=false};
- try{if(typeof image.decode==='function')await image.decode();if(error&&image.naturalWidth)error.hidden=true}
+ const images=qa('#voiceAssistantView .assistant-avatar-frame'),error=q('#voiceAssistantView .assistant-avatar-error');if(!images.length)return;
+ for(const image of images)image.loading='eager';
+ try{await Promise.all(images.map(image=>typeof image.decode==='function'?image.decode():Promise.resolve()));if(error)error.hidden=false}
  catch{if(error)error.hidden=false}
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',installNavigation,{once:true});else installNavigation();
