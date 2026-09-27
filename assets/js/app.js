@@ -423,7 +423,7 @@ async function enterApp(){
     void refresh().catch(()=>{});
   }
 }
-async function refresh({silent=false}={}){async function refresh({silent=false}={}){}
+async function refresh({silent=false}={}){
   try{
     const profiles=isManager()?await select('profiles','select=id,email,login_name,must_change_password,password_changed_at,full_name,display_name,gender,mobile_phone,internal_extension,excel_name,role,active,default_message_channel,messaging_enabled,avatar_path,updated_at&order=full_name'):scopedTaskProfiles();
     syncCanonicalProfiles(profiles,{replaceAll:isManager()});
@@ -432,18 +432,18 @@ async function refresh({silent=false}={}){async function refresh({silent=false}=
     state.requests=workflow.requests;state.requestHistory=workflow.history;state.requestRoutes=workflow.routes;state.definitionRequests=[...workflow.requests,...workflow.history];
     renderAll();
   }catch(err){if(!silent)toast(err.message,true);throw err}
+}
+// A completed RPC must not be presented as failed only because the follow-up
+// read is temporarily busy.  Mutations already have their own success/error
+// boundary; retry the non-authoritative screen refresh quietly.
+async function refreshAfterMutation(){
+  try{await refresh({silent:true})}
+  catch(error){
+    console.warn('BAMCO post-mutation refresh deferred',error?.message||error);
+    setTimeout(()=>void refresh({silent:true}).catch(next=>console.warn('BAMCO deferred refresh failed',next?.message||next)),900);
   }
-  // A completed RPC must not be presented as failed only because the follow-up
-  // read is temporarily busy.  Mutations already have their own success/error
-  // boundary; retry the non-authoritative screen refresh quietly.
-  async function refreshAfterMutation(){
-    try{await refresh({silent:true})}
-      catch(error){
-          console.warn('BAMCO post-mutation refresh deferred',error?.message||error);
-              setTimeout(()=>void refresh({silent:true}).catch(next=>console.warn('BAMCO deferred refresh failed',next?.message||next)),900);
-                }
-                }
-                function renderAll(){window.renderDashboard?.();renderTasks(false);renderTasks(true);renderRequests();renderRequestHistory()}
+}
+function renderAll(){window.renderDashboard?.();renderTasks(false);renderTasks(true);renderRequests();renderRequestHistory()}
 function renderTasks(archived){
   const query=(archived?$('#archiveSearch'):$('#kanbanSearch')).value.trim().toLowerCase();
   const scope=archived?'archive':'kanban',allRows=state.tasks.filter(t=>!!t.archived===archived&&(archived||!window.bamcoTaskTransfer||window.bamcoTaskTransfer.includes(t))),filters=tableFilters[scope];
@@ -638,8 +638,8 @@ $('#taskForm').addEventListener('submit',async e=>{
     :data;
 
   let submittedRequestId=null;
-    try{
-        if($('#saveTaskBtn').disabled)return;
+  try{
+    if($('#saveTaskBtn').disabled)return;
     $('#saveTaskBtn').disabled=true;
     if(state.reviewEdit){
       await rpc('review_request_stage',{p_request_id:state.reviewEdit.id,p_decision:'approved',p_note:state.reviewEdit.managerNote||null,p_final_data:requestPayload});
@@ -660,12 +660,12 @@ $('#taskForm').addEventListener('submit',async e=>{
       }
     }
     state.taskDialogSubmitting=true;
-        $('#taskDialog').close();
-            const submittedLabel=submittedRequestId==null?'':` شماره ${fa(submittedRequestId)}`;
-                toast(state.reviewEdit?'درخواست با اصلاحات مدیر تأیید شد.':state.resubmitting?'درخواست اصلاح‌شده دوباره ارسال شد.':state.amendingRequest?'درخواست ویرایش و دوباره برای تأیید ارسال شد.':directMutation?(completing?'وظیفه انجام شد و به آرشیو منتقل شد.':'تغییرات ثبت شد.'):(completing?`درخواست تکمیل${submittedLabel} برای تأیید ارسال شد.`:`درخواست${submittedLabel} برای تأیید بالادست ارسال شد.`));
+    $('#taskDialog').close();
+    const submittedLabel=submittedRequestId==null?'':` شماره ${fa(submittedRequestId)}`;
+    toast(state.reviewEdit?'درخواست با اصلاحات مدیر تأیید شد.':state.resubmitting?'درخواست اصلاح‌شده دوباره ارسال شد.':state.amendingRequest?'درخواست ویرایش و دوباره برای تأیید ارسال شد.':directMutation?(completing?'وظیفه انجام شد و به آرشیو منتقل شد.':'تغییرات ثبت شد.'):(completing?`درخواست تکمیل${submittedLabel} برای تأیید ارسال شد.`:`درخواست${submittedLabel} برای تأیید بالادست ارسال شد.`));
     state.reviewEdit=null;state.resubmitting=null;state.amendingRequest=null;state.taskDialogSubmitting=false;
     await refreshAfterMutation();
-      }catch(err){toast(err.message,true)}finally{$('#saveTaskBtn').disabled=false}
+  }catch(err){toast(err.message,true)}finally{$('#saveTaskBtn').disabled=false}
 });
 window.archiveTask=async id=>{const task=state.tasks.find(t=>String(t.id)===String(id));if(!task)return;const rule=window.bamcoOptions.status(task),preserve=!!rule?.archivable&&!window.bamcoOptions.completed(task),message=preserve?`وظیفه «${task.title}» با وضعیت «${task.status}» به آرشیو منتقل شود؟`:`وظیفه «${task.title}» تکمیل و آرشیو شود؟`;if(!await window.bamcoConfirm(message))return;try{const data={archived:true,archived_at:new Date().toISOString(),...(preserve?{}:{status:window.bamcoOptions.label('status','done'),done_date:task.done_date||new Date().toISOString().slice(0,10)})},direct=canDirectlyManageTask(task,'edit');if(direct)await update('tasks',`id=eq.${id}`,data);else await rpc('submit_change_request',{p_request_type:preserve?'update':'complete',p_task_id:Number(id),p_proposed_data:preserve?{...data,status:task.status}:{done_date:data.done_date},p_note:null});toast(direct?'وظیفه به آرشیو منتقل شد.':'درخواست برای تأیید بالادست ارسال شد.');await refresh()}catch(error){toast(error.message,true)}};
 
@@ -685,8 +685,8 @@ window.openReview=id=>{
   const proposed=r.proposed_data||{},before=r.before_data||{},value=(key)=>proposed[key]??task?.[key]??before[key],shown=v=>v===null||v===undefined||v===''?'—':v;
   const projectDeletion=proposed.request_context==='project_delete';
   $('#reviewDetails').innerHTML=projectDeletion
-    ?`<p><b>نوع درخواست:</b> حذف پروژه</p><p><b>مرحله:</b> ${fa(r.current_stage||1)}</p><p><b>پروژه:</b> ${safe(shown(proposed.title))}</p><p>با تأیید نهایی، پروژه و همه فعالیت‌ها و روابط وابسته یک‌جا حذف می‌شوند.</p>`
-    :`<p><b>نوع درخواست:</b> ${safe(requestTypeLabel(r))}</p><p><b>مرحله:</b> ${fa(r.current_stage||1)}</p><p><b>شناسه وظیفه:</b> ${fa(task?.legacy_id||before.legacy_id||r.task_id||'—')}</p><p><b>عنوان:</b> ${safe(shown(value('title')))}</p><p><b>متولی:</b> ${safe(profileLabel(value('owner_id'),ownerName(task||before)))}</p><p><b>وضعیت:</b> ${safe(shown(value('status')))}</p><p><b>توضیحات:</b> ${safe(shown(value('description')))}</p><p><b>یادآور (روز):</b> ${fa(value('reminder_days')??0)}</p><p><b>اولویت:</b> ${safe(shown(value('priority')))}</p><p><b>تاریخ شروع:</b> ${jalaliText(value('start_date'))}</p><p><b>تاریخ پایان:</b> ${jalaliText(value('due_date'))}</p><p><b>تاریخ انجام:</b> ${jalaliText(value('done_date'))}</p>`;
+    ?`<p><b>شناسه درخواست:</b> ${fa(r.id)}</p><p><b>نوع درخواست:</b> حذف پروژه</p><p><b>مرحله:</b> ${fa(r.current_stage||1)}</p><p><b>پروژه:</b> ${safe(shown(proposed.title))}</p><p>با تأیید نهایی، پروژه و همه فعالیت‌ها و روابط وابسته یک‌جا حذف می‌شوند.</p>`
+    :`<p><b>شناسه درخواست:</b> ${fa(r.id)}</p><p><b>نوع درخواست:</b> ${safe(requestTypeLabel(r))}</p><p><b>مرحله:</b> ${fa(r.current_stage||1)}</p><p><b>شناسه وظیفه:</b> ${fa(task?.legacy_id||before.legacy_id||r.task_id||'—')}</p><p><b>عنوان:</b> ${safe(shown(value('title')))}</p><p><b>متولی:</b> ${safe(profileLabel(value('owner_id'),ownerName(task||before)))}</p><p><b>وضعیت:</b> ${safe(shown(value('status')))}</p><p><b>توضیحات:</b> ${safe(shown(value('description')))}</p><p><b>یادآور (روز):</b> ${fa(value('reminder_days')??0)}</p><p><b>اولویت:</b> ${safe(shown(value('priority')))}</p><p><b>تاریخ شروع:</b> ${jalaliText(value('start_date'))}</p><p><b>تاریخ پایان:</b> ${jalaliText(value('due_date'))}</p><p><b>تاریخ انجام:</b> ${jalaliText(value('done_date'))}</p>`;
   $('#editRequestBtn').hidden=projectDeletion;
   $('#editRequestBtn').classList.toggle('hidden',projectDeletion);
   $('#managerNote').value='';$('#reviewDialog').showModal();
@@ -694,11 +694,11 @@ window.openReview=id=>{
 async function review(decision){
   const request=state.reviewing;
   if(!canReviewRequest(request)){toast('این درخواست دیگر در مرحله اقدام شما نیست.',true);$('#reviewDialog').close();return}
-  try{const result=await rpc('review_request_stage',{p_request_id:request.id,p_decision:decision,p_note:$('#managerNote').value.trim()||null,p_final_data:null});$('#reviewDialog').close();toast(decision==='approved'?(result==='next_stage'?'مرحله اول تأیید شد و درخواست به مرحله بعد رفت.':'درخواست تأیید و اعمال شد.'):decision==='needs_revision'?'درخواست جهت اصلاح به متولی برگشت.':'درخواست رد شد.');await refresh()}catch(err){toast(err.message,true)}
+  try{await rpc('review_request_stage',{p_request_id:request.id,p_decision:decision,p_note:$('#managerNote').value.trim()||null,p_final_data:null});$('#reviewDialog').close();toast(decision==='approved'?'درخواست تأیید و اعمال شد.':decision==='needs_revision'?'درخواست جهت اصلاح به متولی برگشت.':'درخواست رد شد.');await refreshAfterMutation()}catch(err){toast(err.message,true)}
 }
 window.reviseRequest=async id=>{const r=state.requests.find(row=>String(row.id)===String(id));if(!r||r.request_status!=='needs_revision'||String(r.requested_by)!==String(state.user?.id)){toast('این درخواست برای اصلاح شما در دسترس نیست.',true);return}if(r.proposed_data?.request_context==='project_delete'){try{await rpc('resubmit_project_deletion',{p_request_id:r.id});toast('درخواست حذف پروژه دوباره برای تأیید ارسال شد.');await refresh()}catch(error){toast(error.message,true)}return}state.resubmitting=r;const task=state.tasks.find(t=>String(t.id)===String(r.task_id))||{},ownerId=r.proposed_data?.owner_id||task.owner_id||r.requested_by||state.profile.id;openTask({...task,...r.proposed_data,owner_id:ownerId})};
 window.amendRequest=id=>{const r=state.requests.find(row=>String(row.id)===String(id));if(!r||r.proposed_data?.request_context==='project_delete'||!['pending','in_review'].includes(r.request_status)||String(r.requested_by)!==String(state.user?.id)){toast('این درخواست برای ویرایش شما در دسترس نیست.',true);return}state.amendingRequest=r;const task=state.tasks.find(t=>String(t.id)===String(r.task_id))||{};openTask({...task,...r.proposed_data,owner_id:r.proposed_data?.owner_id||state.profile.id})};
-window.cancelRequest=async id=>{const r=state.requests.find(row=>String(row.id)===String(id));if(!r||String(r.requested_by)!==String(state.user?.id)){toast('این درخواست برای لغو شما در دسترس نیست.',true);return}if(!await window.bamcoConfirm('این درخواست لغو و به سوابق منتقل شود؟'))return;try{if(r.proposed_data?.request_context==='project_delete')await rpc('cancel_project_deletion',{p_request_id:r.id});else await rpc('cancel_change_request',{p_request_id:r.id,p_note:null});toast('درخواست لغو و به سوابق منتقل شد.');await refresh()}catch(error){toast(error.message,true)}};
+window.cancelRequest=async id=>{const r=state.requests.find(row=>String(row.id)===String(id));if(!r||String(r.requested_by)!==String(state.user?.id)){toast('این درخواست برای لغو شما در دسترس نیست.',true);return}if(!await window.bamcoConfirm('این درخواست لغو و به سوابق منتقل شود؟'))return;try{if(r.proposed_data?.request_context==='project_delete')await rpc('cancel_project_deletion',{p_request_id:r.id});else await rpc('cancel_change_request',{p_request_id:r.id,p_note:null});toast('درخواست لغو و به سوابق منتقل شد.');await refreshAfterMutation()}catch(error){toast(error.message,true)}};
 $('#approveBtn').addEventListener('click',()=>review('approved'));$('#rejectBtn').addEventListener('click',()=>review('rejected'));$('#revisionBtn').addEventListener('click',()=>review('needs_revision'));$('#editRequestBtn').addEventListener('click',()=>{const r=state.reviewing;if(!canReviewRequest(r)||r.proposed_data?.request_context==='project_delete'){toast('این درخواست در فرم وظیفه قابل ویرایش نیست.',true);return}const task=state.tasks.find(t=>String(t.id)===String(r.task_id))||{};state.reviewEdit={...r,managerNote:$('#managerNote').value.trim()};$('#reviewDialog').close();openTask({...task,...r.proposed_data,owner_id:r.proposed_data?.owner_id||task.owner_id||r.requested_by})});
 
 $('#passwordForm').addEventListener('submit',async e=>{e.preventDefault();const form=e.currentTarget;const p=$('#newPassword').value,c=$('#confirmPassword').value,wasRequired=!!state.profile.must_change_password;$('#passwordError').textContent='';if(p!==c){$('#passwordError').textContent='تکرار رمز عبور یکسان نیست.';return}try{await window.bamcoAuth.changePassword(p);form.reset();$('#passwordDialog').close();toast('رمز عبور با موفقیت تغییر کرد.');if(wasRequired)showView('kanban')}catch(err){if(wasRequired)try{await update('profiles',`id=eq.${state.profile.id}`,{must_change_password:true,updated_at:new Date().toISOString()})}catch{}const message=err.message==='New password should be different from the old password.'?'رمز جدید باید با رمز قبلی متفاوت باشد.':err.message;$('#passwordError').textContent=message}});
