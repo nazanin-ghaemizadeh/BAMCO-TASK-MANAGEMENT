@@ -72,7 +72,7 @@ html body #appView [data-feature-access-control="local"],html body #appView .veh
 #voiceAssistantView .assistant-composer svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .assistant-history-dialog{width:min(560px,94vw);max-height:min(72dvh,650px)}.assistant-history-list{display:grid;gap:8px;max-height:50dvh;overflow:auto}.assistant-history-entry{display:grid;gap:3px;width:100%;padding:12px;border:1px solid #d2e2d8;border-radius:10px;background:#fff;color:#20583f;text-align:right;font:inherit;cursor:pointer}.assistant-history-entry:hover{border-color:#247352;background:#edf7f1}.assistant-history-entry small{color:#688072}.assistant-history-empty{margin:8px 0;color:#61796c}
 #phoneBookView .phonebook-shell{display:grid;gap:0;min-height:100%;background:#f8faf9;color:#17362d}
-#phoneBookView .phonebook-command{position:sticky;top:0;z-index:8;display:flex;align-items:center;flex-wrap:wrap;gap:7px;min-height:48px;padding:6px 10px;border-bottom:1px solid #c5d5cc;background:#f5f8f6;direction:rtl}
+#phoneBookView .phonebook-command{position:static;z-index:8;display:flex;align-items:center;flex-wrap:wrap;gap:7px;min-height:48px;padding:6px 10px;border-bottom:1px solid #c5d5cc;background:#f5f8f6;direction:rtl}
 #phoneBookView .phonebook-command button{display:inline-flex;align-items:center;justify-content:center;min-height:35px;padding:5px 12px;border:1px solid #bcd0c3;border-radius:7px;background:#fff;color:#214b36;font:inherit;line-height:1.4;white-space:nowrap;cursor:pointer}
 #phoneBookView .phonebook-command button.primary{border-color:#146b4d;background:#146b4d;color:#fff}
 #phoneBookView .phonebook-command button.danger{border-color:#e0bfbb;background:#fff8f7;color:#a23535}
@@ -86,7 +86,12 @@ html body #appView [data-feature-access-control="local"],html body #appView .veh
 #phoneBookView :is(.phonebook-tab-icon,.phonebook-section-icon) svg{display:block;width:25px;height:25px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 #phoneBookView .phonebook-status{min-height:0;padding-inline:18px;color:#638071;background:#f8faf9}
 #phoneBookView .phonebook-status:empty{display:none}
-#phoneBookView .phonebook-units,#phoneBookView .phonebook-unit-workspace{padding:20px}
+#phoneBookView .phonebook-section-heading{display:flex;align-items:center;gap:10px;padding:18px 20px;border-bottom:1px solid #d4e1d8;background:#fff;direction:rtl}
+#phoneBookView .phonebook-section-heading h2{margin:0;color:#185c41;font:900 24px/1.35 var(--fa-font,'B Nazanin',serif)}
+#phoneBookView .phonebook-section-heading p{margin:2px 0 0;color:#61796c;font:600 16px/1.35 var(--fa-font,'B Nazanin',serif)}
+#phoneBookView .phonebook-units{padding:20px}
+#phoneBookView .phonebook-unit-workspace{display:grid;grid-template-rows:auto minmax(0,1fr) auto;min-height:100%;padding:0}
+#phoneBookView .phonebook-command.phonebook-table-command{position:sticky;top:auto;bottom:0;z-index:8;border-top:1px solid #c5d5cc;border-bottom:0;box-shadow:0 -6px 16px #133d2910}
 #phoneBookView .phonebook-units-title,#phoneBookView .phonebook-unit-heading{display:flex;align-items:center;gap:9px;margin:0 0 14px;color:#185c41;font-size:20px;line-height:1.4}
 #phoneBookView .phonebook-units-title strong,#phoneBookView .phonebook-unit-heading strong{font-weight:900}
 #phoneBookView .phonebook-unit-heading small{display:block;margin-top:2px;color:#61796c;font-size:15px;font-weight:400}
@@ -103,9 +108,13 @@ html body #appView [data-feature-access-control="local"],html body #appView .veh
 #phoneBookView .phonebook-table tr[data-phonebook-contact-select]{cursor:pointer}
 #phoneBookView .phonebook-table tr.selected td{background:#e8f4ec}
 #phoneBookView .phonebook-table :is(th,td){vertical-align:middle}
+#phoneBookView .phonebook-row-actions{display:flex;align-items:center;gap:6px;white-space:nowrap}
+#phoneBookView .phonebook-row-actions button{min-height:30px;padding:3px 9px;border:1px solid #bcd0c3;border-radius:6px;background:#fff;color:#214b36;font:inherit;cursor:pointer}
+#phoneBookView .phonebook-row-actions button.danger{border-color:#e0bfbb;background:#fff8f7;color:#a23535}
+#phoneBookView .phonebook-row-actions button:disabled{opacity:.45;cursor:default}
 #phoneBookView .phonebook-table td[dir="ltr"],#phoneBookView .phonebook-dialog :is(input[name="mobile_phone"],input[name="internal_extension"]){font-family:BamcoContact,'B Nazanin',Tahoma,sans-serif}
 #phoneBookView .phonebook-dialog-context{margin:0 0 12px;color:#426c59}
-@media(max-width:700px){#phoneBookView .phonebook-command{align-items:stretch}#phoneBookView .phonebook-command button{flex:1 1 125px}#phoneBookView .phonebook-command input{order:100;flex:1 1 100%;width:100%;margin:0}#phoneBookView .phonebook-tabs{min-height:0;overflow-x:auto;padding-inline:4px}#phoneBookView .phonebook-tabs button{flex:0 0 auto;padding:9px 11px;font-size:17px}#phoneBookView .phonebook-units,#phoneBookView .phonebook-unit-workspace{padding:14px 10px}}
+@media(max-width:700px){#phoneBookView .phonebook-command{align-items:stretch}#phoneBookView .phonebook-command button{flex:1 1 125px}#phoneBookView .phonebook-command input{order:100;flex:1 1 100%;width:100%;margin:0}#phoneBookView .phonebook-tabs{min-height:0;overflow-x:auto;padding-inline:4px}#phoneBookView .phonebook-tabs button{flex:0 0 auto;padding:9px 11px;font-size:17px}#phoneBookView .phonebook-section-heading{padding:14px 10px}#phoneBookView .phonebook-section-heading h2{font-size:22px}#phoneBookView .phonebook-units{padding:14px 10px}#phoneBookView .phonebook-row-actions{gap:4px}#phoneBookView .phonebook-row-actions button{padding-inline:7px}}
 @keyframes assistant-wait-grounded{0%,45%,100%{opacity:1;transform:translateY(0) scale(1)}52%,75%{opacity:0;transform:translateY(2px) scale(.995)}}
 @keyframes assistant-wait-tap{0%,45%,100%{opacity:0;transform:translateY(3px) scale(.99)}52%,75%{opacity:1;transform:translateY(-1px) scale(1.008)}}
 @keyframes assistant-floor-tap{0%,45%,100%{opacity:.48;transform:translateX(50%) scale(1)}56%,72%{opacity:.86;transform:translateX(50%) scale(1.18,.72)}}
