@@ -1,0 +1,13 @@
+/* Final fixed home layout: six circles per row, two rows, no page scroll. */
+@media(min-width:700px){
+html body.card-home-active{height:100dvh!important;overflow:hidden!important}
+html body.card-home-active #appView.app{height:100dvh!important;min-height:0!important;padding:0 0 var(--home-footer-height,42px)!important;overflow:hidden!important}
+html body.card-home-active #appView.app .workspace,html body.card-home-active #appView.app:has(.sidebar.collapsed) .workspace{flex:1 1 0!important;min-height:0!important;overflow:hidden!important}
+html body.card-navigation #appView #homeView #nav{display:grid!important;grid-template-columns:repeat(6,minmax(0,1fr))!important;grid-template-rows:repeat(2,minmax(0,1fr))!important;grid-auto-flow:row!important;width:100%!important;height:100%!important;min-height:0!important;overflow:hidden!important}
+html body.card-navigation #appView #homeFixedFooter{position:fixed!important;flex:none!important}
+html body.card-navigation #appView #homeView[data-layout="launcher"] #nav,html body.card-navigation #appView #homeView[data-layout="custom"] #nav{display:grid!important;grid-template-columns:repeat(6,minmax(0,1fr))!important;grid-template-rows:repeat(2,minmax(0,1fr))!important;grid-auto-flow:row!important;justify-items:center!important;align-items:center!important;align-content:stretch!important;gap:clamp(5px,1vw,14px)!important;width:100%!important;max-width:none!important;height:100%!important;min-height:0!important;margin-inline:auto!important;padding:clamp(4px,1vh,12px)!important;overflow:hidden!important;box-sizing:border-box!important}
+html body.card-navigation #appView #homeView[data-layout="launcher"] #nav>.nav-group,html body.card-navigation #appView #homeView[data-layout="custom"] #nav>.nav-group{display:grid!important;place-items:center!important;align-content:center!important;flex:none!important;width:100%!important;max-width:184px!important;height:100%!important;max-height:218px!important;padding:8px!important;border:0!important;background:transparent!important;box-shadow:none!important}
+html body.card-navigation #appView #homeView[data-layout="launcher"] #nav .home-group-trigger,html body.card-navigation #appView #homeView[data-layout="custom"] #nav .home-group-trigger{width:100%!important;height:100%!important;min-height:0!important}
+html body.card-navigation #appView #homeView #nav .home-group-symbol{width:min(156px,calc((100dvh - 210px)/2))!important;height:min(156px,calc((100dvh - 210px)/2))!important;min-width:0!important;min-height:0!important}
+html body.card-navigation #appView #homeView #nav .home-group-symbol svg{width:48%!important;height:48%!important;min-width:0!important;min-height:0!important}
+}
