@@ -133,8 +133,10 @@ async def manager_checks(page,result):
     headers=await page.locator('#messageCenterView thead tr:first-child th').all_text_contents()
     assert headers==['نام','کار فعال','هشدار','دیرکرد','وضعیت پیام','آخرین ارسال'],f'message headers: {headers!r}'
     controls=await command_texts(page,'#messageCenterView .message-command-row')
-    assert controls[:4]==['بازگشت به خانه','خروجی اکسل','تازه‌سازی','مدیریت دسترسی'],f'message controls: {controls!r}'
-    assert len(controls)>=6 and controls[4].startswith('کانال ارسال') and controls[5]=='ارسال',f'message channel/send controls: {controls!r}'
+    # مدیریت دسترسی فقط در کارت مرکزی «دسترسی‌ها» است، نه در ابزار محلی هر بخش.
+    assert controls[:3]==['بازگشت به خانه','خروجی اکسل','تازه‌سازی'],f'message controls: {controls!r}'
+    assert 'مدیریت دسترسی' not in controls,f'local access control leaked: {controls!r}'
+    assert len(controls)>=5 and controls[3].startswith('کانال ارسال') and controls[4]=='ارسال',f'message channel/send controls: {controls!r}'
     assert await visible_count(page,'#messageCenterView button')>=4,'message controls not visible'
     assert await visible_count(page,'#messageCenterView .bamco-management-toolbar .content-back')==0,'duplicate message-center home button visible'
     await expect(page.locator('#messageChannel')).to_be_visible()
@@ -151,7 +153,8 @@ async def manager_checks(page,result):
 
     await open_tab(page,'sentMessages')
     controls=await command_texts(page,'#sentMessagesView .sent-command-row')
-    assert controls[:4]==['بازگشت به خانه','خروجی اکسل','تازه‌سازی','مدیریت دسترسی'],f'sent controls: {controls!r}'
+    assert controls[:3]==['بازگشت به خانه','خروجی اکسل','تازه‌سازی'],f'sent controls: {controls!r}'
+    assert 'مدیریت دسترسی' not in controls,f'local access control leaked: {controls!r}'
     headers=await page.locator('#sentMessagesView thead tr:first-child th').all_text_contents()
     expected=['ردیف','نوع','فرستنده','گیرنده','موضوع','کانال','وضعیت','زمان ارسال','جزئیات']
     assert headers==expected,f'sent headers: {headers!r}'
