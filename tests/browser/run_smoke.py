@@ -72,7 +72,7 @@ async def home(page):
 
 async def assert_letters_home_access(page,role):
     if role!='manager':
-        await expect(page.locator('#homeView [data-group="correspondence"]')).to_have_count(0)
+        await expect(page.locator('#homeView [data-group="correspondence"]')).to_be_hidden()
         return
     await page.locator('#homeView [data-group="correspondence"] .home-group-trigger').click()
     for route in ('lettersIncoming','lettersOutgoing'):
