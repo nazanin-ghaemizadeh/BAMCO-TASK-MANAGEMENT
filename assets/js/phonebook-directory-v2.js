@@ -9,6 +9,8 @@ const icons={
 };
 const handset='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2A19.79 19.79 0 0 1 3.08 5.18 2 2 0 0 1 5.07 3h3a2 2 0 0 1 2 1.72c.12.9.33 1.77.62 2.6a2 2 0 0 1-.45 2.11L9.1 10.57a16 16 0 0 0 4.33 4.33l1.14-1.14a2 2 0 0 1 2.11-.45c.83.29 1.7.5 2.6.62A2 2 0 0 1 22 16.92z"/></svg>';
 let active='office',rows=[],units=[],search='',loading=false,activeUnitId=null,selectedUnitId=null,selectedContactId=null,managingUnits=false,managedUnitId=null,page=1,pageSize=25;
+const contactColumns=[['full_name','نام'],['role_title','سمت'],['internal_extension','داخلی'],['mobile_phone','شماره همراه'],['email','ایمیل سازمانی'],['address','آدرس']];
+const columnFilters={};
 const appState=()=>window.Bamco?.state||window.state||{},data=()=>window.BamcoData,access=a=>window.BamcoAccess?.can?.('phonebook',a)===true,empty=v=>String(v??'').trim()||'—';
 const activeUnit=()=>units.find(x=>String(x.id)===String(activeUnitId))||null;
 const selectedUnit=()=>units.find(x=>String(x.id)===String(selectedUnitId))||null;
@@ -17,7 +19,7 @@ const contact=()=>rows.find(x=>String(x.id)===String(selectedContactId))||null;
 const contactsForUnit=id=>rows.filter(x=>x.category===active&&String(x.unit_id)===String(id));
 const matches=(value,terms)=>!terms.length||terms.every(term=>String(value??'').toLocaleLowerCase('fa').includes(term));
 const terms=()=>search.trim().toLocaleLowerCase('fa').split(/\s+/).filter(Boolean);
-const visibleContacts=()=>contactsForUnit(activeUnitId).filter(x=>matches([x.full_name,x.role_title,x.internal_extension,x.mobile_phone,x.email,x.address].join(' '),terms()));
+const visibleContacts=()=>contactsForUnit(activeUnitId).filter(x=>matches([x.full_name,x.role_title,x.internal_extension,x.mobile_phone,x.email,x.address].join(' '),terms())&&contactColumns.every(([field],index)=>!columnFilters[index]||String(x[field]??'').trim()===columnFilters[index]));
 const visibleUnits=()=>units.filter(x=>x.category===active).filter(x=>matches(x.title,terms()));
 function currentPageSize(){return Math.max(1,Number(pageSize)||25)}
 function range(total,size=currentPageSize(),current=page){const pages=Math.max(1,Math.ceil(total/size)),safe=Math.max(1,Math.min(pages,current));return{pages,page:safe,start:(safe-1)*size,end:Math.min(total,safe*size)}}
@@ -32,7 +34,7 @@ function toolbar(){
   const label=managedUnit()?'بازگشت به انتخاب واحدها':'بازگشت به واحدها';
   return `<div class="phonebook-command bamco-command-bar" aria-label="ویرایش واحدهای دفتر تلفن"><button type="button" class="ghost" data-phonebook-manager-back>${label}</button></div>`;
  }
- return `<div class="phonebook-command bamco-command-bar" aria-label="ابزارهای واحدهای دفتر تلفن"><button type="button" class="ghost" data-phonebook-home>بازگشت به خانه</button><button type="button" class="primary" data-phonebook-unit ${canCreate?'':'disabled'}>ایجاد واحد</button><button type="button" class="ghost" data-phonebook-manage-units ${access('edit')?'':'disabled'}>ویرایش واحد</button></div>`;
+ return `<div class="phonebook-command bamco-command-bar" aria-label="ابزارهای واحدهای دفتر تلفن"><button type="button" class="content-back ghost" data-phonebook-home>بازگشت به خانه</button><button type="button" class="primary" data-phonebook-unit ${canCreate?'':'disabled'}>ایجاد واحد</button><button type="button" class="ghost" data-phonebook-manage-units ${access('edit')?'':'disabled'}>ویرایش واحد</button></div>`;
 }
 function sectionHeading(){return `<header class="phonebook-section-heading"><h2>${labels[active]}</h2></header>`}
 function unitHeading(unit){return `<header class="phonebook-unit-heading"><h2>${labels[active]}</h2><h3>${esc(unit.title)}</h3></header>`}
@@ -45,8 +47,9 @@ function pager(total){
  return `<footer class="phonebook-table-pagination table-pagination" role="navigation" aria-label="صفحه‌بندی مخاطبان"><span class="page-range">${fa(from)} تا ${fa(current.end)} از ${fa(total)} ردیف</span><div class="page-controls"><label>تعداد ردیف <select data-phonebook-page-size aria-label="تعداد ردیف در هر صفحه">${[10,25,50,100].map(size=>`<option value="${size}" ${currentPageSize()===size?'selected':''}>${fa(size)}</option>`).join('')}</select></label><button type="button" data-phonebook-page="first" ${current.page===1?'disabled':''}>اول</button><button type="button" data-phonebook-page="prev" ${current.page===1?'disabled':''}>قبل</button><span class="page-position">${fa(current.page)} / ${fa(current.pages)}</span><button type="button" data-phonebook-page="next" ${current.page===current.pages?'disabled':''}>بعد</button><button type="button" data-phonebook-page="last" ${current.page===current.pages?'disabled':''}>آخر</button></div></footer>`;
 }
 function table(){
- const all=visibleContacts(),windowed=range(all.length),items=all.slice(windowed.start,windowed.end);page=windowed.page;
- return `<div class="phonebook-table-area"><div class="phonebook-table-wrap"><table class="workspace-table phonebook-table" data-local-selection="true" data-table-suite="off" data-no-pagination="true"><thead><tr><th>نام</th><th>سمت</th><th>داخلی</th><th>شماره همراه</th><th>ایمیل سازمانی</th><th>آدرس</th></tr></thead><tbody>${items.length?items.map(item=>`<tr tabindex="0" data-phonebook-contact-select="${esc(item.id)}" class="${String(selectedContactId)===String(item.id)?'selected':''}"><td><b>${esc(item.full_name)}</b></td><td>${esc(empty(item.role_title))}</td><td dir="ltr">${esc(digit(empty(item.internal_extension)))}</td><td dir="ltr">${esc(digit(empty(item.mobile_phone)))}</td><td dir="ltr">${esc(empty(item.email))}</td><td>${esc(empty(item.address))}</td></tr>`).join(''):'<tr><td colspan="6" class="empty">مخاطبی در این واحد ثبت نشده است.</td></tr>'}</tbody></table></div>${pager(all.length)}</div>`;
+ const all=visibleContacts(),windowed=range(all.length),items=all.slice(windowed.start,windowed.end),available=contactsForUnit(activeUnitId).filter(x=>matches([x.full_name,x.role_title,x.internal_extension,x.mobile_phone,x.email,x.address].join(' '),terms()));page=windowed.page;
+ const filters=contactColumns.map(([field,label],index)=>{const values=[...new Set(available.map(row=>String(row[field]??'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'fa',{numeric:true})),selected=columnFilters[index]||'';if(selected&&!values.includes(selected))values.push(selected);return `<th><select data-phonebook-filter="${index}" aria-label="فیلتر ${label}"><option value="">همه</option>${values.map(value=>`<option value="${esc(value)}" ${selected===value?'selected':''}>${esc(value)}</option>`).join('')}</select></th>`}).join('');
+ return `<div class="phonebook-table-area"><div class="phonebook-table-wrap"><table class="workspace-table phonebook-table" data-local-selection="true" data-table-suite="off" data-no-pagination="true"><thead><tr>${contactColumns.map(([,label])=>`<th>${label}</th>`).join('')}</tr><tr class="phonebook-filters">${filters}</tr></thead><tbody>${items.length?items.map(item=>`<tr tabindex="0" data-phonebook-contact-select="${esc(item.id)}" class="${String(selectedContactId)===String(item.id)?'selected':''}"><td><b>${esc(item.full_name)}</b></td><td>${esc(empty(item.role_title))}</td><td dir="ltr">${esc(digit(empty(item.internal_extension)))}</td><td dir="ltr">${esc(digit(empty(item.mobile_phone)))}</td><td dir="ltr">${esc(empty(item.email))}</td><td>${esc(empty(item.address))}</td></tr>`).join(''):'<tr><td colspan="6" class="empty">مخاطبی در این واحد ثبت نشده است.</td></tr>'}</tbody></table></div>${pager(all.length)}</div>`;
 }
 function unitWorkspace(){const unit=activeUnit();if(!unit)return unitCards();return `<section class="phonebook-unit-workspace" aria-label="${esc(unit.title)}">${unitHeading(unit)}${toolbar()}${searchControl('جست‌وجوی نام، سمت یا شماره')}${table()}</section>`}
 function managedUnitEditor(unit){
@@ -94,7 +97,7 @@ async function removeManagedUnit(){
  await data().remove('phonebook_units',`id=eq.${encodeURIComponent(unit.id)}`);managedUnitId=null;selectedUnitId=null;activeUnitId=null;await load();window.toast?.('واحد حذف شد؛ مخاطبان بدون حذف باقی ماندند.');
 }
 function openDialog(selector){const dialog=q(selector);if(dialog&&!dialog.open)dialog.showModal()}
-function resetSearch(){search='';page=1}
+function resetSearch(){search='';page=1;Object.keys(columnFilters).forEach(index=>delete columnFilters[index])}
 function openSection(category='office'){
  if(!Object.hasOwn(labels,category))category='office';active=category;resetSearch();activeUnitId=null;selectedUnitId=null;selectedContactId=null;managingUnits=false;managedUnitId=null;
  const opened=window.BamcoNavigation?.navigate?.('phoneBook');if(opened===false)return false;render();void load();return true;
@@ -110,6 +113,7 @@ function bind(root){
  q('[data-phonebook-managed-unit-delete]',root)?.addEventListener('click',()=>void removeManagedUnit().catch(error=>window.toast?.(error.message||'حذف انجام نشد.',true)));
  q('[data-phonebook-search]',root)?.addEventListener('input',event=>{const cursor=event.currentTarget.selectionStart;search=event.currentTarget.value;page=1;render();const input=q('[data-phonebook-search]');input?.focus({preventScroll:true});if(cursor!=null)input?.setSelectionRange(cursor,cursor)});
  q('[data-phonebook-search]',root)?.addEventListener('keydown',event=>{if(event.key==='Escape'){resetSearch();render()}});
+ qa('[data-phonebook-filter]',root).forEach(select=>select.addEventListener('change',event=>{columnFilters[Number(event.currentTarget.dataset.phonebookFilter)]=event.currentTarget.value;selectedContactId=null;page=1;render()}));
  qa('[data-phonebook-unit-select]',root).forEach(button=>button.onclick=()=>{activeUnitId=button.dataset.phonebookUnitSelect;selectedUnitId=activeUnitId;selectedContactId=null;managingUnits=false;resetSearch();render()});
  qa('[data-phonebook-manage-unit-select]',root).forEach(button=>button.onclick=()=>{managedUnitId=button.dataset.phonebookManageUnitSelect;resetSearch();render()});
  qa('[data-phonebook-contact-select]',root).forEach(row=>{const pick=()=>{selectedContactId=row.dataset.phonebookContactSelect;render()};row.onclick=pick;row.onkeydown=event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();pick()}}});

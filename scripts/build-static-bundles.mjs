@@ -51,6 +51,7 @@ const javascript = [
   'assets/js/card-home.js',
   'assets/js/interior-ui.js',
   'assets/js/table-pages.js',
+  'assets/js/reference-tables.js',
   'assets/js/table-suite.js',
   'assets/js/usability.js',
   'assets/js/styled-excel.js',
@@ -93,7 +94,8 @@ const stylesheets = [
   'assets/css/unified-ui.css',
   'assets/css/home-stable.css',
   'assets/css/home-welcome.css',
-  'assets/css/home-phonebook-override.css'
+  'assets/css/home-phonebook-override.css',
+  'assets/css/reference-tables.css'
 ];
 
 const digest = value => createHash('sha256').update(value).digest('hex').slice(0, 16);

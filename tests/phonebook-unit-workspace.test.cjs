@@ -14,7 +14,8 @@ test('phonebook keeps one command bar, creates unit cards and shows contacts ins
  assert.equal(view.querySelector('.phonebook-section-heading h2').textContent.trim(),'اداری');
  assert.equal(view.querySelector('.phonebook-tabs'),null);
  assert.equal(view.querySelector('.phonebook-section-heading svg'),null);
- assert.deepEqual([...view.querySelectorAll('.phonebook-command>button')].map(button=>button.textContent.trim()),['بازگشت به خانه','ایجاد واحد','ویرایش واحد','⌕']);
+ assert.deepEqual([...view.querySelectorAll('.phonebook-command>button')].map(button=>button.textContent.trim()),['بازگشت به خانه','ایجاد واحد','ویرایش واحد']);
+ assert.equal(view.querySelector('[data-phonebook-search]').type,'search');
  assert.equal(view.querySelectorAll('.phonebook-unit-card').length,1);
  assert.equal(view.querySelector('.phonebook-unit-card small'),null);
  assert.equal(view.querySelectorAll('.phonebook-table').length,0);
@@ -23,9 +24,10 @@ test('phonebook keeps one command bar, creates unit cards and shows contacts ins
  assert.equal(view.querySelectorAll('[data-phonebook-contact-select]').length,1);
  assert.equal(view.querySelector('.phonebook-unit-heading h2').textContent.trim(),'اداری');
  assert.equal(view.querySelector('.phonebook-unit-heading h3').textContent.trim(),'منابع انسانی');
- assert.deepEqual([...view.querySelectorAll('.phonebook-table-command>button')].map(button=>button.textContent.trim()),['بازگشت به واحدها','حذف مخاطب','ویرایش مخاطب','⌕']);
+ assert.deepEqual([...view.querySelectorAll('.phonebook-table-command>button')].map(button=>button.textContent.trim()),['بازگشت به واحدها','حذف مخاطب','ویرایش مخاطب']);
  assert.equal(view.querySelector('[data-phonebook-new]'),null);
- assert.equal(view.querySelectorAll('.phonebook-table th').length,6);
+ assert.equal(view.querySelectorAll('.phonebook-table thead tr:first-child th').length,6);
+ assert.equal(view.querySelectorAll('.phonebook-table [data-phonebook-filter]').length,6);
  assert.equal([...view.querySelectorAll('.phonebook-table th')].some(th=>th.textContent.includes('عملیات')),false);
  assert.equal(view.querySelector('.phonebook-table').matches('[data-table-suite="off"][data-no-pagination="true"]'),true);
  assert(view.querySelector('.phonebook-table-pagination'));

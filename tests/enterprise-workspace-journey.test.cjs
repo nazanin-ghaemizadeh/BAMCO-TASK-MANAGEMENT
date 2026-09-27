@@ -235,10 +235,8 @@ test('enterprise pages keep a stable shared shell and persist the project, part 
 
   await f.open('invoices');
   assert.equal(d.querySelector('#invoiceFeatureRoot [data-invoice-action="access"]'),null);
-  assert.deepEqual([...d.querySelectorAll('#invoiceFeatureRoot .invoice-top-command-row > button')].filter(button => !button.classList.contains('hidden')).map(button => button.textContent.trim()), ['بازگشت به خانه', 'صورتحساب جدید', 'تازه‌سازی', '⌕']);
-  assert.equal(d.querySelector('#invoiceSearch').classList.contains('search-open'), false, 'جست‌وجو ابتدا مانند نوار سایر تب‌ها جمع است');
-  d.querySelector('[data-invoice-action="search"]').click();
-  assert.equal(d.querySelector('#invoiceSearch').classList.contains('search-open'), true, 'دکمهٔ جست‌وجو کادر را در همان نوار باز می‌کند');
+  assert.deepEqual([...d.querySelectorAll('#invoiceFeatureRoot .invoice-top-command-row > button')].filter(button => !button.classList.contains('hidden')).map(button => button.textContent.trim()), ['بازگشت به خانه', 'صورتحساب جدید', 'تازه‌سازی']);
+  assert.equal(d.querySelector('#invoiceSearch').type, 'search', 'جست‌وجو در نمای کارت‌ها مستقیم در دسترس است');
   d.querySelector('[data-invoice-action="new"]').click();
   const invoiceForm = d.querySelector('#invoiceForm');
   field(invoiceForm, 'invoice_number', 'INV-500');
@@ -295,6 +293,7 @@ test('enterprise pages keep a stable shared shell and persist the project, part 
   await until(() => tables.invoices[0]?.total_amount === 600000000);
   assert.match(d.querySelector('#invoiceFeatureRoot').textContent, /۷۵٪/);
 
+  await f.open('parts');
   await f.open('invoices');
   assert.equal(d.querySelector('.invoice-grid').classList.contains('detail-open'), false, 'هر ورود به صورت‌حساب با کارت‌ها آغاز می‌شود');
   d.querySelector('[data-invoice-select="1000"]').click();

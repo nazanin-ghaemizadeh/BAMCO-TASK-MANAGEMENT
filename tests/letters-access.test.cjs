@@ -11,7 +11,7 @@ for(const allowed of [false,true])test(`letters home card and independent route 
  const f=await fixture({role:'owner',fetchResult:({endpoint})=>endpoint==='effective_feature_access'?{schema:'bamco.feature-access.v1',grants:allowed?[{feature_key:'letters',can_view:true,can_create:true,can_edit:true,can_delete:true,can_export:true}]:[]}:undefined});t.after(()=>f.dispose());
  await until(()=>f.w.BamcoAccess?.isReady?.());
  await until(()=>f.d.querySelector('#lettersIncomingNav').classList.contains('hidden')===!allowed&&f.d.querySelector('#lettersOutgoingNav').classList.contains('hidden')===!allowed);
- assert(f.d.querySelector('#lettersIncomingNav').closest('[data-group="resources"]'));
+ assert(f.d.querySelector('#lettersIncomingNav').closest('[data-group="correspondence"]'));
  assert(!f.d.querySelector('#documentsView [data-document-tab]'));
  if(!allowed){
   assert.equal(f.w.BamcoNavigation.navigate('lettersIncoming'),false);

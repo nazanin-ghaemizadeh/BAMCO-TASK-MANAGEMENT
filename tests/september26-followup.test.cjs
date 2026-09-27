@@ -38,8 +38,8 @@ test('assistant uses a valid task view column list and the exact female status a
  const source=fs.readFileSync('supabase/functions/smart-assistant/index.ts','utf8');
  assert(!source.includes('archived,owner_name'));assert(source.includes(".from('task_status_view').select('id,legacy_id,title,status,status_kind,priority,due_date,start_date,due_state,owner_id,archived')"));
  const f=await fixture();t.after(()=>f.dispose());await f.open('voiceAssistant');
- const view=f.d.querySelector('#voiceAssistantView');assert(view.querySelector('img.assistant-state-sticker[src="assets/images/assistant-status1-female.png"]'));
- assert(view.querySelector('.assistant-avatar-overlays .avatar-jaw'));
+ const view=f.d.querySelector('#voiceAssistantView');assert(view.querySelector('img.assistant-avatar-frame.waiting-grounded[src="assets/images/assistant-female-waiting-grounded.png"]'));
+ assert(view.querySelector('img.assistant-avatar-frame.waiting-tap[src="assets/images/assistant-female-waiting.png"]'));
  assert.equal(view.querySelector('.assistant-prompts'),null);assert.equal(view.querySelector('.assistant-task-glance'),null);
  assert(view.querySelector('.assistant-mic'));assert.deepEqual(f.errors,[]);
 });

@@ -66,7 +66,7 @@ test('entry first-paint styles are generated from the canonical layout, and home
  assert.ok(read('index.html').includes(css));
  assert.ok(read('assets/css/home-stable.css').includes('grid-auto-rows:max(196px,calc(6 * var(--home-row-height,34px) + 68px))'));
  assert.ok(!read('assets/js/runtime.js').includes('html body #departmentEntry'));
- assert.ok(read('.github/workflows/release-version.yml').includes("'assets/js/department-entry.js'"));
+ assert.match(read('.github/workflows/release-version.yml'), /assets\/\(\?:js\|css\)/, 'release versions all local JS and CSS assets');
 });
 test('directory profile metadata keeps a newer local save when an older refresh finishes',async t=>{
  const {fixture,until}=require('./helpers/app-fixture.cjs');const f=await fixture();t.after(()=>f.dispose());await f.open('people');

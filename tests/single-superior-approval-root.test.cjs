@@ -35,9 +35,9 @@ test('phonebook implementation is bundled once, with no observer override', () =
   assert.doesNotMatch(html, /phonebook-directory-v2\.js/);
   assert.doesNotMatch(phonebook, /new MutationObserver/);
   assert.match(phonebook, /data-phonebook-unit/);
-  assert.match(phonebook, /data-phonebook-new/);
-  assert.match(phonebook, /data-phonebook-delete/);
-  assert.match(phonebook, /data-phonebook-edit/);
+  assert.match(phonebook, /data-phonebook-contact-delete/);
+  assert.match(phonebook, /data-phonebook-contact-edit/);
+  assert.match(phonebook, /data-phonebook-filter/);
 });
 
 test('approval-state changes avoid expensive project fan-out and snapshot scans', () => {
