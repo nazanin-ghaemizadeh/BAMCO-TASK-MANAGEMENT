@@ -103,7 +103,10 @@ function install(){
    });
   });
  }
- function scan(){root.querySelectorAll('.view table').forEach(decorate);toolbars()}
+ // Some feature views (notably the phonebook contact screen) provide their
+ // own fixed table and pager.  Decorating them again creates a second filter
+ // row/pager and changes the parent height while the user returns to cards.
+ function scan(){root.querySelectorAll('.view table:not([data-table-suite="off"])').forEach(decorate);toolbars()}
  document.addEventListener('input',e=>{const field=e.target;if(!field.matches('textarea,input[type=text]')||field.closest('#loginVerification'))return;const english=/[A-Za-z]/.test(field.value)&&!/[\u0600-\u06ff]/.test(field.value);field.classList.toggle('suite-english',english);field.dir=english?'ltr':'rtl'});
  document.addEventListener('pointerdown',resize,true);
  document.addEventListener('click',e=>{

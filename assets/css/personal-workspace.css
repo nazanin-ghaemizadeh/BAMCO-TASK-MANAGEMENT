@@ -1,6 +1,7 @@
 /* Personal workspace: colorful pinned notes and the animated task assistant. */
 @font-face{font-family:BamcoContact;src:url('../fonts/BNazanin.woff2') format('woff2');font-weight:400;font-display:swap}
 #peopleView .people-contact{font-family:BamcoContact,'B Nazanin',Tahoma,sans-serif!important;text-align:center;unicode-bidi:isolate}
+#peopleView .people-panel-head:empty{display:none!important}
 .conversation-task-filters{display:flex;align-items:end;flex-wrap:wrap;gap:10px}.conversation-task-filters>label{display:grid;gap:5px;min-width:145px}.conversation-task-filters select,.conversation-date-field input:not([type=hidden]){height:38px;min-width:0;border:1px solid #cbdcd2;border-radius:8px;background:#fff;padding:5px 9px;font:inherit}.conversation-date-field{display:flex;align-items:center;gap:4px}.conversation-date-field input:not([type=hidden]){width:150px;cursor:pointer}.conversation-date-field button{height:38px;min-width:38px;border:1px solid #cbdcd2;border-radius:8px;background:#f5faf7;cursor:pointer}
 #personDialog input.contact-number{font-family:BamcoContact,'B Nazanin',Tahoma,sans-serif!important;font-size:18px;unicode-bidi:isolate}
 .personal-command-row{flex-wrap:nowrap!important;overflow-x:auto!important;overflow-y:hidden!important;scrollbar-width:thin}
@@ -71,13 +72,17 @@ html body #appView [data-feature-access-control="local"],html body #appView .veh
 #voiceAssistantView .assistant-send{background:#17684c;color:#fff}
 #voiceAssistantView .assistant-composer svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .assistant-history-dialog{width:min(560px,94vw);max-height:min(72dvh,650px)}.assistant-history-list{display:grid;gap:8px;max-height:50dvh;overflow:auto}.assistant-history-entry{display:grid;gap:3px;width:100%;padding:12px;border:1px solid #d2e2d8;border-radius:10px;background:#fff;color:#20583f;text-align:right;font:inherit;cursor:pointer}.assistant-history-entry:hover{border-color:#247352;background:#edf7f1}.assistant-history-entry small{color:#688072}.assistant-history-empty{margin:8px 0;color:#61796c}
+#phoneBookView:not(.hidden){min-height:calc(100dvh - var(--app-header-h,158px) - var(--app-footer-h,39px) - 32px)}
 #phoneBookView .phonebook-shell{display:grid;gap:0;min-height:100%;background:#f8faf9;color:#17362d}
-#phoneBookView .phonebook-command{position:static;z-index:8;display:flex;align-items:center;flex-wrap:wrap;gap:7px;min-height:48px;padding:6px 10px;border-bottom:1px solid #c5d5cc;background:#f5f8f6;direction:rtl}
+#phoneBookView .phonebook-command{position:relative;z-index:8;display:flex;align-items:center;flex-wrap:wrap;gap:7px;min-height:48px;padding:6px 10px;border-top:1px solid #c5d5cc;border-bottom:1px solid #c5d5cc;background:#f5f8f6;direction:rtl}
 #phoneBookView .phonebook-command button{display:inline-flex;align-items:center;justify-content:center;min-height:35px;padding:5px 12px;border:1px solid #bcd0c3;border-radius:7px;background:#fff;color:#214b36;font:inherit;line-height:1.4;white-space:nowrap;cursor:pointer}
 #phoneBookView .phonebook-command button.primary{border-color:#146b4d;background:#146b4d;color:#fff}
 #phoneBookView .phonebook-command button.danger{border-color:#e0bfbb;background:#fff8f7;color:#a23535}
 #phoneBookView .phonebook-command button:disabled{opacity:.45;cursor:default}
-#phoneBookView .phonebook-command input{order:99;flex:0 1 300px;min-width:180px;height:35px;margin-inline-start:auto;padding:5px 10px;border:1px solid #bcd0c3;border-radius:7px;background:#fff;color:#17362d;font:inherit}
+#phoneBookView .phonebook-search{display:none;order:99;flex:0 1 300px;min-width:180px;height:35px;margin-inline-start:0;padding:5px 10px;border:1px solid #bcd0c3;border-radius:7px;background:#fff;color:#17362d;font:inherit}
+#phoneBookView .phonebook-search.search-open{display:block}
+#phoneBookView .phonebook-search-toggle{margin-inline-start:auto}
+#phoneBookView .phonebook-search-toggle.active{border-color:#176b4d;background:#176b4d;color:#fff}
 #phoneBookView .phonebook-tabs{display:flex;align-items:stretch;gap:0;min-height:70px;padding-inline:10px;border-bottom:1px solid #c5d5cc;background:#fff;direction:rtl}
 #phoneBookView .phonebook-tabs button{display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border:0;border-bottom:3px solid transparent;background:transparent;color:#315c49;font:800 18px/1.4 var(--fa-font,'B Nazanin',serif);cursor:pointer}
 #phoneBookView .phonebook-tabs button strong{font-weight:900}
@@ -88,30 +93,45 @@ html body #appView [data-feature-access-control="local"],html body #appView .veh
 #phoneBookView .phonebook-status:empty{display:none}
 #phoneBookView .phonebook-section-heading{display:block;padding:18px 20px 10px;border:0;background:transparent;direction:rtl}
 #phoneBookView .phonebook-section-heading h2{margin:0;color:#185c41;font:900 24px/1.35 var(--fa-font,'B Nazanin',serif)}
-#phoneBookView .phonebook-section-heading p{margin:2px 0 0;color:#61796c;font:600 16px/1.35 var(--fa-font,'B Nazanin',serif)}
 #phoneBookView .phonebook-units{padding:20px}
-#phoneBookView .phonebook-unit-workspace{display:grid;grid-template-rows:auto minmax(0,1fr) auto;min-height:0;height:100%;padding:0}
-#phoneBookView .phonebook-command.phonebook-table-command{position:sticky;top:auto;bottom:0;z-index:8;border-top:1px solid #c5d5cc;border-bottom:0;box-shadow:0 -6px 16px #133d2910}
-#phoneBookView .phonebook-units-title,#phoneBookView .phonebook-unit-heading{display:flex;align-items:center;gap:9px;margin:0 0 14px;color:#185c41;font-size:20px;line-height:1.4}
-#phoneBookView .phonebook-units-title strong,#phoneBookView .phonebook-unit-heading strong{font-weight:900}
-#phoneBookView .phonebook-unit-heading small{display:block;margin-top:2px;color:#61796c;font-size:15px;font-weight:400}
-#phoneBookView .phonebook-unit-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:13px}
-#phoneBookView .phonebook-unit-card{display:grid;grid-template-columns:38px minmax(0,1fr);gap:5px 10px;align-items:center;min-height:116px;padding:16px;border:1px solid #c8ddd0;border-radius:13px;background:#fff;color:#20583f;text-align:right;font:inherit;cursor:pointer;box-shadow:0 4px 13px #0d513112}
+#phoneBookView .phonebook-unit-workspace{display:grid;grid-template-rows:auto auto minmax(0,1fr);min-height:0;height:calc(100dvh - var(--app-header-h,158px) - var(--app-footer-h,39px) - 32px);padding:0}
+#phoneBookView .phonebook-unit-heading{position:relative;min-height:68px;padding:14px 20px 10px;background:#f8faf9;direction:rtl}
+#phoneBookView .phonebook-unit-heading h2{position:absolute;inset-block-start:18px;inset-inline-end:20px;margin:0;color:#185c41;font:900 24px/1.35 var(--fa-font,'B Nazanin',serif)}
+#phoneBookView .phonebook-unit-heading h3{margin:0;padding-inline:140px;text-align:center;color:#17362d;font:900 23px/1.45 var(--fa-font,'B Nazanin',serif);overflow-wrap:anywhere}
+#phoneBookView .phonebook-command.phonebook-table-command{position:relative;top:auto;bottom:auto;z-index:8;box-shadow:none}
+#phoneBookView .phonebook-units-title{display:flex;align-items:center;gap:9px;margin:0 0 14px;color:#185c41;font-size:20px;line-height:1.4}
+#phoneBookView .phonebook-units-title strong{font-weight:900}
+#phoneBookView .phonebook-unit-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+#phoneBookView .phonebook-unit-card{display:grid;grid-template-columns:52px minmax(0,1fr);gap:14px;align-items:center;min-height:150px;padding:22px;border:1px solid #c8ddd0;border-radius:13px;background:#fff;color:#20583f;text-align:right;font:inherit;cursor:pointer;box-shadow:0 4px 13px #0d513112}
 #phoneBookView .phonebook-unit-card:hover{border-color:#4b9772;background:#f2f8f4}
 #phoneBookView .phonebook-unit-card.selected{border-color:#267753;background:#e8f4ec;box-shadow:0 0 0 2px #26775322}
-#phoneBookView .phonebook-unit-card-icon{grid-row:1/3;width:38px;height:38px;border-radius:10px;background:#e7f3eb;color:#17684c}
-#phoneBookView .phonebook-unit-card-icon svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-#phoneBookView .phonebook-unit-card strong{min-width:0;font-size:19px;font-weight:900;overflow-wrap:anywhere}
-#phoneBookView .phonebook-unit-card small{color:#668174;font-size:15px}
+#phoneBookView .phonebook-unit-card-icon{width:52px;height:52px;border-radius:12px;background:#e7f3eb;color:#17684c}
+#phoneBookView .phonebook-unit-card-icon svg{width:28px;height:28px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+#phoneBookView .phonebook-unit-card strong{min-width:0;font-size:22px;font-weight:900;overflow-wrap:anywhere}
 #phoneBookView .phonebook-unit-empty{padding:22px;border:1px dashed #b8d1c1;border-radius:12px;background:#fff;color:#60786c;text-align:center}
-#phoneBookView .phonebook-table-wrap{min-height:0;overflow:auto;border:1px solid #d5e4da;border-radius:12px;background:#fff}
+#phoneBookView .phonebook-table-area{display:grid;grid-template-rows:minmax(0,1fr) auto;min-height:0;overflow:hidden;background:#fff}
+#phoneBookView .phonebook-table-wrap{min-height:0;overflow:auto;border:0;border-radius:0;background:#fff}
 #phoneBookView .phonebook-table{min-width:960px;margin:0}
 #phoneBookView .phonebook-table tr[data-phonebook-contact-select]{cursor:pointer}
 #phoneBookView .phonebook-table tr.selected td{background:#e8f4ec}
 #phoneBookView .phonebook-table :is(th,td){vertical-align:middle}
 #phoneBookView .phonebook-table td[dir="ltr"],#phoneBookView .phonebook-dialog :is(input[name="mobile_phone"],input[name="internal_extension"]){font-family:BamcoContact,'B Nazanin',Tahoma,sans-serif}
+#phoneBookView .phonebook-table-pagination{margin:0;border-top:1px solid #d8e4dc;border-radius:0 0 12px 12px;background:#f5f9f6}
+#phoneBookView .phonebook-table-pagination .page-controls{direction:rtl}
+#phoneBookView .phonebook-table-pagination label{display:flex;align-items:center;gap:8px;margin:0;white-space:nowrap}
+#phoneBookView .phonebook-table-pagination select{width:82px!important;min-width:82px!important;height:34px!important;min-height:34px!important;padding:3px 10px!important;border:1px solid #b7cbbf!important;border-radius:999px!important;background:#fff!important;color:var(--text)!important;box-shadow:none!important}
+#phoneBookView .phonebook-management-workspace{min-height:100%}
+#phoneBookView .phonebook-manager-intro{padding:20px 20px 0;direction:rtl}
+#phoneBookView .phonebook-manager-intro h3,#phoneBookView .phonebook-unit-editor-title h3{margin:0;color:#185c41;font:900 21px/1.4 var(--fa-font,'B Nazanin',serif)}
+#phoneBookView .phonebook-manager-intro p,#phoneBookView .phonebook-unit-editor-title p{margin:3px 0 0;color:#61796c;font-size:15px}
+#phoneBookView .phonebook-unit-editor{max-width:760px;margin:26px auto;padding:24px;border:1px solid #c8ddd0;border-radius:13px;background:#fff;box-shadow:0 4px 13px #0d513112;direction:rtl}
+#phoneBookView .phonebook-unit-editor form{display:grid;gap:16px;margin-top:20px}
+#phoneBookView .phonebook-unit-editor label{display:grid;gap:6px;color:#315c49;font-weight:800}
+#phoneBookView .phonebook-unit-editor input{width:100%;height:42px;padding:7px 11px;border:1px solid #bcd0c3;border-radius:9px;background:#fff;color:#17362d;font:inherit}
+#phoneBookView .phonebook-unit-editor-actions{display:flex;flex-wrap:wrap;gap:8px}
+#phoneBookView .phonebook-unit-editor-actions button{min-height:38px;padding:6px 13px;border-radius:8px}
 #phoneBookView .phonebook-dialog-context{margin:0 0 12px;color:#426c59}
-@media(max-width:700px){#phoneBookView .phonebook-command{align-items:stretch}#phoneBookView .phonebook-command button{flex:1 1 125px}#phoneBookView .phonebook-command input{order:100;flex:1 1 100%;width:100%;margin:0}#phoneBookView .phonebook-tabs{min-height:0;overflow-x:auto;padding-inline:4px}#phoneBookView .phonebook-tabs button{flex:0 0 auto;padding:9px 11px;font-size:17px}#phoneBookView .phonebook-section-heading{padding:14px 10px}#phoneBookView .phonebook-section-heading h2{font-size:22px}#phoneBookView .phonebook-units{padding:14px 10px}}
+@media(max-width:700px){#phoneBookView .phonebook-command{align-items:stretch}#phoneBookView .phonebook-command button{flex:1 1 125px}#phoneBookView .phonebook-search{order:100;flex:1 1 100%;width:100%;margin:0}#phoneBookView .phonebook-tabs{min-height:0;overflow-x:auto;padding-inline:4px}#phoneBookView .phonebook-tabs button{flex:0 0 auto;padding:9px 11px;font-size:17px}#phoneBookView .phonebook-section-heading{padding:14px 10px}#phoneBookView .phonebook-section-heading h2{font-size:22px}#phoneBookView .phonebook-unit-heading{min-height:62px;padding:12px 10px 8px}#phoneBookView .phonebook-unit-heading h2{inset-block-start:14px;inset-inline-end:10px;font-size:19px}#phoneBookView .phonebook-unit-heading h3{padding-inline:85px;font-size:20px}#phoneBookView .phonebook-units{padding:14px 10px}#phoneBookView .phonebook-unit-grid{grid-template-columns:1fr;gap:12px}#phoneBookView .phonebook-unit-card{min-height:116px;padding:16px}#phoneBookView .phonebook-table-pagination{align-items:flex-start}#phoneBookView .phonebook-unit-editor{margin:16px 10px;padding:18px}}
 @keyframes assistant-wait-grounded{0%,45%,100%{opacity:1;transform:translateY(0) scale(1)}52%,75%{opacity:0;transform:translateY(2px) scale(.995)}}
 @keyframes assistant-wait-tap{0%,45%,100%{opacity:0;transform:translateY(3px) scale(.99)}52%,75%{opacity:1;transform:translateY(-1px) scale(1.008)}}
 @keyframes assistant-floor-tap{0%,45%,100%{opacity:.48;transform:translateX(50%) scale(1)}56%,72%{opacity:.86;transform:translateX(50%) scale(1.18,.72)}}

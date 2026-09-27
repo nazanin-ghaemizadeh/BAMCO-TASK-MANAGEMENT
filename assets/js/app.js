@@ -1377,6 +1377,7 @@ document.addEventListener('bamco:domain-invalidated',event=>{
   const originalShowView=showView;
   showView=function(view){
     const out=originalShowView(view);
+    if(out===false)return false;
     if(view==='kanban'&&!rendered.kanban)requestAnimationFrame(()=>renderTasks(false));
     else if(view==='archive'&&!rendered.archive)requestAnimationFrame(()=>renderTasks(true));
     else if(view==='dashboard'&&!rendered.dashboard)requestAnimationFrame(()=>{window.renderDashboard?.();rendered.dashboard=true});

@@ -7,7 +7,7 @@
     token:'',user:null,profile:null,profiles:[],tasks:[],requests:[],requestHistory:[],
     definitionRequests:[],requestRoutes:[],view:'dashboard'
   });
-  const lifecycle=new Map(),events=new Map();let titles={},currentView=state.view||null;
+  const lifecycle=new Map(),events=new Map();let titles={},currentView=state.view||null,navigationEpoch=0,activationFrame=0;
   function emit(type,detail={}){
     for(const listener of events.get(type)||[])listener(detail);
     if(typeof root.CustomEvent==='function')root.document?.dispatchEvent(new root.CustomEvent(`bamco:${type}`,{detail}));
@@ -26,6 +26,15 @@
     emit('view-error',{view:id,error});
     const message=error?.message||'باز کردن این بخش انجام نشد. دوباره تلاش کنید.';
     if(typeof root.bamcoToast==='function')root.bamcoToast(message,true);
+  }
+  function scheduleActivation(id,epoch){
+    if(activationFrame&&typeof root.cancelAnimationFrame==='function')root.cancelAnimationFrame(activationFrame);
+    const run=()=>{activationFrame=0;if(epoch!==navigationEpoch||currentView!==id)return;activateView(id)};
+    // Let the chosen view paint before a feature loader starts fetching or
+    // rebuilding a table.  This avoids a second click/rerender being trapped
+    // behind a synchronous loader from the route the user just left.
+    if(typeof root.requestAnimationFrame==='function')activationFrame=root.requestAnimationFrame(run);
+    else queueMicrotask(run);
   }
 
   const nativeFetch=typeof root.fetch==='function'?root.fetch.bind(root):null;
@@ -59,13 +68,16 @@
         access.denied?.(featureKey,'view',{route:view});
         return false;
       }
-      const previous=currentView;if(previous&&previous!==view)disposeView(previous);emit('navigation-before',{from:previous,to:view});
+      const previous=currentView;
+      if(previous===view&&!target.classList.contains('hidden'))return true;
+      if(previous&&previous!==view)disposeView(previous);emit('navigation-before',{from:previous,to:view});
       root.bamcoLeaveHome?.();state.view=view;currentView=view;
       root.document?.querySelectorAll('.view').forEach(node=>node.classList.add('hidden'));target.classList.remove('hidden');
       root.document?.querySelectorAll('#nav button').forEach(node=>node.classList.toggle('active',node.dataset.view===view));
       const title=root.document?.querySelector('#viewTitle');if(title&&titles[view])title.textContent=titles[view];
       const add=root.document?.querySelector('#addTaskBtn');if(add)add.classList.toggle('hidden',view!=='kanban');
-      activateView(view);emit('navigation-after',{from:previous,to:view});return true;
+      const epoch=++navigationEpoch;
+      scheduleActivation(view,epoch);emit('navigation-after',{from:previous,to:view});return true;
     }
   };
   Bamco.state=state;Bamco.lifecycle={registerView,disposeView,on};Bamco.network=network;Bamco.navigation=navigation;
