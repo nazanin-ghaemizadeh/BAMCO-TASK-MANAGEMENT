@@ -75,8 +75,10 @@
     qa('.vehicle-toolbar').forEach(t=>order(t,['.vehicle-add','.vehicle-search-toggle','.vehicle-search','.vehicle-import','.vehicle-export','.vehicle-edit','.vehicle-delete','.vehicle-upload','.vehicle-blank']));
   }
   function normalizeViews(){
-    qa('#appView .view .table-wrap table').forEach(t=>t.classList.add('vehicle-data-table'));
-    qa('#appView .view>.panel').forEach(p=>{if(q('table',p))p.classList.add('vehicle-panel')});
+    // Vehicle-specific geometry must never be applied to financial or
+    // correspondence tables: those views own their render and scroll model.
+    qa('#vehiclesView .table-wrap table').forEach(t=>t.classList.add('vehicle-data-table'));
+    qa('#vehiclesView>.panel').forEach(p=>{if(q('table',p))p.classList.add('vehicle-panel')});
     const page=q('#stickersView .desktop-sticker-page');
     if(page&&q('#desktopStickerSet option')?.textContent.includes('ثبت نشده'))page.innerHTML='<div class="sticker-empty-state"><div><b>هنوز نسخه‌ای تعریف نشده است</b><span>برای ساخت نسخه اول، روی «افزودن نسخه جدید» بزنید و تصاویر وضعیت‌ها را بارگذاری کنید.</span><br><button id="emptyAddSticker" class="primary" type="button">افزودن نسخه اول</button></div></div>'+page.innerHTML;
     q('#emptyAddSticker')?.addEventListener('click',()=>q('#addDesktopStickerSet')?.click());
