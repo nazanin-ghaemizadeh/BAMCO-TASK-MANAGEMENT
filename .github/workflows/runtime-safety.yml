@@ -50,7 +50,13 @@ jobs:
               assert x not in rt, f'unsafe navigation rebuild found: {x}'
           for view in ['groupChat','directMessages','taskChats','loginActivity','activeSessions','performanceReport','responseReport','requestReport','systemOptions']:
               assert view in rt, f'missing tested view: {view}'
-          assert page.count('assets/js/bamco.bundle.js')==1, 'application bundle must load once'
+          bundle_loads=page.count('assets/js/bamco.bundle.js')
+          source_runtime=["production-runtime.js", "tab-workspace.js", "conversations.js", "session-runtime.js"]
+          if bundle_loads:
+              assert bundle_loads==1, 'application bundle must load at most once'
+          else:
+              for script in source_runtime:
+                  assert page.count(f'assets/js/{script}')==1, f"runtime source must load once: {script}"
           for script in ["production-runtime.js", "tab-workspace.js", "conversations.js", "session-runtime.js"]:
               assert bundle.count(f'source: assets/js/{script}')==1, f"runtime must be bundled once: {script}"
           assert "navigation-completeness.js" not in page

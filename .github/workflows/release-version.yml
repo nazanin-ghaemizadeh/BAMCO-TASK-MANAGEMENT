@@ -63,10 +63,12 @@ jobs:
           text,n=re.subn(r'(assets/js/app-update\.js\?v=)[^"&]+',rf'\g<1>{release}',text,count=1)
           if n!=1: raise SystemExit('app updater V2 cache key not found')
 
-          for asset in ('assets/css/bamco.bundle.css', 'assets/js/bamco.bundle.js', 'assets/js/auth-ui.js', 'assets/js/department-entry.js', 'assets/js/app-update.js'):
-              pattern=rf'({re.escape(asset)}\?v=)[^"&]+'
-              text,n=re.subn(pattern,rf'\g<1>{release}',text,count=1)
-              if n!=1: raise SystemExit(f'cache key not found: {asset}')
+          # The application can intentionally boot either from its canonical
+          # bundle or from ordered source modules during bundle recovery.
+          # Keep every versioned local JS/CSS asset coherent in both modes.
+          pattern=r'((?:assets/(?:js|css)/[^?"\']+)\?v=)[^"&\']+'
+          text,n=re.subn(pattern,rf'\g<1>{release}',text)
+          if n<4: raise SystemExit('too few versioned application assets found')
 
           index.write_text(text,encoding='utf-8')
           PY
