@@ -34,11 +34,12 @@ test('task discussion exposes source, owner and Persian calendar, and permits an
  assert.deepEqual(f.errors,[]);
 });
 
-test('assistant uses a valid task view column list and a single female status sticker slot',async t=>{
+test('assistant uses a valid task view column list and the exact female status artwork',async t=>{
  const source=fs.readFileSync('supabase/functions/smart-assistant/index.ts','utf8');
- assert(!source.includes('archived,owner_name'));assert(source.includes(".select('legacy_id,title,status,priority,start_date,due_date,done_date,archived')"));
+ assert(!source.includes('archived,owner_name'));assert(source.includes(".from('task_status_view').select('id,legacy_id,title,status,status_kind,priority,due_date,start_date,due_state,owner_id,archived')"));
  const f=await fixture();t.after(()=>f.dispose());await f.open('voiceAssistant');
- const view=f.d.querySelector('#voiceAssistantView');assert(view.querySelector('img.assistant-state-sticker[alt="استیکر خانم، وضعیت مطلوب"]'));
+ const view=f.d.querySelector('#voiceAssistantView');assert(view.querySelector('img.assistant-state-sticker[src="assets/images/assistant-status1-female.png"]'));
+ assert(view.querySelector('.assistant-avatar-overlays .avatar-jaw'));
  assert.equal(view.querySelector('.assistant-prompts'),null);assert.equal(view.querySelector('.assistant-task-glance'),null);
  assert(view.querySelector('.assistant-mic'));assert.deepEqual(f.errors,[]);
 });

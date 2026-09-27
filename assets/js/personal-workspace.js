@@ -5,7 +5,7 @@ const q=(s,r=document)=>r?.querySelector(s),qa=(s,r=document)=>[...(r?.querySele
 const esc=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const fa=value=>String(value??'').replace(/\d/g,d=>'۰۱۲۳۴۵۶۷۸۹'[d]);
 const noteColors=['sun','rose','mint','sky','lavender','peach'];
-let notes=[],selectedNote='',inactiveMode=false,notesReady=false,notesBusy=false,notesGeneration=0,recognition=null,recorder=null,recordingStream=null,recordingTimer=null,previousResponseId='',assistantBusy=false;
+let notes=[],selectedNote='',inactiveMode=false,notesReady=false,notesBusy=false,notesGeneration=0;
 
 function icon(path){return `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${path}"/></svg>`}
 const ICONS={
@@ -34,18 +34,60 @@ function installNavigation(){
   <div class="personal-command-row bamco-command-bar"><button type="button" class="ghost" data-personal-home>بازگشت به خانه</button><button type="button" class="ghost" data-assistant-new>گفت‌وگوی جدید</button></div>
   <div class="assistant-stage">
    <aside class="assistant-character-panel">
-    <img class="assistant-state-sticker" alt="استیکر خانم، وضعیت مطلوب" hidden>
+    <div class="assistant-avatar-rig" role="img" aria-label="استیکر خانم وضعیت مطلوب، دستیار متحرک">
+     <div class="assistant-avatar-visual">
+      <img class="assistant-state-sticker" src="assets/images/assistant-status1-female.png" alt="" width="800" height="1000" loading="lazy" decoding="async">
+      <svg class="assistant-avatar-overlays" viewBox="0 0 800 1000" aria-hidden="true" focusable="false">
+       <defs>
+       <clipPath id="assistant-eye-left-clip"><ellipse cx="333" cy="338" rx="44" ry="42"/></clipPath>
+       <clipPath id="assistant-eye-right-clip"><ellipse cx="449" cy="331" rx="45" ry="43"/></clipPath>
+        <clipPath id="assistant-pupil-left-clip"><ellipse cx="336" cy="343" rx="19" ry="25"/></clipPath>
+        <clipPath id="assistant-pupil-right-clip"><ellipse cx="450" cy="336" rx="19" ry="25"/></clipPath>
+        <clipPath id="assistant-brow-left-clip"><ellipse cx="324" cy="272" rx="37" ry="21"/></clipPath>
+        <clipPath id="assistant-brow-right-clip"><ellipse cx="441" cy="263" rx="47" ry="22"/></clipPath>
+        <clipPath id="assistant-head-clip"><path d="M167 97H637V486H167Z"/></clipPath>
+        <clipPath id="assistant-shoulder-left-clip"><path d="M301 472H386V589H301Z"/></clipPath>
+        <clipPath id="assistant-shoulder-right-clip"><path d="M443 473H549V587H443Z"/></clipPath>
+        <clipPath id="assistant-arm-left-clip"><path d="M204 474H312V588H204Z"/></clipPath>
+        <clipPath id="assistant-arm-right-clip"><path d="M495 508H586V645H495Z"/></clipPath>
+        <clipPath id="assistant-mouth-clip"><ellipse cx="393" cy="410" rx="49" ry="29"/></clipPath>
+        <clipPath id="assistant-hand-left-clip"><path d="M225 391H308V514H225Z"/></clipPath>
+        <clipPath id="assistant-hand-right-clip"><path d="M447 593H543V696H447Z"/></clipPath>
+        <radialGradient id="assistant-skin-cover"><stop offset="0" stop-color="#f5ae84"/><stop offset=".68" stop-color="#f4b48e" stop-opacity=".96"/><stop offset="1" stop-color="#f8bd99" stop-opacity="0"/></radialGradient>
+       </defs>
+       <g class="avatar-shoulder-left"><image href="assets/images/assistant-status1-female.png" width="800" height="1000" clip-path="url(#assistant-shoulder-left-clip)"/></g>
+       <g class="avatar-shoulder-right"><image href="assets/images/assistant-status1-female.png" width="800" height="1000" clip-path="url(#assistant-shoulder-right-clip)"/></g>
+       <g class="avatar-head"><image href="assets/images/assistant-status1-female.png" width="800" height="1000" clip-path="url(#assistant-head-clip)"/></g>
+       <g class="avatar-eye-left"><image href="assets/images/assistant-status1-female.png" width="800" height="1000" clip-path="url(#assistant-eye-left-clip)"/></g>
+       <g class="avatar-eye-right"><image href="assets/images/assistant-status1-female.png" width="800" height="1000" clip-path="url(#assistant-eye-right-clip)"/></g>
+       <g class="avatar-pupil-left"><image href="assets/images/assistant-status1-female.png" width="800" height="1000" clip-path="url(#assistant-pupil-left-clip)"/></g>
+       <g class="avatar-pupil-right"><image href="assets/images/assistant-status1-female.png" width="800" height="1000" clip-path="url(#assistant-pupil-right-clip)"/></g>
+       <g class="avatar-brow-left"><image href="assets/images/assistant-status1-female.png" width="800" height="1000" clip-path="url(#assistant-brow-left-clip)"/></g>
+       <g class="avatar-brow-right"><image href="assets/images/assistant-status1-female.png" width="800" height="1000" clip-path="url(#assistant-brow-right-clip)"/></g>
+       <g class="avatar-lids"><ellipse cx="333" cy="338" rx="48" ry="38"/><ellipse cx="449" cy="331" rx="48" ry="39"/><path d="M290 338 Q334 360 377 336 M404 331 Q450 355 496 328"/></g>
+       <g class="avatar-mouth-rig"><ellipse class="avatar-mouth-cover" cx="393" cy="414" rx="64" ry="43" fill="url(#assistant-skin-cover)"/><g class="avatar-jaw"><image href="assets/images/assistant-status1-female.png" width="800" height="1000" clip-path="url(#assistant-mouth-clip)"/></g></g>
+       <g class="avatar-arm-left"><image href="assets/images/assistant-status1-female.png" width="800" height="1000" clip-path="url(#assistant-arm-left-clip)"/></g>
+       <g class="avatar-arm-right"><image href="assets/images/assistant-status1-female.png" width="800" height="1000" clip-path="url(#assistant-arm-right-clip)"/></g>
+       <g class="avatar-hand-left"><image href="assets/images/assistant-status1-female.png" width="800" height="1000" clip-path="url(#assistant-hand-left-clip)"/></g>
+       <g class="avatar-hand-right"><image href="assets/images/assistant-status1-female.png" width="800" height="1000" clip-path="url(#assistant-hand-right-clip)"/></g>
+      </svg>
+     </div>
+    </div>
+    <span class="assistant-avatar-error" hidden>تصویر دستیار بارگذاری نشد؛ گفت‌وگو همچنان در دسترس است.</span>
+    <span class="assistant-voice-activity" role="status" aria-label="صدا غیرفعال است"></span>
    </aside>
    <section class="assistant-chat-panel">
+    <header class="assistant-chat-head"><div><strong>دستیار صوتی هوشمند</strong><span class="assistant-status" role="status">آماده گفت‌وگو</span></div><button type="button" class="ghost" data-assistant-mute aria-label="بی‌صدا کردن دستیار" aria-pressed="false">بی‌صدا</button><button type="button" class="ghost" data-assistant-stop aria-label="توقف صدای دستیار">توقف صدا</button></header>
     <div class="assistant-messages" aria-live="polite"></div>
     <form class="assistant-composer"><button type="button" class="assistant-mic" aria-label="گفت‌وگوی صوتی" title="گفت‌وگوی صوتی">${icon(ICONS.mic)}</button><textarea rows="1" maxlength="4000" placeholder="درباره وظایف و برنامه‌تان بپرسید…" required></textarea><button type="submit" class="assistant-send" aria-label="ارسال پیام">${icon(ICONS.send)}</button></form>
    </section>
   </div>`;
  workspace.append(notesView,assistantView);
  window.BamcoNavigation?.configure?.({state,titles:{notes:'یادداشت‌ها',voiceAssistant:'دستیار هوشمند'}});
- bindNotes(notesView);bindAssistant(assistantView);
+ bindNotes(notesView);
+ const assistant=window.BamcoAssistantRuntime.create(assistantView,{session:()=>({token:state.token,userId:state.user?.id}),loadSticker:loadAssistantSticker});
  window.BamcoNavigation?.registerView?.('notes',{activate:()=>{inactiveMode=false;selectedNote='';void loadNotes()}});
- window.BamcoNavigation?.registerView?.('voiceAssistant',{activate:()=>resetAssistant(),dispose:stopAssistantMedia});
+ window.BamcoNavigation?.registerView?.('voiceAssistant',{activate:assistant.activate,dispose:assistant.dispose});
 }
 
 function noteStorageKey(){return`bamco.personal-notes.${state.user?.id||'anonymous'}`}
@@ -103,49 +145,11 @@ function bindNotes(view){
  view.addEventListener('click',event=>{if(event.target.closest('[data-notes-retry]'))void loadNotes()});
 }
 
-function assistantStatus(text,mode=''){const view=q('#voiceAssistantView');if(!view)return;view.dataset.assistantState=text;view.classList.remove('is-listening','is-thinking','is-speaking');if(mode)view.classList.add(`is-${mode}`)}
-function taskGlance(){const view=q('#voiceAssistantView'),today=new Date().toISOString().slice(0,10),rows=(state.tasks||[]).filter(task=>!task.archived),urgent=rows.filter(task=>String(task.priority||'').includes('فوری')).length,overdue=rows.filter(task=>task.due_date&&task.due_date<today&&!['انجام شده','تکمیل شده'].includes(task.status)).length;q('[data-open-tasks]',view).textContent=fa(rows.length);q('[data-urgent-tasks]',view).textContent=fa(urgent);q('[data-overdue-tasks]',view).textContent=fa(overdue)}
-function appendMessage(role,text){const host=q('#voiceAssistantView .assistant-messages'),article=document.createElement('article');article.className=`assistant-message ${role}`;article.innerHTML=`<span>${role==='assistant'?'✦':'شما'}</span><p>${esc(text).replace(/\n/g,'<br>')}</p>`;host.append(article);host.scrollTop=host.scrollHeight;window.requestAnimationFrame?.(()=>{if(article.isConnected&&host.isConnected)host.scrollTop=host.scrollHeight});return article}
-function resetAssistant(){previousResponseId='';assistantBusy=false;stopAssistantMedia();const host=q('#voiceAssistantView .assistant-messages');host.innerHTML='';appendMessage('assistant','سلام! من برای مرور وظایف، تعیین اولویت و برنامه‌ریزی کارها کنار شما هستم. از کجا شروع کنیم؟');q('#voiceAssistantView .assistant-composer textarea').value='';void loadAssistantSticker();assistantStatus('آماده گفت‌وگو')}
 async function loadAssistantSticker(){
- const image=q('#voiceAssistantView .assistant-state-sticker');if(!image||!state.token)return;
- try{const [sets,stickers]=await Promise.all([select('sticker_sets','select=id&active=eq.true&limit=1'),select('stickers','select=set_id,storage_path&state_key=eq.state1&gender=eq.female')]);const row=stickers.find(item=>Number(item.set_id)===Number(sets[0]?.id));if(!row)return;image.src=await window.bamcoMedia.get('stickers',row.storage_path);image.hidden=false}catch(error){console.warn('Assistant sticker',error.message)}
+ const image=q('#voiceAssistantView .assistant-state-sticker'),error=q('#voiceAssistantView .assistant-avatar-error');if(!image)return;
+ image.loading='eager';image.onload=()=>{if(error)error.hidden=true};image.onerror=()=>{if(error)error.hidden=false};
+ try{if(typeof image.decode==='function')await image.decode();if(error&&image.naturalWidth)error.hidden=true}
+ catch{if(error)error.hidden=false}
 }
-function stopAssistantMedia(){try{recognition?.abort()}catch{}recognition=null;if(recordingTimer)clearTimeout(recordingTimer);recordingTimer=null;if(recorder){recorder.onstop=null;try{if(recorder.state==='recording')recorder.stop()}catch{}}recorder=null;recordingStream?.getTracks().forEach(track=>track.stop());recordingStream=null;q('#voiceAssistantView .assistant-mic')?.setAttribute('aria-pressed','false');try{speechSynthesis.cancel()}catch{}q('#voiceAssistantView')?.classList.remove('is-listening','is-thinking','is-speaking')}
-function speak(text){if(!('speechSynthesis'in window))return;speechSynthesis.cancel();const utterance=new SpeechSynthesisUtterance(text.replace(/[*#_`]/g,''));utterance.lang='fa-IR';utterance.rate=.96;const voice=speechSynthesis.getVoices().find(item=>item.lang?.toLowerCase().startsWith('fa'));if(voice)utterance.voice=voice;utterance.onstart=()=>assistantStatus('در حال پاسخ‌گویی','speaking');utterance.onend=()=>assistantStatus('آماده گفت‌وگو');utterance.onerror=()=>assistantStatus('آماده گفت‌وگو');speechSynthesis.speak(utterance)}
-async function askAssistant(text){
- if(assistantBusy||!text.trim())return;assistantBusy=true;appendMessage('user',text.trim());const waiting=appendMessage('assistant','در حال بررسی وظایف شما…');waiting.classList.add('pending');assistantStatus('در حال فکر کردن','thinking');
- try{const response=await fetch(`${SB_URL}/functions/v1/smart-assistant`,{method:'POST',headers:{apikey:SB_KEY,Authorization:`Bearer ${state.token}`,'Content-Type':'application/json'},cache:'no-store',body:JSON.stringify({message:text.trim(),previous_response_id:previousResponseId||null})}),data=await response.json().catch(()=>({}));if(!response.ok)throw Error(data.error||'دستیار هوشمند هنوز روی سرور فعال نشده است.');waiting.remove();appendMessage('assistant',data.text||'پاسخی دریافت نشد.');previousResponseId=data.response_id||previousResponseId;speak(data.text||'')}
- catch(error){waiting.classList.remove('pending');waiting.querySelector('p').textContent=error.message;waiting.classList.add('error');assistantStatus('اتصال دستیار آماده نیست')}
- finally{assistantBusy=false}
-}
-async function transcribeAudio(blob,mime){
- const form=new FormData(),ext=mime.includes('mp4')?'mp4':mime.includes('ogg')?'ogg':'webm';form.append('audio',blob,`voice.${ext}`);
- const response=await fetch(`${SB_URL}/functions/v1/smart-assistant`,{method:'POST',headers:{apikey:SB_KEY,Authorization:`Bearer ${state.token}`},body:form}),data=await response.json().catch(()=>({}));
- if(!response.ok)throw Error(data.error||'تبدیل صدا به متن انجام نشد.');return String(data.transcript||'').trim();
-}
-async function startVoice(){
- if(recorder?.state==='recording'){recorder.stop();return}
- if(window.MediaRecorder&&navigator.mediaDevices?.getUserMedia){
-  try{
-   stopAssistantMedia();const stream=await navigator.mediaDevices.getUserMedia({audio:true});recordingStream=stream;
-   const mime=['audio/webm','audio/mp4','audio/ogg'].find(type=>MediaRecorder.isTypeSupported(type))||'',chunks=[],activeToken=state.token;
-   recorder=new MediaRecorder(stream,mime?{mimeType:mime}:undefined);const activeRecorder=recorder;
-   recorder.ondataavailable=event=>{if(event.data?.size)chunks.push(event.data)};
-   recorder.onstop=async()=>{if(recordingTimer)clearTimeout(recordingTimer);recordingTimer=null;stream.getTracks().forEach(track=>track.stop());if(recordingStream===stream)recordingStream=null;q('#voiceAssistantView .assistant-mic')?.setAttribute('aria-pressed','false');if(activeToken!==state.token||recorder!==activeRecorder)return;recorder=null;assistantStatus('در حال تبدیل صدا به متن','thinking');try{const audioType=(activeRecorder.mimeType||mime||'audio/webm').split(';')[0],text=await transcribeAudio(new Blob(chunks,{type:audioType}),audioType);if(!text)throw Error('صدای قابل تشخیصی دریافت نشد.');if(state.view!=='voiceAssistant'||activeToken!==state.token)return;q('#voiceAssistantView textarea').value='';void askAssistant(text)}catch(error){assistantStatus(error.message);window.toast?.(error.message,true)}};
-   recorder.start();q('#voiceAssistantView .assistant-mic')?.setAttribute('aria-pressed','true');assistantStatus('در حال ضبط؛ برای پایان دوباره میکروفون را بزنید','listening');recordingTimer=setTimeout(()=>{if(recorder===activeRecorder&&recorder.state==='recording')recorder.stop()},20000);
-  }catch(error){stopAssistantMedia();const message=error.name==='NotAllowedError'?'اجازهٔ میکروفون در مرورگر فعال نیست.':error.message||'میکروفون فعال نشد.';assistantStatus(message);window.toast?.(message,true)}
-  return;
- }
- const Recognition=window.SpeechRecognition||window.webkitSpeechRecognition;if(!Recognition)return window.toast?.('ضبط صدا در این مرورگر پشتیبانی نمی‌شود.',true);
- stopAssistantMedia();recognition=new Recognition();recognition.lang='fa-IR';recognition.interimResults=false;recognition.continuous=false;recognition.onstart=()=>assistantStatus('در حال شنیدن…','listening');recognition.onresult=event=>{const text=event.results?.[0]?.[0]?.transcript||'';if(text)void askAssistant(text)};recognition.onerror=event=>{const message=event.error==='not-allowed'?'اجازهٔ میکروفون در مرورگر فعال نیست.':'صدای شما دریافت نشد.';assistantStatus(message);window.toast?.(message,true)};recognition.onend=()=>{if(!assistantBusy)assistantStatus('آماده گفت‌وگو')};try{recognition.start()}catch(error){assistantStatus('میکروفون فعال نشد');window.toast?.(error.message||'میکروفون فعال نشد.',true)}
-}
-function bindAssistant(view){
- q('[data-personal-home]',view).onclick=()=>window.bamcoShowHome?.();q('[data-assistant-new]',view).onclick=resetAssistant;q('.assistant-mic',view).onclick=startVoice;
- q('.assistant-composer',view).onsubmit=event=>{event.preventDefault();const input=q('textarea',event.currentTarget),text=input.value;input.value='';void askAssistant(text)};
- q('.assistant-composer textarea',view).onkeydown=event=>{if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();event.currentTarget.form.requestSubmit()}};
- if(!(window.SpeechRecognition||window.webkitSpeechRecognition)){const mic=q('.assistant-mic',view);mic.title=window.MediaRecorder?'ضبط صدا':'ضبط صدا در این مرورگر پشتیبانی نمی‌شود.'}
-}
-
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',installNavigation,{once:true});else installNavigation();
 })();
