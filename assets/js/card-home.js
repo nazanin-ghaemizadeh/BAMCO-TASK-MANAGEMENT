@@ -86,9 +86,9 @@ function install(){
  let openGroupKey='',lastTrigger=null;
  const badgeSources={tasks:'#approvalBadge',messages:'#messageBadge',conversations:'.conversation-nav-count'};
  const phonebookSections=Object.freeze([
-  {key:'office',title:'اداری',icon:'⌂'},
-  {key:'factory',title:'کارخانه',icon:'▥'},
-  {key:'external',title:'خارج از سازمان',icon:'◎'}
+  {key:'office',title:'اداری',icon:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21V5.5L12 2l8 3.5V21M8 21v-4h8v4M8 8h.01M12 8h.01M16 8h.01M8 12h.01M12 12h.01M16 12h.01"/></svg>'},
+  {key:'factory',title:'کارخانه',icon:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21V11l6 3V9l6 3V5l6 3v13M7 21v-3M12 21v-3M17 21v-3M18 5V2"/></svg>'},
+  {key:'external',title:'خارج از سازمان',icon:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.4 3.7 5.4 3.7 9S14.5 18.6 12 21c-2.5-2.4-3.7-5.4-3.7-9S9.5 5.4 12 3"/></svg>'}
  ]);
  const available=button=>button&&button.hidden!==true&&!button.classList.contains('hidden')&&!button.disabled;
  function fillGroup(group){
@@ -106,8 +106,8 @@ function install(){
    const source=original.find(button=>button.dataset.view==='phoneBook');
    if(!source)return false;
    for(const section of phonebookSections){
-    const shortcut=document.createElement('button');shortcut.type='button';shortcut.className='home-launcher-route';shortcut.dataset.phonebookSection=section.key;
-    const icon=document.createElement('span');icon.className='home-launcher-route-icon';icon.setAttribute('aria-hidden','true');icon.textContent=section.icon;
+    const shortcut=document.createElement('button');shortcut.type='button';shortcut.className='home-launcher-route phonebook-launcher-route';shortcut.dataset.phonebookSection=section.key;
+    const icon=document.createElement('span');icon.className='home-launcher-route-icon';icon.setAttribute('aria-hidden','true');icon.innerHTML=section.icon;
     const name=document.createElement('span');name.textContent=section.title;
     shortcut.append(icon,name);
     shortcut.addEventListener('click',()=>{

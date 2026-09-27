@@ -2,7 +2,9 @@
    their existing modules. Reconcile in place so form state/listeners survive. */
 (()=>{
   'use strict';
-  const excluded=new Set(['homeView','welcomeView']);
+  // The phonebook owns its one-row command bar and card/table transition.
+  // Decorating it as a generic interior page adds a second title and home bar.
+  const excluded=new Set(['homeView','welcomeView','phoneBookView']);
   const headings={dashboardView:'داشبورد',templatesView:'متن پیام‌ها',settingsView:'تنظیمات کاربری'};
   const toolbarSelector='.task-toolbar,.vehicle-toolbar,.people-actions,.manager-toolbar,.workspace-actions,.workspace-report-tools,.suite-toolbar,.sticker-toolbar,.message-center-actions,.response-quick,.tt-switch,.desktop-template-fieldset,.feature-toolbar-actions,.letter-toolbar,.cash-toolbar,.bamco-management-toolbar';
   const ownedCommandSelector='.message-command-row button,.sent-command-row button,.response-command-row button,.personal-command-row [data-personal-home]';
