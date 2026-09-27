@@ -79,8 +79,7 @@ html body #appView [data-feature-access-control="local"],html body #appView .veh
 #phoneBookView .phonebook-command button.primary{border-color:#146b4d;background:#146b4d;color:#fff}
 #phoneBookView .phonebook-command button.danger{border-color:#e0bfbb;background:#fff8f7;color:#a23535}
 #phoneBookView .phonebook-command button:disabled{opacity:.45;cursor:default}
-#phoneBookView .phonebook-search-row{padding:18px 28px;border-bottom:1px solid #c5d5cc;background:#f7faf8}
-#phoneBookView .phonebook-search{display:block;width:min(680px,100%);height:48px;padding:8px 18px;border:2px solid #c5d5cc;border-radius:14px;background:#fff;color:#17362d;font:inherit;font-size:16px;outline:none;box-sizing:border-box}
+#phoneBookView .phonebook-command .phonebook-search{display:block;flex:0 1 270px;width:270px;min-width:160px;max-width:100%;height:40px;margin-inline-start:auto;padding:5px 12px;border:1px solid #c5d5cc;border-radius:8px;background:#fff;color:#17362d;font:inherit;font-size:15px;outline:none;box-sizing:border-box}
 #phoneBookView .phonebook-search:focus{border-color:#4f9179;box-shadow:0 0 0 3px #176b4d14}
 #phoneBookView .phonebook-tabs{display:flex;align-items:stretch;gap:0;min-height:70px;padding-inline:10px;border-bottom:1px solid #c5d5cc;background:#fff;direction:rtl}
 #phoneBookView .phonebook-tabs button{display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border:0;border-bottom:3px solid transparent;background:transparent;color:#315c49;font:800 18px/1.4 var(--fa-font,'B Nazanin',serif);cursor:pointer}
@@ -93,10 +92,9 @@ html body #appView [data-feature-access-control="local"],html body #appView .veh
 #phoneBookView .phonebook-section-heading{display:block;padding:18px 20px 10px;border:0;background:transparent;direction:rtl}
 #phoneBookView .phonebook-section-heading h2{margin:0;color:#185c41;font:900 24px/1.35 var(--fa-font,'B Nazanin',serif)}
 #phoneBookView .phonebook-units{padding:20px}
-#phoneBookView .phonebook-unit-workspace{display:grid;grid-template-rows:auto auto minmax(0,1fr);min-height:0;height:calc(100dvh - var(--app-header-h,158px) - var(--app-footer-h,39px) - 32px);padding:0}
-#phoneBookView .phonebook-unit-heading{position:relative;min-height:68px;padding:14px 20px 10px;background:#f8faf9;direction:rtl}
-#phoneBookView .phonebook-unit-heading h2{position:absolute;inset-block-start:18px;inset-inline-end:20px;margin:0;color:#185c41;font:900 24px/1.35 var(--fa-font,'B Nazanin',serif)}
-#phoneBookView .phonebook-unit-heading h3{margin:0;padding-inline:140px;text-align:center;color:#17362d;font:900 23px/1.45 var(--fa-font,'B Nazanin',serif);overflow-wrap:anywhere}
+#phoneBookView .phonebook-unit-workspace{display:grid;grid-template-rows:auto auto minmax(0,1fr);min-height:0;height:100dvh;overflow:hidden;padding:0}
+#phoneBookView .phonebook-unit-heading{display:flex;align-items:center;min-height:68px;padding:9px 12px;background:#fff;direction:rtl;border-bottom:1px solid #c5d5cc}
+#phoneBookView .phonebook-unit-heading h2{margin:0;color:#185c41;font:700 20px/1.5 var(--fa-font,'B Nazanin',serif);overflow-wrap:anywhere}
 #phoneBookView .phonebook-command.phonebook-table-command{position:relative;top:auto;bottom:auto;z-index:8;box-shadow:none}
 #phoneBookView .phonebook-units-title{display:flex;align-items:center;gap:9px;margin:0 0 14px;color:#185c41;font-size:20px;line-height:1.4}
 #phoneBookView .phonebook-units-title strong{font-weight:900}
@@ -130,7 +128,7 @@ html body #appView [data-feature-access-control="local"],html body #appView .veh
 #phoneBookView .phonebook-unit-editor-actions{display:flex;flex-wrap:wrap;gap:8px}
 #phoneBookView .phonebook-unit-editor-actions button{min-height:38px;padding:6px 13px;border-radius:8px}
 #phoneBookView .phonebook-dialog-context{margin:0 0 12px;color:#426c59}
-@media(max-width:700px){#phoneBookView .phonebook-command{align-items:stretch}#phoneBookView .phonebook-command button{flex:1 1 125px}#phoneBookView .phonebook-search-row{padding:12px 10px}#phoneBookView .phonebook-search{width:100%;height:44px}#phoneBookView .phonebook-tabs{min-height:0;overflow-x:auto;padding-inline:4px}#phoneBookView .phonebook-tabs button{flex:0 0 auto;padding:9px 11px;font-size:17px}#phoneBookView .phonebook-section-heading{padding:14px 10px}#phoneBookView .phonebook-section-heading h2{font-size:22px}#phoneBookView .phonebook-unit-heading{min-height:62px;padding:12px 10px 8px}#phoneBookView .phonebook-unit-heading h2{inset-block-start:14px;inset-inline-end:10px;font-size:19px}#phoneBookView .phonebook-unit-heading h3{padding-inline:85px;font-size:20px}#phoneBookView .phonebook-units{padding:14px 10px}#phoneBookView .phonebook-unit-grid{grid-template-columns:1fr;gap:12px}#phoneBookView .phonebook-unit-card{min-height:116px;padding:16px}#phoneBookView .phonebook-table-pagination{align-items:flex-start}#phoneBookView .phonebook-unit-editor{margin:16px 10px;padding:18px}}
+@media(max-width:700px){#phoneBookView .phonebook-command{align-items:stretch}#phoneBookView .phonebook-command button{flex:1 1 125px}#phoneBookView .phonebook-command .phonebook-search{flex:1 1 100%;width:100%;height:40px;margin:0}#phoneBookView .phonebook-tabs{min-height:0;overflow-x:auto;padding-inline:4px}#phoneBookView .phonebook-tabs button{flex:0 0 auto;padding:9px 11px;font-size:17px}#phoneBookView .phonebook-section-heading{padding:14px 10px}#phoneBookView .phonebook-section-heading h2{font-size:22px}#phoneBookView .phonebook-unit-heading{min-height:62px;padding:10px}#phoneBookView .phonebook-unit-heading h2{font-size:19px}#phoneBookView .phonebook-units{padding:14px 10px}#phoneBookView .phonebook-unit-grid{grid-template-columns:1fr;gap:12px}#phoneBookView .phonebook-unit-card{min-height:116px;padding:16px}#phoneBookView .phonebook-table-pagination{align-items:flex-start}#phoneBookView .phonebook-unit-editor{margin:16px 10px;padding:18px}}
 @keyframes assistant-wait-grounded{0%,45%,100%{opacity:1;transform:translateY(0) scale(1)}52%,75%{opacity:0;transform:translateY(2px) scale(.995)}}
 @keyframes assistant-wait-tap{0%,45%,100%{opacity:0;transform:translateY(3px) scale(.99)}52%,75%{opacity:1;transform:translateY(-1px) scale(1.008)}}
 @keyframes assistant-floor-tap{0%,45%,100%{opacity:.48;transform:translateX(50%) scale(1)}56%,72%{opacity:.86;transform:translateX(50%) scale(1.18,.72)}}

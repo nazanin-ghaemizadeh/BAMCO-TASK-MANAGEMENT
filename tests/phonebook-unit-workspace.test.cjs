@@ -22,9 +22,11 @@ test('phonebook keeps one command bar, creates unit cards and shows contacts ins
  view.querySelector('[data-phonebook-unit-select="1"]').click();
  assert.equal(view.querySelectorAll('.phonebook-table').length,1);
  assert.equal(view.querySelectorAll('[data-phonebook-contact-select]').length,1);
- assert.equal(view.querySelector('.phonebook-unit-heading h2').textContent.trim(),'اداری');
- assert.equal(view.querySelector('.phonebook-unit-heading h3').textContent.trim(),'منابع انسانی');
+ assert.equal(view.querySelector('.phonebook-unit-heading h2').textContent.trim(),'منابع انسانی');
+ assert.equal(view.querySelector('.phonebook-unit-heading h3'),null);
  assert.deepEqual([...view.querySelectorAll('.phonebook-table-command>button')].map(button=>button.textContent.trim()),['بازگشت به واحدها','حذف مخاطب','ویرایش مخاطب']);
+ assert(view.querySelector('.phonebook-table-command>[data-phonebook-search]'),'search belongs to the same command row as the table actions');
+ assert.deepEqual([...view.querySelector('.phonebook-unit-workspace').children].map(element=>element.className),['phonebook-unit-heading','phonebook-command phonebook-table-command bamco-command-bar','phonebook-table-area']);
  assert.equal(view.querySelector('[data-phonebook-new]'),null);
  assert.equal(view.querySelectorAll('.phonebook-table thead tr:first-child th').length,6);
  assert.equal(view.querySelectorAll('.phonebook-table [data-phonebook-filter]').length,6);

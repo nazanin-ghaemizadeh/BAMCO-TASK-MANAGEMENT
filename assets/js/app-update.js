@@ -6,10 +6,11 @@ window.__bamcoAppUpdateV2=true;
 const current=document.querySelector('meta[name="bamco-app-version"]')?.content||'';
 const installedKey='bamco.app.installed-version';
 const announcedKey='bamco.app.announced-update';
+const installedNoticeKey='bamco.app.announced-installed-version';
 const installTargetKey='bamco.app.install-target-v2';
 const legacyKeys=['bamco.app.pending-version','bamco.app.update-attempts','bamco.app.dismissed-version'];
 const updateParams=['bamco_update','bamco_reload','bamco_probe','bamco_v'];
-let checking=false,lastCheck=0;
+let checking=false,lastCheck=0,pendingInstalledNotice=false;
 
 const read=(storage,key)=>{try{return storage.getItem(key)||''}catch{return''}};
 const write=(storage,key,value)=>{try{value?storage.setItem(key,value):storage.removeItem(key)}catch{}};
@@ -81,12 +82,24 @@ function navigate(version){
  return true;
 }
 function confirmInstalledVersion(){
- const previous=read(localStorage,installedKey),target=read(sessionStorage,installTargetKey);
- if(current&&(target===current||(previous&&previous!==current))){
-  notify('سامانه به‌روزرسانی شد',{title:'سامانه به‌روزرسانی شد',duration:8000,icon:'✓'});
- }
+ const target=read(sessionStorage,installTargetKey);
+ if(current&&read(localStorage,installedNoticeKey)!==current)pendingInstalledNotice=true;
  if(target===current)write(sessionStorage,installTargetKey,'');
  if(current)write(localStorage,installedKey,current);
+ showInstalledNotice();
+}
+function showInstalledNotice(){
+ if(!pendingInstalledNotice||!current||typeof window.bamcoToast!=='function')return;
+ const app=document.querySelector('#appView');
+ if(!app||app.classList.contains('hidden')||getComputedStyle(app).display==='none')return;
+ pendingInstalledNotice=false;
+ window.bamcoToast('سامانه به‌روزرسانی شد',false,{kind:'info',title:'سامانه به‌روزرسانی شد',duration:20000,icon:'✓',nonblocking:true});
+ write(localStorage,installedNoticeKey,current);
+}
+function watchInstalledNotice(){
+ const app=document.querySelector('#appView');
+ if(app)new MutationObserver(showInstalledNotice).observe(app,{attributes:true,attributeFilter:['class']});
+ showInstalledNotice();
 }
 async function check(force=false){
  if(checking||(!force&&Date.now()-lastCheck<30000))return;
@@ -114,8 +127,9 @@ async function check(force=false){
 
 clearLegacyState();
 confirmInstalledVersion();
-document.addEventListener('DOMContentLoaded',()=>void check(true),{once:true});
-window.addEventListener('pageshow',()=>void check(true));
+document.addEventListener('DOMContentLoaded',()=>{watchInstalledNotice();void check(true)},{once:true});
+window.addEventListener('bamco:navigation-after',showInstalledNotice);
+window.addEventListener('pageshow',()=>{showInstalledNotice();void check(true)});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)void check(true)});
 window.addEventListener('focus',()=>void check());
 window.addEventListener('online',()=>void check(true));

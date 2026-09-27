@@ -7,15 +7,56 @@ html body #appView#appView .view:has(table) {
   --register-ink:#19392f;
 }
 
-html body #appView#appView .view:has(table) :is(.task-toolbar,.people-actions,.manager-toolbar,.vehicle-toolbar,.cash-toolbar,.letter-toolbar,.bamco-command-bar,.suite-toolbar,.workspace-actions,.workspace-report-tools) {
+html body #appView#appView .view:has(table) :is(.bamco-page-heading,.register-heading,.phonebook-unit-heading,.letters-heading) {
+  display:flex!important;
+  flex:none!important;
+  align-items:center!important;
+  min-height:64px!important;
+  box-sizing:border-box!important;
+  margin:0!important;
+  padding:9px 12px!important;
+  border:0!important;
+  border-bottom:1px solid var(--register-line)!important;
+  background:#fff!important;
+  direction:rtl!important;
+}
+html body #appView#appView .view:has(table) :is(.bamco-page-heading,.register-heading,.phonebook-unit-heading,.letters-heading) :is(h2,h3) {
+  margin:0!important;
+  color:#185c41!important;
+  font:700 20px/1.5 BamcoPersian,'B Nazanin',Tahoma,sans-serif!important;
+  text-align:right!important;
+}
+html body #appView#appView #pettyCashView:has(table) .cash-panel {height:100dvh!important;min-height:0!important;gap:0!important}
+html body #appView#appView :is(#lettersIncomingView,#lettersOutgoingView):has(table) .letters-heading {order:-1!important}
+
+html body #appView#appView .view:has(table) :is(.task-toolbar,.people-actions,.manager-toolbar,.vehicle-toolbar,.cash-toolbar,.letter-toolbar,.prod-toolbar,.table-toolbar,.feature-toolbar-actions,.bamco-management-toolbar,.bamco-command-bar,.suite-toolbar,.workspace-actions,.workspace-report-tools) {
+  display:flex!important;
   align-items:center!important;
   gap:7px!important;
+  min-height:48px!important;
   padding:7px 10px!important;
   margin:0!important;
   border:0!important;
   border-bottom:1px solid var(--register-line)!important;
   border-radius:0!important;
   background:var(--register-toolbar)!important;
+}
+html body #appView#appView .view:has(table) :is(.task-toolbar,.people-actions,.manager-toolbar,.vehicle-toolbar,.cash-toolbar,.letter-toolbar,.prod-toolbar,.table-toolbar,.feature-toolbar-actions,.bamco-management-toolbar,.bamco-command-bar,.suite-toolbar,.workspace-actions,.workspace-report-tools)>:is(input[type=search],input.search,.toolbar-search,.vehicle-search) {
+  flex:0 1 270px!important;
+  order:100!important;
+  width:270px!important;
+  min-width:160px!important;
+  max-width:100%!important;
+  height:40px!important;
+  margin-inline-start:auto!important;
+  margin-inline-end:0!important;
+  padding:5px 12px!important;
+  border:1px solid var(--register-line)!important;
+  border-radius:8px!important;
+  background:#fff!important;
+  box-shadow:none!important;
+  color:var(--register-ink)!important;
+  font:400 15px BamcoPersian,'B Nazanin',Tahoma,sans-serif!important;
 }
 
 /* Buttons on register pages have one neutral appearance, regardless of action. */
@@ -38,6 +79,7 @@ html body #appView#appView#appView#appView .view:has(table) button[aria-pressed=
 html body #appView#appView .view:has(table) :is(.table-wrap,.focus-scroll,.vehicle-table-wrap,.phonebook-table-wrap,.letters-scroll,.cash-table,.prod-table-wrap) {
   min-width:0!important;
   min-height:0!important;
+  max-height:none!important;
   overflow:auto!important;
   border-radius:0!important;
   border:0!important;
@@ -51,6 +93,7 @@ html body #appView#appView .view:has(table) table {
   direction:rtl!important;
   width:max-content!important;
   min-width:100%!important;
+  table-layout:auto!important;
   border-collapse:separate!important;
   border-spacing:0!important;
   background:#fff!important;
@@ -122,6 +165,8 @@ html body #appView#appView .view:has(table) table :is(.column-filters,.suite-fil
 }
 html body #appView#appView .view:has(table) table tbody tr:nth-child(even)>td {background:#f0f2f3!important}
 html body #appView#appView .view:has(table) table tbody tr:nth-child(odd)>td {background:#fff!important}
+html body #appView#appView .view:has(table) table tbody tr:nth-child(even)>th {background:#f0f2f3!important}
+html body #appView#appView .view:has(table) table tbody tr:nth-child(odd)>th {background:#fff!important}
 html body #appView#appView .view:has(table) table tbody tr:is(.row-warning,.row-waiting)>td {background:#fff8e4!important}
 html body #appView#appView .view:has(table) table tbody tr.row-overdue>td {background:#fff0ef!important}
 html body #appView#appView .view:has(table) table tbody tr:is(.suite-selected,.task-selected,.vehicle-selected,.person-selected,.selected,[aria-selected=true])>td {background:#e3ebe6!important;box-shadow:inset 0 -1px #a5b9ad!important}
@@ -129,7 +174,7 @@ html body #appView#appView .view:has(table) table tbody tr:hover>td {background:
 html body #appView#appView .view:has(table) table tbody tr:is(.reference-filtered-out,.reference-page-hidden)>td {display:none!important}
 html body #appView#appView .view:has(table) table tbody tr:is(.reference-filtered-out,.reference-page-hidden) {display:none!important}
 
-html body #appView#appView .view:has(table) :is(.table-pagination,.phonebook-table-pagination,#archivePager,.suite-table-options) {
+html body #appView#appView .view:has(table) :is(.table-pagination,.phonebook-table-pagination,#archivePager,.suite-table-options,.unified-pager) {
   flex:none!important;
   margin:0!important;
   padding:7px 10px!important;
@@ -140,11 +185,12 @@ html body #appView#appView .view:has(table) :is(.table-pagination,.phonebook-tab
   color:#4f665b!important;
   font:400 14px BamcoPersian,'B Nazanin',Tahoma,sans-serif!important;
 }
-html body #appView#appView .view:has(table) :is(.table-pagination,.phonebook-table-pagination,#archivePager) :is(button,select) {height:33px!important;min-height:33px!important;border-radius:6px!important;background:#fff!important;color:#30343a!important;border:1px solid #c6ccce!important}
+html body #appView#appView .view:has(table) :is(.table-pagination,.phonebook-table-pagination,#archivePager,.unified-pager) :is(button,select) {height:33px!important;min-height:33px!important;border-radius:6px!important;background:#fff!important;color:#30343a!important;border:1px solid #c6ccce!important}
 html body #appView#appView .view:has(table) .reference-pagination {display:flex!important;justify-content:space-between!important;align-items:center!important;gap:10px!important;flex-wrap:wrap!important}
 html body #appView#appView .view:has(table) .reference-pagination .page-controls {display:flex;align-items:center;gap:6px}
 
 @media(max-width:700px){
+  html body #appView#appView .view:has(table) :is(.task-toolbar,.people-actions,.manager-toolbar,.vehicle-toolbar,.cash-toolbar,.letter-toolbar,.prod-toolbar,.table-toolbar,.feature-toolbar-actions,.bamco-management-toolbar,.bamco-command-bar,.suite-toolbar,.workspace-actions,.workspace-report-tools)>:is(input[type=search],input.search,.toolbar-search,.vehicle-search) {flex:1 1 100%!important;width:100%!important;margin:0!important}
   html body #appView#appView .view:has(table) .reference-pagination {align-items:flex-start!important}
   html body #appView#appView .view:has(table) .reference-pagination .page-controls {flex-wrap:wrap}
 }
