@@ -179,7 +179,16 @@
     if (unavailable && SAFE_WHEN_UNAVAILABLE.has(feature) && action === 'view') return true;
     return grants.get(feature)?.[actionField(action)] === true;
   }
-  const LOCAL_MANAGE_CONTROL_SELECTOR = '.vehicle-access-button,[data-feature-access-control="local"]';
+  const LOCAL_MANAGE_CONTROL_SELECTOR = '.vehicle-access-button,[data-feature-access-control="local"],[data-access-control="local"]';
+  const isLocalManageControl = node => {
+    if (!node || node.nodeType !== 1) return false;
+    const label = String(node.textContent || '').replace(/\s+/g, ' ').trim();
+    return node.matches?.(LOCAL_MANAGE_CONTROL_SELECTOR)
+      || /^مدیریت\s+دسترسی/.test(label)
+      || !!node.querySelector?.(LOCAL_MANAGE_CONTROL_SELECTOR)
+      || [...(node.querySelectorAll?.('button,a,[role="tab"]') || [])]
+        .some(control => /^مدیریت\s+دسترسی/.test(String(control.textContent || '').replace(/\s+/g, ' ').trim()));
+  };
   let manageControlQueued = false;
 
   function retireManageControl(button) {
@@ -196,7 +205,7 @@
     // Access grants are administered solely in the administrator matrix.  A
     // few legacy feature renderers create an unmarked local shortcut, so use
     // its visible label as a final compatibility guard as well.
-    document.querySelectorAll('button').forEach(button => {
+    document.querySelectorAll('button,a,[role="tab"]').forEach(button => {
       if (button.closest('#accessMatrixView')) return;
       if (/^مدیریت\s+دسترسی/.test(String(button.textContent || '').trim())) retireManageControl(button);
     });
@@ -336,17 +345,15 @@
       const route = state().view;
       const view = route && route !== 'home' ? document.getElementById(`${route}View`) : null;
       if (!view) return;
-      const relevant = node => node?.nodeType === 1 && (
-        node.id === 'featureAccessControl'
-        || node.matches?.(LOCAL_MANAGE_CONTROL_SELECTOR)
-        || node.querySelector?.('#featureAccessControl')
-        || node.querySelector?.(LOCAL_MANAGE_CONTROL_SELECTOR)
-      );
+      const relevant = node => node?.id === 'featureAccessControl' || isLocalManageControl(node);
       if (records.some(record => view.contains(record.target)
-        && ([...record.addedNodes, ...record.removedNodes].some(relevant)))) {
+        && (relevant(record.target) || [...record.addedNodes, ...record.removedNodes].some(relevant)))) {
         scheduleManageControl();
       }
-    }).observe(document.body, { childList: true, subtree: true });
+    }).observe(document.body, {
+      childList: true, subtree: true, attributes: true,
+      attributeFilter: ['class', 'hidden', 'aria-hidden']
+    });
   }
   // Realtime invalidation is the primary path. Focus is deliberately only a
   // lightweight recovery path for a suspended tab, never a timed poll.
