@@ -95,7 +95,7 @@
     (map[featureKey] || (map[featureKey] = [])).push(route);
     return map;
   }, {}));
-  const standaloneLayoutRoutes = Object.freeze(new Set(['projects', 'parts', 'invoices', 'organization', 'tools', 'accessMatrix']));
+  const standaloneLayoutRoutes = Object.freeze(new Set(['projects', 'parts', 'invoices', 'organization', 'tools', 'accessMatrix', 'vehiclePermanent', 'vehicleTemporary']));
   // Standalone layouts own their toolbar. The interior reconciler still
   // guarantees a native return control inside those toolbars.
   const noHomeReturnRoutes = new Set(['projects', 'invoices']);

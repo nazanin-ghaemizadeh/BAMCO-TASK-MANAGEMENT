@@ -15,6 +15,15 @@ test('each vehicle tab displays identifiers from one independently of database k
  assert.equal(f.d.querySelector('#vehicleTemporaryView tbody tr[data-id] td').textContent.trim(),'۱');assert.deepEqual(f.errors,[]);
 });
 
+test('permanent handover opens without a selection feedback loop',async t=>{
+ const f=await fixture({tables:{vehicle_permanent_records:[{id:9,plate_number:'12الف345',vehicle_type:'سواری'}]}});t.after(()=>f.dispose());
+ await f.open('vehiclePermanent');await until(()=>f.d.querySelector('#vehiclePermanentView tbody tr[data-id="9"]'));
+ const row=f.d.querySelector('#vehiclePermanentView tbody tr[data-id="9"]');
+ row.click();await until(()=>!f.d.querySelector('#vehiclePermanentView .vehicle-edit').disabled);
+ assert.equal(f.d.querySelector('#vehiclePermanentView .vehicle-data-table').dataset.localSelection,'true');
+ assert.deepEqual(f.errors,[]);
+});
+
 test('vehicle registers localize every number except the English vehicle type',async t=>{
  const f=await fixture({tables:{vehicle_temporary_records:[{id:4,plate_number:'12 ب 345',vehicle_type:'BMW X5',chassis_number:'CH-123',last_mileage:7438,exit_time:'08:20'}]}});t.after(()=>f.dispose());await f.open('vehicleTemporary');await until(()=>f.d.querySelector('#vehicleTemporaryView tbody tr[data-id]'));
  const row=f.d.querySelector('#vehicleTemporaryView tbody tr[data-id]');

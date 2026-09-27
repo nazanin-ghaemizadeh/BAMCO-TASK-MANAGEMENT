@@ -20,13 +20,16 @@ function clear(value){
 }
 function selectRow(row,event={}){const t=row.closest('table'),m=model(t),id=key(row),was=m.ids.has(id),additiveByDefault=!!row.closest('#responseReportView');if(event.shiftKey&&m.anchor){const list=rows(t).filter(r=>!r.hidden&&!r.classList.contains('suite-filtered-out')&&!r.classList.contains('page-row-hidden')),a=list.findIndex(r=>key(r)===m.anchor),b=list.indexOf(row);if(a>=0&&b>=0){for(const r of list.slice(Math.min(a,b),Math.max(a,b)+1))m.ids.add(key(r))}}else{if(!event.ctrlKey&&!event.metaKey&&!additiveByDefault)m.ids.clear();if(!was)m.ids.add(id);else m.ids.delete(id);m.anchor=id}notify(t)}
 function usesLocalSelection(row){return !!row.closest('#kanbanView,#archiveView,#messageCenterView,#responseTrackingView')}
-function genericTable(t){return !!t&&!t.closest('dialog')&&!t.closest('#kanbanView,#archiveView,#messageCenterView,#responseTrackingView')}
+// Some operational workspaces own row selection themselves.  Capturing their
+// clicks here used to prevent the feature handler from running and could cause
+// a render/selection feedback loop while opening the page.
+function genericTable(t){return !!t&&!t.matches('[data-local-selection="true"]')&&!t.closest('dialog')&&!t.closest('#kanbanView,#archiveView,#messageCenterView,#responseTrackingView')}
 document.addEventListener('click',e=>{const row=e.target.closest('.workspace tbody tr');if(row&&!row.closest('dialog')&&!e.target.closest('button,a,input,select,textarea')&&rows(row.closest('table')).includes(row)){
-  if(usesLocalSelection(row))return;
+  if(usesLocalSelection(row)||row.closest('table')?.matches('[data-local-selection="true"]'))return;
   e.preventDefault();e.stopImmediatePropagation();selectRow(row,e);return
 }if(e.target.closest('.content-back,#nav [data-view],#logoutBtn,[data-tab-refresh]'))clear()},true);
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!e.target.closest('dialog'))clear();if([' ','Enter'].includes(e.key)&&e.target.matches('.workspace tbody tr')){
-  if(usesLocalSelection(e.target))return;
+  if(usesLocalSelection(e.target)||e.target.closest('table')?.matches('[data-local-selection="true"]'))return;
   e.preventDefault();e.stopImmediatePropagation();selectRow(e.target,e)
 }},true);
 let frame;const scan=()=>{frame=0;document.querySelectorAll('.workspace .view table').forEach(t=>{if(genericTable(t))paint(t)})};

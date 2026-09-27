@@ -8,31 +8,35 @@ const icons={
  external:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.4 3.7 5.4 3.7 9S14.5 18.6 12 21c-2.5-2.4-3.7-5.4-3.7-9S9.5 5.4 12 3"/></svg>'
 };
 const handset='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2A19.79 19.79 0 0 1 3.08 5.18 2 2 0 0 1 5.07 3h3a2 2 0 0 1 2 1.72c.12.9.33 1.77.62 2.6a2 2 0 0 1-.45 2.11L9.1 10.57a16 16 0 0 0 4.33 4.33l1.14-1.14a2 2 0 0 1 2.11-.45c.83.29 1.7.5 2.6.62A2 2 0 0 1 22 16.92z"/></svg>';
-let active='office',rows=[],units=[],search='',loading=false,activeUnitId=null,selectedContactId=null,editingUnit=false;
+let active='office',rows=[],units=[],search='',loading=false,activeUnitId=null,selectedUnitId=null,selectedContactId=null,editingUnit=false;
 const appState=()=>window.Bamco?.state||window.state||{},data=()=>window.BamcoData,access=a=>window.BamcoAccess?.can?.('phonebook',a)===true,empty=v=>String(v??'').trim()||'—';
 const activeUnit=()=>units.find(x=>String(x.id)===String(activeUnitId))||null;
+const selectedUnit=()=>units.find(x=>String(x.id)===String(selectedUnitId))||null;
 const contact=()=>rows.find(x=>String(x.id)===String(selectedContactId))||null;
 const contactsForUnit=id=>rows.filter(x=>x.category===active&&String(x.unit_id)===String(id));
 const matches=(value,terms)=>!terms.length||terms.every(term=>String(value??'').toLocaleLowerCase('fa').includes(term));
 const terms=()=>search.trim().toLocaleLowerCase('fa').split(/\s+/).filter(Boolean);
 const visibleContacts=()=>contactsForUnit(activeUnitId).filter(x=>matches([x.full_name,x.role_title,x.internal_extension,x.mobile_phone,x.email,x.address].join(' '),terms()));
 const visibleUnits=()=>units.filter(x=>x.category===active).filter(x=>matches(x.title,terms()));
-const actionTarget=()=>contact()||activeUnit();
+const actionTarget=()=>contact()||activeUnit()||selectedUnit();
 function toolbar({tableBar=false}={}){
- const unit=activeUnit(),selected=contact(),target=actionTarget(),canCreate=access('create'),canEdit=access('edit')&&!!target,canDelete=access('delete')&&!!target;
+ const unit=activeUnit(),selected=contact(),chosenUnit=selectedUnit(),canCreate=access('create');
  const placeholder=unit?'جست‌وجوی نام، سمت یا شماره':'جست‌وجوی واحد';
- const back=unit?'بازگشت به واحدها':'بازگشت به خانه',edit=selected?'ویرایش فرد':unit?'ویرایش واحد':'ویرایش',remove=selected?'حذف فرد':unit?'حذف واحد':'حذف';
- return `<div class="phonebook-command bamco-command-bar ${tableBar?'phonebook-table-command':''}" aria-label="ابزارهای دفتر تلفن"><button type="button" class="ghost" data-phonebook-home>${back}</button><button type="button" class="ghost" data-phonebook-unit ${canCreate?'':'disabled'}>ایجاد واحد</button><button type="button" class="primary" data-phonebook-new ${canCreate&&unit?'':'disabled'} title="${unit?'':'ابتدا یک واحد را باز کنید'}">ثبت مخاطب</button><button type="button" class="danger" data-phonebook-delete ${canDelete?'':'disabled'}>${remove}</button><button type="button" class="ghost" data-phonebook-edit ${canEdit?'':'disabled'}>${edit}</button><input type="search" data-phonebook-search placeholder="${placeholder}" value="${esc(search)}" aria-label="${placeholder}"></div>`;
+ if(unit){
+  const canEdit=access('edit')&&!!selected,canDelete=access('delete')&&!!selected;
+  return `<div class="phonebook-command bamco-command-bar ${tableBar?'phonebook-table-command':''}" aria-label="ابزارهای مخاطبان واحد"><button type="button" class="ghost" data-phonebook-home>بازگشت به واحدها</button><button type="button" class="danger" data-phonebook-delete ${canDelete?'':'disabled'}>حذف مخاطب</button><button type="button" class="ghost" data-phonebook-edit ${canEdit?'':'disabled'}>ویرایش مخاطب</button><input type="search" data-phonebook-search placeholder="${placeholder}" value="${esc(search)}" aria-label="${placeholder}"></div>`;
+ }
+ const canEdit=access('edit')&&!!chosenUnit,canDelete=access('delete')&&!!chosenUnit;
+ return `<div class="phonebook-command bamco-command-bar" aria-label="ابزارهای واحدهای دفتر تلفن"><button type="button" class="ghost" data-phonebook-home>بازگشت به خانه</button><button type="button" class="primary" data-phonebook-unit ${canCreate?'':'disabled'}>ایجاد واحد</button><button type="button" class="danger" data-phonebook-delete ${canDelete?'':'disabled'}>حذف واحد</button><button type="button" class="ghost" data-phonebook-edit ${canEdit?'':'disabled'}>ویرایش واحد</button><input type="search" data-phonebook-search placeholder="${placeholder}" value="${esc(search)}" aria-label="${placeholder}"></div>`;
 }
-function sectionHeading(unit=null){return `<header class="phonebook-section-heading"><span class="phonebook-section-icon">${icons[active]}</span><div><h2>${labels[active]}</h2>${unit?`<p>${esc(unit.title)}</p>`:''}</div></header>`}
+function sectionHeading(unit=null){return `<header class="phonebook-section-heading"><div><h2>${labels[active]}</h2>${unit?`<p>${esc(unit.title)}</p>`:''}</div></header>`}
 function unitCards(){
  const all=visibleUnits();
- return `<section class="phonebook-units" aria-label="واحدهای ${labels[active]}"><div class="phonebook-unit-grid">${all.length?all.map(item=>`<button type="button" class="phonebook-unit-card" data-phonebook-unit-select="${esc(item.id)}"><span class="phonebook-unit-card-icon">${icons[active]}</span><strong>${esc(item.title)}</strong><small>${fa(contactsForUnit(item.id).length)} مخاطب</small></button>`).join(''):`<div class="phonebook-unit-empty">هنوز واحدی در بخش «${labels[active]}» تعریف نشده است. از «ایجاد واحد» استفاده کنید.</div>`}</div></section>`;
+ return `<section class="phonebook-units" aria-label="واحدهای ${labels[active]}"><div class="phonebook-unit-grid">${all.length?all.map(item=>`<button type="button" class="phonebook-unit-card ${String(selectedUnitId)===String(item.id)?'selected':''}" data-phonebook-unit-select="${esc(item.id)}"><span class="phonebook-unit-card-icon">${icons[active]}</span><strong>${esc(item.title)}</strong><small>${fa(contactsForUnit(item.id).length)} مخاطب</small></button>`).join(''):`<div class="phonebook-unit-empty">هنوز واحدی در بخش «${labels[active]}» تعریف نشده است. از «ایجاد واحد» استفاده کنید.</div>`}</div></section>`;
 }
 function table(){
  const all=visibleContacts();
- const canEdit=access('edit'),canDelete=access('delete');
- return `<div class="phonebook-table-wrap"><table class="workspace-table phonebook-table"><thead><tr><th>نام</th><th>سمت</th><th>داخلی</th><th>شماره همراه</th><th>ایمیل سازمانی</th><th>آدرس</th><th>عملیات</th></tr></thead><tbody>${all.length?all.map(item=>`<tr tabindex="0" data-phonebook-contact-select="${esc(item.id)}" class="${String(selectedContactId)===String(item.id)?'selected':''}"><td><b>${esc(item.full_name)}</b></td><td>${esc(empty(item.role_title))}</td><td dir="ltr">${esc(digit(empty(item.internal_extension)))}</td><td dir="ltr">${esc(digit(empty(item.mobile_phone)))}</td><td dir="ltr">${esc(empty(item.email))}</td><td>${esc(empty(item.address))}</td><td class="phonebook-row-actions"><button type="button" class="ghost" data-phonebook-contact-edit="${esc(item.id)}" ${canEdit?'':'disabled'}>ویرایش</button><button type="button" class="danger" data-phonebook-contact-delete="${esc(item.id)}" ${canDelete?'':'disabled'}>حذف</button></td></tr>`).join(''):`<tr><td colspan="7" class="empty">مخاطبی در این واحد ثبت نشده است.</td></tr>`}</tbody></table></div>`;
+ return `<div class="phonebook-table-wrap"><table class="workspace-table phonebook-table" data-local-selection="true"><thead><tr><th>نام</th><th>سمت</th><th>داخلی</th><th>شماره همراه</th><th>ایمیل سازمانی</th><th>آدرس</th></tr></thead><tbody>${all.length?all.map(item=>`<tr tabindex="0" data-phonebook-contact-select="${esc(item.id)}" class="${String(selectedContactId)===String(item.id)?'selected':''}"><td><b>${esc(item.full_name)}</b></td><td>${esc(empty(item.role_title))}</td><td dir="ltr">${esc(digit(empty(item.internal_extension)))}</td><td dir="ltr">${esc(digit(empty(item.mobile_phone)))}</td><td dir="ltr">${esc(empty(item.email))}</td><td>${esc(empty(item.address))}</td></tr>`).join(''):`<tr><td colspan="6" class="empty">مخاطبی در این واحد ثبت نشده است.</td></tr>`}</tbody></table></div>`;
 }
 function unitWorkspace(){
  const unit=activeUnit();
@@ -47,7 +51,7 @@ function contactDialog(row){
 function unitDialog(row){return `<dialog class="modal enterprise-modal phonebook-unit-dialog"><form><div class="modal-head"><h3>${row?'ویرایش واحد':'ایجاد واحد'}</h3><button type="button" data-phonebook-unit-close aria-label="بستن">×</button></div><p>واحد در بخش «<b>${labels[active]}</b>» ثبت می‌شود.</p><div class="form-grid"><label class="span-2">نام واحد<input name="title" maxlength="160" required value="${esc(row?.title||'')}"></label></div><div class="modal-actions"><button type="button" class="ghost" data-phonebook-unit-close>انصراف</button><button type="submit" class="primary">${row?'ذخیره تغییرات':'ذخیره واحد'}</button></div></form></dialog>`}
 function render(){
  const root=q('#phoneBookView');if(!root)return;
- root.innerHTML=`<span class="phonebook-v2-marker" hidden></span><section class="phonebook-shell enterprise-feature-root">${activeUnit()?unitWorkspace():categoryWorkspace()}</section>${contactDialog(contact())}${unitDialog(editingUnit?activeUnit():null)}`;
+ root.innerHTML=`<span class="phonebook-v2-marker" hidden></span><section class="phonebook-shell enterprise-feature-root">${activeUnit()?unitWorkspace():categoryWorkspace()}</section>${contactDialog(contact())}${unitDialog(editingUnit?(activeUnit()||selectedUnit()):null)}`;
  bind(root);
 }
 async function load(){
@@ -57,6 +61,7 @@ async function load(){
   const [directory,unitRows]=await Promise.all([data().select('contact_directory','select=id,category,unit_id,full_name,role_title,mobile_phone,internal_extension,email,address&order=full_name.asc'),data().select('phonebook_units','select=id,category,title&order=title.asc')]);
   rows=directory||[];units=unitRows||[];
   if(activeUnitId&&!activeUnit())activeUnitId=null;
+  if(selectedUnitId&&!selectedUnit())selectedUnitId=null;
   if(selectedContactId&&!contact())selectedContactId=null;
  }catch(error){window.toast?.(error.message||'دریافت دفتر تلفن انجام نشد.',true)}finally{loading=false;render()}
 }
@@ -79,28 +84,26 @@ async function remove(){
  if(!pickedContact&&contactsForUnit(picked.id).length)throw Error('ابتدا مخاطبان این واحد را حذف یا منتقل کنید.');
  const type=pickedContact?'مخاطب':'واحد';if(!await window.bamcoConfirm?.(`«${picked.full_name||picked.title}» حذف شود؟`))return;
  await data().remove(pickedContact?'contact_directory':'phonebook_units',`id=eq.${encodeURIComponent(picked.id)}`);
- if(pickedContact)selectedContactId=null;else{activeUnitId=null;editingUnit=false}
+ if(pickedContact)selectedContactId=null;else{activeUnitId=null;selectedUnitId=null;editingUnit=false}
  await load();window.toast?.(`${type} حذف شد.`);
 }
 function openDialog(selector){const dialog=q(selector);if(dialog&&!dialog.open)dialog.showModal()}
 function openSection(category='office'){
  if(!Object.hasOwn(labels,category))category='office';
- active=category;search='';activeUnitId=null;selectedContactId=null;editingUnit=false;
+ active=category;search='';activeUnitId=null;selectedUnitId=null;selectedContactId=null;editingUnit=false;
  const opened=window.BamcoNavigation?.navigate?.('phoneBook');if(opened===false)return false;
  render();void load();return true;
 }
 function bind(root){
- const currentContact=contact(),currentUnit=editingUnit?activeUnit():null;
- q('[data-phonebook-home]',root).onclick=()=>{if(activeUnit()){activeUnitId=null;selectedContactId=null;editingUnit=false;search='';render()}else window.bamcoShowHome?.()};
- q('[data-phonebook-new]',root).onclick=()=>{if(!activeUnit())return;selectedContactId=null;render();openDialog('#phoneBookView .phonebook-dialog')};
- q('[data-phonebook-unit]',root).onclick=()=>{editingUnit=false;render();openDialog('#phoneBookView .phonebook-unit-dialog')};
- q('[data-phonebook-edit]',root).onclick=()=>{if(currentContact)return openDialog('#phoneBookView .phonebook-dialog');if(activeUnit()){editingUnit=true;render();openDialog('#phoneBookView .phonebook-unit-dialog')}};
- q('[data-phonebook-delete]',root).onclick=()=>void remove().catch(error=>window.toast?.(error.message||'حذف انجام نشد.',true));
- q('[data-phonebook-search]',root).oninput=event=>{const cursor=event.currentTarget.selectionStart;search=event.currentTarget.value;render();const input=q('[data-phonebook-search]');input?.focus({preventScroll:true});input?.setSelectionRange(cursor,cursor)};
- qa('[data-phonebook-unit-select]',root).forEach(button=>button.onclick=()=>{activeUnitId=button.dataset.phonebookUnitSelect;selectedContactId=null;editingUnit=false;search='';render()});
+ const currentContact=contact(),currentUnit=editingUnit?(activeUnit()||selectedUnit()):null;
+ q('[data-phonebook-home]',root)?.addEventListener('click',()=>{if(activeUnit()){activeUnitId=null;selectedContactId=null;editingUnit=false;search='';render()}else window.bamcoShowHome?.()});
+ q('[data-phonebook-new]',root)?.addEventListener('click',()=>{if(!activeUnit())return;selectedContactId=null;render();openDialog('#phoneBookView .phonebook-dialog')});
+ q('[data-phonebook-unit]',root)?.addEventListener('click',()=>{editingUnit=false;render();openDialog('#phoneBookView .phonebook-unit-dialog')});
+ q('[data-phonebook-edit]',root)?.addEventListener('click',()=>{if(currentContact)return openDialog('#phoneBookView .phonebook-dialog');if(activeUnit()||selectedUnit()){editingUnit=true;render();openDialog('#phoneBookView .phonebook-unit-dialog')}});
+ q('[data-phonebook-delete]',root)?.addEventListener('click',()=>void remove().catch(error=>window.toast?.(error.message||'حذف انجام نشد.',true)));
+ q('[data-phonebook-search]',root)?.addEventListener('input',event=>{const cursor=event.currentTarget.selectionStart;search=event.currentTarget.value;render();const input=q('[data-phonebook-search]');input?.focus({preventScroll:true});input?.setSelectionRange(cursor,cursor)});
+ qa('[data-phonebook-unit-select]',root).forEach(button=>button.onclick=()=>{activeUnitId=button.dataset.phonebookUnitSelect;selectedUnitId=activeUnitId;selectedContactId=null;editingUnit=false;search='';render()});
  qa('[data-phonebook-contact-select]',root).forEach(row=>{const pick=()=>{selectedContactId=row.dataset.phonebookContactSelect;render()};row.onclick=pick;row.onkeydown=event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();pick()}}});
- qa('[data-phonebook-contact-edit]',root).forEach(button=>button.onclick=event=>{event.stopPropagation();selectedContactId=button.dataset.phonebookContactEdit;render();openDialog('#phoneBookView .phonebook-dialog')});
- qa('[data-phonebook-contact-delete]',root).forEach(button=>button.onclick=event=>{event.stopPropagation();selectedContactId=button.dataset.phonebookContactDelete;render();void remove().catch(error=>window.toast?.(error.message||'حذف انجام نشد.',true))});
  qa('[data-phonebook-close]',root).forEach(button=>button.onclick=()=>q('.phonebook-dialog',root)?.close());
  qa('[data-phonebook-unit-close]',root).forEach(button=>button.onclick=()=>{editingUnit=false;render()});
  q('.phonebook-dialog form',root).onsubmit=event=>{event.preventDefault();void saveContact(event.currentTarget,currentContact).catch(error=>window.toast?.(error.message,true))};
