@@ -31,7 +31,7 @@ function installNavigation(){
   <div class="sticky-note-board" aria-live="polite"></div>
   <dialog class="modal small personal-note-dialog"><form><div class="modal-head"><div><h3>یادداشت جدید</h3><p>عنوان کوتاه و متن یادداشت را وارد کنید.</p></div><button type="button" data-note-close>×</button></div><label>عنوان<input name="title" maxlength="120" required></label><label>متن<textarea name="body" rows="6" maxlength="4000" required></textarea></label><fieldset class="note-color-picker"><legend>رنگ یادداشت</legend>${noteColors.map((color,index)=>`<label class="note-color ${color}"><input type="radio" name="color" value="${color}" ${index===0?'checked':''}><span aria-label="رنگ ${fa(index+1)}"></span></label>`).join('')}</fieldset><div class="modal-actions"><button type="button" class="ghost" data-note-close>انصراف</button><button type="submit" class="primary">ذخیره یادداشت</button></div></form></dialog>`;
  const assistantView=document.createElement('section');assistantView.id='voiceAssistantView';assistantView.className='view hidden smart-assistant-view';assistantView.dataset.featureKey='voiceAssistant';assistantView.innerHTML=`
-  <div class="personal-command-row bamco-command-bar"><button type="button" class="ghost" data-personal-home>بازگشت به خانه</button><button type="button" class="ghost" data-assistant-new>گفت‌وگوی جدید</button></div>
+  <div class="personal-command-row bamco-command-bar"><button type="button" class="ghost" data-personal-home>بازگشت به خانه</button><button type="button" class="ghost" data-assistant-history>تاریخچه گفت‌وگو</button><button type="button" class="ghost" data-assistant-new>گفت‌وگوی جدید</button></div>
   <div class="assistant-stage">
    <aside class="assistant-character-panel">
     <div class="assistant-avatar-rig" role="img" aria-label="دستیار متحرک خانم وضعیت مطلوب">
@@ -119,7 +119,7 @@ function bindNotes(view){
 async function loadAssistantSticker(){
  const images=qa('#voiceAssistantView .assistant-avatar-frame'),error=q('#voiceAssistantView .assistant-avatar-error');if(!images.length)return;
  for(const image of images)image.loading='eager';
- try{await Promise.all(images.map(image=>typeof image.decode==='function'?image.decode():Promise.resolve()));if(error)error.hidden=false}
+ try{await Promise.all(images.map(image=>typeof image.decode==='function'?image.decode():Promise.resolve()));if(error)error.hidden=true}
  catch{if(error)error.hidden=false}
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',installNavigation,{once:true});else installNavigation();
