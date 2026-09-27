@@ -193,10 +193,9 @@
 :is(#projectFeatureRoot .project-top-command-row,#invoiceFeatureRoot .invoice-top-command-row,#accessMatrixFeatureRoot .access-matrix-toolbar).bamco-command-bar{display:flex;align-items:center;flex-wrap:wrap;min-height:44px;margin:0;padding:5px 8px;gap:6px;border-top:0;border-bottom:1px solid var(--line);background:#f7faf8;box-sizing:border-box}
 :is(#projectFeatureRoot .project-top-command-row,#invoiceFeatureRoot .invoice-top-command-row,#accessMatrixFeatureRoot .access-matrix-toolbar).bamco-command-bar button{min-height:34px;height:34px;padding:5px 10px;line-height:1.2}
 :is(#projectFeatureRoot .project-top-command-row,#invoiceFeatureRoot .invoice-top-command-row,#accessMatrixFeatureRoot .access-matrix-toolbar).bamco-command-bar input[type=search]{width:min(280px,32vw);min-width:180px;height:34px;min-height:34px;margin-inline-start:auto;padding:4px 10px}
-#invoiceFeatureRoot .invoice-search{display:none}
-#invoiceFeatureRoot .invoice-search.search-open{display:block}
-#invoiceFeatureRoot .invoice-search-toggle{margin-inline-start:auto}
-#invoiceFeatureRoot .invoice-search-toggle.active{color:#fff;background:#176b4d;border-color:#176b4d}
+#invoiceFeatureRoot .invoice-search-row{padding:18px 28px;border-bottom:1px solid #c5d5cc;background:#f7faf8}
+#invoiceFeatureRoot .invoice-search{display:block;width:min(680px,100%);height:48px;padding:8px 18px;border:2px solid #c5d5cc;border-radius:14px;background:#fff;color:#17362d;font:inherit;font-size:16px;box-sizing:border-box;outline:none}
+#invoiceFeatureRoot .invoice-search:focus{border-color:#4f9179;box-shadow:0 0 0 3px #176b4d14}
 
 /* The WBS is a top-down tree.  The SVG layer is measured from the actual
    cards, so every connector keeps its parent/child endpoints at every width. */

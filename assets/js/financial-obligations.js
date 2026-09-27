@@ -3,7 +3,7 @@
   'use strict';
   const E = window.bamcoEnterprise; if (!E) return;
   const { q, esc, fa, money, date, fetchRows, insert, insertMinimal, update, removeRows, setBusy, notify, statusText } = E;
-  const model = { invoices: [], payments: [], selected: null, search: '', searchOpen: false, invoiceEditor: null, paymentEditor: null, paymentFormOpen: false };
+  const model = { invoices: [], payments: [], selected: null, search: '', invoiceEditor: null, paymentEditor: null, paymentFormOpen: false };
   let loadVersion = 0;
   const root = () => q('#invoiceFeatureRoot');
   const invoice = id => model.invoices.find(item => String(item.id) === String(id));
@@ -21,12 +21,11 @@
     const host = root(); if (!host) return;
     const visible = model.invoices.filter(item => !model.search || [item.invoice_number, item.title, item.account_party, item.company_name, item.status].some(value => String(value || '').toLowerCase().includes(model.search.toLowerCase())));
     const current = invoice(model.selected);
-    const searchOpen = model.searchOpen || !!model.search;
-    const search = `<button type="button" class="ghost invoice-search-toggle ${searchOpen ? 'active' : ''}" data-invoice-action="search" aria-label="جست‌وجو" title="جست‌وجو" aria-pressed="${searchOpen ? 'true' : 'false'}">⌕</button><input id="invoiceSearch" class="invoice-search ${searchOpen ? 'search-open' : ''}" type="search" value="${esc(model.search)}" placeholder="شماره، عنوان یا شرکت/پیمانکار…">`;
+    const search = `<div class="invoice-search-row"><input id="invoiceSearch" class="invoice-search" type="search" value="${esc(model.search)}" placeholder="شماره، عنوان یا شرکت/پیمانکار…" aria-label="جست‌وجوی صورتحساب"></div>`;
     const commandBar = current
       ? '<div class="invoice-top-command-row bamco-command-bar"><span data-feature-access-suppressed="true" data-home-return-suppressed="true" hidden></span><button type="button" class="ghost" data-invoice-action="back">بازگشت به کارت‌ها</button><button type="button" class="primary" data-invoice-action="payment">ثبت مرحله پرداخت</button><button type="button" class="ghost" data-invoice-action="edit">ویرایش</button><button type="button" class="danger" data-invoice-action="delete">حذف</button></div>'
-      : `<div class="invoice-top-command-row bamco-command-bar"><button type="button" class="ghost" data-home-action>بازگشت به خانه</button><button type="button" class="primary" data-invoice-action="new">صورتحساب جدید</button><button type="button" class="ghost" data-invoice-action="refresh">تازه‌سازی</button>${search}</div>`;
-    host.innerHTML = `<div class="feature-toolbar enterprise-toolbar"><div><h3>صورتحساب‌ها و تعهدات مالی</h3></div></div>${commandBar}<div class="enterprise-grid invoice-grid ${current ? 'detail-open' : ''}"><section class="panel"><div class="panel-head"><h3>کارت‌های صورتحساب</h3><span class="enterprise-count">${fa(visible.length)} مورد</span></div><div class="enterprise-card-list">${visible.length ? visible.map(item => `<button type="button" class="enterprise-list-card invoice-list-card ${String(model.selected) === String(item.id) ? 'active' : ''}" data-invoice-select="${item.id}"><span><strong>${esc(item.title)}</strong><small>${esc(item.invoice_number)} · ${esc(item.company_name || item.account_party)}</small></span><span><b>${money(paid(item.id), currencyText(item))}</b><small>مانده: ${money(balance(item), currencyText(item))}</small><small>${fa(Math.round(percent(item)))}٪ پرداخت · ${esc(statusText(item.status))}</small></span></button>`).join('') : '<div class="empty">صورتحسابی ثبت نشده است.</div>'}</div></section><section class="panel invoice-detail">${current ? detailMarkup(current) : '<div class="enterprise-empty"><b>صورتحسابی انتخاب نشده است.</b><span>برای شروع یک تعهد مالی ثبت کنید.</span></div>'}</section></div>${invoiceDialogMarkup()}${current ? paymentDialogMarkup(current) : ''}`;
+      : `<div class="invoice-top-command-row bamco-command-bar"><button type="button" class="ghost" data-home-action>بازگشت به خانه</button><button type="button" class="primary" data-invoice-action="new">صورتحساب جدید</button><button type="button" class="ghost" data-invoice-action="refresh">تازه‌سازی</button></div>`;
+    host.innerHTML = `<div class="feature-toolbar enterprise-toolbar"><div><h3>صورتحساب‌ها و تعهدات مالی</h3></div></div>${commandBar}${current ? '' : search}<div class="enterprise-grid invoice-grid ${current ? 'detail-open' : ''}"><section class="panel"><div class="panel-head"><h3>کارت‌های صورتحساب</h3><span class="enterprise-count">${fa(visible.length)} مورد</span></div><div class="enterprise-card-list">${visible.length ? visible.map(item => `<button type="button" class="enterprise-list-card invoice-list-card ${String(model.selected) === String(item.id) ? 'active' : ''}" data-invoice-select="${item.id}"><span><strong>${esc(item.title)}</strong><small>${esc(item.invoice_number)} · ${esc(item.company_name || item.account_party)}</small></span><span><b>${money(paid(item.id), currencyText(item))}</b><small>مانده: ${money(balance(item), currencyText(item))}</small><small>${fa(Math.round(percent(item)))}٪ پرداخت · ${esc(statusText(item.status))}</small></span></button>`).join('') : '<div class="empty">صورتحسابی ثبت نشده است.</div>'}</div></section><section class="panel invoice-detail">${current ? detailMarkup(current) : '<div class="enterprise-empty"><b>صورتحسابی انتخاب نشده است.</b><span>برای شروع یک تعهد مالی ثبت کنید.</span></div>'}</section></div>${invoiceDialogMarkup()}${current ? paymentDialogMarkup(current) : ''}`;
     bind();
   }
   function invoiceDialogMarkup() {
@@ -98,13 +97,6 @@
       if (action === 'edit') return showInvoiceDialog(model.selected);
       if (action === 'delete') return void deleteInvoice();
       if (action === 'refresh') return void load();
-      if (action === 'search') {
-        model.searchOpen = !model.searchOpen;
-        if (!model.searchOpen) model.search = '';
-        render();
-        if (model.searchOpen) requestAnimationFrame(() => q('#invoiceSearch')?.focus());
-        return;
-      }
       if (action === 'access') return window.bamcoAccessEditor?.open?.({ featureKey: 'invoices', title: 'مدیریت دسترسی صورتحساب‌ها و تعهدات مالی' });
       if (action === 'back') { model.selected = null; model.paymentEditor = null; model.paymentFormOpen = false; return render(); }
       if (action === 'payment') return showPaymentDialog(null);
@@ -117,7 +109,7 @@
     host.addEventListener('submit', event => { if (event.target.id === 'invoiceForm') void saveInvoice(event); if (event.target.id === 'invoicePaymentForm') void savePayment(event); });
   }
   async function load({ cardsOnly = false } = {}) {
-    if (!root() || !state.profile) return; if (cardsOnly) { model.selected = null; model.search = ''; model.searchOpen = false; model.paymentEditor = null; model.paymentFormOpen = false; }
+    if (!root() || !state.profile) return; if (cardsOnly) { model.selected = null; model.search = ''; model.paymentEditor = null; model.paymentFormOpen = false; }
     const request = ++loadVersion;
     try {
       const [invoices, paymentRows] = await Promise.all([fetchRows('invoices', 'select=*&order=updated_at.desc,id.desc'), fetchRows('invoice_payments', 'select=*&order=sequence_no.asc')]);
