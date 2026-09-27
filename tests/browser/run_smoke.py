@@ -71,11 +71,13 @@ async def home(page):
     await page.wait_for_function("() => window.Bamco?.state?.view === 'home' && !document.querySelector('#homeView')?.classList.contains('bamco-view-settling')")
 
 async def assert_letters_home_access(page,role):
-    await page.locator('#homeView [data-group="resources"] .home-group-trigger').click()
+    if role!='manager':
+        await expect(page.locator('#homeView [data-group="correspondence"]')).to_be_hidden()
+        return
+    await page.locator('#homeView [data-group="correspondence"] .home-group-trigger').click()
     for route in ('lettersIncoming','lettersOutgoing'):
         option=page.locator(f'.home-launcher-dialog [data-route="{route}"]')
-        if role=='manager': await expect(option).to_be_visible()
-        else: await expect(option).to_have_count(0)
+        await expect(option).to_be_visible()
     await page.locator('.home-launcher-close').click()
 
 async def command_texts(page,selector):

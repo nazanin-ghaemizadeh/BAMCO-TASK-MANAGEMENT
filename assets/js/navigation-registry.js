@@ -11,7 +11,7 @@
   if (window.BamcoNavigationCatalog) return;
 
   const groups = Object.freeze([
-    { key: 'people', title: 'مدیریت افراد', icon: '♙', routes: ['people', 'accessMatrix', 'organization', 'activeSessions', 'loginActivity'] },
+    { key: 'people', title: 'مدیریت کاربران', icon: '♙', routes: ['people', 'accessMatrix', 'organization', 'activeSessions', 'loginActivity'] },
     { key: 'messages', title: 'مدیریت پیام', icon: '✉', routes: ['messages', 'messageCenter', 'sentMessages', 'templates', 'stickers'] },
     { key: 'reports', title: 'گزارش‌ها', icon: '▦', routes: ['dashboard', 'performanceReport'] },
     { key: 'configuration', title: 'تنظیمات', icon: '⚙', routes: ['systemOptions', 'settings', 'alertSettings', 'emailSettings'] },
@@ -19,7 +19,9 @@
     { key: 'delivery', title: 'مدیریت مالی', icon: '▰', routes: ['pettyCash', 'invoices'] },
     { key: 'vehicle', title: 'مدیریت منابع', icon: '◇', routes: ['vehiclePermanent', 'vehicleTemporary', 'parts', 'tools'] },
     { key: 'conversations', title: 'گفتگوها', icon: '☵', routes: ['groupChat', 'directMessages', 'taskChats'] },
-    { key: 'resources', title: 'منابع', icon: '▧', routes: ['documents', 'sitesAccess', 'lettersIncoming', 'lettersOutgoing', 'userGuide'] },
+    { key: 'resources', title: 'اسناد و سامانه‌ها', icon: '▧', routes: ['documents', 'sitesAccess', 'userGuide'] },
+    { key: 'correspondence', title: 'مکاتبات', icon: '✉', routes: ['lettersIncoming', 'lettersOutgoing'] },
+    { key: 'phonebook', title: 'دفتر تلفن', icon: '☎', routes: ['phoneBook'] },
     { key: 'personal', title: 'میز شخصی', icon: '✦', routes: ['notes', 'voiceAssistant'] }
   ]);
 
@@ -36,7 +38,7 @@
     'pettyCash', 'invoices',
     'vehiclePermanent', 'vehicleTemporary', 'parts', 'tools',
     'groupChat', 'directMessages', 'taskChats',
-    'documents', 'sitesAccess', 'lettersIncoming', 'lettersOutgoing', 'userGuide',
+    'documents', 'sitesAccess', 'lettersIncoming', 'lettersOutgoing', 'userGuide', 'phoneBook',
     'notes', 'voiceAssistant'
   ]);
 
@@ -80,6 +82,7 @@
     ['lettersIncoming', 'letters', 'نامه‌های ورودی'],
     ['lettersOutgoing', 'letters', 'نامه‌های خروجی'],
     ['userGuide', 'userGuide', 'راهنمای استفاده سامانه'],
+    ['phoneBook', 'phonebook', 'دفتر تلفن'],
     ['notes', 'notes', 'یادداشت‌ها'],
     ['voiceAssistant', 'voiceAssistant', 'دستیار هوشمند']
   ].map(([route, featureKey, title]) => Object.freeze({ route, featureKey, title, groupKey: null })));

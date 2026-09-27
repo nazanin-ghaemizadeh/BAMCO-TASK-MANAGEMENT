@@ -84,6 +84,7 @@ function install(){
  groupDialog.innerHTML='<div class="home-launcher-head"><div><span class="home-launcher-symbol" aria-hidden="true"></span><h2 id="homeLauncherTitle"></h2></div><button type="button" class="home-launcher-close" aria-label="بستن پنجره">×</button></div><div class="home-launcher-routes"></div>';
  document.body.append(groupDialog);
  let openGroupKey='',lastTrigger=null;
+ const badgeSources={tasks:'#approvalBadge',messages:'#messageBadge',conversations:'.conversation-nav-count'};
  const available=button=>button&&button.hidden!==true&&!button.classList.contains('hidden')&&!button.disabled;
  function fillGroup(group){
   const key=group?.dataset.group,entry=catalog?.byKey?.[key];
@@ -131,6 +132,17 @@ function install(){
    group.prepend(button);
   }
  }
+ function syncLauncherBadges(){
+  for(const [key,selector] of Object.entries(badgeSources)){
+   const trigger=nav.querySelector(`.nav-group[data-group="${key}"] .home-group-trigger`),symbol=trigger?.querySelector('.home-group-symbol');if(!symbol)continue;
+   const value=(nav.querySelector(selector)?.textContent||'').trim().replace(/^۰$/,'');let badge=symbol.querySelector('.home-group-badge');
+   if(!value){badge?.remove();continue}
+   if(!badge){badge=document.createElement('b');badge.className='home-group-badge';badge.setAttribute('aria-hidden','true');symbol.append(badge)}
+   if(badge.textContent!==value)badge.textContent=value;
+  }
+ }
+ const badgeObserver=new MutationObserver(syncLauncherBadges);
+ badgeObserver.observe(nav,{childList:true,characterData:true,subtree:true});
  function visibleGroupKeys(){return layout.order.filter(key=>{const group=nav.querySelector(`.nav-group[data-group="${key}"]`);return group&&!group.classList.contains('hidden')})}
  function renderSettings(){
   const settings=q('#homeLayoutSettings');if(!settings)return;
@@ -147,7 +159,7 @@ function install(){
   settings.querySelector('.home-layout-order-panel').hidden=layout.mode!=='custom';
  }
  function renderLayout(){
-  readLayout();ensureTriggers();home.dataset.layout=layout.mode;
+  readLayout();ensureTriggers();syncLauncherBadges();home.dataset.layout=layout.mode;
   for(const group of nav.querySelectorAll('.nav-group')){
    group.style.order=layout.mode==='custom'?String(layout.order.indexOf(group.dataset.group)):'';
    const trigger=group.querySelector('.home-group-trigger');if(trigger)trigger.draggable=layout.mode==='custom';
