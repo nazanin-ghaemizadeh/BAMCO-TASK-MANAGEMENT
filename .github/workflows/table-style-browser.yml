@@ -1,0 +1,38 @@
+name: Table style browser audit
+
+on:
+  push:
+    branches: [main]
+    paths: ['assets/**', 'index.html', 'tests/browser/check_all_table_styles.py', '.github/workflows/table-style-browser.yml']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  chromium:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run build:assets
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: |
+          python -m pip install playwright==1.57.0
+          python -m playwright install --with-deps chromium
+      - run: python tests/browser/check_all_table_styles.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: table-style-screenshots
+          path: test-results/table-style/
+          retention-days: 7

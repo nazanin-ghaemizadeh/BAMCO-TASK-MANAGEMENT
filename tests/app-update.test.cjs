@@ -10,7 +10,7 @@ const release=JSON.parse(fs.readFileSync(path.join(root,'version.json'),'utf8'))
 const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 
 function page({current=release.version,latest=release.version,published=latest,stored={},sessionStored={},url='https://bamco.test/?bamco_update=2026.09.17.73&bamco_reload=1'}={}){
- const dom=new JSDOM(`<!doctype html><html><head><meta name="bamco-app-version" content="${current}"></head><body><section class="bamco-update-notice">legacy error</section></body></html>`,{url,runScripts:'outside-only'});
+ const dom=new JSDOM(`<!doctype html><html><head><meta name="bamco-app-version" content="${current}"></head><body><div id="appView" class="hidden"></div><section class="bamco-update-notice">legacy error</section></body></html>`,{url,runScripts:'outside-only'});
  const w=dom.window;
  for(const [key,value] of Object.entries(stored))w.localStorage.setItem(key,value);
  for(const [key,value] of Object.entries(sessionStored))w.sessionStorage.setItem(key,value);
@@ -58,14 +58,28 @@ test('a newer fully published deployment announces and triggers one cache-busted
 
 test('every installed version change produces a visible success notice',async()=>{
  const {dom,navigations,toasts}=page({current:'2026.09.17.76',latest:'2026.09.17.76',stored:{'bamco.app.installed-version':'2026.09.17.75'},url:'https://bamco.test/?bamco_v=2026.09.17.76'});await pause(25);
- assert.equal(navigations.length,0);assert.equal(toasts.length,1);
- assert.equal(toasts[0][0],'سامانه به‌روزرسانی شد');assert.equal(toasts[0][1].title,'سامانه به‌روزرسانی شد');
+ assert.equal(navigations.length,0);assert.equal(toasts.length,0,'notice waits until the user enters the app');
+ dom.window.document.querySelector('#appView').classList.remove('hidden');await pause(10);
+ assert.equal(toasts.length,1);
+ assert.equal(toasts[0][0],'سامانه به‌روزرسانی شد');assert.equal(toasts[0][2].title,'سامانه به‌روزرسانی شد');
+ assert.equal(toasts[0][1],false);assert.equal(toasts[0][2].duration,20000);
  assert.equal(dom.window.localStorage.getItem('bamco.app.installed-version'),'2026.09.17.76');dom.window.close();
 });
 
 test('a pending update always produces a success notice after reload even on first install marker',async()=>{
  const {dom,navigations,toasts}=page({current:'2026.09.17.80',latest:'2026.09.17.80',stored:{},sessionStored:{'bamco.app.install-target-v2':'2026.09.17.80'},url:'https://bamco.test/?bamco_v=2026.09.17.80'});await pause(25);
- assert.equal(navigations.length,0);assert.equal(toasts.length,1);assert.equal(toasts[0][0],'سامانه به‌روزرسانی شد');assert.equal(dom.window.sessionStorage.getItem('bamco.app.install-target-v2'),null);dom.window.close();
+ assert.equal(navigations.length,0);assert.equal(toasts.length,0);
+ dom.window.document.querySelector('#appView').classList.remove('hidden');await pause(10);
+ assert.equal(toasts.length,1);assert.equal(toasts[0][0],'سامانه به‌روزرسانی شد');assert.equal(dom.window.sessionStorage.getItem('bamco.app.install-target-v2'),null);dom.window.close();
+});
+
+test('the installed update is announced once after login even when no previous marker exists',async()=>{
+ const {dom,toasts}=page({current:'2026.09.17.81',latest:'2026.09.17.81',url:'https://bamco.test/'});await pause(25);
+ assert.equal(toasts.length,0);
+ const app=dom.window.document.querySelector('#appView');app.classList.remove('hidden');await pause(10);
+ assert.equal(toasts.length,1);assert.equal(dom.window.localStorage.getItem('bamco.app.announced-installed-version'),'2026.09.17.81');
+ app.classList.add('hidden');app.classList.remove('hidden');await pause(10);
+ assert.equal(toasts.length,1);dom.window.close();
 });
 
 test('a version race never reloads until version.json and the published document agree',async()=>{
@@ -87,5 +101,5 @@ test('the same target version cannot enter a reload loop within the session',asy
 test('update notice never exposes version details or release notes',()=>{
  assert.doesNotMatch(source,/releaseNotes|release-notes-version/);
  assert.doesNotMatch(source,/نسخه \$\{current\}|نسخه \$\{latest\}/);
- assert.match(source,/notify\('سامانه به‌روزرسانی شد'/);
+ assert.match(source,/bamcoToast\('سامانه به‌روزرسانی شد',false/);
 });
