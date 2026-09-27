@@ -71,7 +71,7 @@ async def home(page):
     await page.wait_for_function("() => window.Bamco?.state?.view === 'home' && !document.querySelector('#homeView')?.classList.contains('bamco-view-settling')")
 
 async def assert_letters_home_access(page,role):
-    await page.locator('#homeView [data-group="resources"] .home-group-trigger').click()
+    await page.locator('#homeView [data-group="correspondence"] .home-group-trigger').click()
     for route in ('lettersIncoming','lettersOutgoing'):
         option=page.locator(f'.home-launcher-dialog [data-route="{route}"]')
         if role=='manager': await expect(option).to_be_visible()
