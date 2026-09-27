@@ -19,7 +19,7 @@ for(const allowed of [false,true])test(`letters home card and independent route 
  }else {await f.open('lettersIncoming');await until(()=>f.d.querySelector('#lettersIncomingView [data-letters-table]'));assert(f.d.querySelector('#lettersIncomingView [data-letter-action="access"]').classList.contains('hidden'));}
  assert.deepEqual(f.errors,[]);
 });
-test('letters pages never expose local access management',async t=>{const f=await fixture();t.after(()=>f.dispose());for(const route of ['lettersIncoming','lettersOutgoing']){await f.open(route);const view=f.d.querySelector(`#${route}View`);assert(view.querySelector('[data-letter-action="access"]').classList.contains('hidden'));assert.equal(view.querySelector('#featureAccessControl'),null)}assert.deepEqual(f.errors,[])});
+test('letters pages never expose local access management',async t=>{const f=await fixture();t.after(()=>f.dispose());for(const route of ['lettersIncoming','lettersOutgoing']){await f.open(route);const view=f.d.querySelector(`#${route}View`);assert(view.querySelector('.letter-toolbar.bamco-command-bar'));assert(view.querySelector('[data-letter-action="access"]').classList.contains('hidden'));assert.equal(view.querySelector('#featureAccessControl'),null)}assert.deepEqual(f.errors,[])});
 test('a failed canonical access refresh fails closed and blocks a direct route',async t=>{
  const f=await fixture({role:'owner',fetchResult:({endpoint})=>endpoint==='effective_feature_access'?{schema:'bamco.feature-access.v1',grants:[{feature_key:'letters',can_view:true}]}:undefined});t.after(()=>f.dispose());
  await f.open('lettersIncoming');await until(()=>f.d.querySelector('#lettersIncomingView [data-letters-table]'));

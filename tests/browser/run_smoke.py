@@ -47,7 +47,10 @@ async def click_route(page,tab):
         group=await page.evaluate("route => window.BamcoNavigationCatalog?.routeFor(route)?.groupKey",tab)
         assert group,f'{tab} has no home card'
         await page.locator(f'#homeView [data-group="{group}"] .home-group-trigger').click()
-        await page.locator(f'.home-launcher-dialog [data-route="{tab}"]').click()
+        if tab=='phoneBook':
+            await page.locator('.home-launcher-dialog [data-phonebook-section="office"]').click()
+        else:
+            await page.locator(f'.home-launcher-dialog [data-route="{tab}"]').click()
     else:
         await page.locator('#nav [data-view="'+tab+'"]').click()
 
@@ -81,7 +84,8 @@ async def assert_letters_home_access(page,role):
     await page.locator('.home-launcher-close').click()
 
 async def command_texts(page,selector):
-    return [re.sub(r'\s+',' ',x).strip() for x in await page.locator(selector+' > *').all_text_contents()]
+    visible=await page.locator(selector+' > *').evaluate_all("els=>els.filter(el=>{const s=getComputedStyle(el);return s.display!=='none'&&s.visibility!=='hidden'&&el.getClientRects().length>0}).map(el=>el.textContent)")
+    return [re.sub(r'\s+',' ',x).strip() for x in visible]
 
 async def visible_count(page,selector):
     return await page.locator(selector).evaluate_all("els=>els.filter(el=>{const s=getComputedStyle(el);return s.display!=='none'&&s.visibility!=='hidden'&&el.getClientRects().length>0}).length")
