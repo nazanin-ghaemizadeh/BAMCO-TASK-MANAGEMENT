@@ -423,7 +423,7 @@ async function enterApp(){
     void refresh().catch(()=>{});
   }
 }
-async function refresh({silent=false}={}){{}
+async function refresh({silent=false}={}){async function refresh({silent=false}={}){}
   try{
     const profiles=isManager()?await select('profiles','select=id,email,login_name,must_change_password,password_changed_at,full_name,display_name,gender,mobile_phone,internal_extension,excel_name,role,active,default_message_channel,messaging_enabled,avatar_path,updated_at&order=full_name'):scopedTaskProfiles();
     syncCanonicalProfiles(profiles,{replaceAll:isManager()});
