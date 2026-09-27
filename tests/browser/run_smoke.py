@@ -147,7 +147,7 @@ async def manager_checks(page,result):
     send=page.locator('#sendSelectedMessages'); await expect(send).to_be_enabled()
     send_bg=await send.evaluate("n=>getComputedStyle(n).backgroundColor")
     rgb=[int(x) for x in re.findall(r'\d+',send_bg)[:3]]
-    assert len(rgb)==3 and rgb[1]>rgb[0] and rgb[1]>rgb[2] and rgb[1]>=80,f'send button not green: {send_bg}'
+    assert rgb==[255,255,255],f'send button is not neutral: {send_bg}'
     await send.click(); await expect(page.locator('#messagePreviewDialog')).to_be_visible(); await expect(page.locator('#messagePreviewDialog .workflow-message')).to_be_visible(); await page.locator('[data-message-preview-close]').first.click()
     await home(page); result['simple_message_send']='pass'
 
