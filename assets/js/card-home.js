@@ -85,6 +85,11 @@ function install(){
  document.body.append(groupDialog);
  let openGroupKey='',lastTrigger=null;
  const badgeSources={tasks:'#approvalBadge',messages:'#messageBadge',conversations:'.conversation-nav-count'};
+ const phonebookSections=Object.freeze([
+  {key:'office',title:'اداری',icon:'⌂'},
+  {key:'factory',title:'کارخانه',icon:'▥'},
+  {key:'external',title:'خارج از سازمان',icon:'◎'}
+ ]);
  const available=button=>button&&button.hidden!==true&&!button.classList.contains('hidden')&&!button.disabled;
  function fillGroup(group){
   const key=group?.dataset.group,entry=catalog?.byKey?.[key];
@@ -95,6 +100,28 @@ function install(){
   const groupSymbol=groupDialog.querySelector('.home-launcher-symbol');
   const groupIcon=window.BamcoIcons?.forGroup(key);if(groupIcon)groupSymbol.innerHTML=groupIcon;else groupSymbol.textContent=entry.icon;
   const routes=groupDialog.querySelector('.home-launcher-routes');routes.replaceChildren();
+  // دفتر تلفن یک مسیرِ داده دارد، ولی در صفحهٔ اصلی باید مانند سه بخشِ مستقل
+  // دیده شود. هر کارت همان مسیر را با دسته‌بندی درست باز می‌کند.
+  if(key==='phonebook'){
+   const source=original.find(button=>button.dataset.view==='phoneBook');
+   if(!source)return false;
+   for(const section of phonebookSections){
+    const shortcut=document.createElement('button');shortcut.type='button';shortcut.className='home-launcher-route';shortcut.dataset.phonebookSection=section.key;
+    const icon=document.createElement('span');icon.className='home-launcher-route-icon';icon.setAttribute('aria-hidden','true');icon.textContent=section.icon;
+    const name=document.createElement('span');name.textContent=section.title;
+    shortcut.append(icon,name);
+    shortcut.addEventListener('click',()=>{
+     if(!available(source)||!group.isConnected)return fillGroup(group);
+     groupDialog.close();
+     requestAnimationFrame(()=>{
+      if(typeof window.bamcoPhonebook?.open==='function')window.bamcoPhonebook.open(section.key);
+      else source.click();
+     });
+    });
+    routes.append(shortcut);
+   }
+   return true;
+  }
   for(const source of original){
    const shortcut=document.createElement('button');shortcut.type='button';shortcut.className='home-launcher-route';shortcut.dataset.route=source.dataset.view;
    const icon=document.createElement('span');icon.className='home-launcher-route-icon';icon.setAttribute('aria-hidden','true');
@@ -135,6 +162,10 @@ function install(){
   }
  }
  function routeBadgeText(view){
+  const source=[...nav.querySelectorAll('button[data-view]')].find(button=>button.dataset.view===String(view||''));
+  const embedded=source?.querySelector?.('#approvalBadge,#messageBadge,.conversation-nav-count,[data-nav-badge]');
+  const embeddedText=(embedded?.textContent||'').trim().replace(/^۰$/,'');
+  if(embeddedText)return embeddedText;
   const selector={
    approvals:'#approvalBadge',messages:'#messageBadge',
    groupChat:'.conversation-nav-count',directMessages:'.conversation-nav-count',taskChats:'.conversation-nav-count'
