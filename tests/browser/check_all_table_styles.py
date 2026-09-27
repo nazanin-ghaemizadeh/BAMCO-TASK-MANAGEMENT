@@ -38,16 +38,19 @@ async def inspect(page, route, name):
         const th=table.tHead?.rows[0]?.cells[0],filter=table.tHead?.querySelector('tr:nth-child(2) th'),td=table.tBodies[0]?.rows[0]?.cells[0];
         const buttons=[...view.querySelectorAll('button')].filter(b=>visible(b)&&!b.closest('dialog'));
         const colors=[...new Set(buttons.map(b=>rgb(b)))];
+        const coloredButtons=buttons.filter(b=>rgb(b)!=='rgb(255, 255, 255)').slice(0,4).map(b=>({html:b.outerHTML.slice(0,300),color:rgb(b)}));
         const first=table.getBoundingClientRect();
         const toolbar=[...view.querySelectorAll('.bamco-command-bar,.task-toolbar,.vehicle-toolbar,.cash-toolbar,.letter-toolbar,.manager-toolbar,.feature-toolbar-actions')].find(e=>visible(e)&&!e.closest('dialog'));
         return {head:th&&rgb(th),filter:filter&&rgb(filter),row:td&&rgb(td),font:th&&getComputedStyle(th).fontSize,
-          line:th&&getComputedStyle(th).borderLeftColor,buttonColors:colors,buttonCount:buttons.length,
+          line:th&&getComputedStyle(th).borderLeftColor,buttonColors:colors,coloredButtons,buttonCount:buttons.length,
           top:Math.round(first.top),toolbarBottom:toolbar&&Math.round(toolbar.getBoundingClientRect().bottom),
           wrapHeight:Math.round(table.parentElement.getBoundingClientRect().height),
           pager:!!view.querySelector('.table-pagination,#archivePager')};
       });
     }''',route)
     assert state, f'{name}: no visible table'
+    print(name,json.dumps(state,ensure_ascii=False),flush=True)
+    await page.screenshot(path=str(OUT/f'{name}.png'),full_page=False)
     for i,entry in enumerate(state):
         where=f'{name} table {i+1}'
         assert entry['head']=='rgb(232, 241, 237)', (where,'header',entry)
@@ -58,14 +61,13 @@ async def inspect(page, route, name):
         if i==0 and entry['toolbarBottom'] is not None:
             assert entry['top']-entry['toolbarBottom']<180, (where,'table sits too far below toolbar',entry)
         assert entry['wrapHeight']>=40, (where,'collapsed table',entry)
-    await page.screenshot(path=str(OUT/f'{name}.png'),full_page=False)
     return state
 
 async def main():
     OUT.mkdir(parents=True,exist_ok=True)
     server=http.server.ThreadingHTTPServer(('127.0.0.1',0),functools.partial(http.server.SimpleHTTPRequestHandler,directory=ROOT))
     threading.Thread(target=server.serve_forever,daemon=True).start()
-    results={}
+    results={};problems=[]
     try:
         async with async_playwright() as p:
             browser=await p.chromium.launch(headless=True,args=['--no-sandbox'])
@@ -79,8 +81,8 @@ async def main():
                 await click_route(page,route)
                 await settled(page,route)
                 await page.wait_for_function("id=>[...document.querySelectorAll('#'+id+'View table')].some(t=>t.getBoundingClientRect().width>0)",arg=route,timeout=8000)
-                results[route]=await inspect(page,route,route)
-                print(route,json.dumps(results[route],ensure_ascii=False),flush=True)
+                try: results[route]=await inspect(page,route,route)
+                except AssertionError as exc: problems.append(str(exc));print('STYLE_MISMATCH',exc,flush=True)
             for category in ('office','factory','external'):
                 await home(page)
                 await page.evaluate('name=>window.bamcoPhonebook.open(name)',category)
@@ -88,13 +90,14 @@ async def main():
                 await page.locator('#phoneBookView [data-phonebook-unit-select]').first.click()
                 await page.wait_for_function("() => document.querySelector('#phoneBookView .phonebook-table')?.getBoundingClientRect().width>0")
                 key='phoneBook-'+category
-                results[key]=await inspect(page,'phoneBook',key)
+                try: results[key]=await inspect(page,'phoneBook',key)
+                except AssertionError as exc: problems.append(str(exc));print('STYLE_MISMATCH',exc,flush=True)
                 metrics=await page.locator('#phoneBookView .phonebook-table-area').evaluate('e=>({top:e.getBoundingClientRect().top,bottom:e.getBoundingClientRect().bottom,viewport:innerHeight})')
                 assert abs(metrics['bottom']-metrics['viewport'])<6,(key,'footer is not at the bottom',metrics)
                 assert metrics['top']<160,(key,'table starts too low',metrics)
-                print(key,json.dumps(results[key],ensure_ascii=False),flush=True)
             (OUT/'results.json').write_text(json.dumps(results,ensure_ascii=False,indent=2))
             await browser.close()
+            assert not problems,problems
     finally:
         server.shutdown()
 
