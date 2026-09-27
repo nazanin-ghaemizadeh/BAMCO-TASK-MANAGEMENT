@@ -145,6 +145,7 @@ html body.card-navigation #appView #homeView #nav .home-group-symbol svg{
   transform:translate(-50%,-50%)!important;fill:none!important;stroke:currentColor!important;
   stroke-width:1.7!important;stroke-linecap:round!important;stroke-linejoin:round!important;
 }
+html body.card-navigation #appView #homeView #nav .home-group-symbol .home-group-badge{position:absolute!important;top:-5px!important;right:-5px!important;z-index:3!important;display:grid!important;place-items:center!important;min-width:25px!important;height:25px!important;padding:0 6px!important;border:2px solid #fff!important;border-radius:999px!important;background:#cf303d!important;color:#fff!important;font:700 13px/1 Tahoma,sans-serif!important;box-shadow:0 3px 10px #8f1a2550!important}
 html body.card-navigation #appView #homeView #nav .home-group-label{display:block;max-width:100%;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 html body.card-navigation #appView #homeView[data-layout="custom"] #nav .home-group-trigger{cursor:grab!important}
 html body.card-navigation #appView #homeView[data-layout="custom"] #nav .home-group-trigger:active{cursor:grabbing!important}
