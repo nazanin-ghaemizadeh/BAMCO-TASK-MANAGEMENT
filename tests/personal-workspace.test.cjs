@@ -48,6 +48,9 @@ test('smart assistant rigs the exact status sticker and starts a fresh conversat
  const view=f.d.querySelector('#voiceAssistantView');
  assert(view.querySelector('.assistant-avatar-rig[role="img"] .assistant-state-sticker[src="assets/images/assistant-status1-female.png"]'));
  for(const part of ['head','eye-left','eye-right','pupil-left','pupil-right','brow-left','brow-right','lids','jaw','shoulder-left','shoulder-right','arm-left','arm-right','hand-left','hand-right'])assert(view.querySelector('.assistant-avatar-overlays .avatar-'+part),part+' layer');
+ assert(view.querySelector('.assistant-avatar-overlays .avatar-mouth-open'),'spoken state adds a visible mouth layer');
+ const css=read('assets/css/personal-workspace.css');
+ assert.match(css,/assistant-presence/);assert.match(css,/assistant-auto-blink/);assert.match(css,/assistant-reduced-presence/);
  assert.equal(view.querySelector('.assistant-prompts'),null);
  view.querySelector('.assistant-state-sticker').dispatchEvent(new f.w.Event('error'));
  assert.equal(view.querySelector('.assistant-avatar-error').hidden,false,'avatar loading failure leaves chat available');
@@ -79,6 +82,7 @@ test('assistant voice state starts on demand and stops when the page closes',asy
  };
  await f.open('voiceAssistant');const view=f.d.querySelector('#voiceAssistantView');
  assert.equal(view.dataset.avatarState,'idle');assert.equal(recognizer,undefined);
+ assert.equal(view.dataset.avatarGesture,'greet','entry begins with a visible greeting gesture');
  const mic=view.querySelector('.assistant-mic');mic.click();
  assert.equal(view.dataset.avatarState,'listening');assert.equal(mic.getAttribute('aria-pressed'),'true');
  recognizer.onresult({resultIndex:0,results:[Object.assign([{transcript:'وظایف من چیست؟'}],{isFinal:true})]});

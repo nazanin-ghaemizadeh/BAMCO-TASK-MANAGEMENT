@@ -13,7 +13,8 @@ function create(view,{session,loadSticker}){
  let conversation=conversationId(),history=[],generation=0,active=false,muted=false,busy=false,recognition=null,recorder=null,recordingStream=null,recordingContext=null,recordingTimer=0;
  let audio=null,audioUrl='',audioContext=null,audioFrame=0,answerAbort=null,speechAbort=null,recognitionRestart=0;
  let blinkTimer=0,blinkClose=0,gestureTimer=0,currentSpoken='',lastSpoken='',lastSpokenAt=0;
- const valid=()=>!view.classList.contains('hidden')&&!!session().token&&session().userId;
+ const visible=()=>!view.classList.contains('hidden');
+ const valid=()=>visible()&&!!session().token&&session().userId;
  const avatar={
   state:'idle',
   set(next,label){
@@ -31,7 +32,9 @@ function create(view,{session,loadSticker}){
   return !!reference&&normalized(phrase).length>3&&normalized(reference).includes(normalized(phrase));
  };
  function blinkLoop(){
-  clearTimeout(blinkTimer);if(!valid()||document.hidden)return;
+  // Blinking is a local visual behaviour.  It must not depend on a network
+  // session, otherwise a slow profile/session refresh leaves a static avatar.
+  clearTimeout(blinkTimer);if(!visible()||document.hidden)return;
   blinkTimer=setTimeout(()=>{
    view.style.setProperty('--avatar-gaze',[-2,-1,0,0,1,2][Math.floor(Math.random()*6)]+'px');
    const doubleBlink=Math.random()<.13;
@@ -204,14 +207,14 @@ function create(view,{session,loadSticker}){
  function dispose(){generation++;answerAbort?.abort();answerAbort=null;active=false;busy=false;stopListening();stopSpeech();clearTimeout(blinkTimer);clearTimeout(blinkClose);clearTimeout(gestureTimer);view.dataset.avatarBlink='false';view.dataset.avatarGesture='neutral';view.style.setProperty('--avatar-gaze','0px');avatar.set('idle')}
  function activate(){
   dispose();conversation=conversationId();history=[];messages.replaceChildren();append('assistant','سلام! من برای مرور وظایف، پروژه‌ها و درخواست‌های شما آماده‌ام. از کجا شروع کنیم؟');
-  input.value='';muted=false;mute.setAttribute('aria-pressed','false');avatar.set('idle');void loadSticker();blinkLoop();
+  input.value='';muted=false;mute.setAttribute('aria-pressed','false');view.dataset.avatarMotion='active';avatar.set('idle');gesture('greet');void loadSticker();blinkLoop();
  }
  mic.onclick=toggleMic;mute.onclick=()=>{muted=!muted;mute.setAttribute('aria-pressed',String(muted));mute.textContent=muted?'باصدا':'بی‌صدا';mute.setAttribute('aria-label',muted?'فعال کردن صدای دستیار':'بی‌صدا کردن دستیار');if(muted)stopSpeech()};
  stop.onclick=()=>{stopSpeech();avatar.set(active?'listening':'idle')};
  $('[data-assistant-new]',view).onclick=activate;$('[data-personal-home]',view).onclick=()=>window.bamcoShowHome?.();
  $('.assistant-composer',view).onsubmit=event=>{event.preventDefault();const text=input.value;input.value='';void send(text)};
  input.onkeydown=event=>{if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();event.currentTarget.form.requestSubmit()}};
- document.addEventListener('visibilitychange',()=>{if(document.hidden){stopListening();stopSpeech();clearTimeout(blinkTimer);clearTimeout(blinkClose);view.dataset.avatarBlink='false'}else if(valid()){blinkLoop();if(active)void beginListening()}});
+ document.addEventListener('visibilitychange',()=>{if(document.hidden){stopListening();stopSpeech();clearTimeout(blinkTimer);clearTimeout(blinkClose);view.dataset.avatarBlink='false'}else if(visible()){blinkLoop();if(active&&valid())void beginListening()}});
  window.addEventListener('beforeunload',dispose);
  return{activate,dispose,getState:()=>avatar.state,get voiceEnabled(){return active},get busy(){return busy}}
 }
