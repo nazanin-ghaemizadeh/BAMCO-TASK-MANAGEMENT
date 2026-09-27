@@ -23,7 +23,31 @@ test('personal tabs are grantable only through the administrator access matrix',
  const source=read('assets/js/navigation-registry.js');
  const accessRows=source.slice(source.indexOf('const accessMatrixRoutes'),source.indexOf('const routeDefinitions'));
  assert.match(accessRows,/'notes', 'voiceAssistant'/);
+ assert.match(accessRows,/'userGuide', 'phoneBook'/);
  assert.doesNotMatch(source,/PERSONAL_FEATURES/);
+});
+
+test('assistant keeps a user-visible local conversation history',async t=>{
+ const f=await fixture({fetchResult:({endpoint})=>endpoint==='smart-assistant'?{text:'برنامه امروز آماده است.',issued:1,speech_token:''}:undefined});t.after(()=>f.dispose());await f.open('voiceAssistant');
+ const view=f.d.querySelector('#voiceAssistantView');view.querySelector('.assistant-composer textarea').value='برنامه امروز من چیست؟';
+ view.querySelector('.assistant-composer').dispatchEvent(new f.w.Event('submit',{bubbles:true,cancelable:true}));
+ await until(()=>view.querySelectorAll('.assistant-message').length>=3);
+ view.querySelector('[data-assistant-history]').click();const dialog=f.d.querySelector('#assistantConversationHistory');
+ assert.equal(dialog.open,true);assert.match(dialog.textContent,/برنامه امروز/);
+ assert.equal(JSON.parse(f.w.localStorage.getItem('bamco.assistant.conversations.v1.test-manager')).length,1);
+});
+
+test('phone book starts empty and separates office, factory and outside contacts with units',async t=>{
+ const f=await fixture({tables:{contact_directory:[],phonebook_units:[]}});t.after(()=>f.dispose());await f.open('phoneBook');
+ const view=f.d.querySelector('#phoneBookView');assert.deepEqual([...view.querySelectorAll('[data-phonebook-tab]')].map(x=>x.textContent.trim()),['اداری','کارخانه','خارج از سازمان']);
+ assert.match(view.querySelector('.phonebook-table').textContent,/مخاطبی در این بخش ثبت نشده است/);
+ assert.deepEqual([...view.querySelectorAll('.phonebook-table th')].map(cell=>cell.textContent.trim()).slice(0,6),['نام','سمت','داخلی','شماره همراه','ایمیل سازمانی','آدرس']);
+ view.querySelector('[data-phonebook-tab="factory"]').click();view.querySelector('[data-phonebook-unit]').click();let unitForm=view.querySelector('.phonebook-unit-dialog form');unitForm.elements.title.value='تولید';unitForm.requestSubmit();
+ await until(()=>view.querySelector('.phonebook-unit-chip')?.textContent.includes('تولید'));
+ view.querySelector('[data-phonebook-new]').click();const form=view.querySelector('.phonebook-dialog form');
+ form.elements.full_name.value='واحد تولید';form.elements.mobile_phone.value='09120000000';form.elements.unit_id.value=[...form.elements.unit_id.options].find(option=>option.textContent==='تولید').value;form.requestSubmit();
+ await until(()=>view.querySelector('.phonebook-table').textContent.includes('واحد تولید'));
+ assert.match(view.querySelector('.phonebook-table').textContent,/۰۹۱۲۰۰۰۰۰۰۰/);assert.deepEqual(f.errors,[]);
 });
 
 test('notes are pinned, editable and can move between active and inactive lists',async t=>{
