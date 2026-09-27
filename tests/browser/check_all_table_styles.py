@@ -83,6 +83,9 @@ async def main():
                 await page.wait_for_function("id=>[...document.querySelectorAll('#'+id+'View table')].some(t=>t.getBoundingClientRect().width>0)",arg=route,timeout=8000)
                 try: results[route]=await inspect(page,route,route)
                 except AssertionError as exc: problems.append(str(exc));print('STYLE_MISMATCH',exc,flush=True)
+                if route in ('vehiclePermanent','vehicleTemporary'):
+                    box=await page.locator(f'#{route}View .vehicle-panel').evaluate('e=>({radius:getComputedStyle(e).borderTopLeftRadius,pagerBottom:e.querySelector(".table-pagination")?.getBoundingClientRect().bottom,viewport:innerHeight,searchVisible:e.querySelector(".vehicle-search")?.getBoundingClientRect().width})')
+                    assert box['radius']=='0px' and box['searchVisible']>150 and abs(box['pagerBottom']-box['viewport'])<6,(route,box)
             for category in ('office','factory','external'):
                 await home(page)
                 await page.evaluate('name=>window.bamcoPhonebook.open(name)',category)
