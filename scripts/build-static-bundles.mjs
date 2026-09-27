@@ -37,7 +37,7 @@ const javascript = [
   'assets/js/navigation-registry.js',
   'assets/js/assistant-runtime.js',
   'assets/js/personal-workspace.js',
-  'assets/js/phonebook.js',
+  'assets/js/phonebook-directory-v2.js',
   'assets/js/sidebar.js',
   'assets/js/phase2-message-engine.js',
   'assets/js/task-ui.js',

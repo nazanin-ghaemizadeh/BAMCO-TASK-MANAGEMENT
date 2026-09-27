@@ -120,10 +120,11 @@ async function selectAllPages(table,q='select=*',pageSize=1000){
 }
 const insert=(table,body)=>api(`/rest/v1/${table}`,{method:'POST',body,prefer:'return=representation'});
 const update=(table,filter,body)=>api(`/rest/v1/${table}?${filter}`,{method:'PATCH',body,prefer:'return=representation'});
+const remove=(table,filter)=>api(`/rest/v1/${table}?${filter}`,{method:'DELETE',prefer:'return=representation'});
 const rpc=(name,body)=>api(`/rest/v1/rpc/${name}`,{method:'POST',body});
 // Domain modules use this one data boundary rather than reaching into page-local
 // helpers.  It keeps persistence, session handling and API errors consistent.
-globalThis.BamcoData=Object.freeze({select,selectAll,insert,update,rpc});
+globalThis.BamcoData=Object.freeze({select,selectAll,insert,update,remove,rpc});
 // `manager` remains the system-administration role.  It is deliberately not
 // used as a shortcut for organizational reporting authority: that relationship
 // comes only from the active position tree below.
@@ -422,7 +423,7 @@ async function enterApp(){
     void refresh().catch(()=>{});
   }
 }
-async function refresh(){
+async function refresh({silent=false}={}){}
   try{
     const profiles=isManager()?await select('profiles','select=id,email,login_name,must_change_password,password_changed_at,full_name,display_name,gender,mobile_phone,internal_extension,excel_name,role,active,default_message_channel,messaging_enabled,avatar_path,updated_at&order=full_name'):scopedTaskProfiles();
     syncCanonicalProfiles(profiles,{replaceAll:isManager()});
@@ -430,9 +431,19 @@ async function refresh(){
     const workflow=await window.bamcoLoadRequestWorkflow();
     state.requests=workflow.requests;state.requestHistory=workflow.history;state.requestRoutes=workflow.routes;state.definitionRequests=[...workflow.requests,...workflow.history];
     renderAll();
-  }catch(err){toast(err.message,true);throw err}
-}
-function renderAll(){window.renderDashboard?.();renderTasks(false);renderTasks(true);renderRequests();renderRequestHistory()}
+  }catch(err){if(!silent)toast(err.message,true);throw err}
+  }
+  // A completed RPC must not be presented as failed only because the follow-up
+  // read is temporarily busy.  Mutations already have their own success/error
+  // boundary; retry the non-authoritative screen refresh quietly.
+  async function refreshAfterMutation(){
+    try{await refresh({silent:true})}
+      catch(error){
+          console.warn('BAMCO post-mutation refresh deferred',error?.message||error);
+              setTimeout(()=>void refresh({silent:true}).catch(next=>console.warn('BAMCO deferred refresh failed',next?.message||next)),900);
+                }
+                }
+                function renderAll(){window.renderDashboard?.();renderTasks(false);renderTasks(true);renderRequests();renderRequestHistory()}
 function renderTasks(archived){
   const query=(archived?$('#archiveSearch'):$('#kanbanSearch')).value.trim().toLowerCase();
   const scope=archived?'archive':'kanban',allRows=state.tasks.filter(t=>!!t.archived===archived&&(archived||!window.bamcoTaskTransfer||window.bamcoTaskTransfer.includes(t))),filters=tableFilters[scope];
@@ -626,8 +637,9 @@ $('#taskForm').addEventListener('submit',async e=>{
     ?{...activeRequest.proposed_data,...data,request_context:'project_activity'}
     :data;
 
-  try{
-    if($('#saveTaskBtn').disabled)return;
+  let submittedRequestId=null;
+    try{
+        if($('#saveTaskBtn').disabled)return;
     $('#saveTaskBtn').disabled=true;
     if(state.reviewEdit){
       await rpc('review_request_stage',{p_request_id:state.reviewEdit.id,p_decision:'approved',p_note:state.reviewEdit.managerNote||null,p_final_data:requestPayload});
@@ -642,17 +654,18 @@ $('#taskForm').addEventListener('submit',async e=>{
       else await insert('tasks',{...data,created_by:state.profile.id});
     }else{
       if(completing&&state.editing){
-        await rpc('submit_change_request',{p_request_type:'complete',p_task_id:state.editing.id,p_proposed_data:{done_date:data.done_date,due_date:data.due_date},p_note:null});
+        submittedRequestId=await rpc('submit_change_request',{p_request_type:'complete',p_task_id:state.editing.id,p_proposed_data:{done_date:data.done_date,due_date:data.due_date},p_note:null});
       }else{
-        await rpc('submit_change_request',{p_request_type:state.editing?'update':'create',p_task_id:state.editing?.id||null,p_proposed_data:state.editing?{...data,...(state.editing._restoring?{archived:false,archived_at:null}:{} )}:data,p_note:null});
+        submittedRequestId=await rpc('submit_change_request',{p_request_type:state.editing?'update':'create',p_task_id:state.editing?.id||null,p_proposed_data:state.editing?{...data,...(state.editing._restoring?{archived:false,archived_at:null}:{} )}:data,p_note:null});
       }
     }
     state.taskDialogSubmitting=true;
-    $('#taskDialog').close();
-    toast(state.reviewEdit?'درخواست با اصلاحات مدیر تأیید شد.':state.resubmitting?'درخواست اصلاح‌شده دوباره ارسال شد.':state.amendingRequest?'درخواست ویرایش و دوباره برای تأیید ارسال شد.':directMutation?(completing?'وظیفه انجام شد و به آرشیو منتقل شد.':'تغییرات ثبت شد.'):(completing?'درخواست تکمیل برای تأیید ارسال شد.':'درخواست برای تأیید بالادست ارسال شد.'));
+        $('#taskDialog').close();
+            const submittedLabel=submittedRequestId==null?'':` شماره ${fa(submittedRequestId)}`;
+                toast(state.reviewEdit?'درخواست با اصلاحات مدیر تأیید شد.':state.resubmitting?'درخواست اصلاح‌شده دوباره ارسال شد.':state.amendingRequest?'درخواست ویرایش و دوباره برای تأیید ارسال شد.':directMutation?(completing?'وظیفه انجام شد و به آرشیو منتقل شد.':'تغییرات ثبت شد.'):(completing?`درخواست تکمیل${submittedLabel} برای تأیید ارسال شد.`:`درخواست${submittedLabel} برای تأیید بالادست ارسال شد.`));)
     state.reviewEdit=null;state.resubmitting=null;state.amendingRequest=null;state.taskDialogSubmitting=false;
-    await refresh();
-  }catch(err){toast(err.message,true)}finally{$('#saveTaskBtn').disabled=false}
+    await refreshAfterMutation();
+      }catch(err){toast(err.message,true)}finally{$('#saveTaskBtn').disabled=false}
 });
 window.archiveTask=async id=>{const task=state.tasks.find(t=>String(t.id)===String(id));if(!task)return;const rule=window.bamcoOptions.status(task),preserve=!!rule?.archivable&&!window.bamcoOptions.completed(task),message=preserve?`وظیفه «${task.title}» با وضعیت «${task.status}» به آرشیو منتقل شود؟`:`وظیفه «${task.title}» تکمیل و آرشیو شود؟`;if(!await window.bamcoConfirm(message))return;try{const data={archived:true,archived_at:new Date().toISOString(),...(preserve?{}:{status:window.bamcoOptions.label('status','done'),done_date:task.done_date||new Date().toISOString().slice(0,10)})},direct=canDirectlyManageTask(task,'edit');if(direct)await update('tasks',`id=eq.${id}`,data);else await rpc('submit_change_request',{p_request_type:preserve?'update':'complete',p_task_id:Number(id),p_proposed_data:preserve?{...data,status:task.status}:{done_date:data.done_date},p_note:null});toast(direct?'وظیفه به آرشیو منتقل شد.':'درخواست برای تأیید بالادست ارسال شد.');await refresh()}catch(error){toast(error.message,true)}};
 
