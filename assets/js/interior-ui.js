@@ -9,6 +9,7 @@
   const toolbarSelector='.task-toolbar,.vehicle-toolbar,.people-actions,.manager-toolbar,.workspace-actions,.workspace-report-tools,.suite-toolbar,.sticker-toolbar,.message-center-actions,.response-quick,.tt-switch,.desktop-template-fieldset,.feature-toolbar-actions,.letter-toolbar,.cash-toolbar,.bamco-management-toolbar';
   const ownedCommandSelector='.message-command-row button,.sent-command-row button,.response-command-row button,.personal-command-row [data-personal-home]';
   let pending=false,observer;
+  const featureOwned=view=>window.BamcoNavigationCatalog?.isFeatureOwnedRoute?.(view?.id?.replace(/View$/,''))===true;
   const eligible=view=>{
     if(!view?.matches('.workspace > .view')||excluded.has(view.id))return false;
     const route=view.id.replace(/View$/,'');
@@ -35,6 +36,7 @@
     });
   }
   function decorateView(view){
+    if(featureOwned(view))return;
     removeToolbarGuidance(view);
     ensureStandaloneHome(view);
     if(!eligible(view))return;

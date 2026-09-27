@@ -96,15 +96,19 @@
     return map;
   }, {}));
   const standaloneLayoutRoutes = Object.freeze(new Set(['projects', 'parts', 'invoices', 'organization', 'tools', 'accessMatrix', 'vehiclePermanent', 'vehicleTemporary']));
+  // These routes render their own table, toolbar and loading states. Shared
+  // presentation engines must not rewrite their DOM while they are active.
+  const featureOwnedRoutes = Object.freeze(new Set(['vehiclePermanent', 'vehicleTemporary', 'lettersIncoming', 'lettersOutgoing', 'pettyCash', 'invoices']));
   // Standalone layouts own their toolbar. The interior reconciler still
   // guarantees a native return control inside those toolbars.
   const noHomeReturnRoutes = new Set(['projects', 'invoices']);
 
   const catalog = Object.freeze({
-    groups, byKey, routeGroup, byRoute, featureRoutes, accessMatrixRoutes, standaloneLayoutRoutes, noHomeReturnRoutes,
+    groups, byKey, routeGroup, byRoute, featureRoutes, accessMatrixRoutes, standaloneLayoutRoutes, featureOwnedRoutes, noHomeReturnRoutes,
     routeFor: route => byRoute[String(route || '')] || null,
     featureForRoute: route => byRoute[String(route || '')]?.featureKey || null,
     routesForFeature: featureKey => [...(featureRoutes[String(featureKey || '')] || [])],
+    isFeatureOwnedRoute: route => featureOwnedRoutes.has(String(route || '')),
     featureTitle: featureKey => {
       const route = Object.values(byRoute).find(item => item.featureKey === String(featureKey || ''));
       return route?.title || String(featureKey || '');
@@ -193,10 +197,12 @@
 
   function retireManageControl(button) {
     if (!button) return;
-    button.classList.add('ghost', 'feature-access-control');
-    button.classList.add('hidden');
-    button.disabled = true;
-    button.setAttribute('aria-hidden', 'true');
+    if (!button.classList.contains('ghost')) button.classList.add('ghost');
+    if (!button.classList.contains('feature-access-control')) button.classList.add('feature-access-control');
+    if (!button.classList.contains('hidden')) button.classList.add('hidden');
+    if ('disabled' in button && !button.disabled) button.disabled = true;
+    if (button.getAttribute('aria-hidden') !== 'true') button.setAttribute('aria-hidden', 'true');
+    button.dataset.bamcoAccessRetired = 'true';
   }
 
   function syncManageControl() {
@@ -345,7 +351,8 @@
       const route = state().view;
       const view = route && route !== 'home' ? document.getElementById(`${route}View`) : null;
       if (!view) return;
-      const relevant = node => node?.id === 'featureAccessControl' || isLocalManageControl(node);
+      const relevant = node => node?.id === 'featureAccessControl'
+        || (node?.dataset?.bamcoAccessRetired !== 'true' && isLocalManageControl(node));
       if (records.some(record => view.contains(record.target)
         && (relevant(record.target) || [...record.addedNodes, ...record.removedNodes].some(relevant)))) {
         scheduleManageControl();

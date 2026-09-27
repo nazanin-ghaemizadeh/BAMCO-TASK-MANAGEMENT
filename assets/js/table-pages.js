@@ -14,6 +14,7 @@
   const workspace=document.querySelector('.workspace'),footer=document.querySelector('#homeFixedFooter');if(!workspace)return;
   const registry=new WeakMap(),viewBindings=new WeakSet();let serial=0,pending=false;
   const number=n=>Number(n).toLocaleString('fa-IR');
+  const featureOwned=view=>window.BamcoNavigationCatalog?.isFeatureOwnedRoute?.(view?.id?.replace(/View$/,''))===true;
   const scrollTop=wrap=>{wrap.scrollTop=0};
   function addPager(table,wrap){
    if(registry.has(table)||table.closest('#archiveView')||table.matches('[data-no-pagination]'))return;
@@ -50,6 +51,7 @@
   function scan(){
    pending=false;
    workspace.querySelectorAll(':scope>.view:not(#homeView):not(#welcomeView)').forEach(view=>{
+    if(featureOwned(view))return;
     backButton(view);
     if(!viewBindings.has(view)){
      viewBindings.add(view);

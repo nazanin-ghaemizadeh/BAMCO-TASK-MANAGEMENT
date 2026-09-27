@@ -8,6 +8,8 @@ if(typeof document==='undefined')return;
 window.BAMCO_COMPARE_VALUES=compareValues;window.BAMCO_TASK_SORT=window.BAMCO_TASK_SORT||{};
 function install(){
  const root=document.querySelector('#appView');if(!root)return;document.body.classList.add('table-suite');
+ const featureOwned=view=>window.BamcoNavigationCatalog?.isFeatureOwnedRoute?.(view?.id?.replace(/View$/,''))===true;
+ const featureOwnedTable=table=>featureOwned(table?.closest('.view'));
  const settings=new WeakMap();let scheduled=false;
  const observer=new MutationObserver(records=>{if(records.every(r=>r.target.nodeType===1&&r.target.closest('.table-pagination,#archivePager,.suite-table-options')))return;schedule()});
  const observe=()=>observer.observe(root,{childList:true,subtree:true});
@@ -87,8 +89,9 @@ function install(){
   return bar;
  }
  function toolbars(){
-  root.querySelectorAll('.view table').forEach(ensureTableToolbar);
+  root.querySelectorAll('.view table').forEach(table=>{if(!featureOwnedTable(table))ensureTableToolbar(table)});
   root.querySelectorAll('.task-toolbar,.vehicle-toolbar,.prod-toolbar,.people-actions,.manager-toolbar,.workspace-actions,.workspace-report-tools,.bamco-management-toolbar,.suite-toolbar').forEach(bar=>{
+   if(featureOwned(bar.closest('.view')))return;
    if(bar.matches('.panel-head')&&!bar.querySelector('button'))return;
    bar.classList.add('suite-toolbar');
    [...bar.children].forEach(el=>{let rank=80;const t=el.textContent.trim(),id=el.id||'';
@@ -106,7 +109,7 @@ function install(){
  // Some feature views (notably the phonebook contact screen) provide their
  // own fixed table and pager.  Decorating them again creates a second filter
  // row/pager and changes the parent height while the user returns to cards.
- function scan(){root.querySelectorAll('.view table:not([data-table-suite="off"])').forEach(decorate);toolbars()}
+ function scan(){root.querySelectorAll('.view table:not([data-table-suite="off"])').forEach(table=>{if(!featureOwnedTable(table))decorate(table)});toolbars()}
  document.addEventListener('input',e=>{const field=e.target;if(!field.matches('textarea,input[type=text]')||field.closest('#loginVerification'))return;const english=/[A-Za-z]/.test(field.value)&&!/[\u0600-\u06ff]/.test(field.value);field.classList.toggle('suite-english',english);field.dir=english?'ltr':'rtl'});
  document.addEventListener('pointerdown',resize,true);
  document.addEventListener('click',e=>{

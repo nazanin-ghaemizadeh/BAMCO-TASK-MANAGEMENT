@@ -75,7 +75,7 @@
       @media(max-width:760px){#vehicleRecordDialog .vehicle-form-grid{grid-template-columns:1fr!important}#vehicleRecordDialog label.wide{grid-column:auto!important}#appView .vehicle-toolbar{flex-wrap:wrap!important}#appView .vehicle-search{width:100%!important;min-width:100%!important;max-width:none!important}}
     `;document.head.appendChild(s);
   }
-  function toolbar(scope){const c=CFG[scope];return `<div class="vehicle-toolbar"><button class="ghost vehicle-access-button hidden" type="button">مدیریت دسترسی</button><button class="ghost vehicle-import" type="button">ورود از اکسل</button><button class="ghost vehicle-export" type="button">خروجی اکسل</button><button class="primary vehicle-add" type="button">افزودن</button><button class="ghost vehicle-search-toggle" type="button">جست‌وجو در تحویل‌ها</button><input class="search vehicle-search" type="search" placeholder="جست‌وجو در ${esc(c.title)}…"><button class="ghost vehicle-edit" type="button" disabled>ویرایش</button><button class="danger vehicle-delete" type="button" disabled>حذف</button>${c.form?'<button class="ghost vehicle-upload" type="button" disabled>بارگذاری فرم تکمیل‌شده</button><button class="ghost vehicle-template-upload" type="button">بارگذاری فرم خام جدید</button><button class="ghost vehicle-blank" type="button">دانلود فرم خام</button>':''}</div>`}
+  function toolbar(scope){const c=CFG[scope];return `<div class="vehicle-toolbar"><button class="content-back ghost" type="button">بازگشت به خانه</button><button class="ghost vehicle-access-button hidden" type="button">مدیریت دسترسی</button><button class="ghost vehicle-import" type="button">ورود از اکسل</button><button class="ghost vehicle-export" type="button">خروجی اکسل</button><button class="primary vehicle-add" type="button">افزودن</button><button class="ghost vehicle-search-toggle" type="button">جست‌وجو در تحویل‌ها</button><input class="search vehicle-search" type="search" placeholder="جست‌وجو در ${esc(c.title)}…"><button class="ghost vehicle-edit" type="button" disabled>ویرایش</button><button class="danger vehicle-delete" type="button" disabled>حذف</button>${c.form?'<button class="ghost vehicle-upload" type="button" disabled>بارگذاری فرم تکمیل‌شده</button><button class="ghost vehicle-template-upload" type="button">بارگذاری فرم خام جدید</button><button class="ghost vehicle-blank" type="button">دانلود فرم خام</button>':''}</div>`}
   // Vehicle tables own their filters, sizing and selection.  Letting the
   // shared table suite decorate them a second time recursively rebuilt their
   // header/pager while a route was opening, which could lock the workspace.
@@ -159,6 +159,7 @@
   }
   function bind(scope){
     const c=CFG[scope],view=q(`#${c.view}`);if(!view||view.dataset.vehicleBound)return;view.dataset.vehicleBound='1';mount(scope);
+    q('.content-back',view).onclick=()=>window.bamcoShowHome?.();
     q('.vehicle-access-button',view).onclick=()=>window.bamcoAccessEditor?.open?.({featureKey:scope,title:'دسترسی به '+c.title});
     q('.vehicle-import',view).onclick=()=>{if(!can(scope,'create'))return deny(scope,'create');q('#vehicleExcelInput').value='';q('#vehicleExcelInput').click()};
     q('.vehicle-export',view).onclick=()=>exportWorkbook(scope);
