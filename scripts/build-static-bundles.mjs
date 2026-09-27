@@ -92,8 +92,8 @@ const stylesheets = [
   'assets/css/stability.css',
   'assets/css/unified-ui.css',
   'assets/css/home-stable.css',
-  'assets/css/home-phonebook-override.css',
-  'assets/css/home-welcome.css'
+  'assets/css/home-welcome.css',
+  'assets/css/home-phonebook-override.css'
 ];
 
 const digest = value => createHash('sha256').update(value).digest('hex').slice(0, 16);
