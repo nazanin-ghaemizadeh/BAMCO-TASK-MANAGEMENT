@@ -662,7 +662,7 @@ $('#taskForm').addEventListener('submit',async e=>{
     state.taskDialogSubmitting=true;
         $('#taskDialog').close();
             const submittedLabel=submittedRequestId==null?'':` شماره ${fa(submittedRequestId)}`;
-                toast(state.reviewEdit?'درخواست با اصلاحات مدیر تأیید شد.':state.resubmitting?'درخواست اصلاح‌شده دوباره ارسال شد.':state.amendingRequest?'درخواست ویرایش و دوباره برای تأیید ارسال شد.':directMutation?(completing?'وظیفه انجام شد و به آرشیو منتقل شد.':'تغییرات ثبت شد.'):(completing?`درخواست تکمیل${submittedLabel} برای تأیید ارسال شد.`:`درخواست${submittedLabel} برای تأیید بالادست ارسال شد.`));)
+                toast(state.reviewEdit?'درخواست با اصلاحات مدیر تأیید شد.':state.resubmitting?'درخواست اصلاح‌شده دوباره ارسال شد.':state.amendingRequest?'درخواست ویرایش و دوباره برای تأیید ارسال شد.':directMutation?(completing?'وظیفه انجام شد و به آرشیو منتقل شد.':'تغییرات ثبت شد.'):(completing?`درخواست تکمیل${submittedLabel} برای تأیید ارسال شد.`:`درخواست${submittedLabel} برای تأیید بالادست ارسال شد.`));
     state.reviewEdit=null;state.resubmitting=null;state.amendingRequest=null;state.taskDialogSubmitting=false;
     await refreshAfterMutation();
       }catch(err){toast(err.message,true)}finally{$('#saveTaskBtn').disabled=false}
