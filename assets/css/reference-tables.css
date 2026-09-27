@@ -19,8 +19,8 @@ html body #appView#appView .view:has(table) :is(.task-toolbar,.people-actions,.m
 }
 
 /* Buttons on register pages have one neutral appearance, regardless of action. */
-html body #appView#appView .view:has(table) button,
-html body #appView#appView .view:has(table) button:is(:hover,:active,:focus-visible) {
+html body #appView#appView#appView#appView .view:has(table) button,
+html body #appView#appView#appView#appView .view:has(table) button:is(:hover,:active,:focus-visible) {
   background:#fff!important;
   color:#30343a!important;
   border:1px solid #c6ccce!important;
@@ -31,9 +31,9 @@ html body #appView#appView .view:has(table) button:is(:hover,:active,:focus-visi
   font-family:BamcoPersian,'B Nazanin',Tahoma,sans-serif!important;
   font-weight:400!important;
 }
-html body #appView#appView .view:has(table) button:focus-visible {outline:2px solid #7b9387!important;outline-offset:2px!important}
-html body #appView#appView .view:has(table) button:disabled {opacity:.42!important;cursor:default!important}
-html body #appView#appView .view:has(table) button[aria-pressed=true] {box-shadow:inset 0 -2px #879e92!important}
+html body #appView#appView#appView#appView .view:has(table) button:focus-visible {outline:2px solid #7b9387!important;outline-offset:2px!important}
+html body #appView#appView#appView#appView .view:has(table) button:disabled {opacity:.42!important;cursor:default!important}
+html body #appView#appView#appView#appView .view:has(table) button[aria-pressed=true] {box-shadow:inset 0 -2px #879e92!important}
 
 html body #appView#appView .view:has(table) :is(.table-wrap,.focus-scroll,.vehicle-table-wrap,.phonebook-table-wrap,.letters-scroll,.cash-table,.prod-table-wrap) {
   min-width:0!important;
