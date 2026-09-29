@@ -286,7 +286,7 @@ function create(view,{session,loadSticker}){
     if(!same())return;
     const stream=event.streams[0]||new MediaStream([event.track]);current.output.srcObject=stream;
     playOutput();
-    if(current.context){try{const source=current.context.createMediaStreamSource(stream);current.analyser=current.context.createAnalyser();current.analyser.fftSize=512;current.samples=new Uint8Array(current.analyser.fftSize);current.spectrum=new Uint8Array(current.analyser.frequencyBinCount||256);source.connect(current.analyser);animateLive(current)}catch{view.classList.add('assistant-mouth-fallback')}}
+    if(current.context){try{const source=current.context.createMediaStreamSource(stream);current.analyser=current.context.createAnalyser();current.analyser.fftSize=512;current.samples=new Uint8Array(current.analyser.fftSize);current.spectrum=new Uint8Array(current.analyser.frequencyBinCount||256);const silent=current.context.createGain();silent.gain.value=0;source.connect(current.analyser);current.analyser.connect(silent);silent.connect(current.context.destination);animateLive(current)}catch{view.classList.add('assistant-mouth-fallback')}}
     else view.classList.add('assistant-mouth-fallback');
    };
    current.peer.onconnectionstatechange=()=>{if(same()&&['failed','disconnected'].includes(current.peer.connectionState)){stopRealtime();avatar.set('warning','ارتباط صوتی قطع شد؛ دوباره مکالمه را شروع کنید.')}};

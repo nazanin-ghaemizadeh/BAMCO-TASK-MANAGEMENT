@@ -77,7 +77,8 @@ test('live voice streams over WebRTC, resolves a scoped task tool and releases m
  const sent=[],track={stopped:false,stop(){this.stopped=true}},stream={getTracks:()=>[track],getAudioTracks:()=>[track]};
  Object.defineProperty(f.w.navigator,'mediaDevices',{configurable:true,value:{getUserMedia:async()=>stream}});
  f.w.HTMLMediaElement.prototype.play=function(){return Promise.resolve()};f.w.HTMLMediaElement.prototype.pause=function(){};
- f.w.AudioContext=class{createMediaStreamSource(){return{connect(){}}}createAnalyser(){return{fftSize:512,getByteTimeDomainData(samples){samples.fill(151)}}}resume(){return Promise.resolve()}close(){return Promise.resolve()}};
+ let audibleAnalysis=false;
+ f.w.AudioContext=class{constructor(){this.destination={}}createMediaStreamSource(){return{connect(){}}}createAnalyser(){return{fftSize:512,frequencyBinCount:256,getByteTimeDomainData(samples){samples.fill(151)},getByteFrequencyData(samples){samples.fill(20)},connect(node){assert.equal(node.gain.value,0)}}}createGain(){return{gain:{value:1},connect:destination=>{assert.equal(destination,this.destination);audibleAnalysis=true}}}resume(){return Promise.resolve()}close(){return Promise.resolve()}};
  let peer,channel;
  f.w.RTCPeerConnection=class{
   constructor(){peer=this;this.connectionState='connected';this.iceGatheringState='gathering'}
@@ -96,6 +97,7 @@ test('live voice streams over WebRTC, resolves a scoped task tool and releases m
  assert.equal(button.getAttribute('aria-pressed'),'true');assert(f.calls.some(call=>call.endpoint==='smart-assistant'&&call.body?.action==='realtime_session'));
  assert(f.calls.some(call=>call.endpoint==='calls'&&call.body==='v=0\na=candidate:1'));
  assert(sent.some(event=>event.type==='response.create'&&event.response?.output_modalities?.[0]==='audio'),'the assistant speaks first when the call connects');
+ assert.equal(audibleAnalysis,true,'the audio analyzer is connected without duplicating sound');
  assert(Number(view.style.getPropertyValue('--assistant-mouth-open'))>.3);
  channel.onmessage({data:JSON.stringify({type:'conversation.item.input_audio_transcription.completed',transcript:'چطور گزارش کوره را انجام بدهم؟'})});
  channel.onmessage({data:JSON.stringify({type:'response.output_audio_transcript.done',item_id:'reply-1',transcript:'اول داده‌ها را مرتب كنيد؛ مرحلة بعدی را بگوييد.'})});
