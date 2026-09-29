@@ -108,7 +108,7 @@ function patch(image,width,height,cx,cy,rx,ry){
  const layer=document.createElement('canvas');layer.width=width;layer.height=height;
  const context=layer.getContext('2d');context.drawImage(image,0,0,width,height);
  context.globalCompositeOperation='destination-in';context.save();context.translate(cx*width/W,cy*height/H);context.scale(rx*width/W,ry*height/H);
- const fade=context.createRadialGradient(0,0,.70,0,0,1.08);fade.addColorStop(0,'#000');fade.addColorStop(.70,'#000');fade.addColorStop(1.08,'transparent');
+ const fade=context.createRadialGradient(0,0,.70,0,0,1.08);fade.addColorStop(0,'#000');fade.addColorStop(.70,'#000');fade.addColorStop(1,'transparent');
  context.fillStyle=fade;context.fillRect(-2,-2,4,4);context.restore();return layer;
 }
 function warp(x,y,time,u){

@@ -35,7 +35,7 @@ test('the assistant also animates with a 2D canvas when WebGL is unavailable',as
  const dom=new JSDOM('<section data-avatar-state="idle"><div data-avatar-scene><img class="assistant-avatar-frame speaking"><img class="assistant-avatar-face mouth-rest"><img class="assistant-avatar-face eyes-blink"><img class="assistant-avatar-face brows-emphasis"></div></section>',{runScripts:'outside-only'});
  const {window:w}=dom,view=w.document.querySelector('section');let draws=0,scheduled=null;
  w.HTMLImageElement.prototype.decode=()=>Promise.resolve();
- const context={drawImage(){draws++},clearRect(){},save(){},restore(){},translate(){},scale(){},fillRect(){},setTransform(){},beginPath(){},moveTo(){},lineTo(){},closePath(){},clip(){},createRadialGradient:()=>({addColorStop(){}})};
+ const context={drawImage(){draws++},clearRect(){},save(){},restore(){},translate(){},scale(){},fillRect(){},setTransform(){},beginPath(){},moveTo(){},lineTo(){},closePath(){},clip(){},createRadialGradient:()=>({addColorStop(offset){assert(offset>=0&&offset<=1,'gradient offsets must be valid in a real browser')}})};
  w.HTMLCanvasElement.prototype.getContext=type=>type==='webgl'?null:context;
  w.requestAnimationFrame=callback=>{scheduled=callback;return 1};w.cancelAnimationFrame=()=>{scheduled=null};w.matchMedia=()=>({matches:false});
  w.eval(fs.readFileSync('assets/js/assistant-puppet.js','utf8'));
