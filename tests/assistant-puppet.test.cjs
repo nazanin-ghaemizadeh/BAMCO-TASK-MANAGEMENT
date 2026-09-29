@@ -17,33 +17,37 @@ test('the assistant puppet renders a continuous character and follows speaking s
  assert(view.classList.contains('assistant-avatar-puppet-ready'));
  assert.equal(pixelStore.length,4);assert(pixelStore.every(([parameter,value])=>parameter===gl.UNPACK_FLIP_Y_WEBGL&&value===false),'top-left image textures are not flipped');
  assert(view.querySelector('canvas.assistant-avatar-canvas'));
- scheduled(2000);assert.equal(draws,0,'the calm source artwork is visible while the character is not speaking');
+ scheduled(2000);assert(draws>=2,'the same puppet remains animated while calm');
+ assert.equal(uniforms.get('uMouth'),0,'the mouth stays closed before speech');
+ const calmDraws=draws;
  view.dataset.avatarState='speaking';view.dataset.avatarViseme='aa';view.dataset.avatarGesture='count';view.style.setProperty('--assistant-mouth-open','.9');view.style.setProperty('--assistant-speech-beat','.7');
- scheduled(2050);assert.equal(draws,1);assert(uniforms.get('uMouth')>.1);assert(uniforms.get('uSpeech')>0);assert(uniforms.get('uCount')>0);assert(uniforms.get('uBeat')>0);
+ scheduled(2050);assert.equal(draws,calmDraws+1);assert(uniforms.get('uMouth')>.1);assert(uniforms.get('uSpeech')>0);assert(uniforms.get('uCount')>0);assert(uniforms.get('uBeat')>0);
  const open=uniforms.get('uMouth');view.dataset.avatarViseme='mbp';scheduled(2070);assert(uniforms.get('uMouth')<open,'a closed-lip sound closes the mouth even during voiced audio');
  view.dataset.avatarState='listening';view.style.setProperty('--assistant-mouth-open','0');
- scheduled(2100);assert.equal(draws,2,'the resting frame takes over immediately when the assistant stops speaking');
+ scheduled(2100);assert.equal(draws,calmDraws+3,'the same canvas continues rendering in the listening state');
+ assert.equal(uniforms.get('uMouth'),0,'the mouth closes immediately when the assistant stops speaking');
+ assert(uniforms.get('uListening')>0,'listening creates a distinct head pose');
  puppet.stop();assert.equal(scheduled,null);
  dom.window.close();
 });
 
-test('avatar artwork remains visible by state when WebGL is unavailable',()=>{
+test('the same welcoming artwork remains visible across states when WebGL is unavailable',()=>{
  const css=fs.readFileSync('assets/css/personal-workspace.css','utf8');
- const dom=new JSDOM(`<style>${css}</style><section id="voiceAssistantView" data-avatar-state="idle"><div class="assistant-avatar-scene"><img class="assistant-avatar-frame listening"><img class="assistant-avatar-frame thinking"><img class="assistant-avatar-frame speaking"></div></section>`);
+ const dom=new JSDOM(`<style>${css}</style><section id="voiceAssistantView" data-avatar-state="idle"><div class="assistant-avatar-scene"><img class="assistant-avatar-frame speaking"><img class="assistant-avatar-face mouth-rest"></div></section>`);
  const {document:d}=dom.window,view=d.querySelector('#voiceAssistantView');
- for(const state of ['listening','thinking','speaking']){
+ for(const state of ['idle','listening','thinking','speaking']){
   view.dataset.avatarState=state;
-  assert.equal(dom.window.getComputedStyle(view.querySelector(`.assistant-avatar-frame.${state}`)).opacity,'1',`${state} artwork hidden`);
+  assert.equal(dom.window.getComputedStyle(view.querySelector('.assistant-avatar-frame.speaking')).opacity,'1',`${state} artwork hidden`);
  }
+ view.dataset.avatarState='idle';assert.equal(dom.window.getComputedStyle(view.querySelector('.mouth-rest')).opacity,'1');
  dom.window.close();
 });
 
-test('the resting portrait remains visible when WebGL is ready and the puppet appears only for speech',()=>{
+test('the animated canvas stays visible in every state when WebGL is ready',()=>{
  const css=fs.readFileSync('assets/css/personal-workspace.css','utf8');
- const dom=new JSDOM(`<style>${css}</style><section id="voiceAssistantView" class="assistant-avatar-puppet-ready" data-avatar-state="idle"><div class="assistant-avatar-scene"><canvas class="assistant-avatar-canvas"></canvas><img class="assistant-avatar-frame waiting-grounded"><img class="assistant-avatar-frame speaking"></div></section>`);
+ const dom=new JSDOM(`<style>${css}</style><section id="voiceAssistantView" class="assistant-avatar-puppet-ready" data-avatar-state="idle"><div class="assistant-avatar-scene"><canvas class="assistant-avatar-canvas"></canvas><img class="assistant-avatar-frame speaking"></div></section>`);
  const {document:d}=dom.window,view=d.querySelector('#voiceAssistantView'),canvas=d.querySelector('canvas');
- assert.equal(dom.window.getComputedStyle(canvas).opacity,'0');
- assert.equal(dom.window.getComputedStyle(d.querySelector('.waiting-grounded')).opacity,'1');
+ assert.equal(dom.window.getComputedStyle(canvas).opacity,'1');
  view.dataset.avatarState='speaking';assert.equal(dom.window.getComputedStyle(canvas).opacity,'1');
  dom.window.close();
 });

@@ -5,7 +5,7 @@ const $=(selector,root)=>root.querySelector(selector);
 const STATES=new Set(['idle','listening','thinking','speaking','success','warning','error']);
 const ROUTES=new Set(['kanban','archive','projects','approvals','notes']);
 const escapeHtml=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
-const persianText=value=>String(value??'').replace(/[يى]/g,'ی').replace(/ك/g,'ک').replace(/[ةۀہھ]/g,'ه');
+const persianText=value=>String(value??'').replace(/[يى]/g,'ی').replace(/ك/g,'ک').replace(/[ةۀہھ]/g,'ه').replace(/هٔ/g,'ه');
 function waitForIce(peer,signal){
  if(!peer.iceGatheringState||peer.iceGatheringState==='complete')return Promise.resolve();
  return new Promise((resolve,reject)=>{
@@ -19,10 +19,10 @@ function waitForIce(peer,signal){
 
 function create(view,{session,loadSticker}){
  const messages=$('.assistant-messages',view),input=$('.assistant-composer textarea',view),mic=$('.assistant-mic',view);
- const status=$('.assistant-status',view),voiceLevel=$('.assistant-voice-activity',view),mute=$('[data-assistant-mute]',view),stop=$('[data-assistant-stop]',view),historyButton=$('[data-assistant-history]',view),liveButton=$('[data-assistant-live]',view),playButton=$('[data-assistant-play]',view);
+ const status=$('.assistant-status',view),voiceLevel=$('.assistant-voice-activity',view),historyButton=$('[data-assistant-history]',view),liveButton=$('[data-assistant-live]',view),playButton=$('[data-assistant-play]',view);
  const puppet=window.BamcoAssistantPuppet?.create(view);
  const conversationId=()=>crypto.randomUUID?.()||String(Date.now());
- let conversation=conversationId(),history=[],generation=0,active=false,muted=false,busy=false,live=null,liveAttempt=0;
+ let conversation=conversationId(),history=[],generation=0,active=false,busy=false,live=null,liveAttempt=0;
  let audio=null,audioUrl='',audioContext=null,audioFrame=0,answerAbort=null,speechAbort=null;
  const speechMotion={};
  let blinkTimer=0,blinkClose=0,gestureTimer=0,currentSpoken='',lastSpoken='',lastSpokenAt=0;
@@ -167,12 +167,12 @@ function create(view,{session,loadSticker}){
   try{speechSynthesis.speak(utterance)}catch{afterSpeech()}
  }
  async function playSpeech(text,issued,token,turn,gestureKind){
-  if(muted||!valid())return;
+  if(!valid())return;
   speechAbort=new AbortController();
   try{
    const result=await fetch(`${SB_URL}/functions/v1/smart-assistant`,{method:'POST',headers:{apikey:SB_KEY,Authorization:`Bearer ${session().token}`,'Content-Type':'application/json','x-conversation-id':conversation},body:JSON.stringify({action:'speech',text,issued,speech_token:token}),signal:speechAbort.signal,cache:'no-store'});
    if(!result.ok)throw Error('صدای دستیار در دسترس نیست.');
-   const blob=await result.blob();if(turn!==generation||!valid()||muted)return;
+   const blob=await result.blob();if(turn!==generation||!valid())return;
    audioUrl=URL.createObjectURL(blob);audio=new Audio(audioUrl);audio.onended=afterSpeech;audio.onerror=afterSpeech;currentSpoken=text;
    const AudioContext=window.AudioContext||window.webkitAudioContext;
    let analyser=null;
@@ -180,7 +180,7 @@ function create(view,{session,loadSticker}){
    await audio.play();if(turn===generation){avatar.set('speaking');gesture(gestureKind);if(analyser)analyze(analyser,text);else{speechMotion.markers=speechMarkers(text);audio.ontimeupdate=()=>{const progress=Number.isFinite(audio.duration)&&audio.duration>0?audio.currentTime/audio.duration:0;const index=Math.floor(progress*text.length);view.dataset.avatarViseme=visemeFor(text,audio.currentTime,audio.duration,.18);view.style.setProperty('--assistant-mouth-open','.18');timedGesture(speechMotion,text,index)}}}
   }catch(error){
    if(error.name==='AbortError')return;
-   stopSpeech();if(turn===generation&&!muted&&valid())browserSpeech(text,gestureKind);
+   stopSpeech();if(turn===generation&&valid())browserSpeech(text,gestureKind);
   }
  }
  async function send(text){
@@ -202,7 +202,7 @@ function create(view,{session,loadSticker}){
    history.push({role:'assistant',text:answer});history=history.slice(-24);saveConversation();busy=false;
    const gestureKind=/\d|[۰-۹]|فوری|اولویت/.test(answer)?'emphasis':/تأیید|تایید|انجام شد/.test(answer)?'acknowledge':'neutral';
    avatar.set('success','پاسخ آماده است');
-   if(!muted&&data.speech_token)void playSpeech(answer,data.issued,data.speech_token,turn,gestureKind);
+   if(data.speech_token)void playSpeech(answer,data.issued,data.speech_token,turn,gestureKind);
    else{gesture(gestureKind);setTimeout(()=>{if(turn===generation&&avatar.state==='success'&&valid())avatar.set(active?'listening':'idle')},700)}
   }catch(error){
    if(turn!==generation||error.name==='AbortError')return;
@@ -220,7 +220,7 @@ function create(view,{session,loadSticker}){
   current?.stream?.getTracks().forEach(track=>track.stop());
   if(current?.output){current.output.pause();current.output.srcObject=null;current.output.remove()}
   if(current?.context)void current.context.close().catch(()=>{});
-  mic.setAttribute('aria-pressed','false');mic.setAttribute('aria-label','شروع مکالمهٔ زنده');mic.title='شروع مکالمهٔ زنده';
+  mic.setAttribute('aria-pressed','false');mic.setAttribute('aria-label','شروع مکالمه زنده');mic.title='شروع مکالمه زنده';
   liveButton.setAttribute('aria-pressed','false');liveButton.textContent='شروع مکالمه';playButton.hidden=true;level(0);
   view.classList.remove('assistant-mouth-fallback');view.style.setProperty('--assistant-mouth-open','0');view.style.setProperty('--assistant-speech-beat','0');view.dataset.avatarViseme='rest';clearTimeout(gestureTimer);view.dataset.avatarGesture='neutral';
  }
@@ -232,7 +232,7 @@ function create(view,{session,loadSticker}){
    case 'conversation.item.input_audio_transcription.completed':{
     const text=String(event.transcript||'').trim();if(text){append('user',text);history.push({role:'user',text});saveConversation()}break
    }
-   case 'response.created':current.responding=true;current.output.muted=muted;current.spokenText='';current.speechCursor=0;current.lastCue='';current.lastCueAt=0;current.markers=[];current.lastMarker=-1;avatar.set('thinking','در حال پاسخ…');break;
+   case 'response.created':current.responding=true;current.spokenText='';current.speechCursor=0;current.lastCue='';current.lastCueAt=0;current.markers=[];current.lastMarker=-1;avatar.set('thinking','در حال پاسخ…');break;
    case 'response.output_audio_transcript.delta':
    case 'response.output_audio_transcript.done':{
     const key=String(event.item_id||event.response_id||'current');let row=current.outputRows.get(key);
@@ -260,7 +260,7 @@ function create(view,{session,loadSticker}){
    }
    case 'output_audio_buffer.started':current.responseAudio=true;avatar.set('speaking');break;
    case 'output_audio_buffer.stopped':current.responseAudio=false;current.mouth=0;current.beat=0;current.lastAmount=0;view.style.setProperty('--assistant-mouth-open','0');view.style.setProperty('--assistant-speech-beat','0');view.dataset.avatarViseme='rest';if(!current.responding)avatar.set('listening','منتظر صحبت شما هستم');break;
-   case 'error':avatar.set('warning',event.error?.message||'خطا در مکالمهٔ زنده.');break;
+   case 'error':avatar.set('warning',event.error?.message||'خطا در مکالمه زنده.');break;
   }
  }
  async function workspaceCall(current,item){
@@ -278,7 +278,7 @@ function create(view,{session,loadSticker}){
   const tick=()=>{
    if(live!==current)return;
    let amount=0;
-   if(current.analyser&&!current.output.muted){
+   if(current.analyser){
     const samples=current.samples;current.analyser.getByteTimeDomainData(samples);
     let power=0;for(const sample of samples){const diff=(sample-128)/128;power+=diff*diff}
     amount=Math.min(1,Math.max(0,(Math.sqrt(power/samples.length)-.008)*13));
@@ -312,16 +312,16 @@ function create(view,{session,loadSticker}){
  }
  async function startRealtime(){
   if(!valid()||active)return;
-  if(!window.RTCPeerConnection||!navigator.mediaDevices?.getUserMedia){avatar.set('warning','مکالمهٔ زنده در این مرورگر یا اتصال امن پشتیبانی نمی‌شود.');return}
+  if(!window.RTCPeerConnection||!navigator.mediaDevices?.getUserMedia){avatar.set('warning','مکالمه زنده در این مرورگر یا اتصال امن پشتیبانی نمی‌شود.');return}
   const identity=session(),run=++liveAttempt,current={userId:identity.userId,abort:new AbortController(),outputRows:new Map(),mouth:0,responding:false,responseAudio:false,spokenText:'',speechCursor:0,markers:[],lastMarker:-1};
-  live=current;active=true;mic.setAttribute('aria-pressed','true');mic.setAttribute('aria-label','پایان مکالمهٔ زنده');mic.title='پایان مکالمهٔ زنده';
-  liveButton.setAttribute('aria-pressed','true');liveButton.textContent='پایان مکالمه';avatar.set('thinking','در حال اتصال به مکالمهٔ زنده…');
+  live=current;active=true;mic.setAttribute('aria-pressed','true');mic.setAttribute('aria-label','پایان مکالمه زنده');mic.title='پایان مکالمه زنده';
+  liveButton.setAttribute('aria-pressed','true');liveButton.textContent='پایان مکالمه';avatar.set('thinking','در حال اتصال به مکالمه زنده…');
   const same=()=>live===current&&run===liveAttempt&&valid()&&session().userId===identity.userId;
   const playOutput=()=>{
-   if(!same()||!current.output||muted)return;
+   if(!same()||!current.output)return;
    void current.context?.resume().catch(()=>{});
    void current.output.play().then(()=>{if(same())playButton.hidden=true}).catch(()=>{
-    if(same()){playButton.hidden=false;avatar.set('warning','صدا آماده است؛ دکمهٔ «پخش صدا» را بزنید.')}
+    if(same()){playButton.hidden=false;avatar.set('warning','صدا آماده است؛ «پخش صدا» را بزنید.')}
    });
   };
   try{
@@ -332,7 +332,7 @@ function create(view,{session,loadSticker}){
    const tokenResponse=await fetch(`${SB_URL}/functions/v1/smart-assistant`,{method:'POST',headers:{apikey:SB_KEY,Authorization:`Bearer ${identity.token}`,'Content-Type':'application/json','x-conversation-id':conversation},body:JSON.stringify({action:'realtime_session'}),signal:current.abort.signal,cache:'no-store'});
    const token=await tokenResponse.json().catch(()=>({}));if(!tokenResponse.ok||!token.value)throw Error(token.error||'اتصال صوتی برقرار نشد.');
    if(!same())return;
-   current.peer=new RTCPeerConnection();current.output=document.createElement('audio');current.output.autoplay=true;current.output.playsInline=true;current.output.muted=muted;current.output.volume=1;view.append(current.output);
+   current.peer=new RTCPeerConnection();current.output=document.createElement('audio');current.output.autoplay=true;current.output.playsInline=true;current.output.volume=1;view.append(current.output);
    current.peer.ontrack=event=>{
     if(!same())return;
     const stream=event.streams[0]||new MediaStream([event.track]);current.output.srcObject=stream;
@@ -349,10 +349,10 @@ function create(view,{session,loadSticker}){
     current.channel.send(JSON.stringify({type:'response.create',response:{output_modalities:['audio'],instructions:'Begin this voice conversation with one warm, natural sentence in Persian. Say hello and invite the user to talk. Use standard Persian spelling. Then listen.'}}));
    }};
    current.channel.onmessage=event=>{try{liveEvent(current,JSON.parse(event.data))}catch(error){console.warn('Realtime event',error)}};
-   current.channel.onclose=()=>{if(same()){stopRealtime();avatar.set('warning','مکالمهٔ زنده پایان یافت.')}};
+   current.channel.onclose=()=>{if(same()){stopRealtime();avatar.set('warning','مکالمه زنده پایان یافت.')}};
    const offer=await current.peer.createOffer();await current.peer.setLocalDescription(offer);await waitForIce(current.peer,current.abort.signal);if(!same())return;
    const response=await fetch('https://api.openai.com/v1/realtime/calls',{method:'POST',headers:{Authorization:`Bearer ${token.value}`,'Content-Type':'application/sdp'},body:current.peer.localDescription?.sdp||offer.sdp,signal:current.abort.signal});
-   if(!response.ok)throw Error(response.status===429?'ظرفیت مکالمهٔ صوتی پر شده است؛ کمی بعد دوباره امتحان کنید.':'اتصال سرویس صوتی برقرار نشد ('+response.status+').');
+   if(!response.ok)throw Error(response.status===429?'ظرفیت مکالمه صوتی پر شده است؛ کمی بعد دوباره امتحان کنید.':'اتصال سرویس صوتی برقرار نشد ('+response.status+').');
    const sdp=await response.text();if(!same())return;
    await current.peer.setRemoteDescription({type:'answer',sdp});
    if(current.channel.readyState!=='open')current.connectTimer=setTimeout(()=>{
@@ -360,19 +360,17 @@ function create(view,{session,loadSticker}){
    },15000);
   }catch(error){
    if(!same()||error.name==='AbortError')return;
-   stopRealtime();avatar.set('warning',error.name==='NotAllowedError'?'اجازهٔ میکروفون داده نشد.':error instanceof TypeError?'اتصال به سرویس صوتی ممکن نشد؛ اینترنت یا دسترسی مرورگر را بررسی کنید.':error.message||'اتصال صوتی برقرار نشد.');
+   stopRealtime();avatar.set('warning',error.name==='NotAllowedError'?'اجازه میکروفون داده نشد.':error.name==='NotFoundError'||error.name==='DevicesNotFoundError'?'میکروفون پیدا نشد؛ ورودی صدای دستگاه را بررسی کنید.':error.name==='NotReadableError'?'میکروفون در برنامه دیگری در حال استفاده است.':error instanceof TypeError?'اتصال به سرویس صوتی ممکن نشد؛ اینترنت یا دسترسی مرورگر را بررسی کنید.':error.message||'اتصال صوتی برقرار نشد.');
   }
  }
  function toggleMic(){if(active){stopRealtime();avatar.set('idle')}else{stopSpeech();void startRealtime()}}
  function dispose(){saveConversation();generation++;answerAbort?.abort();answerAbort=null;busy=false;stopRealtime();stopSpeech();puppet?.stop();clearTimeout(blinkTimer);clearTimeout(blinkClose);clearTimeout(gestureTimer);view.dataset.avatarBlink='false';view.dataset.avatarGesture='neutral';view.style.setProperty('--avatar-gaze','0px');avatar.set('idle')}
  function activate(){
-  dispose();conversation=conversationId();history=[];messages.replaceChildren();append('assistant','سلام! دکمهٔ مکالمه را بزنید تا زنده با هم صحبت کنیم؛ فارسی یا انگلیسی. دربارهٔ هر موضوعی بپرسید، یا روی انجام وظایف و پروژه‌ها با هم کار کنیم.');
-  input.value='';muted=false;mute.setAttribute('aria-pressed','false');view.dataset.avatarMotion='active';avatar.set('idle');gesture('greet');void loadSticker();void puppet?.start();blinkLoop();
+  dispose();conversation=conversationId();history=[];messages.replaceChildren();append('assistant','سلام! روی «شروع مکالمه» بزنید تا با هم صحبت کنیم. می‌توانیم فارسی یا انگلیسی درباره هر موضوعی حرف بزنیم و برای انجام وظایف و پروژه‌ها هم راه‌حل پیدا کنیم.');
+  input.value='';view.dataset.avatarMotion='active';avatar.set('idle');gesture('greet');void loadSticker();void puppet?.start();blinkLoop();
  }
  mic.onclick=toggleMic;liveButton.onclick=toggleMic;playButton.onclick=()=>{if(live?.output){void live.context?.resume().catch(()=>{});void live.output.play().then(()=>{playButton.hidden=true;avatar.set('listening','صدای دستیار فعال شد.')}).catch(()=>avatar.set('warning','مرورگر پخش صدا را مسدود کرده است.'))}};
- mute.onclick=()=>{muted=!muted;mute.setAttribute('aria-pressed',String(muted));mute.textContent=muted?'باصدا':'بی‌صدا';mute.setAttribute('aria-label',muted?'فعال کردن صدای دستیار':'بی‌صدا کردن دستیار');if(live?.output){live.output.muted=muted;if(!muted){void live.output.play().catch(()=>{playButton.hidden=false})}}if(muted)stopSpeech()};
  historyButton.onclick=openConversationHistory;
- stop.onclick=()=>{if(live?.responding&&live.channel?.readyState==='open')live.channel.send(JSON.stringify({type:'response.cancel'}));stopSpeech();avatar.set(active?'listening':'idle')};
  $('[data-assistant-new]',view).onclick=activate;$('[data-personal-home]',view).onclick=()=>window.bamcoShowHome?.();
  $('.assistant-composer',view).onsubmit=event=>{event.preventDefault();const text=input.value;input.value='';void send(text)};
  input.onkeydown=event=>{if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();event.currentTarget.form.requestSubmit()}};

@@ -11,8 +11,6 @@
   #voiceAssistantView:not(.hidden){height:min(80vh,760px)!important;min-height:480px!important;padding:0!important}
   #voiceAssistantView .assistant-character-panel{min-height:440px}
   #voiceAssistantView .assistant-stage{display:grid;grid-template-columns:minmax(270px,480px) minmax(240px,1fr)}
-  #voiceAssistantView:not(.assistant-avatar-puppet-ready) .assistant-avatar-frame.speaking{opacity:1;transform:translateY(0) scale(1)}
-  #voiceAssistantView:not(.assistant-avatar-puppet-ready):not([data-avatar-state="speaking"]) .assistant-avatar-face.mouth-rest{opacity:1}
   .preview-controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;align-content:center;justify-content:center;padding:24px;background:#fff;border:1px solid #d1e1d8;border-radius:18px}
   .preview-controls button{border:0;border-radius:12px;background:#17694d;color:#fff;padding:12px 18px;cursor:pointer;font:inherit}
   .preview-controls button[aria-pressed="true"]{background:#dcefe4;color:#115737;box-shadow:inset 0 0 0 2px #17694d}
@@ -22,7 +20,7 @@
 </head>
 <body><main>
  <h1>پیش‌نمایش انیمیشن دستیار</h1>
- <p>حرکت سر، دست‌ها، چشم‌ها، ابرو و دهان را ببینید. در سامانه، حرکت دهان از صدای زندهٔ دستیار پیروی می‌کند؛ این صفحه فقط انیمیشن را شبیه‌سازی می‌کند.</p>
+ <p>حرکت پیوسته سر، دست‌ها، چشم‌ها، ابرو و دهان را ببینید. در سامانه، حرکت دهان از صدای زنده دستیار پیروی می‌کند؛ این صفحه فقط صدا را شبیه‌سازی می‌کند.</p>
  <section id="voiceAssistantView" data-avatar-state="idle" data-avatar-gesture="neutral" data-avatar-viseme="rest">
   <div class="assistant-stage">
    <aside class="assistant-character-panel"><div class="assistant-avatar-rig"><div class="assistant-avatar-scene" data-avatar-scene>
@@ -36,7 +34,10 @@
     <button type="button" data-state="idle" aria-pressed="true">آرام</button>
     <button type="button" data-state="listening" aria-pressed="false">گوش دادن</button>
     <button type="button" data-state="speaking" aria-pressed="false">حرف زدن</button>
-    <button type="button" data-gesture="emphasis">تأکید</button>
+    <button type="button" data-gesture="greet">سلام</button>
+    <button type="button" data-gesture="explain">توضیح</button>
+    <button type="button" data-gesture="count">شمردن</button>
+    <button type="button" data-gesture="question">پرسش</button>
     <p>برای دیدن حرکت هنگام حرف زدن، «حرف زدن» را بزنید. موج صدا در این پیش‌نمایش ساختگی است.</p>
    </div>
   </div>
@@ -48,14 +49,16 @@
   view.dataset.avatarState=button.dataset.state;
   document.querySelectorAll('[data-state]').forEach(item=>item.setAttribute('aria-pressed',String(item===button)));
  });
- document.querySelector('[data-gesture]').onclick=()=>{view.dataset.avatarGesture='emphasis';setTimeout(()=>view.dataset.avatarGesture='neutral',1700)};
+ document.querySelectorAll('[data-gesture]').forEach(button=>button.onclick=()=>{view.dataset.avatarGesture=button.dataset.gesture;setTimeout(()=>view.dataset.avatarGesture='neutral',1200)});
  let start=performance.now();
  function demo(now){
   const speaking=view.dataset.avatarState==='speaking';
   const t=(now-start)/1000,syllable=Math.max(0,Math.sin(t*12)+.35*Math.sin(t*19));
   const level=speaking?Math.min(1,syllable*.65):0;
   view.style.setProperty('--assistant-mouth-open',String(level));
-  view.dataset.avatarViseme=level<.1?'rest':Math.sin(t*4)>0?'aa':'o';
+  view.style.setProperty('--assistant-speech-beat',String(level>.4?level*.6:0));
+  view.dataset.avatarViseme=level<.1?'rest':['aa','o','i','mbp','e'][Math.floor(t*8)%5];
+  view.dataset.avatarBlink=now%3900<170?'true':'false';
   requestAnimationFrame(demo);
  }requestAnimationFrame(demo);
  </script>

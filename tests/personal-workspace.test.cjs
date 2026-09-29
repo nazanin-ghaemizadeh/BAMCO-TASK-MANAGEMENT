@@ -42,15 +42,18 @@ test('notes are pinned, editable and can move between active and inactive lists'
  assert.deepEqual(f.errors,[]);
 });
 
-test('smart assistant rigs the exact status sticker and starts a fresh conversation on each entry',async t=>{
+test('smart assistant keeps one animated character, simple voice controls and a fresh conversation',async t=>{
  const f=await fixture();t.after(()=>f.dispose());
  await f.open('voiceAssistant');
  const view=f.d.querySelector('#voiceAssistantView');
- assert(view.querySelector('.assistant-avatar-rig[role="img"] .assistant-avatar-frame.waiting-grounded[src="assets/images/assistant-female-waiting-grounded.png"]'));
- for(const state of ['waiting-tap','listening','thinking','speaking'])assert(view.querySelector('.assistant-avatar-frame.'+state),state+' frame');
+ assert(view.querySelector('.assistant-avatar-rig[role="img"] .assistant-avatar-frame.speaking[src="assets/images/assistant-female-speaking.png"]'));
+ assert.equal(view.querySelectorAll('.assistant-avatar-frame').length,1,'the pose must not jump between still images');
+ assert.equal(view.querySelector('[data-assistant-mute]'),null);
+ assert.equal(view.querySelector('[data-assistant-stop]'),null);
+ assert.doesNotMatch(view.querySelector('.assistant-messages').textContent,/هٔ/);
  assert.equal(view.querySelector('.assistant-state-sticker'),null,'the original fixed sticker is no longer the rendered avatar');
  const css=read('assets/css/personal-workspace.css');
- assert.match(css,/assistant-wait-tap/);assert.match(css,/assistant-speech-beat/);assert.match(css,/assistant-avatar-puppet-ready\[data-avatar-state="speaking"\] \.assistant-avatar-canvas\{opacity:1\}/);
+ assert.match(css,/assistant-fallback-presence/);assert.match(read('assets/js/assistant-runtime.js'),/assistant-speech-beat/);assert.match(css,/assistant-avatar-puppet-ready \.assistant-avatar-canvas\{opacity:1\}/);
  assert.equal(view.querySelector('.assistant-prompts'),null);
  assert.equal(createHash('sha256').update(fs.readFileSync('assets/images/assistant-status1-female.png')).digest('hex'),'bb9d3ac1b2096138ac1e0cd8ec69e409c741ca6f28c3fee9f1a6d53fb7ffccc0');
  assert.match(view.querySelector('.assistant-messages').textContent,/سلام/);
@@ -100,8 +103,8 @@ test('live voice streams over WebRTC, resolves a scoped task tool and releases m
  assert.equal(audibleAnalysis,true,'the audio analyzer is connected without duplicating sound');
  assert(Number(view.style.getPropertyValue('--assistant-mouth-open'))>.3);
  channel.onmessage({data:JSON.stringify({type:'conversation.item.input_audio_transcription.completed',transcript:'چطور گزارش کوره را انجام بدهم؟'})});
- channel.onmessage({data:JSON.stringify({type:'response.output_audio_transcript.done',item_id:'reply-1',transcript:'اول داده‌ها را مرتب كنيد؛ مرحلة بعدی را بگوييد.'})});
- assert.match(view.querySelector('.assistant-messages').textContent,/اول داده‌ها را مرتب کنید؛ مرحله بعدی را بگویید/);
+ channel.onmessage({data:JSON.stringify({type:'response.output_audio_transcript.done',item_id:'reply-1',transcript:'اول داده‌ها را مرتب كنيد؛ مرحلة بعدی را بگوييد. دربارهٔ برنامه هم بپرسید.'})});
+ assert.match(view.querySelector('.assistant-messages').textContent,/اول داده‌ها را مرتب کنید؛ مرحله بعدی را بگویید. درباره برنامه هم بپرسید/);
  await until(()=>view.dataset.avatarGesture==='count');
  channel.onmessage({data:JSON.stringify({type:'response.done',response:{output:[{type:'function_call',name:'lookup_workspace',call_id:'call-1',arguments:JSON.stringify({topic:'tasks',query:'گزارش کوره'})}]}})});
  await until(()=>sent.some(event=>event.item?.type==='function_call_output'));

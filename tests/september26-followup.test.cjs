@@ -38,8 +38,8 @@ test('assistant uses a valid task view column list and the exact female status a
  const source=fs.readFileSync('supabase/functions/smart-assistant/index.ts','utf8');
  assert(!source.includes('archived,owner_name'));assert(source.includes(".from('task_status_view').select('id,legacy_id,title,description,status,status_kind,priority,due_date,start_date,due_state,owner_id,archived')"));
  const f=await fixture();t.after(()=>f.dispose());await f.open('voiceAssistant');
- const view=f.d.querySelector('#voiceAssistantView');assert(view.querySelector('img.assistant-avatar-frame.waiting-grounded[src="assets/images/assistant-female-waiting-grounded.png"]'));
- assert(view.querySelector('img.assistant-avatar-frame.waiting-tap[src="assets/images/assistant-female-waiting.png"]'));
+ const view=f.d.querySelector('#voiceAssistantView');assert(view.querySelector('img.assistant-avatar-frame.speaking[src="assets/images/assistant-female-speaking.png"]'));
+ assert.equal(view.querySelectorAll('img.assistant-avatar-frame').length,1);
  assert.equal(view.querySelector('.assistant-prompts'),null);assert.equal(view.querySelector('.assistant-task-glance'),null);
  assert(view.querySelector('.assistant-mic'));assert.deepEqual(f.errors,[]);
 });
@@ -50,8 +50,18 @@ test('a denied microphone permission does not create a billable live session',as
  Object.defineProperty(f.w.navigator,'mediaDevices',{configurable:true,value:{getUserMedia:async()=>{const error=new Error('denied');error.name='NotAllowedError';throw error}}});
  await f.open('voiceAssistant');const button=f.d.querySelector('.assistant-mic');button.click();
  await until(()=>button.getAttribute('aria-pressed')==='false');
- assert.match(f.d.querySelector('.assistant-status').textContent,/اجازهٔ میکروفون/);
+ assert.match(f.d.querySelector('.assistant-status').textContent,/اجازه میکروفون/);
  assert.equal(f.calls.some(call=>call.endpoint==='smart-assistant'&&call.body?.action==='realtime_session'),false);
+ assert.deepEqual(f.errors,[]);
+});
+
+test('a missing microphone shows a Persian device message before opening a live session',async t=>{
+ const f=await fixture();t.after(()=>f.dispose());
+ f.w.RTCPeerConnection=class{};
+ Object.defineProperty(f.w.navigator,'mediaDevices',{configurable:true,value:{getUserMedia:async()=>{const error=new Error('Requested device not found');error.name='NotFoundError';throw error}}});
+ await f.open('voiceAssistant');f.d.querySelector('.assistant-mic').click();
+ await until(()=>f.d.querySelector('.assistant-status').textContent.includes('میکروفون پیدا نشد'));
+ assert.equal(f.calls.some(call=>call.body?.action==='realtime_session'),false);
  assert.deepEqual(f.errors,[]);
 });
 

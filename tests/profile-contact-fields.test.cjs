@@ -43,8 +43,8 @@ test('personal workspace keeps one command row and defaults to active notes',()=
  assert.match(source,/inactiveMode=false;selectedNote='';void loadNotes\(\)/);
  assert.doesNotMatch(source,/data-note-inactive/);
  assert.match(css,/flex-wrap:wrap/);
- assert.match(css,/assistant-avatar-frame\.waiting-grounded/);
- assert.match(css,/assistant-avatar-frame\.waiting-tap/);
+ assert.match(source,/assistant-avatar-frame speaking/);
+ assert.match(css,/assistant-fallback-presence/);
 });
 
 test('task discussion recipients and registered-task edits use the same server authorization boundary',()=>{
