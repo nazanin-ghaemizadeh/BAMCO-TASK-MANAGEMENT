@@ -31,6 +31,22 @@ test('the assistant puppet renders a continuous character and follows speaking s
  dom.window.close();
 });
 
+test('the assistant also animates with a 2D canvas when WebGL is unavailable',async()=>{
+ const dom=new JSDOM('<section data-avatar-state="idle"><div data-avatar-scene><img class="assistant-avatar-frame speaking"><img class="assistant-avatar-face mouth-rest"><img class="assistant-avatar-face eyes-blink"><img class="assistant-avatar-face brows-emphasis"></div></section>',{runScripts:'outside-only'});
+ const {window:w}=dom,view=w.document.querySelector('section');let draws=0,scheduled=null;
+ w.HTMLImageElement.prototype.decode=()=>Promise.resolve();
+ const context={drawImage(){draws++},clearRect(){},save(){},restore(){},translate(){},scale(){},fillRect(){},setTransform(){},beginPath(){},moveTo(){},lineTo(){},closePath(){},clip(){},createRadialGradient:()=>({addColorStop(){}})};
+ w.HTMLCanvasElement.prototype.getContext=type=>type==='webgl'?null:context;
+ w.requestAnimationFrame=callback=>{scheduled=callback;return 1};w.cancelAnimationFrame=()=>{scheduled=null};w.matchMedia=()=>({matches:false});
+ w.eval(fs.readFileSync('assets/js/assistant-puppet.js','utf8'));
+ const puppet=w.BamcoAssistantPuppet.create(view);await puppet.start();
+ assert(puppet.ready);assert(view.classList.contains('assistant-avatar-puppet-ready'));
+ assert(draws>600,'idle animation renders the whole 2D mesh');
+ const initial=draws;view.dataset.avatarState='speaking';view.dataset.avatarViseme='aa';view.style.setProperty('--assistant-mouth-open','.8');
+ scheduled(2000);assert(draws>initial,'speech also renders a moving mesh');
+ puppet.stop();assert.equal(scheduled,null);dom.window.close();
+});
+
 test('the same welcoming artwork remains visible across states when WebGL is unavailable',()=>{
  const css=fs.readFileSync('assets/css/personal-workspace.css','utf8');
  const dom=new JSDOM(`<style>${css}</style><section id="voiceAssistantView" data-avatar-state="idle"><div class="assistant-avatar-scene"><img class="assistant-avatar-frame speaking"><img class="assistant-avatar-face mouth-rest"></div></section>`);
