@@ -24,6 +24,7 @@ function create(view,{session,loadSticker}){
  const conversationId=()=>crypto.randomUUID?.()||String(Date.now());
  let conversation=conversationId(),history=[],generation=0,active=false,muted=false,busy=false,live=null,liveAttempt=0;
  let audio=null,audioUrl='',audioContext=null,audioFrame=0,answerAbort=null,speechAbort=null;
+ const speechMotion={};
  let blinkTimer=0,blinkClose=0,gestureTimer=0,currentSpoken='',lastSpoken='',lastSpokenAt=0;
  const visible=()=>!view.classList.contains('hidden');
  const valid=()=>visible()&&!!session().token&&session().userId;
@@ -76,15 +77,52 @@ function create(view,{session,loadSticker}){
   clearTimeout(gestureTimer);view.dataset.avatarGesture=kind;
   gestureTimer=setTimeout(()=>{view.dataset.avatarGesture='neutral'},1200);
  }
- function visemeFor(text,seconds,duration,amplitude){
+ function visemeAt(text,index,amplitude,acoustic=''){
   if(amplitude<.05)return'rest';
-  const phrase=String(text||'').replace(/\s+/g,'');
-  const position=Math.max(0,Math.min(phrase.length-1,Math.floor((seconds/Math.max(duration,.1))*phrase.length)));
-  const letter=phrase[position]||'';
-  if(/[آا]/.test(letter))return'aa';if(/[یي]/.test(letter))return amplitude>.22?'i':'e';
-  if(/[او]/.test(letter))return letter==='و'?'u':'o';if(/[بمپ]/.test(letter))return'mbp';
-  if(/[فڤ]/.test(letter))return'fv';if(letter==='ل')return'l';if(/[سزشصضثذ]/.test(letter))return'sz';
-  return amplitude>.23?'aa':amplitude>.12?'e':'i';
+  const phrase=persianText(text).toLowerCase(),letter=phrase[index]||'',pair=phrase.slice(index,index+2);
+  if(/[بمپbpm]/.test(letter))return'mbp';
+  if(/[فڤfv]/.test(letter))return'fv';
+  if(/^(sh|ch|th)/.test(pair)||/[سزشصضثذsz]/.test(letter))return'sz';
+  if(/[آاa]/.test(letter))return'aa';
+  if(/[یيie]/.test(letter))return'i';
+  if(/[وu]/.test(letter)||/^(oo|ou)/.test(pair))return'u';
+  if(/[o]/.test(letter))return'o';
+  if(letter==='ل'||letter==='l')return'l';
+  return acoustic|| (amplitude>.38?'aa':amplitude>.16?'e':'i');
+ }
+ function visemeFor(text,seconds,duration,amplitude){
+  const phrase=String(text||'');
+  const progress=Number.isFinite(duration)&&duration>0?seconds/duration:seconds*10/Math.max(phrase.length,1);
+  const position=Math.max(0,Math.min(phrase.length-1,Math.floor(progress*phrase.length)));
+  return visemeAt(phrase,position,amplitude);
+ }
+ function gestureForToken(token){
+  const word=persianText(token).toLowerCase();
+  if(/^(سلام|درود|hello|hi)$/.test(word))return'greet';
+  if(/^(اول|نخست|دوم|سوم|بعد|گام|مرحله|first|second|third|next|step)$/.test(word))return'count';
+  if(/^(مهم|نکته|ضروری|اولویت|فوری|دقت|important|priority|critical)$/.test(word))return'emphasis';
+  if(/^(بله|حتما|حتماً|درست|آفرین|yes|sure|exactly|right)$/.test(word))return'acknowledge';
+  if(/^(چون|زیرا|مثلا|مثلاً|because|example|therefore)$/.test(word))return'explain';
+  if(/^[؟?]$/.test(word))return'question';
+  return'';
+ }
+ function speechMarkers(text){
+  return [...String(text||'').matchAll(/[\p{L}\p{N}]+|[؟?]/gu)].map(match=>({index:match.index,kind:gestureForToken(match[0])})).filter(item=>item.kind);
+ }
+ function speechBeat(owner,amount){
+  const rise=amount-(owner.lastAmount||0);
+  owner.beat=Math.max((owner.beat||0)*.83,amount>.12&&rise>.055?Math.min(1,amount*1.15):0);
+  owner.lastAmount=amount;
+  view.style.setProperty('--assistant-speech-beat',String(owner.beat));
+ }
+ function timedGesture(owner,text,index){
+  if(!owner.markers)owner.markers=speechMarkers(text);
+  const now=performance.now();
+  for(const marker of owner.markers){
+   if(marker.index<=(owner.lastMarker??-1)||marker.index>index)continue;
+   owner.lastMarker=marker.index;
+   if(now-(owner.lastGestureAt??-Infinity)>850){gesture(marker.kind);owner.lastGestureAt=now}
+  }
  }
  function append(role,text,options={}){
   if(role==='assistant')text=persianText(text);
@@ -107,14 +145,15 @@ function create(view,{session,loadSticker}){
   speechAbort?.abort();speechAbort=null;
   if(audio){audio.onended=null;audio.onerror=null;audio.ontimeupdate=null;audio.pause();audio.removeAttribute('src');try{audio.load()}catch{}audio=null}
   if(audioUrl){URL.revokeObjectURL(audioUrl);audioUrl=''}
-  if(audioFrame)cancelAnimationFrame(audioFrame);audioFrame=0;level(0);view.style.setProperty('--assistant-mouth-open','0');if(currentSpoken){lastSpoken=currentSpoken;lastSpokenAt=Date.now()}currentSpoken='';view.dataset.avatarViseme='rest';clearTimeout(gestureTimer);view.dataset.avatarGesture='neutral';
+  if(audioFrame)cancelAnimationFrame(audioFrame);audioFrame=0;level(0);view.style.setProperty('--assistant-mouth-open','0');view.style.setProperty('--assistant-speech-beat','0');Object.keys(speechMotion).forEach(key=>delete speechMotion[key]);if(currentSpoken){lastSpoken=currentSpoken;lastSpokenAt=Date.now()}currentSpoken='';view.dataset.avatarViseme='rest';clearTimeout(gestureTimer);view.dataset.avatarGesture='neutral';
   if(audioContext){void audioContext.close().catch(()=>{});audioContext=null}
   try{speechSynthesis.cancel()}catch{}
   if(avatar.state==='speaking')avatar.set(active?'listening':'idle');
  }
  function analyze(analyser,spoken){
   const samples=new Uint8Array(analyser.fftSize);
-  const tick=()=>{if(!audio||audio.paused)return;analyser.getByteTimeDomainData(samples);let power=0;for(const sample of samples){const diff=(sample-128)/128;power+=diff*diff}const amplitude=Math.min(1,Math.sqrt(power/samples.length)*6);level(amplitude);view.style.setProperty('--assistant-mouth-open',String(amplitude));view.dataset.avatarViseme=visemeFor(spoken,audio.currentTime,audio.duration,amplitude);audioFrame=requestAnimationFrame(tick)};
+  speechMotion.markers=speechMarkers(spoken);
+  const tick=()=>{if(!audio||audio.paused)return;analyser.getByteTimeDomainData(samples);let power=0;for(const sample of samples){const diff=(sample-128)/128;power+=diff*diff}const amplitude=Math.min(1,Math.sqrt(power/samples.length)*6);level(amplitude);speechBeat(speechMotion,amplitude);view.style.setProperty('--assistant-mouth-open',String(amplitude));const duration=audio.duration,index=Number.isFinite(duration)&&duration>0?Math.floor(audio.currentTime/duration*spoken.length):Math.floor(audio.currentTime*10);view.dataset.avatarViseme=visemeFor(spoken,audio.currentTime,duration,amplitude);if(amplitude>.1)timedGesture(speechMotion,spoken,index);audioFrame=requestAnimationFrame(tick)};
   tick();
  }
  function afterSpeech(){
@@ -124,7 +163,7 @@ function create(view,{session,loadSticker}){
   if(!('speechSynthesis'in window)||!window.SpeechSynthesisUtterance){avatar.set(active?'listening':'idle');return}
   const utterance=new SpeechSynthesisUtterance(text);utterance.lang=/[\u0600-\u06ff]/.test(text)?'fa-IR':'en-US';utterance.rate=.96;currentSpoken=text;
   const voice=speechSynthesis.getVoices().find(item=>item.lang?.toLowerCase().startsWith(utterance.lang.slice(0,2).toLowerCase()));if(voice)utterance.voice=voice;
-  utterance.onstart=()=>{avatar.set('speaking');gesture(gestureKind)};utterance.onboundary=event=>{if(avatar.state==='speaking'){view.dataset.avatarViseme=visemeFor(text,event.charIndex,Math.max(text.length,1),.2);level(.3)}};utterance.onend=afterSpeech;utterance.onerror=afterSpeech;
+  speechMotion.markers=speechMarkers(text);utterance.onstart=()=>{avatar.set('speaking');gesture(gestureKind)};utterance.onboundary=event=>{if(avatar.state==='speaking'){view.dataset.avatarViseme=visemeFor(text,event.charIndex,Math.max(text.length,1),.2);view.style.setProperty('--assistant-mouth-open','.3');speechBeat(speechMotion,.3);level(.3);timedGesture(speechMotion,text,event.charIndex)}};utterance.onend=afterSpeech;utterance.onerror=afterSpeech;
   try{speechSynthesis.speak(utterance)}catch{afterSpeech()}
  }
  async function playSpeech(text,issued,token,turn,gestureKind){
@@ -138,7 +177,7 @@ function create(view,{session,loadSticker}){
    const AudioContext=window.AudioContext||window.webkitAudioContext;
    let analyser=null;
    if(AudioContext){audioContext=new AudioContext();const source=audioContext.createMediaElementSource(audio);analyser=audioContext.createAnalyser();analyser.fftSize=512;source.connect(analyser);analyser.connect(audioContext.destination);void audioContext.resume().catch(()=>{})}
-   await audio.play();if(turn===generation){avatar.set('speaking');gesture(gestureKind);if(analyser)analyze(analyser,text);else audio.ontimeupdate=()=>{view.dataset.avatarViseme=visemeFor(text,audio.currentTime,audio.duration,.18)}}
+   await audio.play();if(turn===generation){avatar.set('speaking');gesture(gestureKind);if(analyser)analyze(analyser,text);else{speechMotion.markers=speechMarkers(text);audio.ontimeupdate=()=>{const progress=Number.isFinite(audio.duration)&&audio.duration>0?audio.currentTime/audio.duration:0;const index=Math.floor(progress*text.length);view.dataset.avatarViseme=visemeFor(text,audio.currentTime,audio.duration,.18);view.style.setProperty('--assistant-mouth-open','.18');timedGesture(speechMotion,text,index)}}}
   }catch(error){
    if(error.name==='AbortError')return;
    stopSpeech();if(turn===generation&&!muted&&valid())browserSpeech(text,gestureKind);
@@ -183,23 +222,24 @@ function create(view,{session,loadSticker}){
   if(current?.context)void current.context.close().catch(()=>{});
   mic.setAttribute('aria-pressed','false');mic.setAttribute('aria-label','شروع مکالمهٔ زنده');mic.title='شروع مکالمهٔ زنده';
   liveButton.setAttribute('aria-pressed','false');liveButton.textContent='شروع مکالمه';playButton.hidden=true;level(0);
-  view.classList.remove('assistant-mouth-fallback');view.style.setProperty('--assistant-mouth-open','0');view.dataset.avatarViseme='rest';
+  view.classList.remove('assistant-mouth-fallback');view.style.setProperty('--assistant-mouth-open','0');view.style.setProperty('--assistant-speech-beat','0');view.dataset.avatarViseme='rest';clearTimeout(gestureTimer);view.dataset.avatarGesture='neutral';
  }
  function liveEvent(current,event){
   if(live!==current||!valid()||session().userId!==current.userId)return;
   switch(event.type){
-   case 'input_audio_buffer.speech_started':current.responseAudio=false;avatar.set('listening','دارم می‌شنوم…');break;
+   case 'input_audio_buffer.speech_started':current.responseAudio=false;current.mouth=0;current.beat=0;current.lastAmount=0;view.style.setProperty('--assistant-mouth-open','0');view.style.setProperty('--assistant-speech-beat','0');avatar.set('listening','دارم می‌شنوم…');break;
    case 'input_audio_buffer.speech_stopped':avatar.set('thinking','دارم فکر می‌کنم…');break;
    case 'conversation.item.input_audio_transcription.completed':{
     const text=String(event.transcript||'').trim();if(text){append('user',text);history.push({role:'user',text});saveConversation()}break
    }
-   case 'response.created':current.responding=true;current.output.muted=muted;avatar.set('thinking','در حال پاسخ…');break;
+   case 'response.created':current.responding=true;current.output.muted=muted;current.spokenText='';current.speechCursor=0;current.lastCue='';current.lastCueAt=0;current.markers=[];current.lastMarker=-1;avatar.set('thinking','در حال پاسخ…');break;
    case 'response.output_audio_transcript.delta':
    case 'response.output_audio_transcript.done':{
     const key=String(event.item_id||event.response_id||'current');let row=current.outputRows.get(key);
     if(!row){row=append('assistant','');current.outputRows.set(key,row)}
     const paragraph=$('p',row),previous=paragraph.textContent||'';
     paragraph.textContent=event.type.endsWith('.done')?persianText(event.transcript||previous):previous+persianText(event.delta||'');
+    current.spokenText=paragraph.textContent;current.markers=speechMarkers(current.spokenText);
     if(event.type.endsWith('.done')&&!row.dataset.saved){row.dataset.saved='true';const text=paragraph.textContent.trim();if(text){history.push({role:'assistant',text});history=history.slice(-24);saveConversation()}}
     messages.scrollTop=messages.scrollHeight;current.responseAudio=true;avatar.set('speaking');
     if(event.type.endsWith('.done')&&/[؟?!]|\d|[۰-۹]|important|مهم|اولویت/i.test(paragraph.textContent))gesture('emphasis');
@@ -219,7 +259,7 @@ function create(view,{session,loadSticker}){
     break
    }
    case 'output_audio_buffer.started':current.responseAudio=true;avatar.set('speaking');break;
-   case 'output_audio_buffer.stopped':current.responseAudio=false;if(!current.responding)avatar.set('listening','منتظر صحبت شما هستم');break;
+   case 'output_audio_buffer.stopped':current.responseAudio=false;current.mouth=0;current.beat=0;current.lastAmount=0;view.style.setProperty('--assistant-mouth-open','0');view.style.setProperty('--assistant-speech-beat','0');view.dataset.avatarViseme='rest';if(!current.responding)avatar.set('listening','منتظر صحبت شما هستم');break;
    case 'error':avatar.set('warning',event.error?.message||'خطا در مکالمهٔ زنده.');break;
   }
  }
@@ -245,14 +285,25 @@ function create(view,{session,loadSticker}){
    }
    current.mouth=current.mouth*.62+amount*.38;
    level(current.mouth);
+   speechBeat(current,current.mouth);
    view.style.setProperty('--assistant-mouth-open',String(current.mouth));
    if(current.mouth>.08){
+    let acoustic='e';
     if(typeof current.analyser.getByteFrequencyData==='function'){
      current.analyser.getByteFrequencyData(current.spectrum);
      const energy=(start,end)=>{let total=0;for(let i=start;i<end;i++)total+=current.spectrum[i];return total/(end-start)};
      const low=energy(2,12),mid=energy(12,42),high=energy(42,110);
-     view.dataset.avatarViseme=low>mid*1.3?'o':high>mid*.8?'i':current.mouth>.48?'aa':'e';
-    }else view.dataset.avatarViseme=current.mouth>.48?'aa':'e';
+     acoustic=low>mid*1.3?'o':high>mid*.8?'i':current.mouth>.48?'aa':'e';
+    }else acoustic=current.mouth>.48?'aa':'e';
+    const now=performance.now();
+    if(current.mouth>.12&&now-(current.lastCueAt??-Infinity)>105){
+     const text=current.spokenText||'';let cursor=current.speechCursor||0;
+     while(cursor<text.length&&!/[\p{L}\p{N}]/u.test(text[cursor]))cursor++;
+     if(cursor>(current.speechCursor||0))timedGesture(current,text,cursor);
+     if(cursor<text.length){current.lastCue=visemeAt(text,cursor,current.mouth,acoustic);current.speechCursor=cursor+1;current.lastCueAt=now;timedGesture(current,text,cursor)}
+     else current.lastCue='';
+    }
+    view.dataset.avatarViseme=current.lastCue&&now-(current.lastCueAt||0)<230?current.lastCue:acoustic;
    }else view.dataset.avatarViseme='rest';
    if(current.mouth>.08){current.responseAudio=true;if(avatar.state!=='speaking')avatar.set('speaking')}
    else if(current.responseAudio&&!current.responding){current.responseAudio=false;avatar.set('listening','منتظر صحبت شما هستم')}
@@ -262,7 +313,7 @@ function create(view,{session,loadSticker}){
  async function startRealtime(){
   if(!valid()||active)return;
   if(!window.RTCPeerConnection||!navigator.mediaDevices?.getUserMedia){avatar.set('warning','مکالمهٔ زنده در این مرورگر یا اتصال امن پشتیبانی نمی‌شود.');return}
-  const identity=session(),run=++liveAttempt,current={userId:identity.userId,abort:new AbortController(),outputRows:new Map(),mouth:0,responding:false,responseAudio:false};
+  const identity=session(),run=++liveAttempt,current={userId:identity.userId,abort:new AbortController(),outputRows:new Map(),mouth:0,responding:false,responseAudio:false,spokenText:'',speechCursor:0,markers:[],lastMarker:-1};
   live=current;active=true;mic.setAttribute('aria-pressed','true');mic.setAttribute('aria-label','پایان مکالمهٔ زنده');mic.title='پایان مکالمهٔ زنده';
   liveButton.setAttribute('aria-pressed','true');liveButton.textContent='پایان مکالمه';avatar.set('thinking','در حال اتصال به مکالمهٔ زنده…');
   const same=()=>live===current&&run===liveAttempt&&valid()&&session().userId===identity.userId;

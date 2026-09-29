@@ -50,7 +50,7 @@ test('smart assistant rigs the exact status sticker and starts a fresh conversat
  for(const state of ['waiting-tap','listening','thinking','speaking'])assert(view.querySelector('.assistant-avatar-frame.'+state),state+' frame');
  assert.equal(view.querySelector('.assistant-state-sticker'),null,'the original fixed sticker is no longer the rendered avatar');
  const css=read('assets/css/personal-workspace.css');
- assert.match(css,/assistant-wait-tap/);assert.match(css,/assistant-speaking/);assert.match(css,/assistant-reduced-idle/);
+ assert.match(css,/assistant-wait-tap/);assert.match(css,/assistant-speech-beat/);assert.match(css,/assistant-avatar-puppet-ready\[data-avatar-state="speaking"\] \.assistant-avatar-canvas\{opacity:1\}/);
  assert.equal(view.querySelector('.assistant-prompts'),null);
  assert.equal(createHash('sha256').update(fs.readFileSync('assets/images/assistant-status1-female.png')).digest('hex'),'bb9d3ac1b2096138ac1e0cd8ec69e409c741ca6f28c3fee9f1a6d53fb7ffccc0');
  assert.match(view.querySelector('.assistant-messages').textContent,/سلام/);
@@ -77,8 +77,8 @@ test('live voice streams over WebRTC, resolves a scoped task tool and releases m
  const sent=[],track={stopped:false,stop(){this.stopped=true}},stream={getTracks:()=>[track],getAudioTracks:()=>[track]};
  Object.defineProperty(f.w.navigator,'mediaDevices',{configurable:true,value:{getUserMedia:async()=>stream}});
  f.w.HTMLMediaElement.prototype.play=function(){return Promise.resolve()};f.w.HTMLMediaElement.prototype.pause=function(){};
- let audibleAnalysis=false;
- f.w.AudioContext=class{constructor(){this.destination={}}createMediaStreamSource(){return{connect(){}}}createAnalyser(){return{fftSize:512,frequencyBinCount:256,getByteTimeDomainData(samples){samples.fill(151)},getByteFrequencyData(samples){samples.fill(20)},connect(node){assert.equal(node.gain.value,0)}}}createGain(){return{gain:{value:1},connect:destination=>{assert.equal(destination,this.destination);audibleAnalysis=true}}}resume(){return Promise.resolve()}close(){return Promise.resolve()}};
+ let audibleAnalysis=false,sampleLevel=151;
+ f.w.AudioContext=class{constructor(){this.destination={}}createMediaStreamSource(){return{connect(){}}}createAnalyser(){return{fftSize:512,frequencyBinCount:256,getByteTimeDomainData(samples){samples.fill(sampleLevel)},getByteFrequencyData(samples){samples.fill(20)},connect(node){assert.equal(node.gain.value,0)}}}createGain(){return{gain:{value:1},connect:destination=>{assert.equal(destination,this.destination);audibleAnalysis=true}}}resume(){return Promise.resolve()}close(){return Promise.resolve()}};
  let peer,channel;
  f.w.RTCPeerConnection=class{
   constructor(){peer=this;this.connectionState='connected';this.iceGatheringState='gathering'}
@@ -102,10 +102,13 @@ test('live voice streams over WebRTC, resolves a scoped task tool and releases m
  channel.onmessage({data:JSON.stringify({type:'conversation.item.input_audio_transcription.completed',transcript:'چطور گزارش کوره را انجام بدهم؟'})});
  channel.onmessage({data:JSON.stringify({type:'response.output_audio_transcript.done',item_id:'reply-1',transcript:'اول داده‌ها را مرتب كنيد؛ مرحلة بعدی را بگوييد.'})});
  assert.match(view.querySelector('.assistant-messages').textContent,/اول داده‌ها را مرتب کنید؛ مرحله بعدی را بگویید/);
+ await until(()=>view.dataset.avatarGesture==='count');
  channel.onmessage({data:JSON.stringify({type:'response.done',response:{output:[{type:'function_call',name:'lookup_workspace',call_id:'call-1',arguments:JSON.stringify({topic:'tasks',query:'گزارش کوره'})}]}})});
  await until(()=>sent.some(event=>event.item?.type==='function_call_output'));
  assert.match(sent.find(event=>event.item?.type==='function_call_output').item.output,/تحلیل داده‌ها/);
  assert(sent.some(event=>event.type==='response.create'));
+ sampleLevel=128;channel.onmessage({data:JSON.stringify({type:'output_audio_buffer.stopped'})});await until(()=>Number(view.style.getPropertyValue('--assistant-mouth-open'))<.08);
+ assert.equal(view.dataset.avatarViseme,'rest','silence closes the mouth');
  await f.open('kanban');assert.equal(view.dataset.avatarState,'idle');assert.equal(track.stopped,true);assert.equal(peer.connectionState,'closed');
  assert.equal(f.calls.some(call=>call.body instanceof FormData),false);assert.deepEqual(f.errors,[]);
 });
