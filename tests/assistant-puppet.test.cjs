@@ -24,3 +24,14 @@ test('the assistant puppet renders a continuous character and follows speaking s
  puppet.stop();assert.equal(scheduled,null);
  dom.window.close();
 });
+
+test('avatar artwork remains visible by state when WebGL is unavailable',()=>{
+ const css=fs.readFileSync('assets/css/personal-workspace.css','utf8');
+ const dom=new JSDOM(`<style>${css}</style><section id="voiceAssistantView" data-avatar-state="idle"><div class="assistant-avatar-scene"><img class="assistant-avatar-frame listening"><img class="assistant-avatar-frame thinking"><img class="assistant-avatar-frame speaking"></div></section>`);
+ const {document:d}=dom.window,view=d.querySelector('#voiceAssistantView');
+ for(const state of ['listening','thinking','speaking']){
+  view.dataset.avatarState=state;
+  assert.equal(dom.window.getComputedStyle(view.querySelector(`.assistant-avatar-frame.${state}`)).opacity,'1',`${state} artwork hidden`);
+ }
+ dom.window.close();
+});
