@@ -66,7 +66,10 @@ html body #appView [data-feature-access-control="local"],html body #appView .veh
 #voiceAssistantView .assistant-chat-head button{flex:none;min-height:34px;padding:4px 10px;white-space:nowrap;font:inherit;font-size:14px}
 #voiceAssistantView .assistant-chat-head .assistant-live-button{border:1px solid #17684c;border-radius:9px;background:#17684c;color:#fff;cursor:pointer}
 #voiceAssistantView .assistant-chat-head .assistant-live-button[aria-pressed="true"]{background:#fff;color:#17684c}
+#voiceAssistantView .assistant-chat-head .assistant-play-button{border:1px solid #17684c;color:#17684c;font-weight:700}
+#voiceAssistantView .assistant-chat-head .assistant-play-button[hidden]{display:none!important}
 #voiceAssistantView .assistant-messages{display:flex;flex-direction:column;gap:12px;min-height:0;padding:20px;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
+#voiceAssistantView .assistant-chat-panel{font-family:var(--fa-font,'B Nazanin',Tahoma,sans-serif)}
 #voiceAssistantView .assistant-message{display:grid;grid-template-columns:34px minmax(0,1fr);align-items:start;gap:8px;max-width:82%}
 #voiceAssistantView .assistant-message>span{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:#dff1e8;color:#156246;font-weight:700}
 #voiceAssistantView .assistant-message p{margin:0;padding:10px 13px;border-radius:4px 14px 14px 14px;background:#edf5f1;color:#29473a;line-height:1.8}

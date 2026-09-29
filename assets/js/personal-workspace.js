@@ -51,7 +51,7 @@ function installNavigation(){
     <span class="assistant-voice-activity" role="status" aria-label="صدا غیرفعال است"></span>
    </aside>
    <section class="assistant-chat-panel">
-    <header class="assistant-chat-head"><div><strong>دستیار صوتی هوشمند</strong><span class="assistant-status" role="status">آماده گفت‌وگو</span></div><button type="button" class="assistant-live-button" data-assistant-live aria-pressed="false">شروع مکالمه</button><button type="button" class="ghost" data-assistant-mute aria-label="بی‌صدا کردن دستیار" aria-pressed="false">بی‌صدا</button><button type="button" class="ghost" data-assistant-stop aria-label="توقف صدای دستیار">توقف صدا</button></header>
+    <header class="assistant-chat-head"><div><strong>دستیار صوتی هوشمند</strong><span class="assistant-status" role="status">آماده گفت‌وگو</span></div><button type="button" class="assistant-live-button" data-assistant-live aria-pressed="false">شروع مکالمه</button><button type="button" class="ghost assistant-play-button" data-assistant-play hidden>پخش صدا</button><button type="button" class="ghost" data-assistant-mute aria-label="بی‌صدا کردن دستیار" aria-pressed="false">بی‌صدا</button><button type="button" class="ghost" data-assistant-stop aria-label="توقف صدای دستیار">توقف صدا</button></header>
     <div class="assistant-messages" aria-live="polite"></div>
     <form class="assistant-composer"><button type="button" class="assistant-mic" aria-label="شروع مکالمهٔ زنده" title="شروع مکالمهٔ زنده" aria-pressed="false">${icon(ICONS.mic)}</button><textarea rows="1" maxlength="4000" placeholder="دربارهٔ هر چیزی بپرسید؛ یا دکمهٔ مکالمه را بزنید…" required></textarea><button type="submit" class="assistant-send" aria-label="ارسال پیام">${icon(ICONS.send)}</button></form>
    </section>

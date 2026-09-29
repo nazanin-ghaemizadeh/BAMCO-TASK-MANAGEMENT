@@ -10,7 +10,7 @@ const grants=['voiceAssistant','kanban','archive','projects','approvals','notes'
 const access=allowed=>({schema:'bamco.feature-access.v1',grants:grants.map(feature_key=>({feature_key,can_view:allowed.includes(feature_key)}))});
 const post=(body,headers={})=>new Request('https://example.test',{method:'POST',headers:{Authorization:'Bearer token','Content-Type':'application/json',...headers},body:JSON.stringify(body)});
 
-function harness({allowed=grants,tables={},rpc={},auth=true,dbError=null,openaiError=false,speechError=false}={}){
+function harness({allowed=grants,tables={},rpc={},auth=true,dbError=null,openaiError=false,speechError=false,outputText='پاسخ واقعی'}={}){
   let handler;
   const queries=[],calls=[],upstream=[];
   const row={id:'user-1',full_name:'کاربر نمونه',role:'expert',primary_position_id:2};
@@ -32,7 +32,7 @@ function harness({allowed=grants,tables={},rpc={},auth=true,dbError=null,openaiE
       if(openaiError)return new Response('{}',{status:503});
       if(url.endsWith('/audio/speech'))return new Response('mp3-bytes',{headers:{'Content-Type':'audio/mpeg'}});
       if(url.endsWith('/realtime/client_secrets'))return new Response(JSON.stringify({value:'ek_ephemeral',expires_at:123456}),{headers:{'Content-Type':'application/json'}});
-      return new Response(JSON.stringify(url.endsWith('/transcriptions')?{text:'سلام'}:{id:'resp_1',output_text:'پاسخ واقعی'}),{headers:{'Content-Type':'application/json'}});
+      return new Response(JSON.stringify(url.endsWith('/transcriptions')?{text:'سلام'}:{id:'resp_1',output_text:outputText}),{headers:{'Content-Type':'application/json'}});
     }};
   vm.runInNewContext(source,context);
   return {call:request=>handler(request),queries,calls,upstream};
@@ -165,6 +165,16 @@ test('speech requires a short-lived token bound to the server answer and user',a
   assert.equal(speech.status,200);assert.equal(speech.headers.get('Content-Type'),'audio/mpeg');assert.equal(await speech.text(),'mp3-bytes');
   const altered=await h.call(post({action:'speech',text:'متن تغییریافته',issued:answer.issued,speech_token:answer.speech_token}));assert.equal(altered.status,403);
   assert.equal(h.upstream.filter(call=>call.url.endsWith('/audio/speech')).length,1);
+});
+
+test('Persian answer uses standard letters and its authorized speech says the same text',async()=>{
+ const h=harness({outputText:'مرحلة بعدی را بگوييد و گزارش را كامل كنيد.'});
+ const answer=await (await h.call(post({message:'چه‌طور شروع کنم؟'}))).json();
+ assert.equal(answer.text,'مرحله بعدی را بگویید و گزارش را کامل کنید.');
+ const speech=await h.call(post({action:'speech',text:answer.text,issued:answer.issued,speech_token:answer.speech_token}));
+ assert.equal(speech.status,200);
+ const spoken=JSON.parse(h.upstream.find(call=>call.url.endsWith('/audio/speech')).options.body);
+ assert.equal(spoken.input,answer.text);
 });
 
 test('voice recording is transcribed only for an authenticated user',async()=>{

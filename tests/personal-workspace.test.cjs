@@ -80,11 +80,13 @@ test('live voice streams over WebRTC, resolves a scoped task tool and releases m
  f.w.AudioContext=class{createMediaStreamSource(){return{connect(){}}}createAnalyser(){return{fftSize:512,getByteTimeDomainData(samples){samples.fill(151)}}}resume(){return Promise.resolve()}close(){return Promise.resolve()}};
  let peer,channel;
  f.w.RTCPeerConnection=class{
-  constructor(){peer=this;this.connectionState='connected'}
+  constructor(){peer=this;this.connectionState='connected';this.iceGatheringState='gathering'}
   addTrack(){}
   createDataChannel(){channel={readyState:'open',send:value=>sent.push(JSON.parse(value)),close(){this.readyState='closed'}};return channel}
   async createOffer(){return{sdp:'v=0'}}
-  async setLocalDescription(offer){this.localDescription=offer}
+  async setLocalDescription(offer){this.localDescription=offer;setTimeout(()=>{this.localDescription={sdp:'v=0\na=candidate:1'};this.iceGatheringState='complete';this.onIce?.()},0)}
+  addEventListener(name,handler){if(name==='icegatheringstatechange')this.onIce=handler}
+  removeEventListener(name,handler){if(name==='icegatheringstatechange'&&this.onIce===handler)this.onIce=null}
   async setRemoteDescription(){channel.onopen?.();this.ontrack?.({streams:[{}]})}
   close(){this.connectionState='closed'}
  };
@@ -92,17 +94,41 @@ test('live voice streams over WebRTC, resolves a scoped task tool and releases m
  assert.equal(view.dataset.avatarState,'idle');button.click();
  await until(()=>view.dataset.avatarState==='speaking');
  assert.equal(button.getAttribute('aria-pressed'),'true');assert(f.calls.some(call=>call.endpoint==='smart-assistant'&&call.body?.action==='realtime_session'));
- assert(f.calls.some(call=>call.endpoint==='calls'&&call.body==='v=0'));
+ assert(f.calls.some(call=>call.endpoint==='calls'&&call.body==='v=0\na=candidate:1'));
+ assert(sent.some(event=>event.type==='response.create'&&event.response?.output_modalities?.[0]==='audio'),'the assistant speaks first when the call connects');
  assert(Number(view.style.getPropertyValue('--assistant-mouth-open'))>.3);
  channel.onmessage({data:JSON.stringify({type:'conversation.item.input_audio_transcription.completed',transcript:'چطور گزارش کوره را انجام بدهم؟'})});
- channel.onmessage({data:JSON.stringify({type:'response.output_audio_transcript.done',item_id:'reply-1',transcript:'اول داده‌ها را مرتب کنید.'})});
- assert.match(view.querySelector('.assistant-messages').textContent,/اول داده‌ها/);
+ channel.onmessage({data:JSON.stringify({type:'response.output_audio_transcript.done',item_id:'reply-1',transcript:'اول داده‌ها را مرتب كنيد؛ مرحلة بعدی را بگوييد.'})});
+ assert.match(view.querySelector('.assistant-messages').textContent,/اول داده‌ها را مرتب کنید؛ مرحله بعدی را بگویید/);
  channel.onmessage({data:JSON.stringify({type:'response.done',response:{output:[{type:'function_call',name:'lookup_workspace',call_id:'call-1',arguments:JSON.stringify({topic:'tasks',query:'گزارش کوره'})}]}})});
  await until(()=>sent.some(event=>event.item?.type==='function_call_output'));
  assert.match(sent.find(event=>event.item?.type==='function_call_output').item.output,/تحلیل داده‌ها/);
  assert(sent.some(event=>event.type==='response.create'));
  await f.open('kanban');assert.equal(view.dataset.avatarState,'idle');assert.equal(track.stopped,true);assert.equal(peer.connectionState,'closed');
  assert.equal(f.calls.some(call=>call.body instanceof FormData),false);assert.deepEqual(f.errors,[]);
+});
+
+test('blocked automatic audio playback offers a visible play action',async t=>{
+ const f=await fixture({fetchResult:({endpoint,body})=>endpoint==='smart-assistant'&&body?.action==='realtime_session'?{value:'ek_test'}:undefined});t.after(()=>f.dispose());
+ const track={stop(){}},stream={getTracks:()=>[track],getAudioTracks:()=>[track]};
+ Object.defineProperty(f.w.navigator,'mediaDevices',{configurable:true,value:{getUserMedia:async()=>stream}});
+ let plays=0;
+ f.w.HTMLMediaElement.prototype.play=function(){return ++plays===1?Promise.reject(new Error('autoplay blocked')):Promise.resolve()};
+ f.w.HTMLMediaElement.prototype.pause=function(){};
+ f.w.RTCPeerConnection=class{
+  addTrack(){}
+  createDataChannel(){return{readyState:'open',send(){},close(){this.readyState='closed'},onopen:null}}
+  async createOffer(){return{sdp:'v=0'}}
+  async setLocalDescription(offer){this.localDescription=offer}
+  async setRemoteDescription(){this.ontrack?.({streams:[stream]})}
+  close(){}
+ };
+ await f.open('voiceAssistant');const view=f.d.querySelector('#voiceAssistantView');
+ view.querySelector('[data-assistant-live]').click();
+ await until(()=>view.querySelector('[data-assistant-play]').hidden===false);
+ assert.match(view.querySelector('.assistant-status').textContent,/پخش صدا/);
+ view.querySelector('[data-assistant-play]').click();await until(()=>view.querySelector('[data-assistant-play]').hidden===true);
+ assert.equal(plays,2);assert.deepEqual(f.errors,[]);
 });
 
 test('update request labels include the fields that actually changed',()=>{
