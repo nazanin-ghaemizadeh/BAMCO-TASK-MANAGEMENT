@@ -12,7 +12,7 @@
   #voiceAssistantView .assistant-character-panel{min-height:440px}
   #voiceAssistantView .assistant-stage{display:grid;grid-template-columns:minmax(270px,480px) minmax(240px,1fr)}
   .preview-controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;align-content:center;justify-content:center;padding:24px;background:#fff;border:1px solid #d1e1d8;border-radius:18px}
-  .preview-controls button{border:0;border-radius:12px;background:#17694d;color:#fff;padding:12px 18px;cursor:pointer;font:inherit}
+  .preview-controls button,.preview-controls select{border:0;border-radius:12px;background:#17694d;color:#fff;padding:12px 18px;cursor:pointer;font:inherit}
   .preview-controls button[aria-pressed="true"]{background:#dcefe4;color:#115737;box-shadow:inset 0 0 0 2px #17694d}
   .preview-controls p{width:100%;font-size:14px;color:#526f60}
   @media(max-width:700px){#voiceAssistantView .assistant-stage{grid-template-columns:1fr;grid-template-rows:minmax(300px,1fr) auto}.preview-controls{padding:12px}#voiceAssistantView .assistant-character-panel{min-height:280px}}
@@ -20,7 +20,7 @@
 </head>
 <body><main>
  <h1>پیش‌نمایش انیمیشن دستیار</h1>
- <p>حرکت پیوسته سر، دست‌ها، چشم‌ها، ابرو و دهان را ببینید. در سامانه، حرکت دهان از صدای زنده دستیار پیروی می‌کند؛ این صفحه فقط صدا را شبیه‌سازی می‌کند.</p>
+ <p>۱۰۰ حالت ترکیبی از ۱۰ حس و ۱۰ حرکت بدن را انتخاب کنید. سر و دو دست با مفصل‌های جداگانه، بدون عوض شدن تصویر کامل، میان حالت‌ها حرکت می‌کنند. در سامانه دهان به صدای دستیار وصل است؛ این صفحه صدا را شبیه‌سازی می‌کند.</p>
  <section id="voiceAssistantView" data-avatar-state="idle" data-avatar-gesture="neutral" data-avatar-viseme="rest">
   <div class="assistant-stage">
    <aside class="assistant-character-panel"><div class="assistant-avatar-rig"><div class="assistant-avatar-scene" data-avatar-scene>
@@ -33,23 +33,35 @@
    <div class="preview-controls">
     <button type="button" data-state="idle" aria-pressed="true">آرام</button>
     <button type="button" data-state="listening" aria-pressed="false">گوش دادن</button>
+    <button type="button" data-state="thinking" aria-pressed="false">فکر کردن</button>
     <button type="button" data-state="speaking" aria-pressed="false">حرف زدن</button>
     <button type="button" data-gesture="greet">سلام</button>
     <button type="button" data-gesture="explain">توضیح</button>
     <button type="button" data-gesture="count">شمردن</button>
     <button type="button" data-gesture="question">پرسش</button>
-    <p>برای دیدن حرکت هنگام حرف زدن، «حرف زدن» را بزنید. موج صدا در این پیش‌نمایش ساختگی است.</p>
+    <select id="avatarMood" aria-label="حس کاراکتر"></select><select id="avatarAction" aria-label="حرکت بدن"></select>
+    <button type="button" id="avatarNext">حالت بعدی</button>
+    <p id="avatarPoseCount">۱۰۰ حالت قابل انتخاب؛ تغییر هر حالت با حرکت پیوستهٔ مفصل‌ها انجام می‌شود.</p>
    </div>
   </div>
  </section>
- </main><script src="assets/js/assistant-puppet.js?v=2026.09.29.4.2"></script><script>
+ </main><script src="assets/js/assistant-rig-100.js?v=2026.09.29.5"></script><script>
  const view=document.querySelector('#voiceAssistantView');
  const puppet=window.BamcoAssistantPuppet.create(view);void puppet.start();
+ const motion=window.BamcoAssistantMotions,moodSelect=document.querySelector('#avatarMood'),actionSelect=document.querySelector('#avatarAction');
+ const moods=['آرام','صمیمی','پرانرژی','کنجکاو','متفکر','متمرکز','نگران','دلگرم‌کننده','هیجان‌زده','مطمئن'];
+ const actions=['استراحت','گوش دادن','فکر کردن','ارائه با دست چپ','ارائه با دست راست','توضیح','خوشامد','تأکید','پرسش','جشن'];
+ motion.moods.forEach((name,i)=>moodSelect.add(new Option(moods[i],name)));
+ motion.actions.forEach((name,i)=>actionSelect.add(new Option(actions[i],name)));
+ const selectMotion=()=>{view.dataset.avatarMotion=moodSelect.value+'/'+actionSelect.value;document.querySelector('#avatarPoseCount').textContent=`حالت ${motion.list.indexOf(view.dataset.avatarMotion)+1} از ${motion.count}: ${moodSelect.selectedOptions[0].text}، ${actionSelect.selectedOptions[0].text}`};
+ moodSelect.onchange=actionSelect.onchange=selectMotion;
+ document.querySelector('#avatarNext').onclick=()=>{const next=(motion.list.indexOf(view.dataset.avatarMotion)+1)%motion.count;const [mood,action]=motion.list[next].split('/');moodSelect.value=mood;actionSelect.value=action;selectMotion()};
  document.querySelectorAll('[data-state]').forEach(button=>button.onclick=()=>{
   view.dataset.avatarState=button.dataset.state;
+  view.dataset.avatarMotion='';
   document.querySelectorAll('[data-state]').forEach(item=>item.setAttribute('aria-pressed',String(item===button)));
  });
- document.querySelectorAll('[data-gesture]').forEach(button=>button.onclick=()=>{view.dataset.avatarGesture=button.dataset.gesture;setTimeout(()=>view.dataset.avatarGesture='neutral',1200)});
+ document.querySelectorAll('[data-gesture]').forEach(button=>button.onclick=()=>{view.dataset.avatarMotion='';view.dataset.avatarGesture=button.dataset.gesture;setTimeout(()=>view.dataset.avatarGesture='neutral',1200)});
  let start=performance.now();
  function demo(now){
   const speaking=view.dataset.avatarState==='speaking';

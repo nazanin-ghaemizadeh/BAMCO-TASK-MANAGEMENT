@@ -6,6 +6,17 @@ const STATES=new Set(['idle','listening','thinking','speaking','success','warnin
 const ROUTES=new Set(['kanban','archive','projects','approvals','notes']);
 const escapeHtml=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const persianText=value=>String(value??'').replace(/[يى]/g,'ی').replace(/ك/g,'ک').replace(/[ةۀہھ]/g,'ه').replace(/هٔ/g,'ه');
+function emotionFor(text){
+ const phrase=persianText(text).toLowerCase();
+ if(/(متأسف|متاسف|مشکل|خطا|دیرکرد|نگران|sorry|problem|error|overdue)/i.test(phrase))return'concerned';
+ if(/(تبریک|آفرین|عالی|موفق|congratulations|wonderful|great job)/i.test(phrase))return'excited';
+ if(/(انجام شد|تمام شد|تکمیل شد|completed|all done)/i.test(phrase))return'proud';
+ if(/(چطور|چگونه|چرا|کدام|؟|how|why|which|\?)/i.test(phrase))return'curious';
+ if(/(مرحله|گام|برنامه|اولویت|نخست|step|plan|priority)/i.test(phrase))return'focused';
+ if(/(کمک|با هم|نگران نباش|آرام|together|help|you can)/i.test(phrase))return'reassuring';
+ if(/(سلام|درود|hello|welcome)/i.test(phrase))return'upbeat';
+ return'warm';
+}
 function waitForIce(peer,signal){
  if(!peer.iceGatheringState||peer.iceGatheringState==='complete')return Promise.resolve();
  return new Promise((resolve,reject)=>{
@@ -161,7 +172,7 @@ function create(view,{session,loadSticker}){
  }
  function browserSpeech(text,gestureKind='neutral'){
   if(!('speechSynthesis'in window)||!window.SpeechSynthesisUtterance){avatar.set(active?'listening':'idle');return}
-  const utterance=new SpeechSynthesisUtterance(text);utterance.lang=/[\u0600-\u06ff]/.test(text)?'fa-IR':'en-US';utterance.rate=.96;currentSpoken=text;
+  const utterance=new SpeechSynthesisUtterance(text);utterance.lang=/[\u0600-\u06ff]/.test(text)?'fa-IR':'en-US';utterance.rate=.96;currentSpoken=text;view.dataset.avatarEmotion=emotionFor(text);
   const voice=speechSynthesis.getVoices().find(item=>item.lang?.toLowerCase().startsWith(utterance.lang.slice(0,2).toLowerCase()));if(voice)utterance.voice=voice;
   speechMotion.markers=speechMarkers(text);utterance.onstart=()=>{avatar.set('speaking');gesture(gestureKind)};utterance.onboundary=event=>{if(avatar.state==='speaking'){view.dataset.avatarViseme=visemeFor(text,event.charIndex,Math.max(text.length,1),.2);view.style.setProperty('--assistant-mouth-open','.3');speechBeat(speechMotion,.3);level(.3);timedGesture(speechMotion,text,event.charIndex)}};utterance.onend=afterSpeech;utterance.onerror=afterSpeech;
   try{speechSynthesis.speak(utterance)}catch{afterSpeech()}
@@ -173,7 +184,7 @@ function create(view,{session,loadSticker}){
    const result=await fetch(`${SB_URL}/functions/v1/smart-assistant`,{method:'POST',headers:{apikey:SB_KEY,Authorization:`Bearer ${session().token}`,'Content-Type':'application/json','x-conversation-id':conversation},body:JSON.stringify({action:'speech',text,issued,speech_token:token}),signal:speechAbort.signal,cache:'no-store'});
    if(!result.ok)throw Error('صدای دستیار در دسترس نیست.');
    const blob=await result.blob();if(turn!==generation||!valid())return;
-   audioUrl=URL.createObjectURL(blob);audio=new Audio(audioUrl);audio.onended=afterSpeech;audio.onerror=afterSpeech;currentSpoken=text;
+   audioUrl=URL.createObjectURL(blob);audio=new Audio(audioUrl);audio.onended=afterSpeech;audio.onerror=afterSpeech;currentSpoken=text;view.dataset.avatarEmotion=emotionFor(text);
    const AudioContext=window.AudioContext||window.webkitAudioContext;
    let analyser=null;
    if(AudioContext){audioContext=new AudioContext();const source=audioContext.createMediaElementSource(audio);analyser=audioContext.createAnalyser();analyser.fftSize=512;source.connect(analyser);analyser.connect(audioContext.destination);void audioContext.resume().catch(()=>{})}
@@ -239,7 +250,7 @@ function create(view,{session,loadSticker}){
     if(!row){row=append('assistant','');current.outputRows.set(key,row)}
     const paragraph=$('p',row),previous=paragraph.textContent||'';
     paragraph.textContent=event.type.endsWith('.done')?persianText(event.transcript||previous):previous+persianText(event.delta||'');
-    current.spokenText=paragraph.textContent;current.markers=speechMarkers(current.spokenText);
+    current.spokenText=paragraph.textContent;current.markers=speechMarkers(current.spokenText);view.dataset.avatarEmotion=emotionFor(current.spokenText);
     if(event.type.endsWith('.done')&&!row.dataset.saved){row.dataset.saved='true';const text=paragraph.textContent.trim();if(text){history.push({role:'assistant',text});history=history.slice(-24);saveConversation()}}
     messages.scrollTop=messages.scrollHeight;current.responseAudio=true;avatar.set('speaking');
     if(event.type.endsWith('.done')&&/[؟?!]|\d|[۰-۹]|important|مهم|اولویت/i.test(paragraph.textContent))gesture('emphasis');
@@ -367,7 +378,7 @@ function create(view,{session,loadSticker}){
  function dispose(){saveConversation();generation++;answerAbort?.abort();answerAbort=null;busy=false;stopRealtime();stopSpeech();puppet?.stop();clearTimeout(blinkTimer);clearTimeout(blinkClose);clearTimeout(gestureTimer);view.dataset.avatarBlink='false';view.dataset.avatarGesture='neutral';view.style.setProperty('--avatar-gaze','0px');avatar.set('idle')}
  function activate(){
   dispose();conversation=conversationId();history=[];messages.replaceChildren();append('assistant','سلام! روی «شروع مکالمه» بزنید تا با هم صحبت کنیم. می‌توانیم فارسی یا انگلیسی درباره هر موضوعی حرف بزنیم و برای انجام وظایف و پروژه‌ها هم راه‌حل پیدا کنیم.');
-  input.value='';view.dataset.avatarMotion='active';avatar.set('idle');gesture('greet');void loadSticker();void puppet?.start();blinkLoop();
+  input.value='';view.dataset.avatarMotion='';view.dataset.avatarEmotion='warm';avatar.set('idle');gesture('greet');void loadSticker();void puppet?.start();blinkLoop();
  }
  mic.onclick=toggleMic;liveButton.onclick=toggleMic;playButton.onclick=()=>{if(live?.output){void live.context?.resume().catch(()=>{});void live.output.play().then(()=>{playButton.hidden=true;avatar.set('listening','صدای دستیار فعال شد.')}).catch(()=>avatar.set('warning','مرورگر پخش صدا را مسدود کرده است.'))}};
  historyButton.onclick=openConversationHistory;

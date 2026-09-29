@@ -1,0 +1,33 @@
+const {test}=require('node:test');
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const {JSDOM}=require('jsdom');
+
+test('100 distinct art-backed joint poses interpolate instead of swapping full-body images',async()=>{
+ const dom=new JSDOM('<section data-avatar-state="idle"><div data-avatar-scene></div></section>',{runScripts:'outside-only'});
+ const w=dom.window,view=w.document.querySelector('section'),rotations=[];
+ w.HTMLImageElement.prototype.decode=()=>Promise.resolve();
+ const context={drawImage(){},clearRect(){},save(){},restore(){},translate(){},scale(){},fillRect(){},setTransform(){},rotate(a){rotations.push(a)},createRadialGradient:()=>({addColorStop(){}})};
+ w.HTMLCanvasElement.prototype.getContext=()=>context;
+ let scheduled;w.requestAnimationFrame=callback=>{scheduled=callback;return 1};w.cancelAnimationFrame=()=>{scheduled=null};w.matchMedia=()=>({matches:false});
+ w.eval(fs.readFileSync('assets/js/assistant-rig-100.js','utf8'));
+ const lib=w.BamcoAssistantMotions;
+ assert.equal(lib.count,100);
+ assert.equal(new Set(lib.list.map(key=>JSON.stringify(lib.get(key)))).size,100);
+ const puppet=w.BamcoAssistantPuppet.create(view);await puppet.start();
+ assert(puppet.ready);assert(view.querySelector('canvas.assistant-avatar-canvas'));
+ const before=rotations.slice(-4)[1];
+ view.dataset.avatarMotion='excited/celebrate';const now=w.performance.now();
+ scheduled(now+16);const first=rotations.slice(-4)[1];
+ scheduled(now+200);const middle=rotations.slice(-4)[1];
+ scheduled(now+700);const late=rotations.slice(-4)[1];
+ assert.equal(view.dataset.avatarPose,'excited/celebrate');
+ assert(Math.abs(first-before)<.2,'the arm cannot jump immediately to the next target');
+ assert(middle>first&&late>middle,'the independent shoulder sweeps continuously toward its target');
+ view.dataset.avatarMotion='concerned/listen';scheduled(now+716);
+ assert.equal(view.dataset.avatarPose,'concerned/listen');
+ assert(Math.abs(rotations.slice(-4)[1]-late)<.2,'switching between distant poses remains continuous');
+ view.dataset.avatarMotion='';view.dataset.avatarEmotion='concerned';view.dataset.avatarState='speaking';scheduled(now+732);
+ assert(view.dataset.avatarPose.startsWith('concerned/'),'the spoken response can steer facial mood without interrupting the joint transition');
+ puppet.stop();assert.equal(scheduled,null);dom.window.close();
+});
