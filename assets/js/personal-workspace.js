@@ -41,6 +41,9 @@ function installNavigation(){
       <img class="assistant-avatar-frame listening" src="assets/images/assistant-female-listening.png" alt="" width="1024" height="1280" decoding="async">
       <img class="assistant-avatar-frame thinking" src="assets/images/assistant-female-thinking.png" alt="" width="1024" height="1280" decoding="async">
       <img class="assistant-avatar-frame speaking" src="assets/images/assistant-female-speaking.png" alt="" width="1024" height="1280" decoding="async">
+      <img class="assistant-avatar-face mouth-rest" src="assets/images/assistant-speaking-mouth-closed.png" alt="" width="1122" height="1402" decoding="async">
+      <img class="assistant-avatar-face eyes-blink" src="assets/images/assistant-speaking-blink.png" alt="" width="1122" height="1402" decoding="async">
+      <img class="assistant-avatar-face brows-emphasis" src="assets/images/assistant-speaking-brows-raised.png" alt="" width="1122" height="1402" decoding="async">
       <span class="assistant-avatar-floor" aria-hidden="true"></span>
      </div>
     </div>
@@ -48,9 +51,9 @@ function installNavigation(){
     <span class="assistant-voice-activity" role="status" aria-label="صدا غیرفعال است"></span>
    </aside>
    <section class="assistant-chat-panel">
-    <header class="assistant-chat-head"><div><strong>دستیار صوتی هوشمند</strong><span class="assistant-status" role="status">آماده گفت‌وگو</span></div><button type="button" class="ghost" data-assistant-mute aria-label="بی‌صدا کردن دستیار" aria-pressed="false">بی‌صدا</button><button type="button" class="ghost" data-assistant-stop aria-label="توقف صدای دستیار">توقف صدا</button></header>
+    <header class="assistant-chat-head"><div><strong>دستیار صوتی هوشمند</strong><span class="assistant-status" role="status">آماده گفت‌وگو</span></div><button type="button" class="assistant-live-button" data-assistant-live aria-pressed="false">شروع مکالمه</button><button type="button" class="ghost" data-assistant-mute aria-label="بی‌صدا کردن دستیار" aria-pressed="false">بی‌صدا</button><button type="button" class="ghost" data-assistant-stop aria-label="توقف صدای دستیار">توقف صدا</button></header>
     <div class="assistant-messages" aria-live="polite"></div>
-    <form class="assistant-composer"><button type="button" class="assistant-mic" aria-label="گفت‌وگوی صوتی" title="گفت‌وگوی صوتی">${icon(ICONS.mic)}</button><textarea rows="1" maxlength="4000" placeholder="درباره وظایف و برنامه‌تان بپرسید…" required></textarea><button type="submit" class="assistant-send" aria-label="ارسال پیام">${icon(ICONS.send)}</button></form>
+    <form class="assistant-composer"><button type="button" class="assistant-mic" aria-label="شروع مکالمهٔ زنده" title="شروع مکالمهٔ زنده" aria-pressed="false">${icon(ICONS.mic)}</button><textarea rows="1" maxlength="4000" placeholder="دربارهٔ هر چیزی بپرسید؛ یا دکمهٔ مکالمه را بزنید…" required></textarea><button type="submit" class="assistant-send" aria-label="ارسال پیام">${icon(ICONS.send)}</button></form>
    </section>
   </div>`;
  workspace.append(notesView,assistantView);
@@ -117,7 +120,7 @@ function bindNotes(view){
 }
 
 async function loadAssistantSticker(){
- const images=qa('#voiceAssistantView .assistant-avatar-frame'),error=q('#voiceAssistantView .assistant-avatar-error');if(!images.length)return;
+ const images=qa('#voiceAssistantView .assistant-avatar-frame, #voiceAssistantView .assistant-avatar-face'),error=q('#voiceAssistantView .assistant-avatar-error');if(!images.length)return;
  for(const image of images)image.loading='eager';
  try{await Promise.all(images.map(image=>typeof image.decode==='function'?image.decode():Promise.resolve()));if(error)error.hidden=true}
  catch{if(error)error.hidden=false}

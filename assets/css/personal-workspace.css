@@ -35,11 +35,23 @@ html body #appView [data-feature-access-control="local"],html body #appView .veh
 #voiceAssistantView .assistant-character-panel{position:relative;display:grid;place-items:center;padding:16px;overflow:hidden;background:radial-gradient(circle at 50% 35%,#e8f8f0 0,#fff 65%)}
 #voiceAssistantView .assistant-avatar-rig{display:grid;place-items:center;width:100%;height:100%;min-height:0;overflow:hidden}
 #voiceAssistantView .assistant-avatar-scene{position:relative;width:min(100%,430px);height:100%;min-height:0;isolation:isolate}
+#voiceAssistantView .assistant-avatar-canvas{position:absolute;inset:0;z-index:2;display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none}
+#voiceAssistantView.assistant-avatar-puppet-ready .assistant-avatar-frame,#voiceAssistantView.assistant-avatar-puppet-ready .assistant-avatar-face{visibility:hidden}
 #voiceAssistantView .assistant-avatar-frame{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center bottom;opacity:0;transform:translateY(8px) scale(.985);transition:opacity .32s ease,transform .42s cubic-bezier(.2,.8,.2,1);will-change:opacity,transform;pointer-events:none}
 #voiceAssistantView[data-avatar-state="idle"] .assistant-avatar-frame.waiting-grounded,#voiceAssistantView[data-avatar-state="success"] .assistant-avatar-frame.waiting-grounded,#voiceAssistantView[data-avatar-state="warning"] .assistant-avatar-frame.waiting-grounded,#voiceAssistantView[data-avatar-state="error"] .assistant-avatar-frame.waiting-grounded{opacity:1;transform:translateY(0) scale(1);animation:assistant-wait-grounded 1.45s ease-in-out infinite}
 #voiceAssistantView[data-avatar-state="idle"] .assistant-avatar-frame.waiting-tap,#voiceAssistantView[data-avatar-state="success"] .assistant-avatar-frame.waiting-tap,#voiceAssistantView[data-avatar-state="warning"] .assistant-avatar-frame.waiting-tap,#voiceAssistantView[data-avatar-state="error"] .assistant-avatar-frame.waiting-tap{opacity:1;transform:translateY(0) scale(1);animation:assistant-wait-tap 1.45s ease-in-out infinite}
 #voiceAssistantView.is-listening .assistant-avatar-frame.listening,#voiceAssistantView.is-thinking .assistant-avatar-frame.thinking,#voiceAssistantView.is-speaking .assistant-avatar-frame.speaking{opacity:1;transform:translateY(0) scale(1);animation:assistant-state-presence 1.9s ease-in-out infinite}
 #voiceAssistantView.is-speaking .assistant-avatar-frame.speaking{animation:assistant-speaking 1s ease-in-out infinite}
+#voiceAssistantView .assistant-avatar-face{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none;opacity:0;z-index:1;transform:translateY(0);animation:assistant-speaking 1s ease-in-out infinite}
+/* These two local face layers share the speaking pose and retain the source character. */
+#voiceAssistantView .assistant-avatar-face.mouth-rest{mask-image:radial-gradient(ellipse 8% 4% at 50% 35%,#000 45%,transparent 100%);-webkit-mask-image:radial-gradient(ellipse 8% 4% at 50% 35%,#000 45%,transparent 100%)}
+#voiceAssistantView.is-speaking .assistant-avatar-face.mouth-rest{opacity:calc(1 - var(--assistant-mouth-open,0))}
+#voiceAssistantView.is-speaking.assistant-mouth-fallback .assistant-avatar-face.mouth-rest{animation:assistant-speaking 1s ease-in-out infinite,assistant-mouth-fallback .19s ease-in-out infinite alternate}
+@keyframes assistant-mouth-fallback{from{opacity:.2}to{opacity:1}}
+#voiceAssistantView .assistant-avatar-face.eyes-blink{mask-image:radial-gradient(ellipse 7% 5% at 41% 28%,#000 58%,transparent 100%),radial-gradient(ellipse 7% 5% at 58% 28%,#000 58%,transparent 100%);-webkit-mask-image:radial-gradient(ellipse 7% 5% at 41% 28%,#000 58%,transparent 100%),radial-gradient(ellipse 7% 5% at 58% 28%,#000 58%,transparent 100%)}
+#voiceAssistantView.is-speaking[data-avatar-blink="true"] .assistant-avatar-face.eyes-blink{opacity:1}
+#voiceAssistantView .assistant-avatar-face.brows-emphasis{mask-image:radial-gradient(ellipse 8% 3% at 41% 21%,#000 55%,transparent 100%),radial-gradient(ellipse 8% 3% at 58% 20%,#000 55%,transparent 100%);-webkit-mask-image:radial-gradient(ellipse 8% 3% at 41% 21%,#000 55%,transparent 100%),radial-gradient(ellipse 8% 3% at 58% 20%,#000 55%,transparent 100%)}
+#voiceAssistantView.is-speaking[data-avatar-gesture="emphasis"] .assistant-avatar-face.brows-emphasis{opacity:1}
 #voiceAssistantView .assistant-avatar-floor{position:absolute;z-index:-1;right:50%;bottom:4%;width:54%;height:5%;border-radius:50%;background:radial-gradient(ellipse,#2859443b,transparent 70%);transform:translateX(50%);filter:blur(5px)}
 #voiceAssistantView[data-avatar-state="idle"] .assistant-avatar-floor{animation:assistant-floor-tap 1.45s ease-in-out infinite}
 #voiceAssistantView .assistant-avatar-error{position:absolute;inset:auto 12px 12px;color:#884927;text-align:center;font-size:13px}
@@ -52,6 +64,8 @@ html body #appView [data-feature-access-control="local"],html body #appView .veh
 #voiceAssistantView .assistant-chat-head strong{color:#195b40;font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #voiceAssistantView .assistant-chat-head .assistant-status{font-size:13px;color:#617c6c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #voiceAssistantView .assistant-chat-head button{flex:none;min-height:34px;padding:4px 10px;white-space:nowrap;font:inherit;font-size:14px}
+#voiceAssistantView .assistant-chat-head .assistant-live-button{border:1px solid #17684c;border-radius:9px;background:#17684c;color:#fff;cursor:pointer}
+#voiceAssistantView .assistant-chat-head .assistant-live-button[aria-pressed="true"]{background:#fff;color:#17684c}
 #voiceAssistantView .assistant-messages{display:flex;flex-direction:column;gap:12px;min-height:0;padding:20px;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
 #voiceAssistantView .assistant-message{display:grid;grid-template-columns:34px minmax(0,1fr);align-items:start;gap:8px;max-width:82%}
 #voiceAssistantView .assistant-message>span{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:#dff1e8;color:#156246;font-weight:700}
@@ -151,6 +165,7 @@ html body #appView [data-feature-access-control="local"],html body #appView .veh
  #voiceAssistantView .assistant-chat-head strong{font-size:15px}
  #voiceAssistantView .assistant-chat-head .assistant-status{font-size:11px}
  #voiceAssistantView .assistant-chat-head button{font-size:12px;padding:3px 6px}
+ #voiceAssistantView .assistant-chat-head .assistant-live-button{max-width:95px;white-space:normal;line-height:1.2}
 }
 @media(max-height:500px) and (max-width:900px){#voiceAssistantView .assistant-stage{grid-template-rows:76px minmax(0,1fr)}}
 @media(prefers-reduced-motion:reduce){#voiceAssistantView .assistant-avatar-frame{transition-duration:.01ms}#voiceAssistantView[data-avatar-state="idle"] .assistant-avatar-frame.waiting-grounded{animation:assistant-reduced-idle 5s ease-in-out infinite}#voiceAssistantView[data-avatar-state="idle"] .assistant-avatar-frame.waiting-tap{display:none}}

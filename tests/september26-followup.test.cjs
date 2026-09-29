@@ -36,7 +36,7 @@ test('task discussion exposes source, owner and Persian calendar, and permits an
 
 test('assistant uses a valid task view column list and the exact female status artwork',async t=>{
  const source=fs.readFileSync('supabase/functions/smart-assistant/index.ts','utf8');
- assert(!source.includes('archived,owner_name'));assert(source.includes(".from('task_status_view').select('id,legacy_id,title,status,status_kind,priority,due_date,start_date,due_state,owner_id,archived')"));
+ assert(!source.includes('archived,owner_name'));assert(source.includes(".from('task_status_view').select('id,legacy_id,title,description,status,status_kind,priority,due_date,start_date,due_state,owner_id,archived')"));
  const f=await fixture();t.after(()=>f.dispose());await f.open('voiceAssistant');
  const view=f.d.querySelector('#voiceAssistantView');assert(view.querySelector('img.assistant-avatar-frame.waiting-grounded[src="assets/images/assistant-female-waiting-grounded.png"]'));
  assert(view.querySelector('img.assistant-avatar-frame.waiting-tap[src="assets/images/assistant-female-waiting.png"]'));
@@ -44,15 +44,15 @@ test('assistant uses a valid task view column list and the exact female status a
  assert(view.querySelector('.assistant-mic'));assert.deepEqual(f.errors,[]);
 });
 
-test('microphone records, transcribes and sends speech through the authenticated assistant',async t=>{
- const f=await fixture({fetchResult:({endpoint,body})=>endpoint==='smart-assistant'?(body instanceof FormData?{transcript:'برنامهٔ امروز چیست؟'}:{text:'برنامهٔ امروز را مرور کنید.',response_id:'resp_fixture'}):undefined});t.after(()=>f.dispose());
- const w=f.w;w.FormData=FormData;
- Object.defineProperty(w.navigator,'mediaDevices',{configurable:true,value:{getUserMedia:async()=>({getTracks:()=>[{stop(){}}]})}});
- w.MediaRecorder=class{static isTypeSupported(type){return type==='audio/webm'}constructor(){this.mimeType='audio/webm;codecs=opus';this.state='inactive'}start(){this.state='recording'}stop(){this.state='inactive';this.ondataavailable?.({data:new Blob(['audio'],{type:'audio/webm'})});void this.onstop?.()}};
- await f.open('voiceAssistant');const button=f.d.querySelector('.assistant-mic');button.click();await until(()=>button.getAttribute('aria-pressed')==='true');button.click();
- await until(()=>f.calls.some(call=>call.endpoint==='smart-assistant'&&call.body instanceof FormData));
- await until(()=>f.calls.some(call=>call.endpoint==='smart-assistant'&&call.body?.message==='برنامهٔ امروز چیست؟'));
- assert.equal(button.getAttribute('aria-pressed'),'false');assert.deepEqual(f.errors,[]);
+test('a denied microphone permission does not create a billable live session',async t=>{
+ const f=await fixture();t.after(()=>f.dispose());
+ f.w.RTCPeerConnection=class{};
+ Object.defineProperty(f.w.navigator,'mediaDevices',{configurable:true,value:{getUserMedia:async()=>{const error=new Error('denied');error.name='NotAllowedError';throw error}}});
+ await f.open('voiceAssistant');const button=f.d.querySelector('.assistant-mic');button.click();
+ await until(()=>button.getAttribute('aria-pressed')==='false');
+ assert.match(f.d.querySelector('.assistant-status').textContent,/اجازهٔ میکروفون/);
+ assert.equal(f.calls.some(call=>call.endpoint==='smart-assistant'&&call.body?.action==='realtime_session'),false);
+ assert.deepEqual(f.errors,[]);
 });
 
 test('email login accepts both current and legacy internal Auth identities',async t=>{

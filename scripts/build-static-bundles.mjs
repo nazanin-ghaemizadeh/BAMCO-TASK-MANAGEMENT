@@ -35,6 +35,7 @@ const javascript = [
   'assets/js/ui-helpers.js',
   'assets/js/sticker-assets.js',
   'assets/js/navigation-registry.js',
+  'assets/js/assistant-puppet.js',
   'assets/js/assistant-runtime.js',
   'assets/js/personal-workspace.js',
   'assets/js/phonebook-directory-v2.js',

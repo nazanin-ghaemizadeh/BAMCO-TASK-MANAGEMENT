@@ -70,24 +70,39 @@ test('smart assistant rigs the exact status sticker and starts a fresh conversat
  assert.deepEqual(f.errors,[]);
 });
 
-test('assistant voice state starts on demand and stops when the page closes',async t=>{
- const f=await fixture();t.after(()=>f.dispose());
- let recognizer;
- f.w.SpeechRecognition=class{
-  constructor(){recognizer=this}
-  start(){this.onstart?.()}
-  abort(){this.onend?.()}
+test('live voice streams over WebRTC, resolves a scoped task tool and releases microphone on exit',async t=>{
+ assert.match(read('index.html'),/connect-src[^"<]*https:\/\/api\.openai\.com/,'the production CSP permits the Realtime call');
+ assert.match(read('index.html'),/media-src[^"<]*blob:/,'generated speech can play from its object URL');
+ const f=await fixture({fetchResult:({endpoint,body})=>endpoint==='smart-assistant'&&body?.action==='realtime_session'?{value:'ek_test'}:endpoint==='smart-assistant'&&body?.action==='context'?{context:{tasks:[{title:'گزارش کوره',description:'تحلیل داده‌ها'}]},actions:[]}:undefined});t.after(()=>f.dispose());
+ const sent=[],track={stopped:false,stop(){this.stopped=true}},stream={getTracks:()=>[track],getAudioTracks:()=>[track]};
+ Object.defineProperty(f.w.navigator,'mediaDevices',{configurable:true,value:{getUserMedia:async()=>stream}});
+ f.w.HTMLMediaElement.prototype.play=function(){return Promise.resolve()};f.w.HTMLMediaElement.prototype.pause=function(){};
+ f.w.AudioContext=class{createMediaStreamSource(){return{connect(){}}}createAnalyser(){return{fftSize:512,getByteTimeDomainData(samples){samples.fill(151)}}}resume(){return Promise.resolve()}close(){return Promise.resolve()}};
+ let peer,channel;
+ f.w.RTCPeerConnection=class{
+  constructor(){peer=this;this.connectionState='connected'}
+  addTrack(){}
+  createDataChannel(){channel={readyState:'open',send:value=>sent.push(JSON.parse(value)),close(){this.readyState='closed'}};return channel}
+  async createOffer(){return{sdp:'v=0'}}
+  async setLocalDescription(offer){this.localDescription=offer}
+  async setRemoteDescription(){channel.onopen?.();this.ontrack?.({streams:[{}]})}
+  close(){this.connectionState='closed'}
  };
- await f.open('voiceAssistant');const view=f.d.querySelector('#voiceAssistantView');
- assert.equal(view.dataset.avatarState,'idle');assert.equal(recognizer,undefined);
- assert.equal(view.dataset.avatarGesture,'greet','entry begins with a visible greeting gesture');
- const mic=view.querySelector('.assistant-mic');mic.click();
- assert.equal(view.dataset.avatarState,'listening');assert.equal(mic.getAttribute('aria-pressed'),'true');
- recognizer.onresult({resultIndex:0,results:[Object.assign([{transcript:'وظایف من چیست؟'}],{isFinal:true})]});
- assert.equal(view.dataset.avatarState,'thinking');
- await until(()=>view.querySelectorAll('.assistant-message').length>=3);
- mic.click();assert.equal(mic.getAttribute('aria-pressed'),'false');
- await f.open('kanban');assert.equal(view.dataset.avatarState,'idle');assert.deepEqual(f.errors,[]);
+ await f.open('voiceAssistant');const view=f.d.querySelector('#voiceAssistantView'),button=view.querySelector('[data-assistant-live]');
+ assert.equal(view.dataset.avatarState,'idle');button.click();
+ await until(()=>view.dataset.avatarState==='speaking');
+ assert.equal(button.getAttribute('aria-pressed'),'true');assert(f.calls.some(call=>call.endpoint==='smart-assistant'&&call.body?.action==='realtime_session'));
+ assert(f.calls.some(call=>call.endpoint==='calls'&&call.body==='v=0'));
+ assert(Number(view.style.getPropertyValue('--assistant-mouth-open'))>.3);
+ channel.onmessage({data:JSON.stringify({type:'conversation.item.input_audio_transcription.completed',transcript:'چطور گزارش کوره را انجام بدهم؟'})});
+ channel.onmessage({data:JSON.stringify({type:'response.output_audio_transcript.done',item_id:'reply-1',transcript:'اول داده‌ها را مرتب کنید.'})});
+ assert.match(view.querySelector('.assistant-messages').textContent,/اول داده‌ها/);
+ channel.onmessage({data:JSON.stringify({type:'response.done',response:{output:[{type:'function_call',name:'lookup_workspace',call_id:'call-1',arguments:JSON.stringify({topic:'tasks',query:'گزارش کوره'})}]}})});
+ await until(()=>sent.some(event=>event.item?.type==='function_call_output'));
+ assert.match(sent.find(event=>event.item?.type==='function_call_output').item.output,/تحلیل داده‌ها/);
+ assert(sent.some(event=>event.type==='response.create'));
+ await f.open('kanban');assert.equal(view.dataset.avatarState,'idle');assert.equal(track.stopped,true);assert.equal(peer.connectionState,'closed');
+ assert.equal(f.calls.some(call=>call.body instanceof FormData),false);assert.deepEqual(f.errors,[]);
 });
 
 test('update request labels include the fields that actually changed',()=>{

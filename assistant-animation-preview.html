@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+ <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+ <title>پیش‌نمایش حرکت دستیار</title>
+ <link rel="stylesheet" href="assets/css/personal-workspace.css">
+ <style>
+  body{margin:0;min-height:100vh;background:#eaf2ed;font:16px Tahoma,sans-serif;color:#194c38}
+  main{box-sizing:border-box;max-width:1100px;margin:auto;padding:20px}
+  h1{font-size:22px}p{line-height:1.8}
+  #voiceAssistantView:not(.hidden){height:min(80vh,760px)!important;min-height:480px!important;padding:0!important}
+  #voiceAssistantView .assistant-character-panel{min-height:440px}
+  #voiceAssistantView .assistant-stage{display:grid;grid-template-columns:minmax(270px,480px) minmax(240px,1fr)}
+  .preview-controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;align-content:center;justify-content:center;padding:24px;background:#fff;border:1px solid #d1e1d8;border-radius:18px}
+  .preview-controls button{border:0;border-radius:12px;background:#17694d;color:#fff;padding:12px 18px;cursor:pointer;font:inherit}
+  .preview-controls button[aria-pressed="true"]{background:#dcefe4;color:#115737;box-shadow:inset 0 0 0 2px #17694d}
+  .preview-controls p{width:100%;font-size:14px;color:#526f60}
+  @media(max-width:700px){#voiceAssistantView .assistant-stage{grid-template-columns:1fr;grid-template-rows:minmax(300px,1fr) auto}.preview-controls{padding:12px}#voiceAssistantView .assistant-character-panel{min-height:280px}}
+ </style>
+</head>
+<body><main>
+ <h1>پیش‌نمایش انیمیشن دستیار</h1>
+ <p>حرکت سر، دست‌ها، چشم‌ها، ابرو و دهان را ببینید. در سامانه، حرکت دهان از صدای زندهٔ دستیار پیروی می‌کند؛ این صفحه فقط انیمیشن را شبیه‌سازی می‌کند.</p>
+ <section id="voiceAssistantView" data-avatar-state="idle" data-avatar-gesture="neutral" data-avatar-viseme="rest">
+  <div class="assistant-stage">
+   <aside class="assistant-character-panel"><div class="assistant-avatar-rig"><div class="assistant-avatar-scene" data-avatar-scene>
+    <img class="assistant-avatar-frame speaking" src="assets/images/assistant-female-speaking.png" alt="" width="1122" height="1402">
+    <img class="assistant-avatar-face mouth-rest" src="assets/images/assistant-speaking-mouth-closed.png" alt="" width="1122" height="1402">
+    <img class="assistant-avatar-face eyes-blink" src="assets/images/assistant-speaking-blink.png" alt="" width="1122" height="1402">
+    <img class="assistant-avatar-face brows-emphasis" src="assets/images/assistant-speaking-brows-raised.png" alt="" width="1122" height="1402">
+    <span class="assistant-avatar-floor"></span>
+   </div></div></aside>
+   <div class="preview-controls">
+    <button type="button" data-state="idle" aria-pressed="true">آرام</button>
+    <button type="button" data-state="listening" aria-pressed="false">گوش دادن</button>
+    <button type="button" data-state="speaking" aria-pressed="false">حرف زدن</button>
+    <button type="button" data-gesture="emphasis">تأکید</button>
+    <p>برای دیدن حرکت هنگام حرف زدن، «حرف زدن» را بزنید. موج صدا در این پیش‌نمایش ساختگی است.</p>
+   </div>
+  </div>
+ </section>
+ </main><script src="assets/js/assistant-puppet.js"></script><script>
+ const view=document.querySelector('#voiceAssistantView');
+ const puppet=window.BamcoAssistantPuppet.create(view);void puppet.start();
+ document.querySelectorAll('[data-state]').forEach(button=>button.onclick=()=>{
+  view.dataset.avatarState=button.dataset.state;
+  document.querySelectorAll('[data-state]').forEach(item=>item.setAttribute('aria-pressed',String(item===button)));
+ });
+ document.querySelector('[data-gesture]').onclick=()=>{view.dataset.avatarGesture='emphasis';setTimeout(()=>view.dataset.avatarGesture='neutral',1700)};
+ let start=performance.now();
+ function demo(now){
+  const speaking=view.dataset.avatarState==='speaking';
+  const t=(now-start)/1000,syllable=Math.max(0,Math.sin(t*12)+.35*Math.sin(t*19));
+  const level=speaking?Math.min(1,syllable*.65):0;
+  view.style.setProperty('--assistant-mouth-open',String(level));
+  view.dataset.avatarViseme=level<.1?'rest':Math.sin(t*4)>0?'aa':'o';
+  requestAnimationFrame(demo);
+ }requestAnimationFrame(demo);
+ </script>
+</body></html>

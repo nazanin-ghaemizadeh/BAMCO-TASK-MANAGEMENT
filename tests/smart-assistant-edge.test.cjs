@@ -14,7 +14,7 @@ function harness({allowed=grants,tables={},rpc={},auth=true,dbError=null,openaiE
   let handler;
   const queries=[],calls=[],upstream=[];
   const row={id:'user-1',full_name:'کاربر نمونه',role:'expert',primary_position_id:2};
-  const data={profiles:row,task_status_view:[{id:7,title:'وظیفه من',owner_id:'user-1',due_state:'دیرکرد'}],projects:[{id:4,title:'پروژه نمونه'}],project_items:[{id:8,project_id:4,title:'گام یک'}],project_dependencies:[{predecessor_item_id:8,successor_item_id:9}],notifications:[],...tables};
+  const data={profiles:row,task_status_view:[{id:7,title:'وظیفه من',description:'گزارش داده‌های کوره را آماده کن',owner_id:'user-1',due_state:'دیرکرد'}],projects:[{id:4,title:'پروژه نمونه'}],project_items:[{id:8,project_id:4,title:'گام یک'}],project_dependencies:[{predecessor_item_id:8,successor_item_id:9}],notifications:[],...tables};
   const client={
     auth:{getUser:async()=>auth?{data:{user:{id:'user-1'}},error:null}:{data:{user:null},error:{message:'invalid'}}},
     rpc:async name=>{calls.push(name);return{data:name==='effective_feature_access'?access(allowed):rpc[name]??(name==='organization_scope_directory'?[]:{schema:'bamco.workflow.v2',routes:[],current_requests:[]}),error:null}},
@@ -31,6 +31,7 @@ function harness({allowed=grants,tables={},rpc={},auth=true,dbError=null,openaiE
       if(url.endsWith('/audio/speech')&&speechError)return new Response('{}',{status:503});
       if(openaiError)return new Response('{}',{status:503});
       if(url.endsWith('/audio/speech'))return new Response('mp3-bytes',{headers:{'Content-Type':'audio/mpeg'}});
+      if(url.endsWith('/realtime/client_secrets'))return new Response(JSON.stringify({value:'ek_ephemeral',expires_at:123456}),{headers:{'Content-Type':'application/json'}});
       return new Response(JSON.stringify(url.endsWith('/transcriptions')?{text:'سلام'}:{id:'resp_1',output_text:'پاسخ واقعی'}),{headers:{'Content-Type':'application/json'}});
     }};
   vm.runInNewContext(source,context);
@@ -42,15 +43,51 @@ test('task answer uses the authenticated identity and caller-scoped task view',a
   assert.equal(result.status,200);const answer=await result.json();assert.equal(answer.text,'پاسخ واقعی');assert.match(answer.speech_token,/^[0-9a-f]{64}$/);
   const task=h.queries.find(query=>query.table==='task_status_view');assert(task);
   assert.deepEqual(task.filters.map(value=>Array.from(value)),[['eq','archived',false],['eq','owner_id','user-1']]);
-  assert.doesNotMatch(task.select,/owner_name|description/);
+  assert.doesNotMatch(task.select,/owner_name/);assert.match(task.select,/description/);
   const prompt=JSON.parse(h.upstream[0].options.body);
-  assert.equal(prompt.store,false);assert.equal(prompt.input[0].content.includes('وظیفه من'),true);
+  assert.equal(prompt.store,false);assert.equal(prompt.input[0].content.includes('گزارش داده‌های کوره را آماده کن'),true);
   assert.equal(h.queries.some(query=>query.table==='projects'),false);
 });
 
 test('unauthorized data is rejected before querying that table or contacting AI',async()=>{
   const h=harness({allowed:['voiceAssistant']});const result=await h.call(post({message:'پروژه‌های من؟'}));
   assert.equal(result.status,403);assert.equal(h.queries.length,0);assert.equal(h.upstream.length,0);
+});
+
+test('live speech gets an ephemeral credential with a read-only workspace tool',async()=>{
+ const h=harness();const result=await h.call(post({action:'realtime_session'}));
+ assert.equal(result.status,200);assert.equal((await result.json()).value,'ek_ephemeral');
+ const upstream=h.upstream[0],config=JSON.parse(upstream.options.body).session;
+ assert.match(upstream.url,/\/v1\/realtime\/client_secrets$/);
+ assert.notEqual(upstream.options.headers['OpenAI-Safety-Identifier'],'user-1');
+ assert.equal(config.type,'realtime');assert.deepEqual(Array.from(config.output_modalities),['audio']);
+ assert.equal(config.audio.input.turn_detection.interrupt_response,true);
+ assert.equal(config.tools[0].name,'lookup_workspace');
+ assert.match(config.instructions,/Persian or English/);
+ const forbidden=harness({allowed:['kanban']});
+ assert.equal((await forbidden.call(post({action:'realtime_session'}))).status,403);
+ assert.equal(forbidden.upstream.length,0);
+});
+
+test('live tool uses the same access and caller-scoped query for practical task context',async()=>{
+ const h=harness({allowed:['voiceAssistant','kanban']});
+ const response=await h.call(post({action:'context',topic:'tasks',query:'How can I finish my task?'}));
+ assert.equal(response.status,200);
+ const data=await response.json();assert.match(data.context.tasks[0].description,/کوره/);
+ assert(h.queries.find(query=>query.table==='task_status_view').filters.some(filter=>filter[0]==='eq'&&filter[1]==='owner_id'&&filter[2]==='user-1'));
+ assert.equal(h.upstream.length,0);
+ const denied=harness({allowed:['voiceAssistant']});
+ assert.equal((await denied.call(post({action:'context',topic:'tasks',query:'وظایف من'}))).status,403);
+ assert.equal(denied.queries.length,0);
+ const exact=harness();
+ assert.equal((await exact.call(post({action:'context',topic:'tasks',query:'برنامهٔ امروز من'}))).status,200);
+ assert.equal(exact.queries.some(row=>row.table==='projects'),false,'a tool topic cannot silently expand to all granted modules');
+});
+
+test('general conversation does not preload workspace tables',async()=>{
+ const h=harness();const response=await h.call(post({message:'Explain how a heat exchanger works in English.'}));
+ assert.equal(response.status,200);
+ assert.deepEqual(h.queries.map(query=>query.table),['profiles']);
 });
 
 test('project follow-up retrieves fresh permitted activities and dependencies',async()=>{
