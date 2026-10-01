@@ -61,8 +61,8 @@ html body #appView#appView#appView#appView#appView .view.vehicle-view:has(table)
 }
 html body #appView#appView#appView#appView#appView .view.vehicle-view:has(table) .vehicle-toolbar {
   flex:none!important;
-  flex-wrap:wrap!important;
-  overflow:visible!important;
+  flex-wrap:nowrap!important;
+  overflow-x:auto!important;
 }
 html body #appView#appView#appView#appView#appView .view.vehicle-view:has(table) .vehicle-search {
   display:block!important;
@@ -73,6 +73,10 @@ html body #appView#appView#appView#appView#appView .view.vehicle-view:has(table)
 
 html body #appView#appView#appView#appView#appView .view:has(table) :is(.task-toolbar,.people-actions,.manager-toolbar,.vehicle-toolbar,.cash-toolbar,.letter-toolbar,.prod-toolbar,.table-toolbar,.feature-toolbar-actions,.bamco-management-toolbar,.bamco-command-bar,.suite-toolbar,.workspace-actions,.workspace-report-tools) {
   display:flex!important;
+  flex:0 0 auto!important;
+  flex-wrap:nowrap!important;
+  overflow-x:auto!important;
+  overflow-y:hidden!important;
   align-items:center!important;
   gap:7px!important;
   min-height:48px!important;
@@ -219,4 +223,14 @@ html body #appView#appView#appView#appView#appView .view:has(table) .reference-p
 @media(max-width:700px){
   html body #appView#appView#appView#appView#appView .view:has(table) .reference-pagination {align-items:flex-start!important}
   html body #appView#appView#appView#appView#appView .view:has(table) .reference-pagination .page-controls {flex-wrap:wrap}
+}
+
+/* Column sizing is functional: fixed layout honors explicit col widths even for long text. */
+html body #appView#appView#appView#appView#appView .view:has(table) table.suite-table {table-layout:fixed!important}
+html body #appView#appView#appView#appView#appView .view:has(table) table.suite-table th {position:relative!important}
+html body #appView#appView#appView#appView#appView .view:has(table) table.suite-table :is(th,td) {overflow-wrap:anywhere!important;white-space:normal!important}
+html body #appView#appView#appView#appView#appView .view:has(table) table.suite-table:not(.suite-compact) :is(th,td) {padding:10px 8px!important}
+html body #appView#appView#appView#appView#appView .view:has(table) :is(.bamco-command-bar,.workspace-report-tools,.vehicle-toolbar,.letter-toolbar,.cash-toolbar,.feature-toolbar-actions)>button {flex:0 0 auto!important;white-space:nowrap!important}
+@media(max-width:700px){
+ html body #appView#appView#appView#appView#appView .view:has(table) :is(.bamco-command-bar,.workspace-report-tools,.vehicle-toolbar,.letter-toolbar,.cash-toolbar,.feature-toolbar-actions){flex-wrap:wrap!important;overflow:visible!important}
 }

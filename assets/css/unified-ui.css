@@ -119,8 +119,8 @@ html body #appView#appView :is(#kanbanView,#archiveView,.bamco-interior).bamco-i
 html body #appView#appView :is(#kanbanView,#archiveView,.bamco-interior).bamco-interior .bamco-control-row>div:has(>.bamco-source-title):not(:has(button,input,select,textarea)){display:none!important}
 html body #appView#appView :is(#kanbanView,#archiveView,.bamco-interior).bamco-interior .bamco-command-bar,
 html body #appView#appView .enterprise-feature-root :is(.bamco-command-bar,.feature-toolbar-actions){
- display:flex!important;flex:0 0 auto!important;flex-wrap:wrap!important;align-items:center!important;justify-content:flex-start!important;
- gap:7px!important;min-height:48px!important;width:100%!important;box-sizing:border-box!important;overflow:visible!important;
+ display:flex!important;flex:0 0 auto!important;flex-wrap:nowrap!important;align-items:center!important;justify-content:flex-start!important;
+ gap:7px!important;min-height:48px!important;width:100%!important;box-sizing:border-box!important;overflow-x:auto!important;overflow-y:hidden!important;
  margin:0!important;padding:6px 10px!important;order:0!important;border:0!important;border-bottom:1px solid var(--ui-line)!important;
  border-radius:0!important;background:#f5f8f6!important;direction:rtl!important;
 }
@@ -275,7 +275,7 @@ html body dialog:is(#taskDialog,#vehicleRecordDialog,.bamco-dialog).bamco-dialog
  html body #appView#appView :is(#kanbanView,#archiveView,.bamco-interior).bamco-interior .bamco-page-heading{min-height:52px!important;gap:10px!important;padding:8px!important}
  html body #appView#appView :is(#kanbanView,#archiveView,.bamco-interior).bamco-interior .bamco-page-heading h3{font-size:18px!important}
  html body #appView#appView :is(#kanbanView,#archiveView,.bamco-interior).bamco-interior .bamco-command-bar,
- html body #appView#appView .enterprise-feature-root :is(.bamco-command-bar,.feature-toolbar-actions){gap:6px!important;padding:8px!important}
+ html body #appView#appView .enterprise-feature-root :is(.bamco-command-bar,.feature-toolbar-actions){gap:6px!important;padding:8px!important;flex-wrap:wrap!important;overflow:visible!important}
  html body #appView#appView :is(#kanbanView,#archiveView,.bamco-interior).bamco-interior :is(.bamco-command-bar,.bamco-control-row) :is(input.search,input[type=search],.toolbar-search,.vehicle-search),
  html body #appView#appView#appView#appView#appView .view :is(.task-toolbar,.people-actions,.manager-toolbar,.vehicle-toolbar,.cash-toolbar,.letter-toolbar,.prod-toolbar,.table-toolbar,.feature-toolbar-actions,.bamco-management-toolbar,.bamco-command-bar,.suite-toolbar,.workspace-actions,.workspace-report-tools)>:is(input[type=search],input.search,.toolbar-search,.vehicle-search){flex:1 1 100%!important;width:100%!important;min-width:0!important;margin:0!important}
  html body #appView#appView :is(#kanbanView,#archiveView,.bamco-interior).bamco-interior>.bamco-page-body{padding:10px!important}

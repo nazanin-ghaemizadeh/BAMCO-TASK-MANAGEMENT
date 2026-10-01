@@ -60,7 +60,11 @@
       if(commandBack){
         view.querySelectorAll('.bamco-management-toolbar').forEach(bar=>bar.remove());
       }else{
-        managementBar=[...view.querySelectorAll(toolbarSelector)].find(bar=>!bar.closest('form,dialog,details')&&!bar.matches('.workspace-actions'));
+        const candidates=[...view.querySelectorAll(toolbarSelector)].filter(bar=>!bar.closest('form,dialog,details')&&!bar.matches('.workspace-actions'));
+        managementBar=candidates.find(bar=>!bar.matches('.bamco-management-toolbar')&&bar.querySelector('button:not(.content-back),input,select'))||candidates[0];
+        // Reuse a domain command row when content arrives after the generic shell.
+        // Moving existing controls preserves their listeners, permissions and input state.
+        if(managementBar)candidates.filter(bar=>bar!==managementBar&&bar.matches('.bamco-management-toolbar')).forEach(bar=>{while(bar.firstChild)managementBar.append(bar.firstChild);bar.remove()});
         if(!managementBar){
           managementBar=document.createElement('div');managementBar.className='bamco-management-toolbar';
           const panel=view.querySelector(':scope>.panel');

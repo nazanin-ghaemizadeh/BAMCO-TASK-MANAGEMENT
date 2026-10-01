@@ -1,7 +1,7 @@
 """Inspect the rendered table contract on every register route with isolated data."""
 import asyncio, functools, http.server, json, threading
 from pathlib import Path
-from playwright.async_api import async_playwright
+from playwright.async_api import async_playwright, expect
 from run_smoke import MOCK, MSG_MOCK, login, click_route, home, settled
 
 ROOT=Path(__file__).resolve().parents[2]
@@ -9,7 +9,7 @@ OUT=ROOT/'test-results'/'table-style'
 ROUTES=(
     'people','loginActivity','activeSessions','messageCenter','sentMessages',
     'performanceReport','systemOptions','kanban','archive','approvals',
-    'requestHistory','pettyCash','invoices','vehiclePermanent','vehicleTemporary',
+    'requestHistory','pettyCash','vehiclePermanent','vehicleTemporary',
     'parts','lettersIncoming','lettersOutgoing','accessMatrix'
 )
 CONTACTS='''
@@ -63,6 +63,50 @@ async def inspect(page, route, name):
         assert entry['wrapHeight']>=40, (where,'collapsed table',entry)
     return state
 
+async def inspect_toolbar(page, route):
+    metrics = await page.locator('#'+route+'View').evaluate("""view => {
+      const visible = e => e.getClientRects().length && getComputedStyle(e).display !== 'none' && getComputedStyle(e).visibility !== 'hidden';
+      const bars = [...view.querySelectorAll('.bamco-command-bar,.task-toolbar,.vehicle-toolbar,.cash-toolbar,.letter-toolbar,.manager-toolbar,.feature-toolbar-actions,.workspace-report-tools')].filter(visible);
+      const controls = [...new Set(bars.flatMap(bar => [...bar.querySelectorAll('button,input[type="search"],.table-inline-search,.vehicle-search,.workspace-search')]))].filter(e => visible(e) && !e.closest('dialog'));
+      return {controls: controls.map(e => ({label:e.getAttribute('aria-label') || e.textContent.trim() || e.placeholder, y:Math.round(e.getBoundingClientRect().top + e.getBoundingClientRect().height/2)})), bars:bars.map(e => ({height:e.getBoundingClientRect().height,overflow:getComputedStyle(e).overflowX,client:e.clientWidth,scroll:e.scrollWidth}))};
+    }""")
+    assert metrics['controls'], (route, 'missing toolbar controls')
+    centers = [item['y'] for item in metrics['controls']]
+    assert max(centers)-min(centers) <= 6, (route, 'desktop toolbar splits across rows', metrics)
+    assert all(item['height'] <= 64 for item in metrics['bars']), (route, 'oversized toolbar', metrics)
+    return metrics
+
+async def inspect_capabilities(page, route):
+    view = page.locator('#'+route+'View')
+    tables = view.locator('table:visible')
+    count = await tables.count()
+    assert count > 0, (route, 'no register table')
+    assert await view.locator('.suite-table-options').count() == count, (route, 'missing or duplicated table settings')
+    results = []
+    for index in range(count):
+        table = tables.nth(index)
+        head = table.locator('thead tr').first.locator('th').first
+        await expect(head).to_have_attribute('tabindex','0')
+        await head.press('Enter')
+        await expect(head).to_have_attribute('aria-sort','ascending')
+        await head.press('Enter')
+        await expect(head).to_have_attribute('aria-sort','descending')
+        handle = head.locator('.suite-resize,.column-resize-handle,.vehicle-col-resize').first
+        await expect(handle).to_have_attribute('tabindex','0')
+        before = await head.evaluate('e=>e.getBoundingClientRect().width')
+        await handle.press('ArrowLeft')
+        after = await head.evaluate('e=>e.getBoundingClientRect().width')
+        assert after > before + 4, (route, index, 'column width control did not resize', before, after)
+        options = view.locator('.suite-table-options').nth(index)
+        await options.locator('summary').click()
+        await expect(options.locator('.suite-reset')).to_be_visible()
+        await options.locator('.suite-reset').click()
+        await options.locator('.suite-clear-sort').click()
+        if await options.get_attribute('open') is not None:
+            await options.locator('summary').click()
+        results.append({'sort':'ascending/descending','resize':'keyboard','settings':'open/reset/clear'})
+    return results
+
 async def main():
     OUT.mkdir(parents=True,exist_ok=True)
     server=http.server.ThreadingHTTPServer(('127.0.0.1',0),functools.partial(http.server.SimpleHTTPRequestHandler,directory=ROOT))
@@ -77,27 +121,53 @@ async def main():
             await page.wait_for_function("() => window.bamcoSelection && window.bamcoDocumentsSites && document.querySelector('#departmentEntry')")
             await login(page,'manager')
             for route in ROUTES:
+                try:
+                    await home(page)
+                    await click_route(page,route)
+                    await settled(page,route)
+                    await page.wait_for_function("id=>[...document.querySelectorAll('#'+id+'View table')].some(t=>t.getBoundingClientRect().width>0)",arg=route,timeout=8000)
+                    results[route]=await inspect(page,route,route)
+                    results[route+'-toolbar']=await inspect_toolbar(page,route)
+                    results[route+'-capabilities']=await inspect_capabilities(page,route)
+                    if route in ('vehiclePermanent','vehicleTemporary'):
+                        box=await page.locator(f'#{route}View .vehicle-panel').evaluate('e=>({radius:getComputedStyle(e).borderTopLeftRadius,pagerBottom:e.querySelector(".table-pagination")?.getBoundingClientRect().bottom,viewport:innerHeight,searchVisible:e.querySelector(".vehicle-search")?.getBoundingClientRect().width})')
+                        assert box['radius']=='0px' and box['searchVisible']>150 and abs(box['pagerBottom']-box['viewport'])<6,(route,box)
+                except Exception as exc:
+                    problems.append(f'{route}: {exc}');print('STYLE_MISMATCH',route,exc,flush=True)
+                    await page.screenshot(path=str(OUT/(route+'-failure.png')),full_page=False)
+            for category in ('office','factory','external'):
+                key='phoneBook-'+category
+                try:
+                    await home(page)
+                    await page.evaluate('name=>window.bamcoPhonebook.open(name)',category)
+                    await settled(page,'phoneBook')
+                    await page.locator('#phoneBookView [data-phonebook-unit-select]').first.click()
+                    await page.wait_for_function("() => document.querySelector('#phoneBookView .phonebook-table')?.getBoundingClientRect().width>0")
+                    results[key]=await inspect(page,'phoneBook',key)
+                    results[key+'-toolbar']=await inspect_toolbar(page,'phoneBook')
+                    results[key+'-capabilities']=await inspect_capabilities(page,'phoneBook')
+                    metrics=await page.locator('#phoneBookView .phonebook-table-area').evaluate('e=>({top:e.getBoundingClientRect().top,bottom:e.getBoundingClientRect().bottom,viewport:innerHeight})')
+                    assert abs(metrics['bottom']-metrics['viewport'])<6,(key,'footer is not at the bottom',metrics)
+                    assert metrics['top']<160,(key,'table starts too low',metrics)
+                except Exception as exc:
+                    problems.append(f'{key}: {exc}');print('STYLE_MISMATCH',key,exc,flush=True)
+                    await page.screenshot(path=str(OUT/(key+'-failure.png')),full_page=False)
+            # Invoices deliberately uses cards, not an HTML register table.
+            await home(page)
+            await click_route(page,'invoices')
+            await settled(page,'invoices')
+            await expect(page.locator('#invoiceFeatureRoot .enterprise-card-list')).to_be_visible()
+            results['invoices']={'layout':'cards','toolbar':await inspect_toolbar(page,'invoices')}
+            await page.screenshot(path=str(OUT/'invoices-cards.png'),full_page=False)
+            await page.set_viewport_size({'width':390,'height':844})
+            for route in ('activeSessions','loginActivity','vehiclePermanent','vehicleTemporary'):
                 await home(page)
                 await click_route(page,route)
                 await settled(page,route)
-                await page.wait_for_function("id=>[...document.querySelectorAll('#'+id+'View table')].some(t=>t.getBoundingClientRect().width>0)",arg=route,timeout=8000)
-                try: results[route]=await inspect(page,route,route)
-                except AssertionError as exc: problems.append(str(exc));print('STYLE_MISMATCH',exc,flush=True)
-                if route in ('vehiclePermanent','vehicleTemporary'):
-                    box=await page.locator(f'#{route}View .vehicle-panel').evaluate('e=>({radius:getComputedStyle(e).borderTopLeftRadius,pagerBottom:e.querySelector(".table-pagination")?.getBoundingClientRect().bottom,viewport:innerHeight,searchVisible:e.querySelector(".vehicle-search")?.getBoundingClientRect().width})')
-                    assert box['radius']=='0px' and box['searchVisible']>150 and abs(box['pagerBottom']-box['viewport'])<6,(route,box)
-            for category in ('office','factory','external'):
-                await home(page)
-                await page.evaluate('name=>window.bamcoPhonebook.open(name)',category)
-                await settled(page,'phoneBook')
-                await page.locator('#phoneBookView [data-phonebook-unit-select]').first.click()
-                await page.wait_for_function("() => document.querySelector('#phoneBookView .phonebook-table')?.getBoundingClientRect().width>0")
-                key='phoneBook-'+category
-                try: results[key]=await inspect(page,'phoneBook',key)
-                except AssertionError as exc: problems.append(str(exc));print('STYLE_MISMATCH',exc,flush=True)
-                metrics=await page.locator('#phoneBookView .phonebook-table-area').evaluate('e=>({top:e.getBoundingClientRect().top,bottom:e.getBoundingClientRect().bottom,viewport:innerHeight})')
-                assert abs(metrics['bottom']-metrics['viewport'])<6,(key,'footer is not at the bottom',metrics)
-                assert metrics['top']<160,(key,'table starts too low',metrics)
+                bounds=await page.evaluate('({page:document.documentElement.scrollWidth,viewport:innerWidth})')
+                assert bounds['page'] <= bounds['viewport']+2, (route,'mobile page overflows',bounds)
+                results[route+'-mobile']=bounds
+                await page.screenshot(path=str(OUT/(route+'-mobile.png')),full_page=False)
             (OUT/'results.json').write_text(json.dumps(results,ensure_ascii=False,indent=2))
             await browser.close()
             assert not problems,problems

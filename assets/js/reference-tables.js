@@ -23,6 +23,7 @@
     wrap.after(pager);
     model={page:1,size:25,filters:{},pager};
     models.set(table,model);
+    table.dataset.referenceTable="true";
     pager.addEventListener('click',event=>{
       const button=event.target.closest('[data-page]');
       if(!button||button.disabled)return;
@@ -105,7 +106,9 @@
     const model=modelFor(table);
     if(!model)return;
     if(filters)ensureFilters(table,model);
+    window.bamcoTableSuite?.refresh(table,{filters:false,onRowsChanged:()=>{model.page=1;update(table,model)}});
     update(table,model);
   }
   window.bamcoReferenceTable=Object.freeze({refresh});
+  document.addEventListener('bamco-table-suite-ready',()=>document.querySelectorAll('table[data-reference-table]').forEach(table=>refresh(table)));
 })();
