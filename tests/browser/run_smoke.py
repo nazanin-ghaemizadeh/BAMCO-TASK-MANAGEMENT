@@ -145,7 +145,7 @@ async def manager_checks(page,result):
     assert await visible_count(page,'#messageCenterView .bamco-management-toolbar .content-back')==0,'duplicate message-center home button visible'
     await expect(page.locator('#messageChannel')).to_be_visible()
     assert await page.locator('#messageSubject,#messageCustomText').count()==0,'removed custom message fields returned'
-    assert await visible_count(page,'#messageCenterView .suite-table-options')==0,'table settings leaked into message center'
+    assert await visible_count(page,'#messageCenterView .suite-table-options')==1,'message center is missing the shared table settings'
     recipient=page.locator('#messageCenterBody tr[data-id]').first
     await recipient.click(); await expect(recipient).to_have_attribute('aria-selected','true')
     send=page.locator('#sendSelectedMessages'); await expect(send).to_be_enabled()
@@ -165,7 +165,7 @@ async def manager_checks(page,result):
     assert await page.locator('#sentMessagesView .sent-overview,#sentMessagesView .sent-log-summary').count()==0,'sent overview cards returned'
     assert await page.locator('#sentSearch,#sentStatusFilter,#sentChannelFilter').count()==0,'removed sent-message filters returned'
     await expect(page.locator('#sentMessagesView tbody')).to_contain_text('مدیر آزمایشی'); await expect(page.locator('#sentMessagesView tbody')).to_contain_text('به‌روزرسانی وظیفه'); await expect(page.locator('#sentMessagesView tbody')).to_contain_text('پیام داخل سامانه')
-    assert await visible_count(page,'#sentMessagesView .suite-table-options')==0,'table settings leaked into sent messages'
+    assert await visible_count(page,'#sentMessagesView .suite-table-options')==1,'sent messages is missing the shared table settings'
     await home(page); result['sent_log_unified_without_cards']='pass'
 
 

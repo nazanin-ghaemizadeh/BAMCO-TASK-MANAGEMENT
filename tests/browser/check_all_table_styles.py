@@ -66,8 +66,11 @@ async def inspect(page, route, name):
     return state
 
 async def inspect_toolbar(page, route):
-    if route in ('activeSessions','loginActivity','performanceReport'):
+    if route in ('activeSessions','loginActivity'):
         for control in ('.content-back','[data-tab-refresh]','[data-report-export]','[data-report-search]'):
+            await expect(page.locator('#'+route+'View '+control)).to_be_visible()
+    if route == 'performanceReport':
+        for control in ('.content-back','[data-canonical-refresh]','[data-canonical-export]','[data-performance-from]','[data-performance-to]'):
             await expect(page.locator('#'+route+'View '+control)).to_be_visible()
     metrics = await page.locator('#'+route+'View').evaluate("""view => {
       const visible = e => e.getClientRects().length && getComputedStyle(e).display !== 'none' && getComputedStyle(e).visibility !== 'hidden';
