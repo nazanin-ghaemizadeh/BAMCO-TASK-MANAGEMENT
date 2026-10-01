@@ -1,9 +1,3 @@
--- Narrow patch against read-only production capture from 2026-10-01.
--- Preserve every deployed validation, history and maintenance exception.
--- Only completed-but-active rows are automatically archived on future writes.
--- No RLS/grants, bulk backfill or Edge Function changes are performed here.
--- Rollback definition: docs/deployment/rollback-task-autoarchive.sql.
-
 CREATE OR REPLACE FUNCTION private.enforce_task_rules()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -62,11 +56,6 @@ begin
  end if;
  if new.due_date is not null and new.start_date is not null and new.due_date<new.start_date then raise exception 'تاریخ پایان نمی‌تواند قبل از تاریخ شروع باشد';end if;
  if new.done_date is not null and new_kind<>'completed' then raise exception 'تاریخ انجام فقط برای وظیفه انجام‌شده مجاز است';end if;
- -- Completion archives an active row; already-archived historical metadata
- -- remains unchanged, including deliberately unknown dates.
- if new_kind='completed' and new.archived is distinct from true then
-  new.archived=true;new.archived_at=coalesce(new.archived_at,now());
- end if;
  new.last_updated_at=now();if tg_op='UPDATE' then new.row_version=old.row_version+1;end if;
  return new;
 end $function$;

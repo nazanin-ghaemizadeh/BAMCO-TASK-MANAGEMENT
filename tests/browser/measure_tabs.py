@@ -57,8 +57,27 @@ async def assert_mobile_toolbar(page,tab):
     if not await toolbar.count() or not await toolbar.is_visible(): return
     data=await toolbar.evaluate('''n=>{const r=n.getBoundingClientRect(),s=getComputedStyle(n);return {w:r.width,sw:n.scrollWidth,h:r.height,wrap:s.flexWrap,overflowX:s.overflowX,children:[...n.children].filter(x=>getComputedStyle(x).display!=='none').map(x=>{const b=x.getBoundingClientRect();return {w:b.width,h:b.height}})}}''')
     assert data['w'] <= 390.5, f'{tab} toolbar wider than viewport: {data}'
-    assert data['wrap']=='wrap', f'{tab} actions do not wrap: {data}'
-    assert data['sw'] <= data['w'] + 2, f'{tab} actions overflow: {data}'
+    if data['wrap']=='wrap':
+        assert data['sw'] <= data['w'] + 2, f'{tab} wrapped actions overflow: {data}'
+    else:
+        # Narrow viewports may use the requested accessible horizontal command
+        # row. Overflow alone is insufficient: every control must be reachable.
+        assert data['wrap']=='nowrap' and data['overflowX'] in ('auto','scroll'), f'{tab} clips unwrapped actions: {data}'
+        controls=toolbar.locator('button:visible,input:visible:not([type=hidden]),select:visible')
+        assert await controls.count()>0, f'{tab} has no reachable controls'
+        for index in range(await controls.count()):
+            control=controls.nth(index)
+            await control.scroll_into_view_if_needed()
+            box=await control.bounding_box();bar=await toolbar.bounding_box()
+            assert box and bar and box['width'] <= bar['width']+2, (tab,'oversized mobile control',box,bar)
+            cx=box['x']+box['width']/2;cy=box['y']+box['height']/2
+            assert max(0,bar['x']) <= cx <= min(390,bar['x']+bar['width']) and bar['y'] <= cy <= bar['y']+bar['height'], (tab,'control cannot scroll into view',box,bar)
+            if await control.is_enabled():
+                await control.click(trial=True)
+                await control.focus()
+                await expect(control).to_be_focused()
+                await control.press('Tab')
+                assert not await control.evaluate('e=>e===document.activeElement'), (tab,'keyboard focus trapped in a control')
 
 async def assert_dashboard_mobile(page):
     await home(page);await click_route(page,'dashboard');await settled(page,'dashboard')

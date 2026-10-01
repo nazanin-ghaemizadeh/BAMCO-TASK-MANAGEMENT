@@ -103,3 +103,9 @@ test('recent activity alone cannot assert that an unlinked legacy record is acti
 });
 
 test('parallel start maintenance replaces only an older session of the same device',async()=>{const f=edge(),device='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',other='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';f.rows.push({id:'old',user_id:'owner',auth_session_id:[...f.native][1],device_id:device},{id:'other',user_id:'owner',auth_session_id:'another',device_id:other});const result=await f.call({action:'start',device_id:device});assert.equal(result.status,200);assert.equal(f.rows[0].ended_reason,'replaced');assert(!f.rows[1].logout_at);assert.equal(result.body.session.device_id,device)});
+
+test('session-audit deployment preserves verified production CORS and avoids the absent termination RPC',()=>{
+ const source=fs.readFileSync('supabase/functions/session-audit/index.ts','utf8');
+ assert.match(source,/'Access-Control-Allow-Origin':'https:\/\/nazanin-ghaemizadeh\.github\.io'/);
+ assert.doesNotMatch(source,/bamco_terminate_auth_sessions/);
+});

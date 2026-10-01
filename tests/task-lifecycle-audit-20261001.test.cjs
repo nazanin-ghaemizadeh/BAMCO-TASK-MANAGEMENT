@@ -63,3 +63,14 @@ test('editing a completed archived task keeps the original archive timestamp',as
  const write=f.calls.find(call=>call.endpoint==='tasks'&&call.method==='PATCH');
  assert.ok(write);assert.equal(write.body.archived_at,archivedAt);
 });
+
+test('editing historical completed archive does not invent unknown completion or archive dates',async t=>{
+ const f=await fixture({tables:{tasks:[{id:601,title:'سابقه با تاریخ نامعلوم',description:'old',owner_id:'test-owner',created_by:'test-manager',status:'انجام شده',priority:'متوسط',source:'excel',archived:true,archived_at:null,done_date:null}]}});
+ t.after(()=>f.dispose());await f.open('archive');f.w.openEdit(601);
+ const form=f.d.querySelector('#taskForm');form.elements.description.value='new';form.requestSubmit();
+ await until(()=>!f.d.querySelector('#taskDialog').open);
+ const write=f.calls.find(call=>call.endpoint==='tasks'&&call.method==='PATCH');
+ assert.ok(write);assert.equal(write.body.done_date,null);assert.equal(write.body.archived_at,null);assert.equal(write.body.archived,true);
+ const imported={status:'انجام شده',priority:'متوسط',source:'excel',archived:true,owner_id:'test-owner',done_date:null};
+ f.w.bamcoOptions.normalizeTask(imported);assert.equal(imported.done_date,null);assert.equal(imported.archived_at,null);
+});

@@ -600,7 +600,7 @@ $('#taskForm [name="status"]').addEventListener('change',async e=>{
     if(!ok){selectEl.value=selectEl.dataset.previousStatus||state.editing?.status||'در حال انجام';selectEl.dataset.archiveConfirmed='';return}
     selectEl.dataset.archiveConfirmed='1';
     const f=$('#taskForm');
-    if(!f.elements.done_date.value)setJalaliField('done_date_j',new Date().toISOString().slice(0,10));
+    if(!f.elements.done_date.value&&!window.bamcoOptions.completed(state.editing||{}))setJalaliField('done_date_j',new Date().toISOString().slice(0,10));
   }else if(!window.bamcoOptions.completed(value))selectEl.dataset.archiveConfirmed='';
   selectEl.dataset.previousStatus=selectEl.value;
   syncTaskState();
@@ -626,7 +626,7 @@ $('#taskForm').addEventListener('submit',async e=>{
     if(!await window.bamcoConfirm('از انتقال این وظیفه به آرشیو مطمئن هستید؟'))return;
     f.elements.status.dataset.archiveConfirmed='1';
   }
-  if(completing&&!data.done_date)data.done_date=new Date().toISOString().slice(0,10);
+  if(completing&&!data.done_date&&!window.bamcoOptions.completed(currentTask||{}))data.done_date=new Date().toISOString().slice(0,10);
   const activeRequest=state.reviewEdit||state.resubmitting||state.amendingRequest;
   // Project activity requests carry immutable WBS linkage alongside the task
   // fields shown in this dialog. Preserve that server-validated context when
@@ -646,7 +646,7 @@ $('#taskForm').addEventListener('submit',async e=>{
     }else if(state.amendingRequest){
       await rpc('amend_change_request',{p_request_id:state.amendingRequest.id,p_proposed_data:requestPayload});
     }else if(directMutation){
-      if(completing){data.archived=true;data.archived_at=currentTask?.archived_at||data.archived_at||new Date().toISOString()}
+      if(completing){data.archived=true;data.archived_at=currentTask?.archived?(currentTask.archived_at??null):(data.archived_at||new Date().toISOString())}
       if(state.editing?._restoring){await update('tasks',`id=eq.${state.editing.id}`,{...data,archived:true,archived_at:state.editing.archived_at||new Date().toISOString()});await rpc('restore_tasks_to_kanban_and_resequence',{p_task_ids:[Number(state.editing.id)]})}
       else if(state.editing)await update('tasks',`id=eq.${state.editing.id}`,data);
       else await insert('tasks',{...data,created_by:state.profile.id});
