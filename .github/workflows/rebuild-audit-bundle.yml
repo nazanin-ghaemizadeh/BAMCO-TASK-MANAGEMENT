@@ -1,0 +1,92 @@
+name: Temporary audit bundle repair
+
+on:
+  push:
+    branches: [fix/comprehensive-bug-audit-20261001]
+    paths: [.github/workflows/rebuild-audit-bundle.yml]
+
+permissions: {}
+
+concurrency:
+  group: temporary-audit-bundle-repair
+  cancel-in-progress: false
+
+jobs:
+  rebuild:
+    if: >-
+      github.repository == 'nazanin-ghaemizadeh/BAMCO-TASK-MANAGEMENT' &&
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/fix/comprehensive-bug-audit-20261001' &&
+      github.event.deleted == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    env:
+      EXPECTED_SOURCE_PARENT: 27f2db21448d5969ebfaedd7345cc2b8a256a74b
+      EXPECTED_BUNDLE_BLOB: bbe1439f9e6fd521086a5a9bf54e9514ae92b10b
+      TARGET_BRANCH: fix/comprehensive-bug-audit-20261001
+      WORKFLOW_PATH: .github/workflows/rebuild-audit-bundle.yml
+      PUSH_BEFORE: ${{ github.event.before }}
+    steps:
+      - name: Check out exact triggering commit
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Validate immutable source and workflow-only trigger commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$EXPECTED_SOURCE_PARENT" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$EXPECTED_BUNDLE_BLOB" =~ ^[0-9a-f]{40}$ ]]
+          test "$GITHUB_REPOSITORY" = nazanin-ghaemizadeh/BAMCO-TASK-MANAGEMENT
+          test "$GITHUB_EVENT_NAME" = push
+          test "$GITHUB_REF" = "refs/heads/$TARGET_BRANCH"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git show -s --format=%P HEAD)" = "$EXPECTED_SOURCE_PARENT"
+          test "$PUSH_BEFORE" = "$EXPECTED_SOURCE_PARENT"
+          test "$(git diff-tree --no-commit-id --name-only -r HEAD)" = "$WORKFLOW_PATH"
+          test "$(git diff-tree --no-commit-id --diff-filter=A --name-only -r HEAD)" = "$WORKFLOW_PATH"
+          test -z "$(git status --porcelain --untracked-files=all)"
+      - name: Set up Node without installing project dependencies
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '24'
+      - name: Rebuild and validate only the expected JavaScript bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/build-static-bundles.mjs
+          node scripts/build-static-bundles.mjs --check
+          test "$(git hash-object assets/js/bamco.bundle.js)" = "$EXPECTED_BUNDLE_BLOB"
+          git diff --exit-code -- assets/css
+          test -z "$(git ls-files --others --exclude-standard)"
+          test "$(git diff --name-only)" = assets/js/bamco.bundle.js
+          git add -- assets/js/bamco.bundle.js
+          test "$(git diff --cached --name-only)" = assets/js/bamco.bundle.js
+          git diff --exit-code
+          test "$(git rev-parse :assets/js/bamco.bundle.js)" = "$EXPECTED_BUNDLE_BLOB"
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'Build verified audit JavaScript bundle'
+          test "$(git rev-parse HEAD^)" = "$GITHUB_SHA"
+          test "$(git diff-tree --no-commit-id --name-only -r HEAD)" = assets/js/bamco.bundle.js
+          test -z "$(git status --porcelain --untracked-files=all)"
+      - name: Push only the verified bundle to the unchanged audit branch
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          case "$(git remote get-url origin)" in
+            https://github.com/nazanin-ghaemizadeh/BAMCO-TASK-MANAGEMENT|https://github.com/nazanin-ghaemizadeh/BAMCO-TASK-MANAGEMENT.git) ;;
+            *) exit 1 ;;
+          esac
+          export GIT_CONFIG_COUNT=1
+          export GIT_CONFIG_KEY_0=http.https://github.com/.extraheader
+          export GIT_CONFIG_VALUE_0="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
+          remote_sha="$(git ls-remote --exit-code origin "refs/heads/$TARGET_BRANCH" | cut -f1)"
+          test "$remote_sha" = "$GITHUB_SHA"
+          git push origin "HEAD:refs/heads/$TARGET_BRANCH"
+          remote_sha="$(git ls-remote --exit-code origin "refs/heads/$TARGET_BRANCH" | cut -f1)"
+          test "$remote_sha" = "$(git rev-parse HEAD)"
