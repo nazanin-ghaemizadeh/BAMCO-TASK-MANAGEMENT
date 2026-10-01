@@ -7,28 +7,32 @@ if(typeof module!=='undefined'&&module.exports)module.exports={compareValues};
 if(typeof document==='undefined')return;
 window.BAMCO_COMPARE_VALUES=compareValues;window.BAMCO_TASK_SORT=window.BAMCO_TASK_SORT||{};
 function install(){
+ if(window.bamcoTableSuite)return;
  const root=document.querySelector('#appView');if(!root)return;document.body.classList.add('table-suite');
  const featureOwned=view=>window.BamcoNavigationCatalog?.isFeatureOwnedRoute?.(view?.id?.replace(/View$/,''))===true;
  const featureOwnedTable=table=>featureOwned(table?.closest('.view'));
- const settings=new WeakMap();let scheduled=false;
+ const settings=new WeakMap(),preferences=new Map();let scheduled=false;
  const observer=new MutationObserver(records=>{if(records.every(r=>r.target.nodeType===1&&r.target.closest('.table-pagination,#archivePager,.suite-table-options')))return;schedule()});
  const observe=()=>observer.observe(root,{childList:true,subtree:true});
  function schedule(){if(scheduled)return;scheduled=true;queueMicrotask(()=>{scheduled=false;observer.disconnect();scan();observe()})}
  function dataRows(table){return [...(table.tBodies[0]?.rows||[])].filter(r=>!(r.cells.length===1&&r.cells[0].colSpan>1))}
  function clear(){window.bamcoSelection?.clear();root.querySelectorAll('tr.suite-selected').forEach(r=>{r.classList.remove('suite-selected');r.setAttribute('aria-selected','false')})}
- function sort(table,index,direction){
+ function sort(table,index,direction,notify=true){
   const model=settings.get(table);if(!model.sort)model.unsorted=dataRows(table);model.sort={index,direction};
   const rows=dataRows(table);rows.sort((a,b)=>direction*compareValues(a.cells[index]?.textContent,b.cells[index]?.textContent));
   rows.forEach(row=>table.tBodies[0].append(row));
   [...table.tHead.rows[0].cells].forEach((th,i)=>{if(i===index)th.setAttribute('aria-sort',direction===1?'ascending':'descending');else th.removeAttribute('aria-sort')});
   model.fingerprint=rows.map(r=>r.dataset.taskId||r.dataset.requestId||r.dataset.id||r.textContent).join('\n');
-  table.closest('.view')?.querySelector('.focus-scroll')?.scrollTo({top:0});
+  table.closest('.view')?.querySelector('.focus-scroll')?.scrollTo?.({top:0});
+  if(notify)model.onRowsChanged?.();
  }
  function applyColumnWidth(table,th,width){
   width=Math.max(64,Math.min(900,width));th.style.setProperty('width',width+'px','important');
   let group=table.querySelector(':scope>colgroup');if(!group){group=document.createElement('colgroup');table.prepend(group)}
   while(group.children.length<table.tHead.rows[0].cells.length)group.append(document.createElement('col'));
+  [...group.children].forEach((col,i)=>{if(!col.style.width)col.style.width=Math.max(64,table.tHead.rows[0].cells[i].getBoundingClientRect().width||155)+'px'});
   group.children[th.cellIndex].style.width=width+'px';
+  table.style.setProperty('width',[...group.children].reduce((total,col)=>total+(parseFloat(col.style.width)||155),0)+'px','important');
   const model=settings.get(table);model.widths[th.cellIndex]=width;
   try{localStorage.setItem(model.key,JSON.stringify(model.widths))}catch{}
  }
@@ -45,27 +49,29 @@ function install(){
   if(model.options?.isConnected)return;
   const options=document.createElement('details');options.className='suite-table-options';options.innerHTML='<summary>تنظیمات جدول</summary><div class="suite-options-panel"><label><input type="checkbox" class="suite-density"> نمایش فشرده</label><button type="button" class="suite-clear-sort">حذف مرتب‌سازی</button><button type="button" class="suite-reset">بازنشانی عرض ستون‌ها</button><div class="suite-columns"></div></div>';
   const host=table.closest('.focus-scroll')||table.parentElement;host.after(options);model.options=options;
-  const heads=[...table.tHead.rows[0].cells];heads.forEach((th,i)=>{const label=document.createElement('label'),input=document.createElement('input');input.type='checkbox';input.checked=true;label.append(input,document.createTextNode(th.textContent.trim()));options.querySelector('.suite-columns').append(label);input.addEventListener('change',()=>{model.hiddenColumns=model.hiddenColumns||new Set();if(input.checked)model.hiddenColumns.delete(i);else model.hiddenColumns.add(i);table.querySelectorAll('tr').forEach(row=>row.cells[i]?.classList.toggle('suite-column-hidden',!input.checked));const col=table.querySelector('colgroup')?.children[i];if(col)col.style.display=input.checked?'':'none'})});
-  const density=options.querySelector('.suite-density');density.checked=true;density.addEventListener('change',e=>table.classList.toggle('suite-compact',e.target.checked));
-  options.querySelector('.suite-clear-sort').addEventListener('click',()=>{model.sort=null;table.querySelectorAll('[aria-sort]').forEach(th=>th.removeAttribute('aria-sort'));const scope=table.closest('#kanbanView')?'kanban':table.closest('#archiveView')?'archive':null;if(scope){delete window.BAMCO_TASK_SORT[scope];renderTasks(scope==='archive')}else if(table.tBodies[0]?.id==='approvalBody'){renderRequests()}else if(table.tBodies[0]?.id==='requestHistoryBody'){renderRequestHistory()}else if(model.unsorted?.every(r=>r.isConnected&&r.closest('table')===table)){model.unsorted.forEach(r=>table.tBodies[0].append(r))}});
-  options.querySelector('.suite-reset').addEventListener('click',()=>{model.widths={};try{localStorage.removeItem(model.key)}catch{};heads.forEach(th=>{th.style.removeProperty('width');th.style.removeProperty('min-width')});table.querySelectorAll('col').forEach(col=>col.style.removeProperty('width'))});
+  const heads=[...table.tHead.rows[0].cells];heads.forEach((th,i)=>{const label=document.createElement('label'),input=document.createElement('input');input.type='checkbox';input.checked=!model.hiddenColumns?.has(i);label.append(input,document.createTextNode(th.textContent.trim()));options.querySelector('.suite-columns').append(label);input.addEventListener('change',()=>{model.hiddenColumns=model.hiddenColumns||new Set();if(input.checked)model.hiddenColumns.delete(i);else model.hiddenColumns.add(i);table.querySelectorAll('tr').forEach(row=>row.cells[i]?.classList.toggle('suite-column-hidden',!input.checked));const col=table.querySelector('colgroup')?.children[i];if(col)col.style.display=input.checked?'':'none'})});
+  const density=options.querySelector('.suite-density');density.checked=model.compact!==false;density.addEventListener('change',e=>{model.compact=e.target.checked;table.classList.toggle('suite-compact',model.compact)});
+  options.querySelector('.suite-clear-sort').addEventListener('click',()=>{model.sort=null;if(model.onClearSort){model.onClearSort();return}table.querySelectorAll('[aria-sort]').forEach(th=>th.removeAttribute('aria-sort'));const scope=table.closest('#kanbanView')?'kanban':table.closest('#archiveView')?'archive':null;if(scope){delete window.BAMCO_TASK_SORT[scope];renderTasks(scope==='archive')}else if(table.tBodies[0]?.id==='approvalBody'){renderRequests()}else if(table.tBodies[0]?.id==='requestHistoryBody'){renderRequestHistory()}else if(model.unsorted?.every(r=>r.isConnected&&r.closest('table')===table)){model.unsorted.forEach(r=>table.tBodies[0].append(r));model.onRowsChanged?.()}});
+  options.querySelector('.suite-reset').addEventListener('click',()=>{model.widths={};try{localStorage.removeItem(model.key)}catch{};[...table.tHead.rows[0].cells].forEach(th=>{th.style.removeProperty('width');th.style.removeProperty('min-width')});table.querySelectorAll('col').forEach(col=>col.style.removeProperty('width'));table.style.removeProperty('width')});
  }
- function decorate(table){
+ function decorate(table,config){
   const heads=table.tHead?.rows[0];if(!heads||table.closest('dialog'))return;
   const first=heads.cells[0];if(first&&(first.textContent.trim()==='انتخاب'||first.classList.contains('unified-select-head'))){table.querySelectorAll('tr').forEach(row=>{if(row.cells.length>1)row.cells[0].remove()});table.querySelector('colgroup')?.children[0]?.remove()}
-  let model=settings.get(table);if(!model){const view=table.closest('.view');const key='bamco.table.widths.v4.'+(view?.id||'table')+'.'+[...view.querySelectorAll('table')].indexOf(table);let widths={};try{widths=JSON.parse(localStorage.getItem(key)||'{}')}catch{}model={key,widths};settings.set(table,model)}
-  table.classList.add('suite-table','suite-compact');table.setAttribute('aria-multiselectable','true');
+  let model=settings.get(table);if(!model){const view=table.closest('.view');const key='bamco.table.widths.v4.'+(table.dataset.tableKey||((view?.id||'table')+'.'+[...(view||root).querySelectorAll('table')].indexOf(table)));let widths={};try{widths=JSON.parse(localStorage.getItem(key)||'{}')}catch{}model={key,widths:widths&&typeof widths==='object'?widths:{},...(preferences.has(key)?{widths:preferences.get(key).widths,hiddenColumns:preferences.get(key).hiddenColumns,compact:preferences.get(key).compact}:{})};settings.set(table,model);preferences.set(key,model)}
+  if(config)Object.assign(model,config);
+  table.classList.add('suite-table');table.classList.toggle('suite-compact',model.compact!==false);table.setAttribute('aria-multiselectable','true');
   [...heads.cells].forEach((th,i)=>{
    if(!th.querySelector('.suite-resize,.column-resize-handle,.vehicle-col-resize')){const handle=document.createElement('span');handle.className='suite-resize';handle.tabIndex=0;handle.setAttribute('role','separator');handle.setAttribute('aria-orientation','vertical');handle.setAttribute('aria-label','تغییر عرض '+th.textContent.trim());th.append(handle)}
    if(th.tabIndex<0)th.tabIndex=0;th.title='کلیک برای مرتب‌سازی؛ لبه ستون برای تغییر عرض';
+   const handle=th.querySelector('.suite-resize,.column-resize-handle,.vehicle-col-resize');handle.classList.add('suite-resize');handle.tabIndex=0;handle.setAttribute('role','separator');handle.setAttribute('aria-orientation','vertical');handle.setAttribute('aria-label','تغییر عرض '+th.textContent.trim());
    if(model.widths[i])applyColumnWidth(table,th,model.widths[i]);
   });
   dataRows(table).forEach(row=>{if(!row.closest('thead'))row.tabIndex=0;[...row.cells].forEach(cell=>{const text=cell.textContent.trim(),english=/[A-Za-z]/.test(text)&&!/[\u0600-\u06ff]/.test(text);cell.classList.toggle('suite-english',english)})});
   const scope=table.closest('#kanbanView')?'kanban':table.closest('#archiveView')?'archive':null;
-  const nativeSort=scope&&window.BAMCO_TASK_SORT[scope];if(nativeSort){[...heads.cells].forEach((th,i)=>{if(i===nativeSort.index)th.setAttribute('aria-sort',nativeSort.direction===1?'ascending':'descending');else th.removeAttribute('aria-sort')})}
-  else if(model.sort){const fingerprint=dataRows(table).map(r=>r.dataset.taskId||r.dataset.requestId||r.dataset.id||r.textContent).join('\n');if(fingerprint!==model.fingerprint)sort(table,model.sort.index,model.sort.direction)}
-  if(model.hiddenColumns)table.querySelectorAll('tr').forEach(row=>[...row.cells].forEach((cell,i)=>cell.classList.toggle('suite-column-hidden',model.hiddenColumns.has(i))));
-  addFilters(table,model);
+  const nativeSort=model.onSort?model.sort:scope&&window.BAMCO_TASK_SORT[scope];if(nativeSort){[...heads.cells].forEach((th,i)=>{if(i===nativeSort.index)th.setAttribute('aria-sort',nativeSort.direction===1?'ascending':'descending');else th.removeAttribute('aria-sort')})}
+  else if(model.sort&&!model.onSort){[...heads.cells].forEach((th,i)=>{if(i===model.sort.index)th.setAttribute('aria-sort',model.sort.direction===1?'ascending':'descending');else th.removeAttribute('aria-sort')});if(model.unsorted?.some(row=>!row.isConnected))model.unsorted=dataRows(table);const fingerprint=dataRows(table).map(r=>r.dataset.taskId||r.dataset.requestId||r.dataset.id||r.textContent).join('\n');if(fingerprint!==model.fingerprint)sort(table,model.sort.index,model.sort.direction,false)}
+  if(model.hiddenColumns){table.querySelectorAll('tr').forEach(row=>[...row.cells].forEach((cell,i)=>cell.classList.toggle('suite-column-hidden',model.hiddenColumns.has(i))));table.querySelectorAll(':scope>colgroup>col').forEach((col,i)=>col.style.display=model.hiddenColumns.has(i)?'none':'')}
+  if(model.filters!==false)addFilters(table,model);
   tableOptions(table,model);
  }
  function addFilters(table,model){
@@ -78,7 +84,7 @@ function install(){
  function ensureTableToolbar(table){
   const panel=table.closest('.panel,.table-panel'),head=panel?.querySelector(':scope>.panel-head');if(!panel||!head)return null;
   const scope=panel.closest('.view')||panel;
-  let bar=scope.querySelector(':scope>.bamco-command-bar')||panel.querySelector(':scope>.task-toolbar,:scope>.vehicle-toolbar,:scope>.prod-toolbar,:scope>.people-actions,:scope>.manager-toolbar,:scope>.workspace-actions,:scope>.workspace-report-tools,:scope>.bamco-management-toolbar,:scope>.suite-toolbar');
+  let bar=scope.querySelector(':scope>.bamco-command-bar')||panel.querySelector(':scope>.bamco-command-bar,:scope>.task-toolbar,:scope>.vehicle-toolbar,:scope>.prod-toolbar,:scope>.people-actions,:scope>.manager-toolbar,:scope>.workspace-actions,:scope>.workspace-report-tools,:scope>.bamco-management-toolbar,:scope>.suite-toolbar');
   if(!bar){bar=document.createElement('div');bar.className='suite-toolbar';head.after(bar)}
   const search=head.querySelector('input.search,input[type=search],.toolbar-search');if(search)bar.append(search);
   if(![...scope.querySelectorAll('button')].some(b=>/خروجی اکسل|خروج از اکسل/.test(b.textContent))){
@@ -116,17 +122,19 @@ function install(){
   const th=e.target.closest('thead tr:first-child th'),table=th?.closest('table');
   if(table?.classList.contains('suite-table')&&!e.target.closest('input,select,button,.suite-resize,.column-resize-handle,.vehicle-col-resize')){
    e.preventDefault();e.stopImmediatePropagation();if(table.dataset.resizeDone)return;
-   const direction=th.getAttribute('aria-sort')==='ascending'?-1:1;const scope=table.closest('#kanbanView')?'kanban':table.closest('#archiveView')?'archive':null;if(scope){window.BAMCO_TASK_SORT[scope]={index:th.cellIndex,direction};renderTasks(scope==='archive');return}observer.disconnect();sort(table,th.cellIndex,direction);observe();return;
+   const direction=th.getAttribute('aria-sort')==='ascending'?-1:1;const model=settings.get(table);if(model.onSort){model.onSort({index:th.cellIndex,direction});return}const scope=table.closest('#kanbanView')?'kanban':table.closest('#archiveView')?'archive':null;if(scope){window.BAMCO_TASK_SORT[scope]={index:th.cellIndex,direction};renderTasks(scope==='archive');return}observer.disconnect();sort(table,th.cellIndex,direction);observe();return;
   }
   if(e.target.closest('.content-back,#nav [data-view],#logoutBtn')){clear();return}
   if(!e.target.closest('table,button,a,input,select,textarea,label,dialog,summary,.suite-table-options,.table-pagination,#archivePager,.task-toolbar,.vehicle-toolbar,.prod-toolbar'))clear();
  },true);
  document.addEventListener('keydown',e=>{
   const handle=e.target.closest('.suite-resize,.column-resize-handle,.vehicle-col-resize');
-  if(handle&&['ArrowLeft','ArrowRight'].includes(e.key)){e.preventDefault();e.stopImmediatePropagation();const th=handle.closest('th');applyColumnWidth(th.closest('table'),th,th.getBoundingClientRect().width+(e.key==='ArrowLeft'?12:-12));return}
+  if(handle&&settings.has(handle.closest('table'))&&['ArrowLeft','ArrowRight'].includes(e.key)){e.preventDefault();e.stopImmediatePropagation();const th=handle.closest('th');applyColumnWidth(th.closest('table'),th,th.getBoundingClientRect().width+(e.key==='ArrowLeft'?12:-12));return}
   if(e.key==='Escape'&&!e.target.closest('dialog'))clear();
   if(['Enter',' '].includes(e.key)&&e.target.matches('table.suite-table tbody tr,table.suite-table thead tr:first-child th')){e.preventDefault();e.stopImmediatePropagation();e.target.click()}
  },true);
+ window.bamcoTableSuite=Object.freeze({refresh(table,config={}){observer.disconnect();try{decorate(table,config)}finally{observe()}}});
+ document.dispatchEvent(new Event('bamco-table-suite-ready'));
  scan();observe();
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();

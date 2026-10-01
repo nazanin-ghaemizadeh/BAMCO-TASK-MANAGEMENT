@@ -53,7 +53,8 @@ test('welcome uses the active database sticker pair and home is deduplicated',()
 
 test('all data tables default to compact multi-selection behavior',()=>{
   const js=read('assets/js/table-suite.js');
-  assert.match(js,/classList\.add\('suite-table','suite-compact'\)/);
+  assert.match(js,/classList\.add\('suite-table'\)/);
+  assert.match(js,/classList\.toggle\('suite-compact',model\.compact!==false\)/);
   assert.match(read('assets/js/table-selection.js'),/event\.ctrlKey.*event\.metaKey/);
   assert.match(js,/home\.textContent='⌂ خانه'/);
 });

@@ -26,4 +26,8 @@ if (run.error) {
   console.error(run.error);
   process.exit(1);
 }
+if (run.signal || run.status !== 0) {
+  console.error(`Regression runner did not complete successfully (status=${run.status}, signal=${run.signal || 'none'}).`);
+  process.exit(1);
+}
 process.exit(0);

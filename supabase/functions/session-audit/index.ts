@@ -2,7 +2,8 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from 'jsr:@supabase/supabase-js@2.57.4';
 
 const cors={
-  'Access-Control-Allow-Origin':'*',
+  // Preserve the verified production origin allowlist when deploying this fix.
+  'Access-Control-Allow-Origin':'https://nazanin-ghaemizadeh.github.io',
   'Access-Control-Allow-Headers':'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods':'POST, OPTIONS',
   'Content-Type':'application/json',

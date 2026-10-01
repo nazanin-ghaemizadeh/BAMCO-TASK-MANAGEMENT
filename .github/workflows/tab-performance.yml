@@ -12,6 +12,8 @@ on:
       - 'tests/browser/mock-messaging-api.js'
       - '.github/workflows/tab-performance.yml'
   workflow_dispatch:
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: read

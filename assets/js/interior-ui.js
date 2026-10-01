@@ -60,7 +60,11 @@
       if(commandBack){
         view.querySelectorAll('.bamco-management-toolbar').forEach(bar=>bar.remove());
       }else{
-        managementBar=[...view.querySelectorAll(toolbarSelector)].find(bar=>!bar.closest('form,dialog,details')&&!bar.matches('.workspace-actions'));
+        const candidates=[...view.querySelectorAll(toolbarSelector)].filter(bar=>!bar.closest('form,dialog,details')&&!bar.matches('.workspace-actions'));
+        managementBar=candidates.find(bar=>!bar.matches('.bamco-management-toolbar')&&bar.querySelector('button:not(.content-back),input,select'))||candidates[0];
+        // Reuse a domain command row when content arrives after the generic shell.
+        // Moving existing controls preserves their listeners, permissions and input state.
+        if(managementBar)candidates.filter(bar=>bar!==managementBar&&bar.matches('.bamco-management-toolbar')).forEach(bar=>{while(bar.firstChild)managementBar.append(bar.firstChild);bar.remove()});
         if(!managementBar){
           managementBar=document.createElement('div');managementBar.className='bamco-management-toolbar';
           const panel=view.querySelector(':scope>.panel');
@@ -69,6 +73,7 @@
         managementBar.classList.add('bamco-command-bar');
         const nativeHead=view.querySelector('.panel-head,.vehicle-panel-head,.tt-head');
         nativeHead?.querySelectorAll(':scope>.workspace-actions>button,:scope>button').forEach(button=>managementBar.append(button));
+        nativeHead?.querySelectorAll(':scope>.workspace-actions').forEach(group=>{if(!group.querySelector('button,a,input,select,textarea'))group.remove()});
         [...(nativeHead?.children||[])].filter(child=>child!==managementBar&&!child.contains(managementBar)&&child.matches('div')&&!child.querySelector('h1,h2,h3,p,small')&&child.querySelector('button,a,input,select')).forEach(group=>{
           [...group.children].forEach(control=>managementBar.append(control));group.remove();
         });
