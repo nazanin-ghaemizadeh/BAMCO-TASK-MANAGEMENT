@@ -5,9 +5,9 @@ const {JSDOM}=require('jsdom');
 
 test('100 distinct art-backed joint poses interpolate instead of swapping full-body images',async()=>{
  const dom=new JSDOM('<section data-avatar-state="idle"><div data-avatar-scene></div></section>',{runScripts:'outside-only'});
- const w=dom.window,view=w.document.querySelector('section'),rotations=[];
+ const w=dom.window,view=w.document.querySelector('section'),rotations=[],translations=[];
  w.HTMLImageElement.prototype.decode=()=>Promise.resolve();
- const context={drawImage(){},clearRect(){},save(){},restore(){},translate(){},scale(){},fillRect(){},setTransform(){},rotate(a){rotations.push(a)},createRadialGradient:()=>({addColorStop(){}})};
+ const context={drawImage(){},clearRect(){},save(){},restore(){},translate(...args){translations.push(args)},scale(){},fillRect(){},setTransform(){},rotate(a){rotations.push(a)},createRadialGradient:()=>({addColorStop(){}})};
  w.HTMLCanvasElement.prototype.getContext=()=>context;
  let scheduled;w.requestAnimationFrame=callback=>{scheduled=callback;return 1};w.cancelAnimationFrame=()=>{scheduled=null};w.matchMedia=()=>({matches:false});
  w.eval(fs.readFileSync('assets/js/assistant-rig-100.js','utf8'));
@@ -29,5 +29,13 @@ test('100 distinct art-backed joint poses interpolate instead of swapping full-b
  assert(Math.abs(rotations.slice(-4)[1]-late)<.2,'switching between distant poses remains continuous');
  view.dataset.avatarMotion='';view.dataset.avatarEmotion='concerned';view.dataset.avatarState='speaking';scheduled(now+732);
  assert(view.dataset.avatarPose.startsWith('concerned/'),'the spoken response can steer facial mood without interrupting the joint transition');
+ view.dataset.avatarState='idle';view.dataset.avatarGesture='greet';scheduled(now+748);
+ assert.equal(view.dataset.avatarPose,'warm/welcome','greeting is visible even before speech begins');
+ view.dataset.avatarState='listening';view.dataset.avatarGesture='neutral';
+ for(let i=1;i<=80;i++)scheduled(now+748+i*16);
+ assert(translations.some(([x,y])=>y===0&&x>0&&x<=4),'listening uses its eye-gaze channel');
+ w.matchMedia=()=>({matches:true});view.dataset.avatarState='speaking';
+ scheduled(now+4000);const reducedPose=view.dataset.avatarPose;scheduled(now+14000);
+ assert.equal(view.dataset.avatarPose,reducedPose,'reduced motion does not cycle through unrelated arm poses');
  puppet.stop();assert.equal(scheduled,null);dom.window.close();
 });

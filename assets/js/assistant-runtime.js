@@ -64,7 +64,7 @@ function create(view,{session,loadSticker}){
  function restoreConversation(row){
   if(!row||!Array.isArray(row.messages))return;
   dispose();conversation=String(row.id||conversationId());history=row.messages.filter(item=>item&&['user','assistant'].includes(item.role)&&String(item.text||'').trim()).slice(-24);messages.replaceChildren();
-  history.forEach(item=>append(item.role,item.text));avatar.set('idle','آماده گفت‌وگو');
+  history.forEach(item=>append(item.role,item.text));avatar.set('idle','آماده گفت‌وگو');void puppet?.start();blinkLoop();
  }
  function openConversationHistory(){
   let dialog=document.querySelector('#assistantConversationHistory');
@@ -202,7 +202,7 @@ function create(view,{session,loadSticker}){
    live.channel.send(JSON.stringify({type:'conversation.item.create',item:{type:'message',role:'user',content:[{type:'input_text',text}]}}));
    live.channel.send(JSON.stringify({type:'response.create'}));avatar.set('thinking');return
   }
-  const turn=++generation,identity=session(),previous=[...history];answerAbort?.abort();stopSpeech();
+  const turn=++generation,identity=session(),previous=[...history];answerAbort?.abort();messages.querySelectorAll('.pending').forEach(row=>row.remove());stopSpeech();
   busy=true;append('user',text);history.push({role:'user',text});saveConversation();const waiting=append('assistant','در حال بررسی اطلاعات…',{pending:true});avatar.set('thinking');
   answerAbort=new AbortController();
   try{
@@ -324,6 +324,7 @@ function create(view,{session,loadSticker}){
  async function startRealtime(){
   if(!valid()||active)return;
   if(!window.RTCPeerConnection||!navigator.mediaDevices?.getUserMedia){avatar.set('warning','مکالمه زنده در این مرورگر یا اتصال امن پشتیبانی نمی‌شود.');return}
+  generation++;answerAbort?.abort();answerAbort=null;busy=false;messages.querySelectorAll('.pending').forEach(row=>row.remove());
   const identity=session(),run=++liveAttempt,current={userId:identity.userId,abort:new AbortController(),outputRows:new Map(),mouth:0,responding:false,responseAudio:false,spokenText:'',speechCursor:0,markers:[],lastMarker:-1};
   live=current;active=true;mic.setAttribute('aria-pressed','true');mic.setAttribute('aria-label','پایان مکالمه زنده');mic.title='پایان مکالمه زنده';
   liveButton.setAttribute('aria-pressed','true');liveButton.textContent='پایان مکالمه';avatar.set('thinking','در حال اتصال به مکالمه زنده…');
@@ -357,7 +358,10 @@ function create(view,{session,loadSticker}){
    current.channel.onopen=()=>{if(same()){
     clearTimeout(current.connectTimer);
     avatar.set('listening','ارتباط برقرار شد؛ منتظر صدای دستیار باشید.');
-    current.channel.send(JSON.stringify({type:'response.create',response:{output_modalities:['audio'],instructions:'Begin this voice conversation with one warm, natural sentence in Persian. Say hello and invite the user to talk. Use standard Persian spelling. Then listen.'}}));
+    for(const row of history.slice(-12)){
+     current.channel.send(JSON.stringify({type:'conversation.item.create',item:{type:'message',role:row.role,content:[{type:row.role==='user'?'input_text':'output_text',text:row.text}]}}));
+    }
+    current.channel.send(JSON.stringify({type:'response.create',response:{output_modalities:['audio'],instructions:'Begin this voice conversation with one warm, natural sentence in Persian. Say hello and invite the user to talk. Use standard Persian spelling. If earlier messages exist, briefly acknowledge that we can continue that conversation without repeating an earlier answer. Never treat historical workspace details as current; look them up again. Then listen.'}}));
    }};
    current.channel.onmessage=event=>{try{liveEvent(current,JSON.parse(event.data))}catch(error){console.warn('Realtime event',error)}};
    current.channel.onclose=()=>{if(same()){stopRealtime();avatar.set('warning','مکالمه زنده پایان یافت.')}};
@@ -385,7 +389,7 @@ function create(view,{session,loadSticker}){
  $('[data-assistant-new]',view).onclick=activate;$('[data-personal-home]',view).onclick=()=>window.bamcoShowHome?.();
  $('.assistant-composer',view).onsubmit=event=>{event.preventDefault();const text=input.value;input.value='';void send(text)};
  input.onkeydown=event=>{if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();event.currentTarget.form.requestSubmit()}};
- document.addEventListener('visibilitychange',()=>{if(document.hidden){stopRealtime();stopSpeech();clearTimeout(blinkTimer);clearTimeout(blinkClose);view.dataset.avatarBlink='false'}else if(visible()){blinkLoop()}});
+ document.addEventListener('visibilitychange',()=>{if(document.hidden){stopRealtime();stopSpeech();puppet?.stop();clearTimeout(blinkTimer);clearTimeout(blinkClose);view.dataset.avatarBlink='false'}else if(visible()){void puppet?.start();blinkLoop()}});
  window.addEventListener('beforeunload',dispose);
  return{activate,dispose,getState:()=>avatar.state,get voiceEnabled(){return active},get busy(){return busy}}
 }

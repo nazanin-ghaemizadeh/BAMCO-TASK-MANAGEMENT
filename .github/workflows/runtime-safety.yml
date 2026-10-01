@@ -74,3 +74,5 @@ jobs:
 
       - name: Full regression suite with documented baseline
         run: npm run test:regression
+      - name: Verify catalog task lifecycle in isolated PostgreSQL
+        run: npm run test:task-lifecycle-db

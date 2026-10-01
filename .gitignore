@@ -1,2 +1,6 @@
 node_modules/
 .ui-qa/
+test-results/
+__pycache__/
+
+supabase/.temp/

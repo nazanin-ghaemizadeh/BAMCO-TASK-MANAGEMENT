@@ -185,3 +185,66 @@ test('voice recording is transcribed only for an authenticated user',async()=>{
   assert.equal(h.upstream[0].options.body.get('language'),'fa');
   const invalid=harness({auth:false});assert.equal((await invalid.call(post({message:'سلام'}))).status,401);assert.equal(invalid.upstream.length,0);
 });
+
+test('an unrelated general question does not inherit a previous private workspace topic',async()=>{
+ const h=harness({allowed:['voiceAssistant']});
+ const result=await h.call(post({message:'Explain how a heat exchanger works.',history:[{role:'user',text:'پروژه من چه وضعیتی دارد؟'}]}));
+ assert.equal(result.status,200);
+ assert.deepEqual(h.queries.map(query=>query.table),['profiles']);
+});
+
+test('bounded workspace data carries coverage and date context rather than implying complete totals',async()=>{
+ const h=harness();await h.call(post({message:'وظایف من چیست؟'}));
+ const payload=JSON.parse(h.upstream[0].options.body);
+ assert.match(payload.input[0].content,/"limited":true/);
+ assert.match(payload.input[0].content,/"timezone":"Asia\/Tehran"/);
+ assert.match(payload.instructions,/پاسخ قبلی دستیار سند نیست/);
+ assert.match(payload.instructions,/تعداد کل نساز/);
+});
+
+test('generic words such as problem, complete, or today do not request a workspace briefing',async()=>{
+ for(const message of ['مشکل ریاضی را توضیح بده','همه چیز درباره خورشید','یک توضیح کامل درباره مبدل حرارتی بده','امروز هوا چطور است؟']){
+  const h=harness({allowed:['voiceAssistant']});
+  assert.equal((await h.call(post({message}))).status,200,message);
+  assert.deepEqual(h.queries.map(query=>query.table),['profiles'],message);
+ }
+});
+
+test('exact due-date questions do not label overdue or unrelated tasks as today or tomorrow',async()=>{
+ for(const message of ['وظایف امروز من','وظایف فردای من']){
+  const h=harness();assert.equal((await h.call(post({message}))).status,200);
+  const filters=h.queries.find(q=>q.table==='task_status_view').filters;
+  assert(filters.some(f=>f[0]==='eq'&&f[1]==='due_date'));
+  assert(!filters.some(f=>f[0]==='lte'));
+ }
+});
+
+test('English workspace topics route to authorized sources as Persian questions do',async()=>{
+ for(const [message,table] of [['What is overdue?','task_status_view'],['Show my personal notes','personal_notes'],['Show my archived tasks','task_status_view'],['Show my notifications','notifications']]){
+  const h=harness();assert.equal((await h.call(post({message}))).status,200);
+  assert(h.queries.some(q=>q.table===table),message);
+ }
+});
+
+test('short Persian and English continuations retain the previous workspace topic',async()=>{
+ const history=[{role:'user',text:'وظایف امروز من چیست؟'},{role:'assistant',text:'پاسخ قبلی'}];
+ for(const message of ['فردا چطور؟','What about tomorrow?','بیشتر توضیح بده','Please explain more']){
+  const h=harness();assert.equal((await h.call(post({message,history}))).status,200,message);
+  const task=h.queries.find(q=>q.table==='task_status_view');assert(task,message);
+  if(/فردا|tomorrow/.test(message)){
+   const parts=Object.fromEntries(new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Tehran',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date(Date.now()+86400000)).map(p=>[p.type,p.value]));
+   const expected=`${parts.year}-${parts.month}-${parts.day}`;
+   assert(task.filters.some(f=>f[0]==='eq'&&f[1]==='due_date'&&f[2]===expected),message);
+   assert(!task.filters.some(f=>f[0]==='lte'),message);
+  }
+ }
+});
+
+test('continuation words with an explicit unrelated subject do not inherit workspace context',async()=>{
+ const history=[{role:'user',text:'وظایف امروز من چیست؟'}];
+ for(const message of ['فردا هوا چطور است؟','بیشتر درباره خورشید توضیح بده','Please explain more about heat exchangers']){
+  const h=harness({allowed:['voiceAssistant']});
+  assert.equal((await h.call(post({message,history}))).status,200,message);
+  assert.deepEqual(h.queries.map(q=>q.table),['profiles'],message);
+ }
+});

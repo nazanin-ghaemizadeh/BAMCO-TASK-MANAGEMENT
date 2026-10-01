@@ -34,6 +34,8 @@ jobs:
           python -m playwright install --with-deps chromium
       - name: Verify fixed home-card geometry
         run: python tests/browser/check_post_welcome.py
+      - name: Verify browser failure accounting
+        run: python tests/browser/test_smoke_wrapper.py
       - name: Exercise existing startup stability on desktop and mobile
         run: python tests/browser/run_smoke_dom.py
       # The complete regression gate runs in the release workflow on every

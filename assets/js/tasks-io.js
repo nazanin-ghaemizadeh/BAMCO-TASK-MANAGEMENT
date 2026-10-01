@@ -19,7 +19,8 @@ function validateAll(){
  preview.forEach(r=>{
   const errors=[],data=r.data;
   if(!String(data.title||'').trim())errors.push('عنوان خالی است');
-  if(!data.owner_id)errors.push('متولی معتبر انتخاب نشده است');
+  const ownerMode=window.bamcoOptions.status(data)?.owner_mode;
+  if(!data.owner_id&&(ownerMode==='required'||ownerMode!=='none'&&String(r.rawOwner||'').trim()))errors.push('متولی معتبر انتخاب نشده است');
   if(data.legacy_id&&state.tasks.some(t=>Number(t.legacy_id||t.id)===Number(data.legacy_id)))errors.push('شناسه قبلاً در سامانه وجود دارد');
   if(data.legacy_id&&(ids.get(Number(data.legacy_id))||0)>1)errors.push('شناسه در همین فایل تکراری است');
   for(const [raw,label,field] of [[r.rawStart,'تاریخ شروع','start_date'],[r.rawDone,'تاریخ انجام','done_date'],[r.rawDue,'تاریخ پایان','due_date']]){if(String(raw||'').trim()&&!data[field])errors.push(`${label} نامعتبر است`)}

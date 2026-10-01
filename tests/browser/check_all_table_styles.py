@@ -9,7 +9,7 @@ OUT=ROOT/'test-results'/'table-style'
 ROUTES=(
     'people','loginActivity','activeSessions','messageCenter','sentMessages',
     'performanceReport','systemOptions','kanban','archive','approvals',
-    'requestHistory','pettyCash','vehiclePermanent','vehicleTemporary',
+    'requestHistory','pettyCash','invoices','vehiclePermanent','vehicleTemporary',
     'parts','lettersIncoming','lettersOutgoing','accessMatrix'
 )
 CONTACTS='''

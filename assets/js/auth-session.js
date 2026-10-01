@@ -7,7 +7,7 @@
   state.token=data.access_token;if(data.user)state.user=data.user;
   if(data.refresh_token)refreshToken=data.refresh_token;
   expiresAt=Number(data.expires_at||0)*1000||Date.now()+Number(data.expires_in||3600)*1000;
-  clearTimeout(timer);if(refreshToken)timer=setTimeout(()=>ensureFresh(true).catch(()=>expire()),Math.max(1000,expiresAt-Date.now()-60000));
+  clearTimeout(timer);const epoch=generation;if(refreshToken)timer=setTimeout(()=>ensureFresh(true).catch(()=>{if(epoch===generation)expire()}),Math.max(1000,expiresAt-Date.now()-60000));
  }
  function snapshot(){return {generation,userId:state.user?.id}}
  function isCurrent(value){return !!value&&value.generation===generation&&value.userId===state.user?.id&&!!state.token}
@@ -31,6 +31,7 @@
   let response=await next(input,{...init,headers});
   if(!isCurrent(session))throw Error('حساب ورود تغییر کرده است.');
   if(response.status===401&&refreshToken&&!ending){if(state.token===sentToken)await ensureFresh(true);if(!isCurrent(session))throw Error('حساب ورود تغییر کرده است.');if(!state.token)throw Error('دوباره وارد شوید.');headers.set('Authorization','Bearer '+state.token);response=await next(input,{...init,headers})}
+  if(!isCurrent(session))throw Error('حساب ورود تغییر کرده است.');
   return response;
  };
  if(network?.use)network.use('auth-session',request);

@@ -83,23 +83,7 @@ html body #appView#appView#appView#appView#appView .view:has(table) :is(.task-to
   border-radius:0!important;
   background:var(--register-toolbar)!important;
 }
-html body #appView#appView#appView#appView#appView .view:has(table) :is(.task-toolbar,.people-actions,.manager-toolbar,.vehicle-toolbar,.cash-toolbar,.letter-toolbar,.prod-toolbar,.table-toolbar,.feature-toolbar-actions,.bamco-management-toolbar,.bamco-command-bar,.suite-toolbar,.workspace-actions,.workspace-report-tools)>:is(input[type=search],input.search,.toolbar-search,.vehicle-search) {
-  flex:0 1 270px!important;
-  order:100!important;
-  width:270px!important;
-  min-width:160px!important;
-  max-width:100%!important;
-  height:40px!important;
-  margin-inline-start:auto!important;
-  margin-inline-end:0!important;
-  padding:5px 12px!important;
-  border:1px solid var(--register-line)!important;
-  border-radius:8px!important;
-  background:#fff!important;
-  box-shadow:none!important;
-  color:var(--register-ink)!important;
-  font:400 15px BamcoPersian,'B Nazanin',Tahoma,sans-serif!important;
-}
+/* Toolbar search geometry is shared with card/loading views in unified-ui.css. */
 
 /* Buttons on register pages have one neutral appearance, regardless of action. */
 html body #appView#appView#appView#appView .view:has(table) button,
@@ -233,7 +217,6 @@ html body #appView#appView#appView#appView#appView .view:has(table) .reference-p
 html body #appView#appView#appView#appView#appView .view:has(table) .reference-pagination .page-controls {display:flex;align-items:center;gap:6px}
 
 @media(max-width:700px){
-  html body #appView#appView#appView#appView#appView .view:has(table) :is(.task-toolbar,.people-actions,.manager-toolbar,.vehicle-toolbar,.cash-toolbar,.letter-toolbar,.prod-toolbar,.table-toolbar,.feature-toolbar-actions,.bamco-management-toolbar,.bamco-command-bar,.suite-toolbar,.workspace-actions,.workspace-report-tools)>:is(input[type=search],input.search,.toolbar-search,.vehicle-search) {flex:1 1 100%!important;width:100%!important;margin:0!important}
   html body #appView#appView#appView#appView#appView .view:has(table) .reference-pagination {align-items:flex-start!important}
   html body #appView#appView#appView#appView#appView .view:has(table) .reference-pagination .page-controls {flex-wrap:wrap}
 }

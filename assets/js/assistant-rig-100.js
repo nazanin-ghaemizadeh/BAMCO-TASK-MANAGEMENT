@@ -44,7 +44,7 @@ function patch(image,cx,cy,rx,ry){
 }
 function create(view){
  const scene=view.querySelector('[data-avatar-scene]');if(!scene)return null;
- let canvas,ctx,headFace,headCtx,images={},mouthPatch,blinkPatches,expressions={},loading=null,ready=false,running=false,frame=0,last=0,started=0,speechStart=0,previousState='',actionIndex=0;
+ let canvas,ctx,headFace,headCtx,images={},mouthPatch,blinkPatches,gazePatches,expressions={},loading=null,ready=false,running=false,frame=0,last=0,started=0,speechStart=0,previousState='',actionIndex=0;
  const channels=Object.fromEntries(keys.map(k=>[k,{value:poses['neutral/rest'][k],velocity:0}]));
  let mouth=0,blink=0,audio=0,bright=0,concern=0,lastAction='rest',gestureAt=0;
  async function prepare(){
@@ -55,6 +55,7 @@ function create(view){
    ctx=canvas.getContext('2d',{alpha:true});if(!ctx)throw Error('2D avatar canvas unavailable');
    headFace=document.createElement('canvas');headFace.width=canvas.width;headFace.height=canvas.height;headCtx=headFace.getContext('2d',{alpha:true});
    mouthPatch=patch(images.head,560,885,118,87);
+   gazePatches=[patch(images.rest,442,729,86,59),patch(images.rest,707,708,86,59)];
    blinkPatches=[patch(images.blink,442,729,105,85),patch(images.blink,707,708,105,85)];
    expressions={bright:patch(images.curious,560,664,350,245),concern:patch(images.concerned,560,664,350,245)};
    scene.prepend(canvas);ready=true;
@@ -67,20 +68,21 @@ function create(view){
   if(state==='thinking')return'thoughtful/ponder';
   if(state==='warning'||state==='error')return'concerned/question';
   if(state==='success')return'proud/celebrate';
-  if(state!=='speaking')return'warm/rest';
+  if(state!=='speaking')return view.dataset.avatarGesture==='greet'?'warm/welcome':'warm/rest';
   const spokenMood=Object.prototype.hasOwnProperty.call(moods,view.dataset.avatarEmotion)?view.dataset.avatarEmotion:'warm';
   const gesture=view.dataset.avatarGesture||'neutral';
   const mapping={greet:'welcome',explain:'explain',count:'presentRight',emphasis:'emphasize',acknowledge:'presentLeft',question:'question'};
   if(mapping[gesture]){lastAction=mapping[gesture];gestureAt=now;return spokenMood+'/'+lastAction}
   if(now-gestureAt<1100)return spokenMood+'/'+lastAction;
-  const cycle=['explain','presentLeft','presentRight','rest','emphasize','question'];
+  if(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)return spokenMood+'/rest';
+  const cycle=['explain','presentLeft','rest','presentRight','rest'];
   actionIndex=Math.floor((now-speechStart)/2450)%cycle.length;
   return spokenMood+'/'+cycle[actionIndex];
  }
  function updatePose(target,dt){
   for(const key of keys){const p=channels[key];p.velocity+=(target[key]-p.value)*55*dt;p.velocity*=Math.exp(-10*dt);p.value+=p.velocity*dt}
  }
- function paintFace(open,closedEyes,viseme){
+ function paintFace(open,closedEyes,viseme,gaze){
   headCtx.setTransform(1,0,0,1,0,0);headCtx.globalAlpha=1;headCtx.clearRect(0,0,headFace.width,headFace.height);
   headCtx.drawImage(images.rest,0,0,headFace.width,headFace.height);
   headCtx.save();headCtx.globalAlpha=bright;headCtx.drawImage(expressions.bright,0,0);headCtx.restore();
@@ -88,6 +90,7 @@ function create(view){
   if(open>.01){headCtx.save();headCtx.globalAlpha=clamp(open*1.4);
    headCtx.translate(560*S,885*S);headCtx.scale(viseme==='o'||viseme==='u'?.82:viseme==='i'?1.14:1,.62+.5*open);
    headCtx.translate(-560*S,-885*S);headCtx.drawImage(mouthPatch,0,0);headCtx.restore()}
+  if(Math.abs(gaze)>.05){headCtx.save();headCtx.translate(clamp(gaze,-8,8)*S,0);for(const eye of gazePatches)headCtx.drawImage(eye,0,0);headCtx.restore()}
   if(closedEyes>.01){headCtx.save();headCtx.globalAlpha=closedEyes;for(const eye of blinkPatches)headCtx.drawImage(eye,0,0);headCtx.restore()}
  }
  function render(now){
@@ -107,7 +110,7 @@ function create(view){
   bright+=(clamp((curiosity?.7:.08)+p.brow*.2)-bright)*(1-Math.exp(-dt*8));
   concern+=((empathy?.75:0)-concern)*(1-Math.exp(-dt*8));
   const beat=clamp(parseFloat(view.style.getPropertyValue('--assistant-speech-beat'))||0)*Number(speaking);
-  paintFace(mouth,blink,viseme);
+  paintFace(mouth,blink,viseme,reduced?0:p.gaze);
   ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,canvas.width,canvas.height);ctx.setTransform(S,0,0,S,0,0);
   ctx.save();ctx.translate(560+p.shift,1305+p.lift+(reduced?0:3*Math.sin(t*1.7)-14*beat));
   ctx.rotate(p.lean+(reduced?0:.012*Math.sin(t*.8)+.015*beat));

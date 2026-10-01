@@ -129,7 +129,9 @@ test('a stale home repair cannot close an active enterprise route',()=>{
  const js=read('assets/js/card-home.js'),css=read('assets/css/unified-ui.css');
  assert.match(js,/state\.view!=='home'/);
  assert.match(css,/enterprise-feature-root>\.enterprise-toolbar>div:first-child/);
- assert.match(css,/enterprise-feature-root>\.enterprise-toolbar>\.feature-toolbar-actions/);
+ // Shared toolbar rules also cover sibling/nested command bars, before a
+ // table exists. This supersedes the narrower direct-child-only selector.
+ assert.match(css,/enterprise-feature-root :is\(\.bamco-command-bar,\.feature-toolbar-actions\)/);
 });
 
 test('instant welcome isolates the dialog from the mutating home dashboard',()=>{
