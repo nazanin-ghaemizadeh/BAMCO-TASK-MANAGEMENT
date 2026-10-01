@@ -51,3 +51,18 @@ test('model-owned sort callback and keyed preferences survive a replaced table',
  assert.equal(table.tHead.rows[0].cells[1].getAttribute('aria-sort'),'ascending');
  dom.window.close();
 });
+test('message registers reuse their native command row instead of adding an empty toolbar',()=>{
+ const dom=new JSDOM('<div id="appView"><section id="messageCenterView" class="view"><div class="panel"><div class="panel-head"><h3>پیام</h3></div><div class="message-command-row bamco-command-bar"><button>خروجی اکسل</button></div><div class="table-wrap"><table><thead><tr><th>نام</th></tr></thead><tbody><tr><td>فرد</td></tr></tbody></table></div></div></section></div>',{url:'https://example.test',runScripts:'outside-only'});
+ const w=dom.window;w.bamcoInteriorUI={};w.eval(fs.readFileSync('assets/js/table-suite.js','utf8'));w.document.dispatchEvent(new w.Event('DOMContentLoaded'));
+ assert.equal(w.document.querySelectorAll('.suite-toolbar').length,0);
+ assert.equal(w.document.querySelectorAll('.bamco-command-bar').length,1);
+ assert.equal(w.document.querySelectorAll('.suite-table-options').length,1);
+ dom.window.close();
+});
+test('message history leaves register settings intact and shared settings expand in flow',()=>{
+ const source=fs.readFileSync('assets/js/message-history.js','utf8'),css=fs.readFileSync('assets/css/interface-refinement.css','utf8');
+ assert.doesNotMatch(source,/#(?:messageCenter|sentMessages)View \.suite-table-options/);
+ assert.match(source,/#messagesView \.suite-table-options/);
+ assert.match(source,/\.conversation-panel \[data-management-export\]/);
+ assert.match(css,/\.suite-options-panel\{position:relative;inset:auto;max-height:min\(320px,40dvh\);overflow:auto/);
+});

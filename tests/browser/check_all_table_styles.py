@@ -16,14 +16,16 @@ CONTACTS='''
 const earlier=window.fetch;
 window.fetch=(input,options)=>{
  const table=new URL(typeof input==='string'?input:input.url,location.href).pathname.split('/').pop();
+ if(table==='admin-users'&&(!options||!options.method||options.method==='GET'))return Promise.resolve(new Response(JSON.stringify({ok:true,profiles:window.__testApi.profiles}),{status:200}));
+ if(table==='user_sessions')return Promise.resolve(new Response(JSON.stringify([3,1,2,6,4,5].map((n)=>({id:'session-'+n,user_id:window.__testApi.profiles[0].id,auth_session_id:'auth-'+n,login_at:new Date(Date.now()-60000*n).toISOString(),last_activity_at:new Date().toISOString(),logout_at:n>3?new Date().toISOString():null,browser:'Fixture browser '+n}))),{status:200}));
+ if(table==='vehicle_permanent_records'||table==='vehicle_temporary_records')return Promise.resolve(new Response(JSON.stringify(Array.from({length:31},(_,i)=>({id:31-i,legacy_id:31-i,vehicle_type:'خودروی آزمایشی '+(31-i),plate_number:'TEST-'+(31-i),chassis_number:'FIXTURE-'+(31-i),status:'active'}))),{status:200}));
+ if(table==='invoices')return Promise.resolve(new Response(JSON.stringify([{id:1,title:'صورتحساب آزمایشی',invoice_number:'FIXTURE-01',total_amount:1000,currency:'IRR',account_party:'شرکت آزمایشی',status:'open'}]),{status:200}));
+ if(table==='invoice_payments')return Promise.resolve(new Response(JSON.stringify([{id:1,invoice_id:1,sequence_no:1,amount:500,status:'planned',planned_date:'2026-10-10'}]),{status:200}));
  if(table==='phonebook_units')return Promise.resolve(new Response(JSON.stringify([
   {id:1,category:'office',title:'واحد اداری'},
   {id:2,category:'factory',title:'واحد کارخانه'},
   {id:3,category:'external',title:'واحد خارج از سازمان'}]),{status:200}));
- if(table==='contact_directory')return Promise.resolve(new Response(JSON.stringify([
-  {id:11,category:'office',unit_id:1,full_name:'مخاطب اداری',role_title:'کارشناس'},
-  {id:12,category:'factory',unit_id:2,full_name:'مخاطب کارخانه',role_title:'کارشناس'},
-  {id:13,category:'external',unit_id:3,full_name:'مخاطب خارجی',role_title:'کارشناس'}]),{status:200}));
+ if(table==='contact_directory')return Promise.resolve(new Response(JSON.stringify(['office','factory','external'].flatMap((category,c)=>Array.from({length:31},(_,i)=>({id:100*c+31-i,category,unit_id:c+1,full_name:'مخاطب '+String(31-i).padStart(2,'0'),role_title:'کارشناس',internal_extension:String(31-i)})))),{status:200}));
  return earlier(input,options);
 };
 '''
@@ -64,6 +66,9 @@ async def inspect(page, route, name):
     return state
 
 async def inspect_toolbar(page, route):
+    if route in ('activeSessions','loginActivity','performanceReport'):
+        for control in ('.content-back','[data-tab-refresh]','[data-report-export]','[data-report-search]'):
+            await expect(page.locator('#'+route+'View '+control)).to_be_visible()
     metrics = await page.locator('#'+route+'View').evaluate("""view => {
       const visible = e => e.getClientRects().length && getComputedStyle(e).display !== 'none' && getComputedStyle(e).visibility !== 'hidden';
       const bars = [...view.querySelectorAll('.bamco-command-bar,.task-toolbar,.vehicle-toolbar,.cash-toolbar,.letter-toolbar,.manager-toolbar,.feature-toolbar-actions,.workspace-report-tools')].filter(visible);
@@ -89,14 +94,22 @@ async def inspect_capabilities(page, route):
         await expect(head).to_have_attribute('tabindex','0')
         await head.press('Enter')
         await expect(head).to_have_attribute('aria-sort','ascending')
+        ascending = await table.evaluate('''t=>{const c=new Intl.Collator('fa',{numeric:true,sensitivity:'base'});const values=[...t.tBodies[0].rows].filter(r=>r.cells.length>1&&r.getClientRects().length&&getComputedStyle(r).display!=='none').map(r=>r.cells[0].textContent.trim());return {values,ordered:values.every((v,i)=>!i||c.compare(values[i-1],v)<=0)}}''')
+        assert ascending['ordered'], (route,index,'ascending values are not sorted',ascending)
         await head.press('Enter')
         await expect(head).to_have_attribute('aria-sort','descending')
+        descending = await table.evaluate('''t=>{const c=new Intl.Collator('fa',{numeric:true,sensitivity:'base'});const values=[...t.tBodies[0].rows].filter(r=>r.cells.length>1&&r.getClientRects().length&&getComputedStyle(r).display!=='none').map(r=>r.cells[0].textContent.trim());return {values,ordered:values.every((v,i)=>!i||c.compare(values[i-1],v)>=0)}}''')
+        assert descending['ordered'], (route,index,'descending values are not sorted',descending)
         handle = head.locator('.suite-resize,.column-resize-handle,.vehicle-col-resize').first
         await expect(handle).to_have_attribute('tabindex','0')
         before = await head.evaluate('e=>e.getBoundingClientRect().width')
         await handle.press('ArrowLeft')
         after = await head.evaluate('e=>e.getBoundingClientRect().width')
         assert after > before + 4, (route, index, 'column width control did not resize', before, after)
+        await head.press('Enter')
+        await expect(head).to_have_attribute('aria-sort','ascending')
+        retained = await head.evaluate('e=>e.getBoundingClientRect().width')
+        assert retained >= after-2, (route,index,'column width lost after sorting/rerender',after,retained)
         options = view.locator('.suite-table-options').nth(index)
         await options.locator('summary').click()
         await expect(options.locator('.suite-reset')).to_be_visible()
@@ -104,7 +117,7 @@ async def inspect_capabilities(page, route):
         await options.locator('.suite-clear-sort').click()
         if await options.get_attribute('open') is not None:
             await options.locator('summary').click()
-        results.append({'sort':'ascending/descending','resize':'keyboard','settings':'open/reset/clear'})
+        results.append({'sort':'ascending/descending values','rows_checked':len(ascending['values']),'resize':'keyboard, retained after sort/rerender','settings':'open/reset/clear'})
     return results
 
 async def main():
@@ -159,6 +172,10 @@ async def main():
             await expect(page.locator('#invoiceFeatureRoot .enterprise-card-list')).to_be_visible()
             results['invoices']={'layout':'cards','toolbar':await inspect_toolbar(page,'invoices')}
             await page.screenshot(path=str(OUT/'invoices-cards.png'),full_page=False)
+            await page.locator('#invoiceFeatureRoot [data-invoice-select]').first.click()
+            await expect(page.locator('#invoiceFeatureRoot .payment-row')).to_have_count(1)
+            results['invoice-detail']={'layout':'payment cards','toolbar':await inspect_toolbar(page,'invoices')}
+            await page.screenshot(path=str(OUT/'invoice-payments.png'),full_page=False)
             await page.set_viewport_size({'width':390,'height':844})
             for route in ('activeSessions','loginActivity','vehiclePermanent','vehicleTemporary'):
                 await home(page)

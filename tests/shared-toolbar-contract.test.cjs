@@ -36,7 +36,7 @@ test('feature-owned sibling and nested command bars inherit shared layout and di
   const {window}=dom;
   for(const bar of window.document.querySelectorAll('[data-bar]')){
     assert.equal(window.getComputedStyle(bar).display,'flex');
-    assert.equal(window.getComputedStyle(bar).flexWrap,'wrap');
+    assert.equal(window.getComputedStyle(bar).flexWrap,'nowrap');
     assert.equal(window.getComputedStyle(bar).minHeight,'48px');
     assert.equal(window.getComputedStyle(bar.querySelector('button')).opacity,'0.4');
     assert.equal(window.getComputedStyle(bar.querySelector('button')).cursor,'default');

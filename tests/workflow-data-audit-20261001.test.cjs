@@ -32,10 +32,13 @@ test('vehicle exported headers round-trip handover fields and numeric zero', asy
 });
 
 test('vehicle register survives malformed saved column widths', async t => {
-  const f = await fixture({ storage: { 'bamco-vehicle-widths-vehiclePermanent-v3': '{broken' }, tables: { vehicle_permanent_records: [{ id: 1, plate_number: 'TEST' }] } }); t.after(() => f.dispose());
-  f.w.localStorage.setItem('bamco-vehicle-widths-vehiclePermanent-v3', '{broken');
+  const f = await fixture({ storage: { 'bamco.table.widths.v4.vehiclePermanentView.0': '{broken' }, tables: { vehicle_permanent_records: [{ id: 1, plate_number: 'TEST' }] } }); t.after(() => f.dispose());
+  f.w.localStorage.setItem('bamco.table.widths.v4.vehiclePermanentView.0', '{broken');
   await f.open('vehiclePermanent');
   await until(() => f.d.querySelector('#vehiclePermanentView tbody tr[data-id]'));
+  const handle=f.d.querySelector('#vehiclePermanentView .suite-resize');
+  assert(handle,'shared resizing remains usable despite corrupt saved widths');
+  handle.dispatchEvent(new f.w.KeyboardEvent('keydown',{key:'ArrowLeft',bubbles:true}));
   assert(f.d.querySelector('#vehiclePermanentView colgroup col').style.width);
   assert.deepEqual(f.errors, []);
 });

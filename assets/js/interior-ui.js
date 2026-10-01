@@ -73,6 +73,7 @@
         managementBar.classList.add('bamco-command-bar');
         const nativeHead=view.querySelector('.panel-head,.vehicle-panel-head,.tt-head');
         nativeHead?.querySelectorAll(':scope>.workspace-actions>button,:scope>button').forEach(button=>managementBar.append(button));
+        nativeHead?.querySelectorAll(':scope>.workspace-actions').forEach(group=>{if(!group.querySelector('button,a,input,select,textarea'))group.remove()});
         [...(nativeHead?.children||[])].filter(child=>child!==managementBar&&!child.contains(managementBar)&&child.matches('div')&&!child.querySelector('h1,h2,h3,p,small')&&child.querySelector('button,a,input,select')).forEach(group=>{
           [...group.children].forEach(control=>managementBar.append(control));group.remove();
         });
