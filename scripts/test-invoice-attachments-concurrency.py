@@ -255,7 +255,8 @@ class Harness:
         return self.rpc(connection, "reserve_invoice_file", request or uuid4(), invoice_id, payment_id, kind, "synthetic.pdf", "application/pdf", 32, sha)
 
     def upload(self, connection, row):
-        connection.execute(
+        # Synthetic metadata is seeded as test admin; browser writes are denied.
+        self.observer.execute(
             "insert into storage.objects(bucket_id,name,metadata,user_metadata,owner_id) values('invoices-private',%s,%s,%s,%s)",
             (row["storage_path"], self.jsonb({"size": int(row["size_bytes"]), "mimetype": row["content_type"]}), self.jsonb({"sha256": row["sha256"]}), ACTOR),
         )
@@ -494,22 +495,16 @@ class Harness:
     def storage_and_cascade_races(self):
         # This is synthetic Storage metadata SQL, never a Storage API/bytes test.
         for kind in ("proforma", "receipt", "final"):
-            invoice, payment, _ = self.settled(f"storage-finalize-{kind}")
+            invoice, payment, _ = self.settled(f"storage-denial-{kind}")
             row = self.reserve(self.actor, invoice["id"], payment["id"] if kind == "receipt" else None, kind)
+            self.reject(lambda connection: connection.execute(
+                "insert into storage.objects(bucket_id,name) values('invoices-private',%s)", (row["storage_path"],)), states=("42501",))
             self.upload(self.actor, row)
-            # A Storage preflight that sees pending must re-check after waiting
-            # for another session to finalize it. Otherwise it could overwrite
-            # a ready object's metadata/bytes in the real API transaction.
-            _, changed = self.race(
-                f"storage-update-after-{kind}-finalize",
-                lambda connection: self.finalize(connection, row),
-                lambda connection: connection.execute(
-                    "update storage.objects set metadata=metadata where bucket_id='invoices-private' and name=%s returning name", (row["storage_path"],)
-                ).fetchall(),
-            )
-            require(changed == [], "waiting Storage update must recheck pending state and affect zero ready objects")
-            require(self.file(row["id"])["upload_state"] == "ready", "ready attachment changed during blocked Storage update")
-            self.pass_test(f"{kind} Storage write rechecks immutable-ready state after lock wait")
+            for ready in (False, True):
+                if ready: self.finalize(self.actor, row)
+                changed = self.actor.execute("update storage.objects set metadata=metadata where bucket_id='invoices-private' and name=%s returning name", (row["storage_path"],)).fetchall()
+                require(changed == [], "direct browser updates must affect zero pending and ready objects")
+            self.pass_test(f"{kind} direct browser Storage writes denied; service-seeded metadata finalizes")
 
         for parent in ("invoice", "payment"):
             invoice, payment, _ = self.settled(f"cascade-{parent}")
@@ -519,11 +514,11 @@ class Harness:
             pending = self.reserve(self.actor, invoice["id"], payment["id"], "receipt")
             table, parent_id = ("invoices", invoice["id"]) if parent == "invoice" else ("invoice_payments", payment["id"])
             deleted, _ = self.race(
-                f"{parent}-cascade-versus-pending-upload",
+                f"{parent}-cascade-versus-upload-authorization",
                 lambda connection: connection.execute(
                     self.sql.SQL("delete from public.{} where id=%s returning id").format(self.sql.Identifier(table)), (parent_id,)
                 ).fetchall(),
-                lambda connection: self.upload(connection, pending),
+                lambda connection: self.rpc(connection, "get_invoice_file_upload", pending["id"]),
                 rejection=(("42501",), None),
             )
             require(len(deleted) == 1, "authorized cascade did not remove its parent")
@@ -542,7 +537,7 @@ class Harness:
                 contains="retired",
             )
             require(self.observer.execute("select count(*) from private.invoice_mutation_requests where request_id=%s", (pending["client_request_id"],)).fetchone()[0] == 1, "cleanup acknowledgment erased request tombstone")
-            self.pass_test(f"{parent} cascade serializes pending upload, queues ready/pending files, and retains replay tombstone")
+            self.pass_test(f"{parent} cascade serializes upload authorization, queues ready/pending files, and retains replay tombstone")
 
     def access_scope(self):
         invoice, payment, _ = self.settled("view-only-scope")

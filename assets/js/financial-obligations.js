@@ -35,6 +35,11 @@
   const isLate = row => row.status === 'paid' && !!row.planned_date && !!row.paid_date && String(row.paid_date) > String(row.planned_date);
   const dateField = (name, label, value = '') => `<label>${label}<span class="enterprise-date-field"><input name="${name}_jalali" class="jalali-input" readonly value="${esc(value ? date(value) : '')}" placeholder="۱۴۰۵/۰۱/۰۱"><button type="button" class="ghost bamco-icon-button" data-invoice-date="${name}" aria-label="${label}">▦</button><input name="${name}" type="hidden" value="${esc(value || '')}"></span></label>`;
   const formValue = (value, fallback = '') => esc(value ?? fallback);
+  const currencyOptions = item => {
+    const options = [['IRR','ریال'],['IRT','تومان'],['USD','دلار آمریکا'],['EUR','یورو']];
+    if (item?.currency && !options.some(([key]) => key === item.currency)) options.push([item.currency, item.currency]);
+    return options.map(([key,label]) => `<option value="${esc(key)}" ${(item?.currency || 'IRR') === key ? 'selected' : ''}>${esc(label)}</option>`).join('');
+  };
   const currencyText = item => ({ IRR: 'ریال', IRT: 'تومان', USD: 'دلار آمریکا', EUR: 'یورو' })[item.currency] || item.currency;
   const moneyInput = (name, value, minimum) => `<input name="${name}" type="text" inputmode="decimal" data-money-input data-money-scale="2" data-money-integer-digits="16" data-money-min="${minimum}" value="${formValue(value)}" required>`;
   const filePicker = (name, label, required = false) => `<label class="span-2 invoice-file-picker"><span>${label}</span><input type="file" name="${name}" accept=".pdf,.png,.jpg,.jpeg,.webp" ${required ? 'required' : ''}><small>PDF یا تصویر · حداکثر ۶ مگابایت</small></label>`;
@@ -56,7 +61,7 @@
   }
   function invoiceDialogMarkup() {
     const editing = invoice(model.invoiceEditor);
-    return `<dialog id="invoiceDialog" class="modal enterprise-modal"><form id="invoiceForm" method="dialog"><input type="hidden" name="invoice_id" value="${formValue(editing?.id)}"><div class="modal-head"><div><h3>${editing ? 'ویرایش صورتحساب' : 'ثبت صورتحساب'}</h3></div><button type="button" data-invoice-close aria-label="بستن">×</button></div><div class="form-grid"><label>شماره صورتحساب<input name="invoice_number" dir="rtl" value="${formValue(editing?.invoice_number)}" required></label><label>عنوان<input name="title" value="${formValue(editing?.title)}" required></label><label>شرکت/پیمانکار<input name="company_name" value="${formValue(editing?.company_name || editing?.account_party)}" required></label><label>ارز<select name="currency">${[['IRR','ریال'],['IRT','تومان'],['USD','دلار آمریکا'],['EUR','یورو']].map(([key,label]) => `<option value="${key}" ${(editing?.currency || 'IRR') === key ? 'selected' : ''}>${label}</option>`).join('')}</select></label><label>مبلغ کل${moneyInput('total_amount', editing?.total_amount, '0')}</label>${dateField('due_date', 'تاریخ سررسید', editing?.due_date)}<label class="span-2">توضیحات<textarea name="description" rows="3">${formValue(editing?.description)}</textarea></label>${!editing ? filePicker('proforma_file', 'پیش‌فاکتور (اختیاری)') : ''}</div>${formStatus()}<div class="modal-actions"><button type="button" class="ghost" data-invoice-close>انصراف</button><button type="submit" class="primary">${editing ? 'ذخیره تغییرات' : 'ثبت صورتحساب'}</button></div></form></dialog>`;
+    return `<dialog id="invoiceDialog" class="modal enterprise-modal"><form id="invoiceForm" method="dialog"><input type="hidden" name="invoice_id" value="${formValue(editing?.id)}"><div class="modal-head"><div><h3>${editing ? 'ویرایش صورتحساب' : 'ثبت صورتحساب'}</h3></div><button type="button" data-invoice-close aria-label="بستن">×</button></div><div class="form-grid"><label>شماره صورتحساب<input name="invoice_number" dir="rtl" value="${formValue(editing?.invoice_number)}" required></label><label>عنوان<input name="title" value="${formValue(editing?.title)}" required></label><label>شرکت/پیمانکار<input name="company_name" value="${formValue(editing?.company_name || editing?.account_party)}" required></label><label>ارز<select name="currency">${currencyOptions(editing)}</select></label><label>مبلغ کل${moneyInput('total_amount', editing?.total_amount, '0')}</label>${dateField('due_date', 'تاریخ سررسید', editing?.due_date)}<label class="span-2">توضیحات<textarea name="description" rows="3">${formValue(editing?.description)}</textarea></label>${!editing ? filePicker('proforma_file', 'پیش‌فاکتور (اختیاری)') : ''}</div>${formStatus()}<div class="modal-actions"><button type="button" class="ghost" data-invoice-close>انصراف</button><button type="submit" class="primary">${editing ? 'ذخیره تغییرات' : 'ثبت صورتحساب'}</button></div></form></dialog>`;
   }
   function fileRowsMarkup(item, kind, paymentId = null) {
     const rows = files(item.id, kind, paymentId);
@@ -100,7 +105,7 @@
   function remember(table, row) { const index = model[table].findIndex(value => String(value.id) === String(row.id)); if (index < 0) model[table].push(row); else model[table][index] = row; }
   function validateFile(file) {
     if (!file) return null;
-    const type = MIME[file.name.split('.').pop().toLowerCase()];
+    const type = MIME[file.name.split('.').pop().trim().toLowerCase()];
     if (!type || (file.type && file.type !== type)) throw Error('فقط PDF و تصویر PNG، JPEG یا WebP مجاز است.');
     if (!file.size || file.size > MAX_FILE_BYTES) throw Error('حجم فایل باید بیشتر از صفر و حداکثر ۶ مگابایت باشد.');
     return { file, type };
@@ -110,10 +115,10 @@
     const hash = await window.crypto.subtle.digest('SHA-256', bytes);
     return Array.from(new Uint8Array(hash), value => value.toString(16).padStart(2, '0')).join('');
   }
-  async function storageRequest(path, init = {}) {
+  async function fileRequest(path, init = {}) {
     const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 90000);
     try {
-      const response = await fetch(`${SB_URL}/storage/v1/object/${path}`, { ...init, headers: { apikey: SB_KEY, Authorization: `Bearer ${state.token}`, ...init.headers }, cache: 'no-store', signal: controller.signal });
+      const response = await fetch(`${SB_URL}${path}`, { ...init, headers: { apikey: SB_KEY, Authorization: `Bearer ${state.token}`, ...init.headers }, cache: 'no-store', signal: controller.signal });
       if (!response.ok) { let body; try { body = await response.json(); } catch {} throw Error(body?.message || body?.error || 'دریافت یا بارگذاری فایل انجام نشد؛ دوباره تلاش کنید.'); }
       return response;
     } finally { clearTimeout(timer); }
@@ -125,12 +130,16 @@
     const reserved = assertRow(await rpc('reserve_invoice_file', { p_request_id: context.requestId, p_invoice_id: String(invoiceId), p_payment_id: paymentId == null ? null : String(paymentId), p_file_type: kind, p_file_name: context.file.name, p_content_type: context.type, p_size_bytes: context.file.size, p_sha256: context.sha256 }), invoiceId);
     if (String(reserved.payment_id ?? '') !== String(paymentId ?? '') || reserved.file_type !== kind) throw Error('ارتباط فایل با صورتحساب یا مرحله معتبر نیست.');
     context.reserved = reserved; remember('files', reserved);
-    if (reserved.upload_state === 'ready') return reserved;
-    sameSession(userId); saveStatus(form, 'اطلاعات ثبت شده است؛ در حال بارگذاری فایل…');
-    const body = new FormData(); body.append('cacheControl', '0'); body.append('metadata', JSON.stringify({ sha256: context.sha256 })); body.append('', context.file, context.file.name);
-    await storageRequest(`${BUCKET}/${reserved.storage_path.split('/').map(encodeURIComponent).join('/')}`, { method: 'POST', headers: { 'x-upsert': 'true' }, body });
-    sameSession(userId); saveStatus(form, 'در حال تأیید و اتصال فایل…');
-    const ready = assertRow(await rpc('finalize_invoice_file', { p_file_id: String(reserved.id) }), invoiceId);
+    sameSession(userId); saveStatus(form, 'اطلاعات ثبت شده است؛ در حال بارگذاری و تأیید فایل…');
+    const body = new FormData(); body.append('file_id', String(reserved.id));
+    body.append('file', new Blob([context.file], { type: context.type }), context.file.name);
+    // The server validates this caller's reservation and the actual file bytes,
+    // then uses an enforced non-upsert upload. Browsers cannot write the bucket.
+    const response = await fileRequest('/functions/v1/invoice-file-upload', { method: 'POST', body });
+    sameSession(userId);
+    const result = await response.json(); sameSession(userId);
+    const ready = assertRow(result?.file, invoiceId);
+    if (String(ready.id) !== String(reserved.id) || String(ready.payment_id ?? '') !== String(paymentId ?? '') || ready.file_type !== kind) throw Error('ارتباط فایل تأییدشده معتبر نیست.');
     if (ready.upload_state !== 'ready') throw Error('تأیید فایل کامل نشد؛ دوباره تلاش کنید.');
     remember('files', ready); return ready;
   }
@@ -194,7 +203,7 @@
     const file = model.files.find(row => String(row.id) === String(id)); if (!file || !managedFile(file) || !canFiles(invoice(file.invoice_id))) return deny();
     try {
       const userId = sessionIdentity();
-      const response = await storageRequest(`authenticated/${BUCKET}/${file.storage_path.split('/').map(encodeURIComponent).join('/')}`), blob = await response.blob();
+      const response = await fileRequest(`/storage/v1/object/authenticated/${BUCKET}/${file.storage_path.split('/').map(encodeURIComponent).join('/')}`), blob = await response.blob();
       sameSession(userId);
       const url = URL.createObjectURL(blob), link = document.createElement('a');
       link.href = url; link.download = file.file_name; link.rel = 'noopener'; document.body.append(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);

@@ -9,8 +9,10 @@ FEATURE_MOCK = (Path(__file__).parent / 'mock-feature-files-api.js').read_text()
 PDF = {'name': 'report-fixture.pdf', 'mimeType': 'application/pdf', 'buffer': b'%PDF-1.7\n% Isolated acceptance fixture'}
 
 async def snapshot(page, name):
-    for button in await page.locator('.bamco-toast-close:visible').all():
-        await button.click()
+    for _ in range(5):
+        buttons=page.locator('.bamco-toast-close:visible')
+        if not await buttons.count(): break
+        await buttons.first.click()
     await page.screenshot(path=str(OUT / name), full_page=True)
 
 async def check_report(page, width):

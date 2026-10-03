@@ -30,8 +30,12 @@ The Excel import is intentionally not performed. The user's workbook has not bee
    - Existing invoice/payment/file RLS scope is preserved
    - Public save/list/reserve/finalize RPCs are security invoker
    - Narrow private lock-only helper checks the existing invoice scope; trigger-only cleanup functions cannot be invoked by ordinary clients
-   - Private `invoices-private` bucket and path/row-scoped Storage policies
-4. `supabase/functions/invoice-file-cleanup/`
+   - Private `invoices-private` bucket, authorized row-scoped reads and denied direct browser writes
+4. `supabase/functions/invoice-file-upload/`
+   - Authenticates the caller, retrieves their reservation with caller-scoped RPC access, and verifies actual filename, size, MIME and SHA-256 bytes
+   - Uses server-only non-upsert Storage upload; a duplicate/lost reply succeeds only after verifying the existing stored bytes
+   - Finalizes through the caller-scoped RPC; the client never supplies a bucket, path or overwrite flag
+5. `supabase/functions/invoice-file-cleanup/`
    - Trusted server-only cleanup calls Storage API, never deletes Storage metadata directly through SQL
    - Retained tombstones reconcile delayed uploads; initial five-minute grace and later hourly rechecks
    - Must be activated with its server-side scheduler before rollout. No credential belongs in browser code, repository, logs or a public scheduler request
@@ -46,7 +50,7 @@ Do not merge/deploy the frontend before the backend gates below pass. Publicatio
 2. Recheck live schema/migrations and take the normal recoverable database backup/snapshot; never replace existing tables or policies wholesale
 3. Run the isolated PostgreSQL, true multi-session and browser acceptance checks at the exact reviewed source revision
 4. In an approved isolated Supabase environment, verify actual Storage multipart metadata, RLS preflight/upsert, signed/authenticated download, pending retry and delete cleanup behavior. The SQL fixtures simulate Storage metadata; they do not prove physical object API behavior
-5. Apply approved generated migrations, deploy the report and cleanup functions, and configure the approved server-only cleanup schedule using an existing authorized secret mechanism
+5. Apply approved generated migrations, deploy the report, invoice upload and cleanup functions, and configure the approved server-only cleanup schedule using an existing authorized secret mechanism
 6. Check advisors and schema/RPC availability, verify private bucket flags and scheduler health, and perform authorized smoke validation without fabricated production business records
 7. Build committed canonical assets, rerun exact-head gates, then obtain the separate release/merge approval
 8. Verify the deployed release marker and cache update, navigation and access after the approved release

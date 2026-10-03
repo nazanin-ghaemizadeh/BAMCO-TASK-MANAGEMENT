@@ -20,7 +20,15 @@ const rpc = async (name,args) => (await db.query(`select public.${name}(${args.m
 const saveInvoice = (payload,id=null,request=randomUUID()) => rpc('save_invoice',[request,id,JSON.stringify(payload)]);
 const savePayment = (payload,id=null,request=randomUUID()) => rpc('save_invoice_payment',[request,id,JSON.stringify(payload)]);
 const reserve = (invoice,payment=null,kind='proforma',request=randomUUID(),overrides={}) => rpc('reserve_invoice_file',[request,invoice,payment,kind,overrides.file_name||'invoice.pdf',overrides.content_type||'application/pdf',overrides.size_bytes??32,overrides.sha256||'a'.repeat(64)]);
-const upload = (row, metadata={size:Number(row.size_bytes),mimetype:row.content_type}, user={sha256:row.sha256}, name=row.storage_path) => db.query('insert into storage.objects(bucket_id,name,metadata,user_metadata,owner_id) values ($1,$2,$3,$4,$5)', ['invoices-private',name,JSON.stringify(metadata),JSON.stringify(user),actors[0]]);
+const directUpload = (row, metadata={size:Number(row.size_bytes),mimetype:row.content_type}, user={sha256:row.sha256}, name=row.storage_path) => db.query('insert into storage.objects(bucket_id,name,metadata,user_metadata,owner_id) values ($1,$2,$3,$4,$5)', ['invoices-private',name,JSON.stringify(metadata),JSON.stringify(user),actors[0]]);
+// Model the new authenticated Edge gate followed by its privileged, no-upsert
+// Storage completion. Real bytes/API behavior has a separate integration gate.
+const upload = async (row, ...args) => {
+ await rpc('get_invoice_file_upload',[row.id]);
+ await db.exec('reset role');
+ try { return await directUpload(row,...args); }
+ finally { await db.exec('set role authenticated'); }
+};
 const one = async (sql,args=[]) => (await db.query(sql,args)).rows[0];
 const deny = async (promise,pattern=/denied|policy|permission|not found|immutable|invalid|unsupported|requires|match|already used|duplicate|foreign key|پرداخت|کل|receipt/i) => assert.rejects(promise,pattern);
 try {
@@ -30,6 +38,11 @@ try {
  // Legacy rows must survive the proposal untouched and be readable afterwards.
  const legacyInvoice = (await db.query("insert into public.invoices(invoice_number,title,account_party,total_amount,created_by,follow_up_owner_id) values('LEGACY','Old','Old',100,$1,$1) returning id::text",[actors[0]])).rows[0].id;
  const legacyFile = (await db.query("insert into public.invoice_files(invoice_id,file_type,file_name,storage_path,uploaded_by) values($1,'proforma','old.pdf','legacy/old.pdf',$2) returning id::text",[legacyInvoice,actors[0]])).rows[0].id;
+ const legacyCurrencies=[];
+ for(const currency of ['GBP','AED']) {
+  const row=await one("insert into public.invoices(invoice_number,title,account_party,currency,total_amount,created_by,follow_up_owner_id) values($1,'Legacy currency','Supplier',$2,100,$3,$3) returning id::text",['LEGACY-'+currency,currency,actors[0]]);
+  legacyCurrencies.push({id:row.id,currency});
+ }
  const proposal = source('../supabase/schema-proposals/invoice-attachments.sql');
  await db.exec(proposal);
  await db.exec(proposal); // Proposal must be safe to reapply to an isolated DB.
@@ -39,6 +52,13 @@ try {
  assert.equal(workspace.files.find(f=>f.id===legacyFile).storage_path,'legacy/old.pdf');
  assert.equal(workspace.files.find(f=>f.id===legacyFile).bucket_id,null);
 
+ for(const row of legacyCurrencies) {
+  const legacyEdit={...invoicePayload('LEGACY-'+row.currency),currency:row.currency,title:'Unrelated title edit'};
+  assert.equal((await saveInvoice(legacyEdit,row.id)).currency,row.currency,'unchanged legacy currency survives editing');
+  await deny(saveInvoice({...legacyEdit,currency:'CHF'},row.id),/currency/);
+  await deny(saveInvoice({...legacyEdit,currency:row.currency==='GBP'?'AED':'GBP'},row.id),/currency/);
+ }
+ await deny(saveInvoice({...invoicePayload('NEW-UNSUPPORTED'),currency:'GBP'}),/currency/);
  const createRequest = randomUUID(), payload=invoicePayload('ONE');
  const inv = await saveInvoice(payload,null,createRequest);
  assert.equal(typeof inv.id,'string'); assert.equal(inv.total_amount,'100.00');
@@ -95,8 +115,18 @@ try {
  await deny(reserve(zero.id,null,'final'));
  console.log('PASS server percentages, overpayment validation, immutable invoice link, editable sequence and settlement eligibility');
 
+ // Preserve the actual browser filename; whitespace is not a request rename.
+ for(const fileName of [' leading-space.pdf','trailing-space.pdf ']) {
+  const requestId=randomUUID();
+  const named=await reserve(inv.id,null,'proforma',requestId,{file_name:fileName});
+  assert.equal(named.file_name,fileName);
+  assert.equal((await rpc('get_invoice_file_upload',[named.id])).file_name,fileName);
+  assert.equal((await reserve(inv.id,null,'proforma',requestId,{file_name:fileName})).id,named.id);
+  await deny(reserve(inv.id,null,'proforma',requestId,{file_name:fileName.trim()}),/different file data/);
+ }
  const fileReq=randomUUID();
  const receipt=await reserve(inv.id,pay.id,'receipt',fileReq);
+ assert.equal(receipt.uploaded_object_matches,false);
  assert.equal(receipt.upload_state,'pending'); assert.equal(receipt.storage_path,`${inv.id}/${pay.id}/receipt/${fileReq}.pdf`);
  assert.equal((await reserve(inv.id,pay.id,'receipt',fileReq)).id,receipt.id);
  await deny(reserve(inv.id,pay.id,'receipt',fileReq,{sha256:'b'.repeat(64)}));
@@ -111,10 +141,40 @@ try {
  await deny(reserve(inv.id,null,'proforma',randomUUID(),{size_bytes:0}));
  await deny(rpc('finalize_invoice_file',[receipt.id]));
  assert.equal((await one('select upload_state from public.invoice_files where id=$1',[receipt.id])).upload_state,'pending','failed upload leaves stable retry reservation');
- await deny(upload(receipt,{size:33,mimetype:receipt.content_type}));
- await deny(upload(receipt,undefined,{sha256:'b'.repeat(64)}));
- await deny(upload(receipt,undefined,undefined,'wrong/path.pdf'));
+ // Direct Storage writes remain denied for every preflight shape, even to
+ // the authorized uploader. The Edge gate owns byte validation and uploads.
+ for(const metadata of [null,{mimetype:receipt.content_type},{mimetype:receipt.content_type,contentLength:432},{size:32,mimetype:receipt.content_type}]) {
+  await deny(directUpload(receipt,metadata),/policy|denied/);
+ }
+ const uploadContract=await rpc('get_invoice_file_upload',[receipt.id]);
+ assert.equal(uploadContract.id,receipt.id);assert.equal(uploadContract.size_bytes,'32');assert.equal(uploadContract.sha256,receipt.sha256);
+ // Even if backend completion bypasses RLS, incomplete/wrong object metadata
+ // cannot make a reserved file ready. These fixture inserts deliberately use
+ // the test administrator to model Storage completeUpload's asSuperUser path.
+ const serverCompleted=await reserve(inv.id);
+ await db.exec('reset role');
+ await directUpload(serverCompleted,{mimetype:serverCompleted.content_type},{sha256:serverCompleted.sha256});
+ await actor();
+ assert.equal((await reserve(inv.id,null,'proforma',serverCompleted.client_request_id)).uploaded_object_matches,false);
+ await deny(rpc('finalize_invoice_file',[serverCompleted.id]),/metadata/);
+ for(const [metadata,user] of [
+  [{size:33,mimetype:serverCompleted.content_type},{sha256:serverCompleted.sha256}],
+  [{size:32,mimetype:'image/png'},{sha256:serverCompleted.sha256}],
+  [{size:32,mimetype:serverCompleted.content_type},{sha256:'b'.repeat(64)}]
+ ]) {
+  await db.exec('reset role'); await db.query('update storage.objects set metadata=$1,user_metadata=$2 where name=$3',[JSON.stringify(metadata),JSON.stringify(user),serverCompleted.storage_path]);
+  await actor(); await deny(rpc('finalize_invoice_file',[serverCompleted.id]),/metadata/);
+ }
+ await db.exec('reset role'); await db.query('update storage.objects set metadata=$1,user_metadata=$2 where name=$3',[JSON.stringify({size:32,mimetype:serverCompleted.content_type}),JSON.stringify({sha256:serverCompleted.sha256}),serverCompleted.storage_path]);
+ await actor();
+ assert.equal((await reserve(inv.id,null,'proforma',serverCompleted.client_request_id)).uploaded_object_matches,true);
+ assert.equal((await rpc('finalize_invoice_file',[serverCompleted.id])).upload_state,'ready');
+ await deny(directUpload(receipt,{size:33,mimetype:receipt.content_type}));
+ await deny(directUpload(receipt,undefined,{sha256:'b'.repeat(64)}));
+ await deny(directUpload(receipt,undefined,undefined,'wrong/path.pdf'));
+ assert.equal((await db.query('update storage.objects set metadata=$1 where name=$2 returning name',[JSON.stringify({size:32,mimetype:receipt.content_type}),serverCompleted.storage_path])).rows.length,0);
  await upload(receipt);
+ assert.equal((await reserve(inv.id,pay.id,'receipt',fileReq)).uploaded_object_matches,true);
  const finalized=await rpc('finalize_invoice_file',[receipt.id]);
  assert.equal(finalized.upload_state,'ready');
  assert.equal((await one('select receipt_path from public.invoice_payments where id=$1',[pay.id])).receipt_path,receipt.storage_path);
@@ -146,14 +206,14 @@ try {
  const pending=await reserve(inv.id);
  await actor(actors[1]);
  assert.deepEqual(await rpc('list_invoice_workspace',[]),{invoices:[],payments:[],files:[]});
- await deny(saveInvoice(payload,inv.id)); await deny(savePayment(paymentPayload(inv.id,5,'1.00'))); await deny(reserve(inv.id)); await deny(rpc('finalize_invoice_file',[receipt.id]));
+ await deny(saveInvoice(payload,inv.id)); await deny(savePayment(paymentPayload(inv.id,5,'1.00'))); await deny(reserve(inv.id)); await deny(rpc('get_invoice_file_upload',[receipt.id])); await deny(rpc('finalize_invoice_file',[receipt.id]));
  assert.equal((await db.query("select name from storage.objects where bucket_id='invoices-private'")).rows.length,0);
  await deny(upload(pending));
  await db.exec('reset role'); await db.query('update public.invoices set follow_up_owner_id=$1 where id=$2',[actors[1],inv.id]);
  await actor(actors[1]);
  workspace=await rpc('list_invoice_workspace',[]);
  assert.ok(workspace.files.some(f=>f.id===receipt.id)); assert.ok(!workspace.files.some(f=>f.id===pending.id));
- await deny(rpc('finalize_invoice_file',[pending.id])); await deny(upload(pending));
+ await deny(rpc('get_invoice_file_upload',[pending.id])); await deny(rpc('finalize_invoice_file',[pending.id])); await deny(upload(pending));
  const ownPending=await reserve(inv.id); assert.equal(ownPending.upload_state,'pending');
  await actor(actors[0],{...all,create:false}); await deny(saveInvoice(invoicePayload('DENIED-CREATE')));
  await actor(actors[0],{...all,edit:false}); await deny(saveInvoice(payload,inv.id));
@@ -200,8 +260,8 @@ try {
  await db.exec('set role service_role');
  assert.ok((await db.query('select * from public.invoice_file_cleanup_batch(20)')).rows.some(j=>j.file_id===final.id),'delayed-upload reconciliation remains eligible');
  await db.exec('reset role');
- const exposed=await db.query("select proname,prosecdef from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and proname in('save_invoice','save_invoice_payment','reserve_invoice_file','finalize_invoice_file','list_invoice_workspace')");
- assert.equal(exposed.rows.length,5); assert.ok(exposed.rows.every(f=>!f.prosecdef));
+ const exposed=await db.query("select proname,prosecdef from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and proname in('save_invoice','save_invoice_payment','reserve_invoice_file','get_invoice_file_upload','finalize_invoice_file','list_invoice_workspace')");
+ assert.equal(exposed.rows.length,6); assert.ok(exposed.rows.every(f=>!f.prosecdef));
  assert.equal((await one("select has_function_privilege('authenticated','private.queue_invoice_file_cleanup()','EXECUTE') allowed")).allowed,false);
  console.log('PASS delete outbox, cascades, legacy preservation, invoker RPCs and trigger-only cleanup privileges');
  console.log('Invoice attachment SQL contract: PASS. Activation still requires real Storage API and multi-session PostgreSQL integration checks.');

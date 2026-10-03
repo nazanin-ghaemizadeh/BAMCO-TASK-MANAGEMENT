@@ -2,11 +2,12 @@
 -- Reviewed against the read-only live invoice policies/schema on 2026-10-03.
 -- Preserve existing invoice/payment/file RLS; SECURITY INVOKER RPCs cannot bypass it.
 -- Activation prerequisites: review this schema/bucket proposal, verify actual
--- Storage API metadata/preflight behavior, and deploy/schedule the staged
--- invoice-file-cleanup Edge Function using server-only service-role credentials.
+-- Storage API behavior, deploy the staged invoice-file-upload Edge Function,
+-- and deploy/schedule the staged invoice-file-cleanup Edge Function using server-only service-role credentials.
 -- Storage objects are read-only here: never DELETE storage.objects through SQL.
--- Client SHA-256 metadata is a retry identity, NOT trusted verification of bytes.
--- A trusted download-and-hash/scanner is required for adversarial content assurance.
+-- Client hash metadata is not authorization. The upload Edge gate must compute
+-- SHA-256 over received bytes and compare the reservation before uploading.
+-- Matching hashes do not replace PDF content inspection or malware scanning.
 BEGIN;
 
 -- Bucket configuration only; object data is always managed via the Storage API.
@@ -87,10 +88,20 @@ LANGUAGE sql STABLE SECURITY INVOKER SET search_path='' AS $$
   AND NOT EXISTS(SELECT 1 FROM public.invoice_payments p WHERE p.invoice_id=i.id AND p.status IS DISTINCT FROM 'paid')
  FROM public.invoices i WHERE i.id=p_invoice_id),false);
 $$;
+-- A resume hint, not a cryptographic assertion about the bytes. Always require
+-- the same actual Storage metadata here and in the pending -> ready transition.
+CREATE OR REPLACE FUNCTION private.invoice_file_object_matches(r public.invoice_files) RETURNS boolean
+LANGUAGE sql STABLE SECURITY INVOKER SET search_path='' AS $$
+ SELECT r.client_request_id IS NOT NULL AND EXISTS(SELECT 1 FROM storage.objects o
+  WHERE o.bucket_id='invoices-private' AND o.name=r.storage_path
+   AND o.metadata->>'size'=r.size_bytes::text AND o.metadata->>'mimetype'=r.content_type
+   AND o.user_metadata->>'sha256'=r.sha256);
+$$;
 CREATE OR REPLACE FUNCTION private.invoice_file_json(r public.invoice_files) RETURNS jsonb
 LANGUAGE sql STABLE SECURITY INVOKER SET search_path='' AS $$
  SELECT (to_jsonb(r)-'settlement_snapshot')||jsonb_build_object('id',r.id::text,'invoice_id',r.invoice_id::text,'payment_id',r.payment_id::text,
  'size_bytes',r.size_bytes::text,'bucket_id',CASE WHEN r.client_request_id IS NOT NULL THEN 'invoices-private' ELSE NULL END,
+ 'uploaded_object_matches',private.invoice_file_object_matches(r),
  'final_is_current',CASE WHEN r.file_type='final' THEN r.upload_state='ready' AND r.settlement_snapshot IS NOT NULL
   AND private.invoice_is_settled(r.invoice_id) AND r.settlement_snapshot=private.invoice_settlement_snapshot(r.invoice_id) ELSE NULL END);
 $$;
@@ -112,7 +123,12 @@ BEGIN
  IF coalesce(p_payload->>'total_amount','') !~ '^[0-9]+([.][0-9]{1,2})?$' THEN RAISE EXCEPTION 'invalid exact invoice amount' USING ERRCODE='22023'; END IF;
  amount_value:=(p_payload->>'total_amount')::numeric;
  IF amount_value>9999999999999999.99 OR nullif(btrim(p_payload->>'invoice_number'),'') IS NULL OR nullif(btrim(p_payload->>'title'),'') IS NULL
-  OR nullif(btrim(p_payload->>'account_party'),'') IS NULL OR coalesce(p_payload->>'currency','') NOT IN('IRR','IRT','USD','EUR') THEN RAISE EXCEPTION 'invalid invoice data' USING ERRCODE='22023'; END IF;
+  OR nullif(btrim(p_payload->>'account_party'),'') IS NULL THEN RAISE EXCEPTION 'invalid invoice data' USING ERRCODE='22023'; END IF;
+ -- Existing currency is free-form text. Preserve an unchanged legacy value
+ -- on edits, while creation and actual currency changes use supported choices.
+ IF coalesce(p_payload->>'currency','') NOT IN('IRR','IRT','USD','EUR') AND NOT (
+  p_invoice_id IS NOT NULL AND EXISTS(SELECT 1 FROM public.invoices i WHERE i.id=p_invoice_id AND i.currency=p_payload->>'currency')
+ ) THEN RAISE EXCEPTION 'invalid invoice currency' USING ERRCODE='22023'; END IF;
  IF p_invoice_id IS NULL THEN
   INSERT INTO public.invoices(invoice_number,title,account_party,company_name,currency,total_amount,due_date,description,created_by,follow_up_owner_id,client_request_id)
   VALUES(btrim(p_payload->>'invoice_number'),btrim(p_payload->>'title'),btrim(p_payload->>'account_party'),nullif(btrim(p_payload->>'company_name'),''),p_payload->>'currency',amount_value,
@@ -218,8 +234,7 @@ BEGIN
    IF NOT private.invoice_is_settled(NEW.invoice_id) THEN RAISE EXCEPTION 'final invoice requires full settlement and no unpaid stages' USING ERRCODE='22023'; END IF;
    NEW.settlement_snapshot:=private.invoice_settlement_snapshot(NEW.invoice_id);
   ELSE NEW.settlement_snapshot:=NULL; END IF;
-  IF NOT EXISTS(SELECT 1 FROM storage.objects o WHERE o.bucket_id='invoices-private' AND o.name=NEW.storage_path
-   AND o.metadata->>'size'=NEW.size_bytes::text AND o.metadata->>'mimetype'=NEW.content_type AND o.user_metadata->>'sha256'=NEW.sha256)
+  IF NOT private.invoice_file_object_matches(NEW)
   THEN RAISE EXCEPTION 'uploaded object metadata does not match reservation' USING ERRCODE='22023'; END IF;
   RETURN NEW;
  END IF;
@@ -227,7 +242,7 @@ BEGIN
   OR NEW.file_type NOT IN('proforma','receipt','final') OR NEW.content_type NOT IN('application/pdf','image/jpeg','image/png','image/webp')
   OR NEW.size_bytes IS NULL OR NEW.size_bytes<1 OR NEW.size_bytes>6291456 OR NEW.sha256 IS NULL OR NEW.sha256 !~ '^[0-9a-f]{64}$'
   OR nullif(btrim(NEW.file_name),'') IS NULL OR length(NEW.file_name)>255 OR NEW.file_name ~ '[[:cntrl:]/\\]' OR NEW.settlement_snapshot IS NOT NULL
-  OR NOT (CASE NEW.content_type WHEN 'application/pdf' THEN NEW.file_name ~* '[.]pdf$' WHEN 'image/jpeg' THEN NEW.file_name ~* '[.](jpg|jpeg)$' WHEN 'image/png' THEN NEW.file_name ~* '[.]png$' WHEN 'image/webp' THEN NEW.file_name ~* '[.]webp$' ELSE false END)
+  OR NOT (CASE NEW.content_type WHEN 'application/pdf' THEN btrim(NEW.file_name) ~* '[.]pdf$' WHEN 'image/jpeg' THEN btrim(NEW.file_name) ~* '[.](jpg|jpeg)$' WHEN 'image/png' THEN btrim(NEW.file_name) ~* '[.]png$' WHEN 'image/webp' THEN btrim(NEW.file_name) ~* '[.]webp$' ELSE false END)
   OR (NEW.file_type='receipt') IS DISTINCT FROM (NEW.payment_id IS NOT NULL)
   OR NEW.storage_path IS DISTINCT FROM private.invoice_file_path(NEW.invoice_id,NEW.payment_id,NEW.file_type,NEW.client_request_id,NEW.content_type)
  THEN RAISE EXCEPTION 'invalid attachment reservation' USING ERRCODE='22023'; END IF;
@@ -260,7 +275,7 @@ BEGIN
  SELECT * INTO r FROM public.invoice_files WHERE client_request_id=p_request_id;
  IF FOUND THEN
   IF r.uploaded_by IS DISTINCT FROM auth.uid() OR ROW(r.invoice_id,r.payment_id,r.file_type,r.file_name,r.content_type,r.size_bytes,r.sha256)
-   IS DISTINCT FROM ROW(p_invoice_id,p_payment_id,p_file_type,btrim(p_file_name),p_content_type,p_size_bytes,lower(p_sha256)) THEN RAISE EXCEPTION 'request ID was already used with different file data' USING ERRCODE='22023'; END IF;
+   IS DISTINCT FROM ROW(p_invoice_id,p_payment_id,p_file_type,p_file_name,p_content_type,p_size_bytes,lower(p_sha256)) THEN RAISE EXCEPTION 'request ID was already used with different file data' USING ERRCODE='22023'; END IF;
   IF r.file_type='final' AND r.upload_state='pending' THEN
    PERFORM private.lock_invoice_for_file(r.invoice_id);
    IF NOT private.invoice_is_settled(r.invoice_id) THEN RAISE EXCEPTION 'final invoice requires full settlement and no unpaid stages' USING ERRCODE='22023'; END IF;
@@ -269,7 +284,21 @@ BEGIN
  END IF;
  IF EXISTS(SELECT 1 FROM private.invoice_mutation_requests WHERE request_id=p_request_id) THEN RAISE EXCEPTION 'attachment request is retired or already used' USING ERRCODE='22023'; END IF;
  INSERT INTO public.invoice_files(invoice_id,payment_id,file_type,file_name,storage_path,uploaded_by,client_request_id,upload_state,content_type,size_bytes,sha256)
- VALUES(p_invoice_id,p_payment_id,p_file_type,btrim(p_file_name),private.invoice_file_path(p_invoice_id,p_payment_id,p_file_type,p_request_id,p_content_type),auth.uid(),p_request_id,'pending',p_content_type,p_size_bytes,lower(p_sha256)) RETURNING * INTO r;
+ VALUES(p_invoice_id,p_payment_id,p_file_type,p_file_name,private.invoice_file_path(p_invoice_id,p_payment_id,p_file_type,p_request_id,p_content_type),auth.uid(),p_request_id,'pending',p_content_type,p_size_bytes,lower(p_sha256)) RETURNING * INTO r;
+ RETURN private.invoice_file_json(r);
+END $$;
+-- Caller-scoped upload authorization/read contract for the Edge handler. IDs
+-- and money never travel as JavaScript JSON numbers. No bytes are written here.
+CREATE OR REPLACE FUNCTION public.get_invoice_file_upload(p_file_id bigint) RETURNS jsonb
+LANGUAGE plpgsql SECURITY INVOKER SET search_path='' AS $$
+DECLARE r public.invoice_files;
+BEGIN
+ SELECT * INTO r FROM public.invoice_files WHERE id=p_file_id;
+ IF NOT FOUND OR r.client_request_id IS NULL OR r.uploaded_by IS DISTINCT FROM auth.uid() THEN RAISE EXCEPTION 'attachment not found or upload access denied' USING ERRCODE='42501'; END IF;
+ PERFORM private.lock_invoice_for_file(r.invoice_id);
+ SELECT * INTO r FROM public.invoice_files WHERE id=p_file_id FOR UPDATE;
+ IF NOT FOUND OR r.client_request_id IS NULL OR r.uploaded_by IS DISTINCT FROM auth.uid() THEN RAISE EXCEPTION 'attachment not found or upload access denied' USING ERRCODE='42501'; END IF;
+ IF r.upload_state='pending' AND r.file_type='final' AND NOT private.invoice_is_settled(r.invoice_id) THEN RAISE EXCEPTION 'final invoice requires full settlement and no unpaid stages' USING ERRCODE='22023'; END IF;
  RETURN private.invoice_file_json(r);
 END $$;
 CREATE OR REPLACE FUNCTION public.finalize_invoice_file(p_file_id bigint) RETURNS jsonb
@@ -303,44 +332,27 @@ LANGUAGE sql STABLE SECURITY INVOKER SET search_path='' AS $$
  SELECT EXISTS(SELECT 1 FROM public.invoice_files f WHERE f.storage_path=p_name AND f.client_request_id IS NOT NULL
   AND public.platform_can_access_invoice(f.invoice_id) AND (f.upload_state='ready' OR f.uploaded_by=auth.uid()));
 $$;
-CREATE OR REPLACE FUNCTION private.invoice_storage_write(p_name text,p_metadata jsonb,p_user_metadata jsonb) RETURNS boolean
-LANGUAGE plpgsql VOLATILE SECURITY INVOKER SET search_path='' AS $$
-DECLARE f public.invoice_files;
-BEGIN
- SELECT * INTO f FROM public.invoice_files WHERE storage_path=p_name AND client_request_id IS NOT NULL
-  AND upload_state='pending' AND uploaded_by=auth.uid() AND public.platform_can_access_invoice(invoice_id);
- IF NOT FOUND THEN RETURN false; END IF;
- PERFORM private.lock_invoice_for_file(f.invoice_id);
- -- Re-read after waiting; the reservation may have become ready or been deleted.
- -- Hold its row through the Storage metadata write so finalization cannot race it.
- SELECT * INTO f FROM public.invoice_files WHERE id=f.id AND client_request_id IS NOT NULL
-  AND upload_state='pending' AND uploaded_by=auth.uid() AND public.platform_can_access_invoice(invoice_id) FOR UPDATE;
- IF NOT FOUND THEN RETURN false; END IF;
- IF f.file_type='final' AND NOT private.invoice_is_settled(f.invoice_id) THEN RETURN false; END IF;
- -- Storage may preflight an empty metadata record; finalization always requires
- -- actual server-observed size/type and matching custom retry hash.
- RETURN (p_metadata IS NULL OR (p_metadata->>'size'=f.size_bytes::text AND p_metadata->>'mimetype'=f.content_type))
-  AND (p_user_metadata IS NULL OR p_user_metadata->>'sha256'=f.sha256);
-END $$;
 DROP POLICY IF EXISTS invoice_objects_read ON storage.objects;
 CREATE POLICY invoice_objects_read ON storage.objects FOR SELECT TO authenticated USING(bucket_id='invoices-private' AND private.invoice_storage_read(name));
+-- Client Storage uploads are disabled even for pending rows. The Storage API
+-- v1.79.28 permission preflight and its asSuperUser completion are different
+-- transactions, so RLS alone cannot protect against an in-flight malicious
+-- upsert replacing bytes after finalization. The invoice-file-upload Edge
+-- handler authenticates the caller, validates exact bytes against the getter,
+-- uploads with server credentials and upsert=false, then finalizes as caller.
 DROP POLICY IF EXISTS invoice_objects_insert ON storage.objects;
-CREATE POLICY invoice_objects_insert ON storage.objects FOR INSERT TO authenticated WITH CHECK(bucket_id='invoices-private' AND private.invoice_storage_write(name,metadata,user_metadata));
 DROP POLICY IF EXISTS invoice_objects_update ON storage.objects;
-CREATE POLICY invoice_objects_update ON storage.objects FOR UPDATE TO authenticated
- USING(bucket_id='invoices-private' AND private.invoice_storage_write(name,metadata,user_metadata))
- WITH CHECK(bucket_id='invoices-private' AND private.invoice_storage_write(name,metadata,user_metadata));
 -- These restrictive gates also defeat accidentally broad, unrelated Storage policies.
 DROP POLICY IF EXISTS invoice_objects_read_guard ON storage.objects;
 CREATE POLICY invoice_objects_read_guard ON storage.objects AS RESTRICTIVE FOR SELECT TO authenticated USING(bucket_id<>'invoices-private' OR private.invoice_storage_read(name));
 DROP POLICY IF EXISTS invoice_objects_insert_guard ON storage.objects;
-CREATE POLICY invoice_objects_insert_guard ON storage.objects AS RESTRICTIVE FOR INSERT TO authenticated WITH CHECK(bucket_id<>'invoices-private' OR private.invoice_storage_write(name,metadata,user_metadata));
+CREATE POLICY invoice_objects_insert_guard ON storage.objects AS RESTRICTIVE FOR INSERT TO authenticated WITH CHECK(bucket_id<>'invoices-private');
 DROP POLICY IF EXISTS invoice_objects_update_guard ON storage.objects;
 CREATE POLICY invoice_objects_update_guard ON storage.objects AS RESTRICTIVE FOR UPDATE TO authenticated
- USING(bucket_id<>'invoices-private' OR private.invoice_storage_write(name,metadata,user_metadata))
- WITH CHECK(bucket_id<>'invoices-private' OR private.invoice_storage_write(name,metadata,user_metadata));
+ USING(bucket_id<>'invoices-private') WITH CHECK(bucket_id<>'invoices-private');
 DROP POLICY IF EXISTS invoice_objects_delete_guard ON storage.objects;
 CREATE POLICY invoice_objects_delete_guard ON storage.objects AS RESTRICTIVE FOR DELETE TO authenticated USING(bucket_id<>'invoices-private');
+DROP FUNCTION IF EXISTS private.invoice_storage_write(text,jsonb,jsonb);
 -- Anonymous callers never access the bucket, even if another policy is broad.
 DROP POLICY IF EXISTS invoice_objects_anon_guard ON storage.objects;
 CREATE POLICY invoice_objects_anon_guard ON storage.objects AS RESTRICTIVE FOR ALL TO anon USING(bucket_id<>'invoices-private') WITH CHECK(bucket_id<>'invoices-private');
@@ -463,8 +475,8 @@ $$;
 -- their functions are not replaced or re-granted by this proposal.
 DO $$ DECLARE f record; BEGIN
  FOR f IN SELECT p.oid::regprocedure signature,n.nspname FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
-  WHERE (n.nspname='public' AND p.proname IN('save_invoice','save_invoice_payment','reserve_invoice_file','finalize_invoice_file','list_invoice_workspace'))
-   OR (n.nspname='private' AND p.proname IN('invoice_row_json','invoice_payment_json','invoice_settlement_snapshot','invoice_is_settled','invoice_file_json','guard_invoice_payment_identity','invoice_file_path','guard_invoice_file','invoice_storage_read','invoice_storage_write','sync_invoice_receipt','refresh_invoice_amount_state','record_invoice_file_request'))
+  WHERE (n.nspname='public' AND p.proname IN('save_invoice','save_invoice_payment','reserve_invoice_file','get_invoice_file_upload','finalize_invoice_file','list_invoice_workspace'))
+   OR (n.nspname='private' AND p.proname IN('invoice_row_json','invoice_payment_json','invoice_settlement_snapshot','invoice_is_settled','invoice_file_json','invoice_file_object_matches','guard_invoice_payment_identity','invoice_file_path','guard_invoice_file','invoice_storage_read','sync_invoice_receipt','refresh_invoice_amount_state','record_invoice_file_request'))
  LOOP
   EXECUTE format('REVOKE ALL ON FUNCTION %s FROM PUBLIC,anon',f.signature);
   EXECUTE format('GRANT EXECUTE ON FUNCTION %s TO authenticated',f.signature);

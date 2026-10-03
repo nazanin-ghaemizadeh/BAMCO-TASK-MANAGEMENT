@@ -40,6 +40,13 @@
       }
       return response(exact(row));
     }
+    if (endpoint === 'invoice-file-upload') {
+      const row=store.files.find(item=>String(item.id)===String(body.get('file_id')));
+      const file=body.get('file');
+      if(!row||!file||file.name!==row.file_name||file.size!==Number(row.size_bytes))return response({error:'فایل با درخواست رزروشده مطابقت ندارد'},409);
+      store.uploads.push({path:row.storage_path,bytes:file.size,transport:'authorized-edge'});
+      row.upload_state='ready';return response({file:exact(row)});
+    }
     if (endpoint === 'finalize_invoice_file') {
       const row = store.files.find(item => String(item.id) === String(body.p_file_id)); if (!row) return response({ message: 'فایل پیدا نشد' }, 404);
       row.upload_state = 'ready'; return response(exact(row));
