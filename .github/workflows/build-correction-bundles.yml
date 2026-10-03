@@ -1,0 +1,48 @@
+name: Build approved correction bundles once
+on:
+  push:
+    branches: [fix/report-invoice-presentation-20261003]
+    paths: [.github/workflows/build-correction-bundles.yml]
+permissions:
+  contents: read
+jobs:
+  build-reviewed-bundles:
+    if: github.repository == 'nazanin-ghaemizadeh/BAMCO-TASK-MANAGEMENT' && github.ref == 'refs/heads/fix/report-invoice-presentation-20261003'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - name: Verify exact approved source and workflow-only commit
+        env:
+          EXPECTED_SOURCE: f8ac6a50760d31ea32c21f6eaf68e3cca6fc50f6
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^)" = "$EXPECTED_SOURCE"
+          test "$(git diff --name-only "$EXPECTED_SOURCE" HEAD)" = ".github/workflows/build-correction-bundles.yml"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      # Full exact-source regression passed in read-only run 37126353380.
+      # The complete suite runs again on the final head after this workflow is removed.
+      - run: npm run build:assets && npm run check:assets
+      - name: Recheck changed component contracts
+        run: node --test --test-force-exit --test-concurrency=4 tests/file-picker.test.cjs tests/money-input.test.cjs tests/invoice-attachments.test.cjs tests/test-reports.test.cjs tests/immediate-results-guide-reminders.test.cjs
+      - name: Verify exact hashes and commit only the two approved outputs
+        run: |
+          set -euo pipefail
+          echo 'b7ffb04823875b3f15ce632b064ece4243266557a3eeebb977851ec7fa8d3fc8  assets/js/bamco.bundle.js' | sha256sum --check
+          echo '25db9940e02a46702527f87e3ce059b7b7217e9ccd4f37c771102ee8718faad7  assets/css/bamco.bundle.css' | sha256sum --check
+          git add -- assets/js/bamco.bundle.js assets/css/bamco.bundle.css
+          test "$(git diff --cached --name-only | sort)" = "$(printf '%s\n' assets/css/bamco.bundle.css assets/js/bamco.bundle.js)"
+          test "$(git ls-remote origin refs/heads/fix/report-invoice-presentation-20261003 | cut -f1)" = "$GITHUB_SHA"
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git commit -m "build: generate verified report and invoice presentation bundles"
+          git push origin HEAD:refs/heads/fix/report-invoice-presentation-20261003
