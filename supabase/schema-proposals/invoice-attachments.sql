@@ -47,6 +47,7 @@ CREATE TABLE IF NOT EXISTS private.invoice_mutation_requests(
  created_at timestamptz NOT NULL DEFAULT now(),
  CHECK(operation IN('invoice','payment','file'))
 );
+CREATE UNIQUE INDEX IF NOT EXISTS invoice_file_request_target_key ON private.invoice_mutation_requests(target_id) WHERE operation='file';
 ALTER TABLE private.invoice_mutation_requests ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON private.invoice_mutation_requests FROM PUBLIC,anon,authenticated;
 GRANT SELECT,INSERT ON private.invoice_mutation_requests TO authenticated;
@@ -74,7 +75,8 @@ CREATE OR REPLACE FUNCTION private.invoice_settlement_snapshot(p_invoice_id bigi
 LANGUAGE sql STABLE SECURITY INVOKER SET search_path='' AS $$
  SELECT jsonb_build_object('total_amount',i.total_amount::text,'currency',i.currency,
   'payments',coalesce((SELECT jsonb_agg(jsonb_build_object('id',p.id::text,'sequence_no',p.sequence_no,'amount',p.amount::text,
-    'status',p.status,'paid_date',p.paid_date,'tracking_no',p.tracking_no,'document_no',p.document_no) ORDER BY p.id)
+    'status',p.status,'planned_date',p.planned_date,'paid_date',p.paid_date,'tracking_no',p.tracking_no,'document_no',p.document_no,
+    'payment_method',p.payment_method,'payer_id',p.payer_id,'approver_id',p.approver_id,'notes',p.notes) ORDER BY p.id)
     FROM public.invoice_payments p WHERE p.invoice_id=i.id),'[]'::jsonb))
  FROM public.invoices i WHERE i.id=p_invoice_id;
 $$;
@@ -147,6 +149,10 @@ BEGIN
  amount_value:=(p_payload->>'amount')::numeric;
  parent_id:=(p_payload->>'invoice_id')::bigint; stage:=(p_payload->>'sequence_no')::integer;
  IF amount_value<=0 OR amount_value>9999999999999999.99 OR parent_id IS NULL OR stage IS NULL OR stage<1 OR coalesce(p_payload->>'status','') NOT IN('planned','paid') THEN RAISE EXCEPTION 'invalid payment data' USING ERRCODE='22023'; END IF;
+ -- Parent-before-payment order matches total changes, file finalization and
+ -- deletion. This uses the same invoker lock/permissions as the existing trigger.
+ PERFORM 1 FROM public.invoices WHERE id=parent_id FOR UPDATE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'invoice payment lock access denied' USING ERRCODE='42501'; END IF;
  IF p_payment_id IS NULL THEN
   INSERT INTO public.invoice_payments(invoice_id,sequence_no,amount,planned_date,paid_date,status,tracking_no,notes,payer_id,client_request_id)
   VALUES(parent_id,stage,amount_value,nullif(p_payload->>'planned_date','')::date,nullif(p_payload->>'paid_date','')::date,p_payload->>'status',nullif(btrim(p_payload->>'tracking_no'),''),
@@ -191,6 +197,8 @@ BEGIN
  IF auth.uid() IS NULL OR NOT public.platform_can_access_invoice(p_invoice_id) THEN RAISE EXCEPTION 'invoice lock access denied' USING ERRCODE='42501'; END IF;
  PERFORM 1 FROM public.invoices WHERE id=p_invoice_id FOR UPDATE;
  IF NOT FOUND THEN RAISE EXCEPTION 'invoice no longer exists' USING ERRCODE='42501'; END IF;
+ -- Access could have changed while waiting for the row lock.
+ IF NOT public.platform_can_access_invoice(p_invoice_id) THEN RAISE EXCEPTION 'invoice lock access denied' USING ERRCODE='42501'; END IF;
 END $$;
 REVOKE ALL ON FUNCTION private.lock_invoice_for_file(bigint) FROM PUBLIC,anon;
 GRANT EXECUTE ON FUNCTION private.lock_invoice_for_file(bigint) TO authenticated;
@@ -253,6 +261,10 @@ BEGIN
  IF FOUND THEN
   IF r.uploaded_by IS DISTINCT FROM auth.uid() OR ROW(r.invoice_id,r.payment_id,r.file_type,r.file_name,r.content_type,r.size_bytes,r.sha256)
    IS DISTINCT FROM ROW(p_invoice_id,p_payment_id,p_file_type,btrim(p_file_name),p_content_type,p_size_bytes,lower(p_sha256)) THEN RAISE EXCEPTION 'request ID was already used with different file data' USING ERRCODE='22023'; END IF;
+  IF r.file_type='final' AND r.upload_state='pending' THEN
+   PERFORM private.lock_invoice_for_file(r.invoice_id);
+   IF NOT private.invoice_is_settled(r.invoice_id) THEN RAISE EXCEPTION 'final invoice requires full settlement and no unpaid stages' USING ERRCODE='22023'; END IF;
+  END IF;
   RETURN private.invoice_file_json(r);
  END IF;
  IF EXISTS(SELECT 1 FROM private.invoice_mutation_requests WHERE request_id=p_request_id) THEN RAISE EXCEPTION 'attachment request is retired or already used' USING ERRCODE='22023'; END IF;
@@ -266,7 +278,9 @@ DECLARE r public.invoice_files;
 BEGIN
  -- Parent-before-file lock order matches financial mutations and cascades.
  SELECT * INTO r FROM public.invoice_files WHERE id=p_file_id;
- IF FOUND AND r.file_type='final' AND r.upload_state='pending' THEN PERFORM private.lock_invoice_for_file(r.invoice_id); END IF;
+ IF NOT FOUND OR r.client_request_id IS NULL OR r.uploaded_by IS DISTINCT FROM auth.uid() THEN RAISE EXCEPTION 'attachment not found or access denied' USING ERRCODE='42501'; END IF;
+ IF r.upload_state='ready' THEN RETURN private.invoice_file_json(r); END IF;
+ PERFORM private.lock_invoice_for_file(r.invoice_id);
  SELECT * INTO r FROM public.invoice_files WHERE id=p_file_id FOR UPDATE;
  IF NOT FOUND OR r.client_request_id IS NULL OR r.uploaded_by IS DISTINCT FROM auth.uid() THEN RAISE EXCEPTION 'attachment not found or access denied' USING ERRCODE='42501'; END IF;
  IF r.upload_state='pending' THEN
@@ -296,10 +310,13 @@ BEGIN
  SELECT * INTO f FROM public.invoice_files WHERE storage_path=p_name AND client_request_id IS NOT NULL
   AND upload_state='pending' AND uploaded_by=auth.uid() AND public.platform_can_access_invoice(invoice_id);
  IF NOT FOUND THEN RETURN false; END IF;
- IF f.file_type='final' THEN
-  PERFORM private.lock_invoice_for_file(f.invoice_id);
-  IF NOT private.invoice_is_settled(f.invoice_id) THEN RETURN false; END IF;
- END IF;
+ PERFORM private.lock_invoice_for_file(f.invoice_id);
+ -- Re-read after waiting; the reservation may have become ready or been deleted.
+ -- Hold its row through the Storage metadata write so finalization cannot race it.
+ SELECT * INTO f FROM public.invoice_files WHERE id=f.id AND client_request_id IS NOT NULL
+  AND upload_state='pending' AND uploaded_by=auth.uid() AND public.platform_can_access_invoice(invoice_id) FOR UPDATE;
+ IF NOT FOUND THEN RETURN false; END IF;
+ IF f.file_type='final' AND NOT private.invoice_is_settled(f.invoice_id) THEN RETURN false; END IF;
  -- Storage may preflight an empty metadata record; finalization always requires
  -- actual server-observed size/type and matching custom retry hash.
  RETURN (p_metadata IS NULL OR (p_metadata->>'size'=f.size_bytes::text AND p_metadata->>'mimetype'=f.content_type))
@@ -330,11 +347,14 @@ CREATE POLICY invoice_objects_anon_guard ON storage.objects AS RESTRICTIVE FOR A
 
 -- Durable cleanup outbox. Only a privileged worker can inspect/ack it. A worker
 -- MUST confirm the matching invoice_files row is absent, delete via Storage API,
--- and only then acknowledge this row. SQL never deletes Storage metadata/bytes.
+-- and only then acknowledge this row. Tombstones remain for hourly reconciliation
+-- of delayed uploads: Storage bytes and database rows cannot share a transaction.
+-- SQL never deletes Storage metadata/bytes.
 CREATE TABLE IF NOT EXISTS private.invoice_storage_cleanup(
  file_id bigint PRIMARY KEY, invoice_id bigint NOT NULL, storage_path text NOT NULL,
  bucket_id text NOT NULL DEFAULT 'invoices-private' CHECK(bucket_id='invoices-private'),
- requested_by uuid, requested_at timestamptz NOT NULL DEFAULT now()
+ requested_by uuid, requested_at timestamptz NOT NULL DEFAULT now(),
+ last_checked_at timestamptz, last_attempted_at timestamptz, cleanup_attempts bigint NOT NULL DEFAULT 0
 );
 ALTER TABLE private.invoice_storage_cleanup ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON private.invoice_storage_cleanup FROM PUBLIC,anon,authenticated;
@@ -406,15 +426,23 @@ GRANT USAGE ON SCHEMA private TO service_role;
 GRANT SELECT ON public.invoice_files TO service_role;
 CREATE OR REPLACE FUNCTION public.invoice_file_cleanup_batch(p_limit integer DEFAULT 50)
 RETURNS TABLE(file_id text,bucket_id text,storage_path text)
-LANGUAGE sql STABLE SECURITY INVOKER SET search_path='' AS $$
- SELECT q.file_id::text,q.bucket_id,q.storage_path FROM private.invoice_storage_cleanup q
- WHERE NOT EXISTS(SELECT 1 FROM public.invoice_files f WHERE f.id=q.file_id OR f.storage_path=q.storage_path)
- ORDER BY q.requested_at,q.file_id LIMIT greatest(1,least(coalesce(p_limit,50),50));
+LANGUAGE sql VOLATILE SECURITY INVOKER SET search_path='' AS $$
+ WITH candidates AS (
+  SELECT q.file_id FROM private.invoice_storage_cleanup q
+  WHERE q.requested_at <= now()-interval '5 minutes'
+   AND (q.last_checked_at IS NULL OR q.last_checked_at<=now()-interval '1 hour')
+   AND (q.last_attempted_at IS NULL OR q.last_attempted_at<=now()-interval '1 minute')
+   AND NOT EXISTS(SELECT 1 FROM public.invoice_files f WHERE f.id=q.file_id OR f.storage_path=q.storage_path)
+  ORDER BY q.last_attempted_at NULLS FIRST,q.requested_at,q.file_id
+  LIMIT greatest(1,least(coalesce(p_limit,50),50)) FOR UPDATE SKIP LOCKED
+ )
+ UPDATE private.invoice_storage_cleanup q SET last_attempted_at=now(),cleanup_attempts=cleanup_attempts+1
+ FROM candidates c WHERE q.file_id=c.file_id RETURNING q.file_id::text,q.bucket_id,q.storage_path;
 $$;
 CREATE OR REPLACE FUNCTION public.ack_invoice_file_cleanup(p_file_id bigint) RETURNS boolean
 LANGUAGE plpgsql SECURITY INVOKER SET search_path='' AS $$
 BEGIN
- DELETE FROM private.invoice_storage_cleanup q WHERE q.file_id=p_file_id
+ UPDATE private.invoice_storage_cleanup q SET last_checked_at=now() WHERE q.file_id=p_file_id
   AND NOT EXISTS(SELECT 1 FROM public.invoice_files f WHERE f.id=q.file_id OR f.storage_path=q.storage_path);
  RETURN FOUND;
 END $$;

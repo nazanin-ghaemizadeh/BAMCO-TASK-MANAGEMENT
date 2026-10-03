@@ -174,3 +174,14 @@ test('empty, oversized, unsupported and invalid metadata uploads fail before res
  }
  const f=fixture(),big=new File([new Uint8Array(25*1024*1024+1)],'big.pdf',{type:'application/pdf'});assert.equal((await f.call('upload',{file:big})).status,413);assert.equal(f.files.size,0);
 });
+
+
+test('downloadable filename extension and declared MIME must both be allowed and consistent', async()=>{
+ for(const selected of [new File(['x'],'payload.exe',{type:'application/pdf'}),new File(['x'],'report.pdf',{type:'image/png'}),new File(['x'],'report.pdf',{type:'text/html'}),new File(['x'],'report.constructor',{type:''})]){
+  const f=fixture(),r=await f.call('upload',{file:selected});assert.equal(r.status,400);assert.equal(r.body.code,'invalid_file_type');
+  assert.equal(f.files.size,0);assert.equal(f.objects.size,0);assert.equal(f.leases.size,0);
+ }
+ for(const selected of [new File(['x'],'report.pdf',{type:''}),new File(['x'],'report.pdf',{type:'application/octet-stream'}),new File(['x'],'report.JPG',{type:'image/jpeg'}),new File(['x'],'report.jpeg',{type:'image/jpeg'})]){
+  const f=fixture(),r=await f.call('upload',{file:selected});assert.equal(r.status,200);assert.equal(f.files.size,1);assert.equal(f.objects.size,1);
+ }
+});

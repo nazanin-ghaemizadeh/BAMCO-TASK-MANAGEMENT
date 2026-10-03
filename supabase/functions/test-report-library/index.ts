@@ -196,8 +196,12 @@ Deno.serve(async (req: Request) => {
       if (file.size <= 0 || file.size > MAX) throw new ApiError("حجم فایل باید حداکثر ۲۵ مگابایت باشد.", 413, "file_too_large");
       if (!file.name || file.name.length > 512) throw new ApiError("نام فایل معتبر نیست.", 400, "invalid_file_name");
       const ext = file.name.split(".").pop()?.toLowerCase() || "", declared = file.type.toLowerCase();
-      const mime = EXT_BY_MIME[declared] ? declared : MIME_BY_EXT[ext];
-      if (!mime) throw new ApiError("فرمت فایل مجاز نیست.", 400, "invalid_file_type");
+      // Validate the ORIGINAL downloadable name as well as the declared MIME.
+      // Canonical Storage paths alone do not make an executable filename safe.
+      const mime = Object.hasOwn(MIME_BY_EXT, ext) ? MIME_BY_EXT[ext] : null;
+      if (!mime || (declared && declared !== "application/octet-stream" && declared !== mime)) {
+        throw new ApiError("پسوند و نوع فایل باید با یکی از فرمت‌های مجاز مطابقت داشته باشند.", 400, "invalid_file_type");
+      }
       const hash = await sha256(await file.arrayBuffer());
       const wanted = { id: fileId, year_id: yearId, title, description, original_file_name: file.name,
         storage_path: `years/${yearId}/${fileId}.${EXT_BY_MIME[mime]}`, mime_type: mime, file_size: file.size, sha256: hash, created_by: user.id };

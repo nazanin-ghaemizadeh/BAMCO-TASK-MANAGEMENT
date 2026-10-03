@@ -93,7 +93,7 @@ try {
  await db.query('delete from public.invoice_payments where id=$1',[extra.id]);
  const zero=await saveInvoice(invoicePayload('ZERO','0.00'));
  await deny(reserve(zero.id,null,'final'));
- console.log('PASS server percentages, overpayment validation, immutable payment pair and settlement eligibility');
+ console.log('PASS server percentages, overpayment validation, immutable invoice link, editable sequence and settlement eligibility');
 
  const fileReq=randomUUID();
  const receipt=await reserve(inv.id,pay.id,'receipt',fileReq);
@@ -126,6 +126,9 @@ try {
  const newer=await reserve(inv.id,pay.id,'receipt'); await upload(newer); await rpc('finalize_invoice_file',[newer.id]);
  await rpc('finalize_invoice_file',[receipt.id]);
  assert.equal((await one('select receipt_path from public.invoice_payments where id=$1',[pay.id])).receipt_path,newer.storage_path,'old finalize retry cannot replace newer receipt');
+ await savePayment({...pp,sequence_no:9},pay.id);
+ assert.equal((await one('select receipt_path from public.invoice_payments where id=$1',[pay.id])).receipt_path,newer.storage_path,'sequence edit keeps receipt attached to stable payment ID');
+ assert.equal((await one('select payment_id::text id from public.invoice_files where id=$1',[newer.id])).id,pay.id);
  const final=await reserve(inv.id,null,'final'); await upload(final); const readyFinal=await rpc('finalize_invoice_file',[final.id]);
  assert.equal(readyFinal.final_is_current,true);
  await saveInvoice({...payload,total_amount:'110.00'},inv.id);
@@ -180,6 +183,23 @@ try {
  assert.ok(await one('select file_id from private.invoice_storage_cleanup where file_id=$1',[ownPending.id]),'invoice cascade queues other uploader hidden pending row');
  assert.ok(await one('select file_id from private.invoice_storage_cleanup where file_id=$1',[final.id]));
  assert.ok(await one('select name from storage.objects where name=$1',[final.storage_path]),'SQL never deletes Storage metadata or bytes');
+ // Cleanup is service-only, delayed initially, and reconciles retained retired
+ // paths after success so an upload completing late cannot orphan its bytes.
+ await actor(); await deny(rpc('invoice_file_cleanup_batch',[20]),/permission/); await deny(rpc('ack_invoice_file_cleanup',[final.id]),/permission/);
+ await db.exec('reset role; set role service_role');
+ assert.deepEqual((await db.query('select * from public.invoice_file_cleanup_batch(20)')).rows,[],'initial cleanup grace');
+ await db.exec('reset role'); await db.exec("update private.invoice_storage_cleanup set requested_at=now()-interval '10 minutes'");
+ await db.exec('set role service_role');
+ const cleanupJobs=(await db.query('select * from public.invoice_file_cleanup_batch(20)')).rows;
+ assert.ok(cleanupJobs.some(j=>j.file_id===final.id));
+ assert.equal(await rpc('ack_invoice_file_cleanup',[final.id]),true);
+ assert.ok(!(await db.query('select * from public.invoice_file_cleanup_batch(20)')).rows.some(j=>j.file_id===final.id),'successful path is deferred for reconciliation');
+ await db.exec('reset role');
+ assert.ok(await one('select file_id from private.invoice_storage_cleanup where file_id=$1',[final.id]),'tombstone retained after API ack');
+ await db.query("update private.invoice_storage_cleanup set last_checked_at=now()-interval '2 hours',last_attempted_at=now()-interval '2 minutes' where file_id=$1",[final.id]);
+ await db.exec('set role service_role');
+ assert.ok((await db.query('select * from public.invoice_file_cleanup_batch(20)')).rows.some(j=>j.file_id===final.id),'delayed-upload reconciliation remains eligible');
+ await db.exec('reset role');
  const exposed=await db.query("select proname,prosecdef from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and proname in('save_invoice','save_invoice_payment','reserve_invoice_file','finalize_invoice_file','list_invoice_workspace')");
  assert.equal(exposed.rows.length,5); assert.ok(exposed.rows.every(f=>!f.prosecdef));
  assert.equal((await one("select has_function_privilege('authenticated','private.queue_invoice_file_cleanup()','EXECUTE') allowed")).allowed,false);

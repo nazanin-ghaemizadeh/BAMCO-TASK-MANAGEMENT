@@ -174,3 +174,87 @@ test('load errors are visible and retry restores data without changing the selec
   f.click('#testReportsStatus [data-report-action="refresh"]'); await wait();
   assert.equal(f.d.querySelector('#testReportsStatus').textContent, ''); assert.equal(f.w.bamcoTestReports.model.type, 'research'); assert.ok(f.d.querySelector(`[data-report-year="${YEAR}"]`));
 });
+
+
+test('uncertain upload pins exact file and metadata even if controls are changed before retry', async t => {
+  const attempts = []; let resolve;
+  const f = await fixture({ years: [year()], fetch: async (url, init) => { attempts.push(init.body); return new Promise(done => resolve = done); } }); t.after(() => f.dispose()); f.branch(); f.click(`[data-report-year="${YEAR}"]`); f.click('[data-report-action="upload"]');
+  const form = f.d.querySelector('#testReportFileForm'), original = new f.w.File(['original'], 'original.pdf', { type: 'application/pdf' });
+  form.elements.title.value = 'عنوان اصلی'; form.elements.description.value = 'شرح اصلی'; Object.defineProperty(form.elements.file, 'files', { configurable: true, value: [original] });
+  f.submit('#testReportFileForm'); await wait(); assert.equal(form.elements.file.disabled, true); assert.equal(form.elements.title.disabled, true);
+  form.elements.title.value = 'عنوان تغییر یافته'; form.elements.description.value = 'شرح تغییر یافته'; Object.defineProperty(form.elements.file, 'files', { configurable: true, value: [new f.w.File(['changed'], 'changed.pdf', { type: 'application/pdf' })] });
+  resolve({ ok: false, status: 503, json: async () => ({ ok: false, code: 'operation_unconfirmed', error: 'پاسخ دریافت نشد' }) }); await wait();
+  assert.equal(form.elements.title.disabled, true); assert.equal(form.elements.file.disabled, true); f.submit('#testReportFileForm'); await wait();
+  assert.equal(attempts[0], attempts[1]); assert.equal(attempts[1].get('title'), 'عنوان اصلی'); assert.equal(attempts[1].get('description'), 'شرح اصلی'); assert.equal(attempts[1].get('file').name, 'original.pdf');
+  resolve({ ok: false, status: 403, json: async () => ({ ok: false, code: 'forbidden', error: 'اجازه ندارید' }) }); await wait();
+  assert.equal(form.elements.file.disabled, true, 'later definitive denial cannot erase uncertainty about the earlier mutation');
+});
+
+test('definitive pre-upload rejection allows correction; reopening starts an explicit new operation', async t => {
+  const attempts = [];
+  const f = await fixture({ years: [year()], fetch: async (url, init) => { attempts.push(init.body); return { ok: false, status: 400, json: async () => ({ ok: false, code: 'invalid_file_type', error: 'فرمت مجاز نیست' }) }; } }); t.after(() => f.dispose()); f.branch(); f.click(`[data-report-year="${YEAR}"]`); f.click('[data-report-action="upload"]');
+  const form = f.d.querySelector('#testReportFileForm'); form.elements.title.value = 'عنوان'; Object.defineProperty(form.elements.file, 'files', { configurable: true, value: [new f.w.File(['x'], 'valid.pdf', { type: 'application/pdf' })] });
+  const originalId = form.elements.id.value; f.submit('#testReportFileForm'); await wait();
+  assert.equal(form.elements.file.disabled, false); assert.equal(form.elements.title.disabled, false); form.elements.title.value = 'عنوان اصلاح شده'; f.submit('#testReportFileForm'); await wait();
+  assert.notEqual(attempts[0], attempts[1]); assert.equal(attempts[1].get('title'), 'عنوان اصلاح شده');
+  f.click('#testReportFileDialog [data-report-close]'); f.click('[data-report-action="upload"]'); assert.notEqual(form.elements.id.value, originalId); assert.equal(form.elements.file.disabled, false);
+});
+
+
+test('canonical home control and view hiding dispose report listeners and pending previews', async t => {
+  const f = await fixture({ years: [year()], files: [file()] }); t.after(() => f.dispose());
+  assert.ok(f.d.querySelector('[data-home-action][data-report-action="home"]'));
+  f.d.querySelector('#testReportsView').classList.add('hidden'); await wait();
+  assert.equal(f.w.bamcoTestReports.model.active, false); f.click('[data-report-domain="environment"]'); assert.equal(f.w.bamcoTestReports.model.domain, '');
+});
+
+
+test('named id input shadowing the form.id property never blocks year or file submission', async t => {
+  const f = await fixture({ years: [year()], fetch: async (url, init, tables) => {
+    const body = init.body;
+    if (body.get('action') === 'create_year') tables.test_report_years.push({ ...year(body.get('id')), jalali_year: Number(body.get('jalali_year')) });
+    return { ok: true, json: async () => ({ ok: true }) };
+  } }); t.after(() => f.dispose()); f.branch(); f.click('[data-report-action="new-year"]');
+  const yearForm = f.d.querySelector('#testReportYearForm');
+  Object.defineProperty(yearForm, 'id', { configurable: true, value: yearForm.elements.id });
+  assert.equal(typeof yearForm.id, 'object'); yearForm.elements.jalali_year.value = '۱۴۰۴'; f.submit('#testReportYearForm'); await wait();
+  assert.equal(f.calls.filter(call => call.action)[0].action, 'create_year'); assert.equal(f.d.querySelector('#testReportYearDialog').open, false);
+  assert.equal(f.notices.at(-1)[0], 'پوشه سال ذخیره شد.');
+  f.click(`[data-report-year="${YEAR}"]`); f.click('[data-report-action="upload"]');
+  const fileForm = f.d.querySelector('#testReportFileForm');
+  Object.defineProperty(fileForm, 'id', { configurable: true, value: fileForm.elements.id });
+  fileForm.elements.title.value = 'گزارش'; Object.defineProperty(fileForm.elements.file, 'files', { configurable: true, value: [new f.w.File(['x'], 'sample.pdf', { type: 'application/pdf' })] });
+  f.submit('#testReportFileForm'); await wait(); assert.equal(f.calls.filter(call => call.action)[1].action, 'upload'); assert.equal(f.d.querySelector('#testReportFileDialog').open, false);
+  assert.equal(f.notices.at(-1)[0], 'گزارش ذخیره شد.');
+});
+
+
+test('export exists only for a rendered file table and search typing preserves the input node', async t => {
+  const f = await fixture({ years: [year()], files: [file()] }); t.after(() => f.dispose());
+  assert.equal(f.d.querySelector('[data-report-action="export"]'), null);
+  f.click('[data-report-domain="environment"]'); assert.equal(f.d.querySelector('[data-report-action="export"]'), null);
+  f.click('[data-report-type="research"]'); assert.equal(f.d.querySelector('[data-report-action="export"]'), null);
+  const search = f.d.querySelector('#testReportsSearch'); search.value = 'آزمایش'; search.dispatchEvent(new f.w.Event('input', { bubbles: true }));
+  assert.ok(f.d.querySelector('[data-report-action="export"]')); assert.equal(f.d.querySelector('#testReportsSearch'), search);
+  search.value = ''; search.dispatchEvent(new f.w.Event('input', { bubbles: true }));
+  assert.equal(f.d.querySelector('[data-report-action="export"]'), null); assert.equal(f.d.querySelector('#testReportsSearch'), search);
+  f.click(`[data-report-year="${YEAR}"]`); assert.ok(f.d.querySelector('[data-report-action="export"]'));
+  const yearSearch = f.d.querySelector('#testReportsSearch'); yearSearch.value = 'does not match'; yearSearch.dispatchEvent(new f.w.Event('input', { bubbles: true }));
+  assert.equal(f.d.querySelector('[data-report-action="export"]'), null); assert.equal(f.d.querySelector('#testReportsSearch'), yearSearch);
+});
+
+
+test('metadata edit removes the irrelevant file picker and a new upload restores it', async t => {
+  const f = await fixture({ years: [year()], files: [file()] }); t.after(() => f.dispose()); f.branch(); f.click(`[data-report-year="${YEAR}"]`); f.click(`[data-report-edit-file="${FILE}"]`);
+  assert.equal(f.d.querySelector('#testReportFileForm [data-report-file-field]'), null); assert.equal(f.d.querySelector('#testReportFileForm [name="file"]'), null);
+  f.click('#testReportFileDialog [data-report-close]'); f.click('[data-report-action="upload"]');
+  assert.ok(f.d.querySelector('#testReportFileForm [data-report-file-field]')); assert.equal(f.d.querySelector('#testReportFileForm [name="file"]').required, true);
+});
+
+
+test('report heading follows shared enterprise header structure and content uses canonical insets', async t => {
+  const f = await fixture(); t.after(() => f.dispose());
+  assert.equal(f.d.querySelector('#testReportsRoot > .enterprise-toolbar > div:first-child h3').textContent, 'گزارش آزمایش‌ها');
+  const css = fs.readFileSync(path.join(__dirname, '../assets/css/test-reports.css'), 'utf8');
+  assert.match(css, /#testReportsBody, #testReportsBreadcrumbs, #testReportsStatus \{[^}]*padding-inline: 16px/);
+});

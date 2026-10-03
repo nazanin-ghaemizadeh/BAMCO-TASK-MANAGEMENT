@@ -1,6 +1,8 @@
 /* Feature-specific report cards use the shared RTL controls and table suite. */
 #testReportsView { min-width: 0; }
 #testReportsRoot { min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+#testReportsBody, #testReportsBreadcrumbs, #testReportsStatus { min-width: 0; padding-inline: 16px; }
+#testReportsBody { padding-bottom: 16px; }
 .test-reports-heading { margin: 0; }
 .test-reports-heading h3 { margin: 0; }
 .test-reports-command { display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; min-width: 0; }

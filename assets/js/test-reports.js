@@ -13,7 +13,7 @@
   function updatedDate(value) { return value && Number.isFinite(Date.parse(value)) ? new Intl.DateTimeFormat('fa-IR-u-ca-persian', { dateStyle: 'short', timeStyle: 'short', timeZone: 'Asia/Tehran' }).format(new Date(value)) : '—'; }
   function matchesFile(file, query) { const needle = latin(query).trim().toLocaleLowerCase('fa'); return !needle || [file.title, file.description, file.original_file_name].some(value => latin(value).toLocaleLowerCase('fa').includes(needle)); }
   function scopedFiles(files, years, path) { const ids = new Set(years.filter(year => (!path.domain || year.domain === path.domain) && (!path.type || year.report_type === path.type) && (!path.year || String(year.id) === String(path.year))).map(year => String(year.id))); return files.filter(file => ids.has(String(file.year_id))); }
-  function validateFile(file) { if (!file || file.size <= 0 || file.size > MAX_FILE_SIZE) throw Error('یک فایل با حجم حداکثر ۲۵ مگابایت انتخاب کنید.'); const ext = String(file.name || '').split('.').pop().toLowerCase(); if (!EXTENSIONS[ext]) throw Error('فرمت مجاز: PDF، تصویر، متن، CSV، Excel یا Word.'); return EXTENSIONS[ext]; }
+  function validateFile(file) { if (!file || file.size <= 0 || file.size > MAX_FILE_SIZE) throw Error('یک فایل با حجم حداکثر ۲۵ مگابایت انتخاب کنید.'); const ext = String(file.name || '').split('.').pop().toLowerCase(); if (!Object.hasOwn(EXTENSIONS, ext) || (file.type && file.type !== 'application/octet-stream' && file.type !== EXTENSIONS[ext])) throw Error('پسوند و نوع فایل باید با فرمت مجاز PDF، تصویر، متن، CSV، Excel یا Word مطابقت داشته باشند.'); return EXTENSIONS[ext]; }
   if (typeof module !== 'undefined' && module.exports) module.exports = { DOMAINS, TYPES, normalizeYear, currentJalaliYear, updatedDate, matchesFile, scopedFiles, validateFile };
   if (typeof document === 'undefined') return;
 
@@ -31,23 +31,36 @@
   const session = () => ({ identity: identity(), snapshot: window.bamcoAuth?.snapshot?.() });
   const current = value => !!appState().token && value.identity === identity() && (!value.snapshot || window.bamcoAuth?.isCurrent?.(value.snapshot) !== false) && can('view');
   let loadVersion = 0, binding = null, previewUrl = '', previewVersion = 0, dialogBusy = false;
+  const uploadAttempts = new WeakMap();
+  const safeUploadRejections = new Set(['invalid_field', 'invalid_id', 'invalid_file_name', 'invalid_file_type', 'file_too_large', 'missing_file', 'invalid_form', 'forbidden', 'unauthorized', 'not_found', 'idempotency_conflict', 'deleted_id']);
   const bytes = size => `${fa((Number(size || 0) / 1024).toFixed(1))} کیلوبایت`;
   const statusText = file => file.status === 'ready' ? 'آماده' : file.status === 'deleting' ? 'حذف ناتمام؛ تلاش دوباره' : 'بارگذاری ناتمام؛ ادامه بارگذاری';
   const newest = rows => rows.map(row => row.updated_at).filter(value => value && Number.isFinite(Date.parse(value))).sort((a, b) => Date.parse(b) - Date.parse(a))[0];
   const pathLabel = year => year ? `${DOMAINS.find(item => item.key === year.domain)?.title || ''} / ${TYPES.find(item => item.key === year.report_type)?.title || ''} / ${fa(year.jalali_year)}` : '';
 
+  const filePickerMarkup = '<label class="span-2" data-report-file-field>فایل گزارش<input name="file" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp,.gif,.txt,.csv,.xls,.xlsx,.docx"><small>حداکثر ۲۵ مگابایت؛ در ادامه بارگذاری، همان فایل قبلی را انتخاب کنید.</small></label>';
   function shell() {
     if (!root() || q('#testReportsBody', root())) return;
-    root().innerHTML = `<header class="feature-toolbar enterprise-toolbar test-reports-heading"><h3>گزارش آزمایش‌ها</h3></header><div class="bamco-command-bar test-reports-command" id="testReportsCommands"></div><nav class="test-reports-breadcrumbs" aria-label="مسیر گزارش آزمایش‌ها" id="testReportsBreadcrumbs"></nav><div id="testReportsStatus" role="status" aria-live="polite"></div><div id="testReportsBody"></div>
+    root().innerHTML = `<header class="feature-toolbar enterprise-toolbar test-reports-heading"><div><h3>گزارش آزمایش‌ها</h3></div></header><div class="bamco-command-bar test-reports-command" id="testReportsCommands"></div><nav class="test-reports-breadcrumbs" aria-label="مسیر گزارش آزمایش‌ها" id="testReportsBreadcrumbs"></nav><div id="testReportsStatus" role="status" aria-live="polite"></div><div id="testReportsBody"></div>
     <dialog class="modal small" id="testReportYearDialog"><form id="testReportYearForm"><div class="modal-head"><h3>پوشه سال شمسی</h3><button type="button" data-report-close aria-label="بستن">×</button></div><input name="id" type="hidden"><input name="domain" type="hidden"><input name="report_type" type="hidden"><label>سال شمسی<input name="jalali_year" type="text" inputmode="numeric" maxlength="4" required aria-describedby="testReportYearHint"></label><small id="testReportYearHint">سال چهاررقمی را وارد کنید؛ هر سال در این مسیر فقط یک پوشه دارد.</small><p class="feature-form-error" data-report-error role="alert"></p><div class="modal-actions"><button type="button" class="ghost" data-report-close>انصراف</button><button type="submit" class="primary">ذخیره پوشه</button></div></form></dialog>
-    <dialog class="modal" id="testReportFileDialog"><form id="testReportFileForm"><div class="modal-head"><div><h3>بارگذاری گزارش</h3><p data-report-file-path></p></div><button type="button" data-report-close aria-label="بستن">×</button></div><input name="id" type="hidden"><input name="year_id" type="hidden"><input name="mode" type="hidden"><div class="form-grid"><label class="span-2">عنوان گزارش<input name="title" maxlength="220" required></label><label class="span-2">توضیحات<textarea name="description" rows="3" maxlength="4000"></textarea></label><label class="span-2" data-report-file-field>فایل گزارش<input name="file" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp,.gif,.txt,.csv,.xls,.xlsx,.docx"><small>حداکثر ۲۵ مگابایت؛ در ادامه بارگذاری، همان فایل قبلی را انتخاب کنید.</small></label></div><p class="feature-form-error" data-report-error role="alert"></p><p data-report-progress role="status" aria-live="polite"></p><div class="modal-actions"><button type="button" class="ghost" data-report-close>انصراف</button><button type="submit" class="primary">ذخیره گزارش</button></div></form></dialog>
+    <dialog class="modal" id="testReportFileDialog"><form id="testReportFileForm"><div class="modal-head"><div><h3>بارگذاری گزارش</h3><p data-report-file-path></p></div><button type="button" data-report-close aria-label="بستن">×</button></div><input name="id" type="hidden"><input name="year_id" type="hidden"><input name="mode" type="hidden"><div class="form-grid"><label class="span-2">عنوان گزارش<input name="title" maxlength="220" required></label><label class="span-2">توضیحات<textarea name="description" rows="3" maxlength="4000"></textarea></label>${filePickerMarkup}</div><p class="feature-form-error" data-report-error role="alert"></p><p data-report-progress role="status" aria-live="polite"></p><div class="modal-actions"><button type="button" class="ghost" data-report-close>انصراف</button><button type="submit" class="primary">ذخیره گزارش</button></div></form></dialog>
     <dialog class="modal feature-preview-modal" id="testReportPreview"><div class="modal-head"><h3>نمایش گزارش</h3><button type="button" data-report-close aria-label="بستن">×</button></div><div class="test-report-preview-body"></div></dialog>`;
     q('#testReportPreview').addEventListener('close', clearPreview);
     for (const dialog of root().querySelectorAll('dialog')) dialog.addEventListener('cancel', event => { if (dialogBusy && dialog.id !== 'testReportPreview') event.preventDefault(); });
   }
   function commands() {
     const hasParent = !!model.domain;
-    q('#testReportsCommands').innerHTML = `<button type="button" class="ghost" data-report-action="home">بازگشت به خانه</button>${hasParent ? '<button type="button" class="ghost" data-report-action="back">بازگشت</button>' : ''}${model.type && !model.year && can('create') ? `<button type="button" class="primary" data-report-action="new-year" ${model.loaded ? '' : 'disabled'}>پوشه سال جدید</button>` : ''}${model.year && can('create') ? `<button type="button" class="primary" data-report-action="upload" ${model.loaded ? '' : 'disabled'}>بارگذاری گزارش</button>` : ''}<button type="button" class="ghost" data-report-action="refresh" ${model.loading ? 'disabled' : ''}>تازه‌سازی</button>${can('export') ? `<button type="button" class="ghost" data-report-action="export" ${model.year || model.query ? '' : 'hidden'}>خروجی اکسل</button>` : ''}<input id="testReportsSearch" type="search" value="${esc(model.query)}" placeholder="جست‌وجوی فایل در این مسیر…" aria-label="جست‌وجوی فایل در مسیر فعلی">`;
+    q('#testReportsCommands').innerHTML = `<button type="button" class="ghost" data-home-action data-report-action="home">بازگشت به خانه</button>${hasParent ? '<button type="button" class="ghost" data-report-action="back">بازگشت</button>' : ''}${model.type && !model.year && can('create') ? `<button type="button" class="primary" data-report-action="new-year" ${model.loaded ? '' : 'disabled'}>پوشه سال جدید</button>` : ''}${model.year && can('create') ? `<button type="button" class="primary" data-report-action="upload" ${model.loaded ? '' : 'disabled'}>بارگذاری گزارش</button>` : ''}<button type="button" class="ghost" data-report-action="refresh" ${model.loading ? 'disabled' : ''}>تازه‌سازی</button><input id="testReportsSearch" type="search" value="${esc(model.query)}" placeholder="جست‌وجوی فایل در این مسیر…" aria-label="جست‌وجوی فایل در مسیر فعلی">`;
+  }
+  function syncExportButton() {
+    const bar = q('#testReportsCommands'), existing = q('[data-report-action="export"]', bar);
+    // Shared button display rules override the native hidden attribute. Keep an
+    // unavailable export out of the DOM, preserving the live search input.
+    if (!can('export') || !q('#testReportsTable')) { existing?.remove(); return; }
+    if (existing || !bar) return;
+    const button = document.createElement('button'); button.type = 'button'; button.className = 'ghost';
+    button.dataset.reportAction = 'export'; button.textContent = 'خروجی اکسل';
+    bar.insertBefore(button, q('#testReportsSearch', bar));
   }
   function breadcrumbs() {
     const links = [{ label: 'گزارش آزمایش‌ها', level: 'root' }];
@@ -66,7 +79,7 @@
   }
   function content() {
     const host = q('#testReportsBody'); if (!host) return;
-    if (!can('view')) { host.innerHTML = '<div class="feature-empty">دسترسی مشاهده گزارش‌ها فعال نیست.</div>'; return; }
+    if (!can('view')) { host.innerHTML = '<div class="feature-empty">دسترسی مشاهده گزارش‌ها فعال نیست.</div>'; syncExportButton(); return; }
     const files = scopedFiles(model.files, model.years, model).filter(file => matchesFile(file, model.query));
     if (model.query || model.year) host.innerHTML = files.length ? fileTable(files) : `<div class="feature-empty">${model.loading && !model.loaded ? 'در حال دریافت فایل‌ها…' : model.query ? 'فایلی مطابق جست‌وجو در این مسیر پیدا نشد.' : 'هنوز گزارشی در این پوشه بارگذاری نشده است.'}</div>`;
     else if (!model.domain) host.innerHTML = `<div class="test-report-grid">${DOMAINS.map(domain => card({ id: domain.key, title: domain.title, icon: domain.icon, kind: 'domain', rows: model.years.filter(year => year.domain === domain.key) })).join('')}</div>`;
@@ -76,6 +89,7 @@
       host.innerHTML = years.length ? `<div class="test-report-grid">${years.map(year => card({ id: year.id, title: `سال ${fa(year.jalali_year)}`, kind: 'year', rows: [year], actions: `${can('edit') ? `<button type="button" class="ghost" data-report-edit-year="${esc(year.id)}">ویرایش سال</button>` : ''}${can('delete') ? `<button type="button" class="danger" data-report-delete-year="${esc(year.id)}">حذف پوشه</button>` : ''}` })).join('')}</div>` : `<div class="feature-empty">${model.loading && !model.loaded ? 'در حال دریافت پوشه‌ها…' : 'هنوز پوشه سالی ایجاد نشده است. برای شروع «پوشه سال جدید» را بزنید.'}</div>`;
     }
     const table = q('#testReportsTable'); if (table) window.bamcoReferenceTable?.refresh?.(table, { filters: true });
+    syncExportButton();
   }
   function render() {
     shell(); if (!root()) return;
@@ -109,7 +123,7 @@
   }
   function clearPreview() { previewVersion++; if (previewUrl) URL.revokeObjectURL(previewUrl); previewUrl = ''; q('#testReportPreview .test-report-preview-body')?.replaceChildren(); }
   function closeDialogs() { for (const dialog of root()?.querySelectorAll('dialog') || []) { if (dialog.open) dialog.close(); } clearPreview(); }
-  function reset() { loadVersion++; closeDialogs(); Object.assign(model, { years: [], files: [], domain: '', type: '', year: '', query: '', loading: false, loaded: false, error: '', identity: '' }); }
+  function reset() { loadVersion++; closeDialogs(); const form = q('#testReportFileForm'); if (form) { uploadAttempts.delete(form); form.reset(); form.querySelectorAll('input,textarea,select').forEach(input => input.disabled = false); } Object.assign(model, { years: [], files: [], domain: '', type: '', year: '', query: '', loading: false, loaded: false, error: '', identity: '' }); }
   function openYear(id = '') {
     if (!requireAccess(id ? 'edit' : 'create') || !model.type) return;
     const year = id ? yearById(id) : null, form = q('#testReportYearForm'); form.reset();
@@ -121,24 +135,39 @@
   function openFile(id = '', retry = false) {
     if (!requireAccess(id && !retry ? 'edit' : 'create')) return;
     const file = id ? fileById(id) : null, year = yearById(file?.year_id || model.year); if (!year || (id && !file)) return;
-    const form = q('#testReportFileForm'); form.reset(); form.elements.id.value = file?.id || crypto.randomUUID(); form.elements.year_id.value = year.id; form.elements.mode.value = file && !retry ? 'update' : 'upload';
+    const form = q('#testReportFileForm'); uploadAttempts.delete(form); form.reset(); form.querySelectorAll('input,textarea,select').forEach(input => input.disabled = false); form.elements.id.value = file?.id || crypto.randomUUID(); form.elements.year_id.value = year.id; form.elements.mode.value = file && !retry ? 'update' : 'upload';
     form.elements.title.value = file?.title || ''; form.elements.description.value = file?.description || ''; form.elements.title.readOnly = retry; form.elements.description.readOnly = retry;
-    q('[data-report-file-field]', form).hidden = !!file && !retry; form.elements.file.required = !file || retry;
+    const picker = q('[data-report-file-field]', form);
+    if (file && !retry) picker?.remove();
+    else { if (!picker) q('.form-grid', form).insertAdjacentHTML('beforeend', filePickerMarkup); form.elements.file.required = true; }
     q('[data-report-error]', form).textContent = ''; q('[data-report-progress]', form).textContent = ''; q('[data-report-file-path]', form).textContent = pathLabel(year);
     q('h3', form).textContent = retry ? 'ادامه بارگذاری ناتمام' : file ? 'ویرایش گزارش' : 'بارگذاری گزارش'; q('#testReportFileDialog').showModal();
   }
   async function edge(form) {
     const controller = new AbortController(), timeout = setTimeout(() => controller.abort(), 120000);
-    try { const response = await fetch(`${SB_URL}/functions/v1/test-report-library`, { method: 'POST', headers: { apikey: SB_KEY, Authorization: `Bearer ${appState().token}` }, body: form, signal: controller.signal, cache: 'no-store' }); const result = await response.json(); if (!response.ok || result.ok !== true) { if (result.code === 'folder_not_empty' && Number(result.count) > 0) throw Error(`این پوشه ${fa(result.count)} فایل دارد. ابتدا فایل‌ها را جداگانه حذف کنید.`); if (result.code === 'operation_busy' && Number(result.retry_after) > 0) throw Error(`عملیات قبلی در حال بررسی است؛ ${fa(result.retry_after)} ثانیه دیگر همان عملیات را دوباره امتحان کنید.`); throw Error(result.error || 'ذخیره تغییرات تأیید نشد.'); } return result; }
-    catch (error) { if (error.name === 'AbortError' || error.name === 'TypeError' || error.name === 'SyntaxError') throw Error('پاسخ سرور دریافت نشد؛ نتیجه ممکن است ثبت شده باشد. تازه‌سازی کنید یا همان عملیات را دوباره ادامه دهید.'); throw error; }
-    finally { clearTimeout(timeout); }
+    try {
+      const response = await fetch(`${SB_URL}/functions/v1/test-report-library`, { method: 'POST', headers: { apikey: SB_KEY, Authorization: `Bearer ${appState().token}` }, body: form, signal: controller.signal, cache: 'no-store' });
+      const result = await response.json();
+      if (!response.ok || result.ok !== true) {
+        let message = result.error || 'ذخیره تغییرات تأیید نشد.';
+        if (result.code === 'folder_not_empty' && Number(result.count) > 0) message = `این پوشه ${fa(result.count)} فایل دارد. ابتدا فایل‌ها را جداگانه حذف کنید.`;
+        if (result.code === 'operation_busy' && Number(result.retry_after) > 0) message = `عملیات قبلی در حال بررسی است؛ ${fa(result.retry_after)} ثانیه دیگر همان عملیات را دوباره امتحان کنید.`;
+        throw Object.assign(Error(message), { code: result.code || 'operation_unconfirmed', status: response.status });
+      }
+      return result;
+    } catch (error) {
+      if (['AbortError', 'TypeError', 'SyntaxError'].includes(error.name)) throw Object.assign(Error('پاسخ سرور دریافت نشد؛ نتیجه ممکن است ثبت شده باشد. تازه‌سازی کنید یا همان عملیات را دوباره ادامه دهید.'), { code: 'operation_unconfirmed' });
+      throw error;
+    } finally { clearTimeout(timeout); }
   }
   const requestForm = (action, fields = {}) => { const form = new FormData(); form.set('action', action); for (const [key, value] of Object.entries(fields)) form.set(key, value ?? ''); return form; };
   async function submit(event) {
-    event.preventDefault(); const form = event.target; if (dialogBusy || !['testReportYearForm', 'testReportFileForm'].includes(form.id)) return;
+    event.preventDefault(); const form = event.target, formId = form.getAttribute('id'); if (dialogBusy || !['testReportYearForm', 'testReportFileForm'].includes(formId)) return;
     const started = session(); let body;
     try {
-      if (form.id === 'testReportYearForm') {
+      const pinned = uploadAttempts.get(form);
+      if (pinned) { if (!requireAccess('create')) return; body = pinned.body; }
+      else if (formId === 'testReportYearForm') {
         const editing = form.dataset.editing === 'true', year = normalizeYear(form.elements.jalali_year.value);
         if (!requireAccess(editing ? 'edit' : 'create')) return;
         if (!year) throw Error('سال شمسی معتبر و چهاررقمی بین ۱۲۰۰ تا ۱۶۰۰ وارد کنید.');
@@ -148,14 +177,27 @@
         const mode = form.elements.mode.value; if (!requireAccess(mode === 'update' ? 'edit' : 'create')) return;
         const title = form.elements.title.value.trim(); if (!title) throw Error('عنوان گزارش را وارد کنید.');
         body = requestForm(mode, { [mode === 'update' ? 'file_id' : 'id']: form.elements.id.value, year_id: form.elements.year_id.value, title, description: form.elements.description.value.trim() });
-        if (mode === 'upload') { const file = form.elements.file.files[0]; validateFile(file); body.set('file', file); }
+        if (mode === 'upload') { const file = form.elements.file.files[0]; validateFile(file); body.set('file', file); uploadAttempts.set(form, { body, uncertain: false }); }
       }
-      dialogBusy = true; form.querySelectorAll('button').forEach(button => button.disabled = true); q('[data-report-error]', form).textContent = '';
+      dialogBusy = true; form.querySelectorAll('button,input,textarea,select').forEach(control => control.disabled = true); q('[data-report-error]', form).textContent = '';
       const progress = q('[data-report-progress]', form); if (progress) progress.textContent = 'در حال ذخیره؛ لطفاً تا دریافت نتیجه صبر کنید…';
       await edge(body); if (!current(started)) return;
-      form.closest('dialog').close(); await load(); notice(form.id === 'testReportYearForm' ? 'پوشه سال ذخیره شد.' : 'گزارش ذخیره شد.');
-    } catch (error) { if (current(started)) q('[data-report-error]', form).textContent = error.message; }
-    finally { dialogBusy = false; form.querySelectorAll('button').forEach(button => button.disabled = false); const progress = q('[data-report-progress]', form); if (progress) progress.textContent = ''; }
+      uploadAttempts.delete(form); form.closest('dialog').close(); await load(); notice(formId === 'testReportYearForm' ? 'پوشه سال ذخیره شد.' : 'گزارش ذخیره شد.');
+    } catch (error) {
+      // Only a definitive pre-mutation rejection unlocks an upload for changes.
+      // Uncertain replies preserve the exact UUID, metadata AND File object.
+      const attempt = uploadAttempts.get(form);
+      if (attempt && safeUploadRejections.has(error.code) && !attempt.uncertain) uploadAttempts.delete(form);
+      else if (attempt) attempt.uncertain = true;
+      if (current(started)) q('[data-report-error]', form).textContent = error.message;
+    } finally {
+      dialogBusy = false;
+      form.querySelectorAll('button').forEach(button => button.disabled = false);
+      const pinned = uploadAttempts.has(form);
+      form.querySelectorAll('input,textarea,select').forEach(control => control.disabled = pinned);
+      const progress = q('[data-report-progress]', form);
+      if (progress) progress.textContent = pinned ? 'برای جلوگیری از ثبت تکراری، تلاش دوباره با همان فایل و اطلاعات انجام می‌شود. برای تغییر فایل، پنجره را ببندید و پس از تازه‌سازی بارگذاری جدیدی آغاز کنید.' : '';
+    }
   }
   const deleting = new Set();
   async function remove(kind, id) {
@@ -188,7 +230,7 @@
   function bind() {
     if (binding || !root()) return; binding = []; const listen = (type, handler) => { root().addEventListener(type, handler); binding.push([type, handler]); };
     listen('submit', event => void submit(event));
-    listen('input', event => { if (event.target.id === 'testReportsSearch') { model.query = event.target.value; const exportButton = q('[data-report-action=export]', root()); if (exportButton) exportButton.hidden = !model.year && !model.query; content(); } });
+    listen('input', event => { if (event.target.id === 'testReportsSearch') { model.query = event.target.value; content(); } });
     listen('change', event => { if (event.target.matches('#testReportFileForm [name=file]')) { const form = event.target.form; if (!form.elements.title.value) form.elements.title.value = event.target.files[0]?.name.replace(/\.[^.]+$/, '') || ''; } });
     listen('click', event => {
       const button = event.target.closest('button'); if (!button) return;
@@ -220,6 +262,7 @@
     if (!root()) return; shell(); render();
     window.BamcoNavigation?.registerView?.('testReports', { activate, dispose });
     window.addEventListener('bamco:feature-access-changed', () => { if (!can('view')) { reset(); if (root()) render(); } else if (model.active) void load(); });
+    const view = q('#testReportsView'); if (view) new MutationObserver(() => { if (model.active && view.classList.contains('hidden')) dispose(); }).observe(view, { attributes: true, attributeFilter: ['class'] });
     const app = q('#appView'); if (app) new MutationObserver(() => { if (app.classList.contains('hidden')) { dispose(); reset(); render(); } }).observe(app, { attributes: true, attributeFilter: ['class'] });
     document.addEventListener('bamco-table-suite-ready', () => { const table = q('#testReportsTable'); if (table) window.bamcoReferenceTable?.refresh?.(table, { filters: true }); });
   }

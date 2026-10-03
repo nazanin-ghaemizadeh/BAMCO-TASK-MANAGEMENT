@@ -113,7 +113,7 @@ async def check_phonebook(page, width):
     border=await page.locator('.phonebook-command').evaluate("element=>({top:getComputedStyle(element).borderTopWidth,bottom:getComputedStyle(element).borderBottomWidth,style:getComputedStyle(element).borderTopStyle})")
     assert border['top']=='1px' and border['bottom']=='1px' and border['style']=='solid',border
     await page.screenshot(path=str(OUT / f'{width}-phonebook-toolbar.png'),full_page=True)
-    await page.locator('[data-phonebook-unit-select]').dblclick()
+    await page.locator('[data-phonebook-unit-select]').click()
     await expect(page.locator('.phonebook-table-command')).to_be_visible()
     assert await page.locator('.phonebook-table-command').evaluate("element=>getComputedStyle(element).borderTopWidth")=='1px'
     await home(page)
@@ -142,7 +142,8 @@ async def main():
                     results.append({'width':width,'status':'passed','errors':errors})
                 except Exception as error:
                     await page.screenshot(path=str(OUT/f'{width}-failure.png'),full_page=True)
-                    results.append({'width':width,'status':'failed','error':str(error),'errors':errors})
+                    diagnostic=await page.evaluate("() => ({years:window.__featureFiles?.years,reports:window.__featureFiles?.reports,invoices:window.__featureFiles?.invoices,payments:window.__featureFiles?.payments,forms:[...document.querySelectorAll('dialog[open] form')].map(f=>({id:f.getAttribute('id'),namedId:typeof f.id,valid:f.checkValidity(),error:f.querySelector('[data-report-error],[data-invoice-save-status]')?.textContent})),lastCalls:(window.__featureFiles?.calls||[]).slice(-12).map(c=>({endpoint:c.endpoint,method:c.method,body:c.body instanceof FormData?Object.fromEntries(c.body.entries()):c.body}))})")
+                    results.append({'width':width,'status':'failed','error':str(error),'errors':errors,'diagnostic':diagnostic})
                 await context.close()
             await browser.close()
     finally:
