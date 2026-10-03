@@ -1,5 +1,6 @@
 /* Shared monetary fields: decimal strings are the data, grouping is presentation.
-   Domain owners opt in with data-money-input and bind their freshly rendered form. */
+   Domain owners opt in with data-money-input and bind their freshly rendered form.
+   Add data-money-digits="fa" for Persian display without changing the raw value. */
 (() => {
   'use strict';
   if (window.BamcoMoney) return;
@@ -7,6 +8,7 @@
   const selector = 'input[data-money-input]';
   const groups = /[,\u066c\s]/g;
   const group = char => !!char && /[,\u066c\s]/.test(char);
+  const digit = char => !!char && /[0-9۰-۹٠-٩]/.test(char);
   const digits = value => String(value ?? '').replace(/[۰-۹]/g, char => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(char)))
     .replace(/[٠-٩]/g, char => String('٠١٢٣٤٥٦٧٨٩'.indexOf(char))).replace(/\u066b/g, '.');
   const invalid = () => new Error('مبلغ را با رقم و حداکثر یک ممیز وارد کنید.');
@@ -67,11 +69,12 @@
     }
     return value;
   }
-  function format(value) {
+  function format(value, { digits: digitSet } = {}) {
     try {
       const item = parts(value);
-      return (item.negative ? '-' : '') + item.integer.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+      const formatted = (item.negative ? '-' : '') + item.integer.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
         + (item.fraction != null ? '.' + item.fraction : '');
+      return digitSet === 'fa' ? formatted.replace(/\d/g, char => '۰۱۲۳۴۵۶۷۸۹'[char]) : formatted;
     } catch { return String(value ?? ''); }
   }
   function validate(input) {
@@ -87,7 +90,8 @@
   }
   function refresh(input) {
     const before = input.value, start = input.selectionStart, end = input.selectionEnd, direction = input.selectionDirection;
-    const after = format(before);
+    // Digit presentation is field-specific; raw() always keeps exact ASCII data.
+    const after = format(before, { digits: input.dataset.moneyDigits });
     if (after !== before) {
       input.value = after;
       if (start != null && end != null) input.setSelectionRange(
@@ -112,8 +116,8 @@
           // A grouping mark is not an extra character to erase. Deletion across
           // it erases the adjacent digit in the requested direction in one step.
           let from, to;
-          if (event.inputType === 'deleteContentBackward' && cursor > 1 && group(text[cursor - 1]) && /\d/.test(text[cursor - 2])) { from = cursor - 2; to = cursor; }
-          if (event.inputType === 'deleteContentForward' && group(text[cursor]) && /\d/.test(text[cursor + 1])) { from = cursor; to = cursor + 2; }
+          if (event.inputType === 'deleteContentBackward' && cursor > 1 && group(text[cursor - 1]) && digit(text[cursor - 2])) { from = cursor - 2; to = cursor; }
+          if (event.inputType === 'deleteContentForward' && group(text[cursor]) && digit(text[cursor + 1])) { from = cursor; to = cursor + 2; }
           if (from == null || !event.cancelable) return;
           event.preventDefault(); input.setRangeText('', from, to, 'end');
           input.dispatchEvent(new Event('input', { bubbles: true }));

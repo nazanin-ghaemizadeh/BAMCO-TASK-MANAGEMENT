@@ -6,7 +6,7 @@
   const BUCKET = 'invoices-private', MAX_FILE_BYTES = 6 * 1024 * 1024;
   const MIME = { pdf: 'application/pdf', png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp' };
   const model = { invoices: [], payments: [], files: [], selected: null, search: '', invoiceEditor: null, paymentEditor: null, paymentFormOpen: false, fileEditor: null };
-  let loadVersion = 0, activeMutation = false, modelIdentity = '';
+  let loadVersion = 0, activeMutation = false, modelIdentity = '', pendingFileDelete = null;
   const sessionIdentity = () => state.token && state.user?.id ? `${state.user.id}:${window.bamcoAuth?.snapshot?.()?.generation ?? 0}` : '';
   function clear() {
     ++loadVersion; modelIdentity = sessionIdentity();
@@ -15,6 +15,7 @@
   }
   function resetChangedIdentity() { if (modelIdentity !== sessionIdentity()) clear(); }
   const root = () => q('#invoiceFeatureRoot');
+  const scrollInvoiceStart = () => root()?.scrollIntoView?.({ block: 'start', inline: 'nearest', behavior: 'auto' });
   const M = () => window.BamcoMoney;
   const invoice = id => model.invoices.find(item => String(item.id) === String(id));
   const payments = id => model.payments.filter(item => String(item.invoice_id) === String(id));
@@ -32,6 +33,12 @@
   // Existing payment and file policies authorize scoped invoice viewers. Keep
   // that boundary rather than widening access or silently changing role rules.
   const canFiles = item => canFeature('view') && owns(item);
+  // Payment writes and receipt finalization also run the existing parent
+  // FOR UPDATE validation, so their effective scope requires invoice editing.
+  const canPayments = item => canFiles(item) && canEdit(item);
+  const paymentAccessHint = 'برای ثبت یا ویرایش مرحله و بارگذاری رسید، مجوز ویرایش صورتحساب لازم است.';
+  const paymentAccessAttributes = item => canPayments(item) ? '' : `disabled title="${paymentAccessHint}" aria-describedby="invoicePaymentAccessHint"`;
+  const canDeleteFile = (item, file) => canFiles(item) && (file.file_type !== 'receipt' || payment(file.payment_id)?.receipt_path !== file.storage_path || canPayments(item));
   const isLate = row => row.status === 'paid' && !!row.planned_date && !!row.paid_date && String(row.paid_date) > String(row.planned_date);
   const dateField = (name, label, value = '') => `<label>${label}<span class="enterprise-date-field"><input name="${name}_jalali" class="jalali-input" readonly value="${esc(value ? date(value) : '')}" placeholder="۱۴۰۵/۰۱/۰۱"><button type="button" class="ghost bamco-icon-button" data-invoice-date="${name}" aria-label="${label}">▦</button><input name="${name}" type="hidden" value="${esc(value || '')}"></span></label>`;
   const formValue = (value, fallback = '') => esc(value ?? fallback);
@@ -41,9 +48,15 @@
     return options.map(([key,label]) => `<option value="${esc(key)}" ${(item?.currency || 'IRR') === key ? 'selected' : ''}>${esc(label)}</option>`).join('');
   };
   const currencyText = item => ({ IRR: 'ریال', IRT: 'تومان', USD: 'دلار آمریکا', EUR: 'یورو' })[item.currency] || item.currency;
-  const moneyInput = (name, value, minimum) => `<input name="${name}" type="text" inputmode="decimal" data-money-input data-money-scale="2" data-money-integer-digits="16" data-money-min="${minimum}" value="${formValue(value)}" required>`;
-  const filePicker = (name, label, required = false) => `<label class="span-2 invoice-file-picker"><span>${label}</span><input type="file" name="${name}" accept=".pdf,.png,.jpg,.jpeg,.webp" ${required ? 'required' : ''}><small>PDF یا تصویر · حداکثر ۶ مگابایت</small></label>`;
+  const moneyInput = (name, value, minimum) => `<input name="${name}" type="text" inputmode="decimal" data-money-input data-money-digits="fa" data-money-scale="2" data-money-integer-digits="16" data-money-min="${minimum}" value="${formValue(value)}" required>`;
+  const filePicker = (name, label, required = false) => `<div class="span-2 invoice-file-picker">${window.BamcoFilePicker.render({ name, label, accept: '.pdf,.png,.jpg,.jpeg,.webp', maxSizeText: 'PDF یا تصویر · حداکثر ۶ مگابایت', required, wrapperAttribute: 'data-invoice-file-picker' })}</div>`;
   const managedFile = file => file?.bucket_id === BUCKET && !!file.client_request_id;
+  const fileIcon = kind => `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${kind === 'download' ? '<path d="M12 3v12m-5-5 5 5 5-5M4 16v4h16v-4"/>' : '<path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7"/>'}</svg>`;
+  const fileAction = (file, action, disabled = false) => {
+    const restriction = disabled && action === 'delete' ? '؛ حذف رسید فعال به مجوز ویرایش صورتحساب نیاز دارد' : disabled && file.upload_state === 'pending' ? '؛ بارگذاری هنوز کامل نشده است' : '';
+    const label = `${action === 'download' ? 'دریافت' : 'حذف'} فایل ${file.file_name}${restriction}`;
+    return `<button type="button" class="ghost bamco-icon-button invoice-file-action${action === 'delete' ? ' invoice-file-delete' : ''}" data-invoice-file-${action}="${esc(file.id)}" title="${esc(label)}" aria-label="${esc(label)}" ${disabled ? 'disabled' : ''}>${fileIcon(action)}</button>`;
+  };
   const formStatus = () => '<p class="invoice-save-status" data-invoice-save-status role="status" aria-live="polite" hidden></p>';
   function deny() { notify('مجوز انجام این عملیات را ندارید.', true); }
 
@@ -54,10 +67,10 @@
     const current = invoice(model.selected);
     const search = `<input id="invoiceSearch" class="invoice-search" type="search" value="${esc(model.search)}" placeholder="شماره، عنوان یا شرکت/پیمانکار…" aria-label="جست‌وجوی صورتحساب">`;
     const commandBar = current
-      ? `<div class="invoice-top-command-row bamco-command-bar"><span data-feature-access-suppressed="true" data-home-return-suppressed="true" hidden></span><button type="button" class="ghost" data-invoice-action="back">بازگشت به کارت‌ها</button>${canFiles(current) ? '<button type="button" class="primary" data-invoice-action="payment">ثبت مرحله پرداخت</button>' : ''}${canEdit(current) ? '<button type="button" class="ghost" data-invoice-action="edit">ویرایش</button>' : ''}${canDelete(current) ? '<button type="button" class="danger" data-invoice-action="delete">حذف</button>' : ''}</div>`
+      ? `<div class="invoice-top-command-row bamco-command-bar"><span data-feature-access-suppressed="true" data-home-return-suppressed="true" hidden></span><button type="button" class="ghost" data-invoice-action="back">بازگشت به کارت‌ها</button>${canFiles(current) ? `<button type="button" class="primary" data-invoice-action="payment" ${paymentAccessAttributes(current)}>ثبت مرحله پرداخت</button>` : ''}${canEdit(current) ? '<button type="button" class="ghost" data-invoice-action="edit">ویرایش</button>' : ''}${canDelete(current) ? '<button type="button" class="danger" data-invoice-action="delete">حذف</button>' : ''}</div>`
       : `<div class="invoice-top-command-row bamco-command-bar"><button type="button" class="ghost" data-home-action>بازگشت به خانه</button>${canFeature('create') ? '<button type="button" class="primary" data-invoice-action="new">صورتحساب جدید</button>' : ''}<button type="button" class="ghost" data-invoice-action="refresh">تازه‌سازی</button>${search}</div>`;
     host.innerHTML = `<div class="feature-toolbar enterprise-toolbar"><div><h3>صورتحساب‌ها و تعهدات مالی</h3></div></div>${commandBar}<div class="enterprise-grid invoice-grid ${current ? 'detail-open' : ''}"><section class="panel"><div class="panel-head"><h3>کارت‌های صورتحساب</h3><span class="enterprise-count">${fa(visible.length)} مورد</span></div><div class="enterprise-card-list">${visible.length ? visible.map(item => `<button type="button" class="enterprise-list-card invoice-list-card ${String(model.selected) === String(item.id) ? 'active' : ''}" data-invoice-select="${esc(item.id)}"><span><strong>${esc(item.title)}</strong><small>${esc(item.invoice_number)} · ${esc(item.company_name || item.account_party)}</small></span><span><b>${money(paid(item.id), currencyText(item))}</b><small>مانده: ${money(balance(item), currencyText(item))}</small><small>${fa(Math.round(percent(item)))}٪ پرداخت · ${esc(statusText(item.status))}</small></span></button>`).join('') : '<div class="empty">صورتحسابی ثبت نشده است.</div>'}</div></section><section class="panel invoice-detail">${current ? detailMarkup(current) : '<div class="enterprise-empty"><b>صورتحسابی انتخاب نشده است.</b><span>برای شروع یک تعهد مالی ثبت کنید.</span></div>'}</section></div>${invoiceDialogMarkup()}${current ? paymentDialogMarkup(current) : ''}${current ? fileDialogMarkup(current) : ''}`;
-    M()?.bind(host); bind();
+    M()?.bind(host); window.BamcoFilePicker.bind(host); bind();
   }
   function invoiceDialogMarkup() {
     const editing = invoice(model.invoiceEditor);
@@ -65,11 +78,15 @@
   }
   function fileRowsMarkup(item, kind, paymentId = null) {
     const rows = files(item.id, kind, paymentId);
-    return rows.length ? `<ul class="invoice-file-list">${rows.map(file => `<li><span><b>${esc(file.file_name)}</b>${kind === 'final' && file.final_is_current === false ? '<small class="invoice-file-warning">وضعیت مالی پس از بارگذاری تغییر کرده؛ این فایل سابقه است.</small>' : ''}</span>${!managedFile(file) ? '<span class="invoice-file-warning">فایل قدیمی؛ محل ذخیرهٔ آن هنوز تأیید نشده است.</span>' : file.upload_state === 'pending' ? `<span class="invoice-file-warning">بارگذاری ناتمام</span>${String(file.uploaded_by) === String(state.user?.id) && canFiles(item) ? `<button type="button" class="ghost" data-invoice-file-resume="${esc(file.id)}">ادامه بارگذاری</button>` : ''}` : `<button type="button" class="ghost" data-invoice-file-download="${esc(file.id)}">دریافت فایل</button>`}</li>`).join('')}</ul>` : '<small class="invoice-file-empty">فایلی ثبت نشده است.</small>';
+    return rows.length ? `<ul class="invoice-file-list">${rows.map(file => {
+      const managed = managedFile(file), permitted = canFiles(item);
+      const warning = !managed ? '<span class="invoice-file-warning">فایل قدیمی؛ محل ذخیرهٔ آن هنوز تأیید نشده است.</span>' : file.upload_state === 'pending' ? `<span class="invoice-file-warning">بارگذاری ناتمام</span>${String(file.uploaded_by) === String(state.user?.id) && permitted ? `<button type="button" class="ghost" data-invoice-file-resume="${esc(file.id)}">ادامه بارگذاری</button>` : ''}` : '';
+      return `<li data-invoice-file-row="${esc(file.id)}"><span><b>${esc(file.file_name)}</b>${kind === 'final' && file.final_is_current === false ? '<small class="invoice-file-warning">وضعیت مالی پس از بارگذاری تغییر کرده؛ این فایل سابقه است.</small>' : ''}</span>${warning}${managed ? `<div class="invoice-file-actions">${fileAction(file, 'download', file.upload_state !== 'ready' || !permitted)}${permitted ? fileAction(file, 'delete', !canDeleteFile(item, file)) : ''}</div>` : ''}</li>`;
+    }).join('')}</ul>` : '<small class="invoice-file-empty">فایلی ثبت نشده است.</small>';
   }
   function detailMarkup(item) {
     const rows = payments(item.id);
-    return `<div class="project-detail-head"><div><span class="enterprise-eyebrow">${esc(item.invoice_number)}</span><h3>${esc(item.title)}</h3><p>${esc(item.company_name || item.account_party)}</p></div><span class="status-badge">${esc(statusText(item.status))}</span></div><div class="invoice-total"><div><b>${money(item.total_amount, currencyText(item))}</b><span>مبلغ کل</span></div><div><b>${money(paid(item.id), currencyText(item))}</b><span>پرداخت‌شده</span></div><div><b>${money(balance(item), currencyText(item))}</b><span>باقی‌مانده</span></div><div><b>${fa(Math.round(percent(item)))}٪</b><span>درصد پرداخت</span></div></div>${E.progress(percent(item))}<div class="invoice-meta"><span>سررسید: ${date(item.due_date)}</span></div><section class="invoice-attachments"><div class="panel-head"><h4>پیش‌فاکتور</h4>${canFiles(item) ? '<button type="button" class="ghost" data-invoice-file-kind="proforma">بارگذاری پیش‌فاکتور</button>' : ''}</div>${fileRowsMarkup(item, 'proforma')}</section><section class="invoice-payments"><div class="panel-head"><h4>پرداخت‌های مرحله‌ای</h4><small>${fa(rows.length)} مرحله</small></div>${rows.length ? rows.map(row => `<article class="payment-row"><div class="payment-stage-title"><b>مرحله ${fa(row.sequence_no)}</b><small>${esc(statusText(row.status))}${isLate(row) ? '<i class="payment-late-icon" role="img" aria-label="پرداخت با دیرکرد" title="پرداخت با دیرکرد">⌛</i>' : ''}</small></div><div class="payment-stage-value"><b>${money(row.amount, currencyText(item))}</b><small>${row.percent_of_total != null ? `${fa(Math.round(Number(row.percent_of_total)))}٪ از کل` : '—'}</small></div><div class="payment-stage-dates"><span>برنامه‌ای: ${date(row.planned_date)}</span><span>واقعی: ${date(row.paid_date)}</span></div>${canFiles(item) ? `<button type="button" class="ghost" data-invoice-payment-edit="${esc(row.id)}">ویرایش مرحله</button>` : ''}<div class="payment-stage-receipts"><div class="panel-head"><h5>رسید مرحله ${fa(row.sequence_no)}</h5>${canFiles(item) ? `<button type="button" class="ghost" data-invoice-file-kind="receipt" data-payment-id="${esc(row.id)}">بارگذاری رسید</button>` : ''}</div>${fileRowsMarkup(item, 'receipt', row.id)}</div></article>`).join('') : '<div class="empty">مرحله پرداختی ثبت نشده است.</div>'}</section><section class="invoice-attachments"><div class="panel-head"><h4>فاکتور نهایی</h4>${canFiles(item) && settled(item) ? '<button type="button" class="primary" data-invoice-file-kind="final">بارگذاری فاکتور نهایی</button>' : ''}</div>${!settled(item) ? '<p class="invoice-file-hint">پس از تکمیل همه مراحل پرداخت و تسویه مبلغ صورتحساب، فاکتور نهایی قابل بارگذاری است.</p>' : ''}${fileRowsMarkup(item, 'final')}</section>`;
+    return `<div class="project-detail-head"><div><span class="enterprise-eyebrow">${esc(item.invoice_number)}</span><h3>${esc(item.title)}</h3><p>${esc(item.company_name || item.account_party)}</p></div><span class="status-badge">${esc(statusText(item.status))}</span></div><div class="invoice-total"><div><b>${money(item.total_amount, currencyText(item))}</b><span>مبلغ کل</span></div><div><b>${money(paid(item.id), currencyText(item))}</b><span>پرداخت‌شده</span></div><div><b>${money(balance(item), currencyText(item))}</b><span>باقی‌مانده</span></div><div><b>${fa(Math.round(percent(item)))}٪</b><span>درصد پرداخت</span></div></div>${E.progress(percent(item))}<div class="invoice-meta"><span>سررسید: ${date(item.due_date)}</span></div><section class="invoice-attachments"><div class="panel-head"><h4>پیش‌فاکتور</h4>${canFiles(item) ? '<button type="button" class="ghost" data-invoice-file-kind="proforma">بارگذاری پیش‌فاکتور</button>' : ''}</div>${fileRowsMarkup(item, 'proforma')}</section><section class="invoice-payments"><div class="panel-head"><h4>پرداخت‌های مرحله‌ای</h4><small>${fa(rows.length)} مرحله</small></div>${canFiles(item) && !canPayments(item) ? `<p id="invoicePaymentAccessHint" class="invoice-file-hint">${paymentAccessHint}</p>` : ''}${rows.length ? rows.map(row => `<article class="payment-row"><div class="payment-stage-title"><b>مرحله ${fa(row.sequence_no)}</b><small>${esc(statusText(row.status))}${isLate(row) ? '<i class="payment-late-icon" role="img" aria-label="پرداخت با دیرکرد" title="پرداخت با دیرکرد">⌛</i>' : ''}</small></div><div class="payment-stage-value"><b>${money(row.amount, currencyText(item))}</b><small>${row.percent_of_total != null ? `${fa(Math.round(Number(row.percent_of_total)))}٪ از کل` : '—'}</small></div><div class="payment-stage-dates"><span>برنامه‌ای: ${date(row.planned_date)}</span><span>واقعی: ${date(row.paid_date)}</span></div>${canFiles(item) ? `<button type="button" class="ghost" data-invoice-payment-edit="${esc(row.id)}" ${paymentAccessAttributes(item)}>ویرایش مرحله</button>` : ''}<div class="payment-stage-receipts"><div class="panel-head"><h5>رسید مرحله ${fa(row.sequence_no)}</h5>${canFiles(item) ? `<button type="button" class="ghost" data-invoice-file-kind="receipt" data-payment-id="${esc(row.id)}" ${paymentAccessAttributes(item)}>بارگذاری رسید</button>` : ''}</div>${fileRowsMarkup(item, 'receipt', row.id)}</div></article>`).join('') : '<div class="empty">مرحله پرداختی ثبت نشده است.</div>'}</section><section class="invoice-attachments"><div class="panel-head"><h4>فاکتور نهایی</h4>${canFiles(item) && settled(item) ? '<button type="button" class="primary" data-invoice-file-kind="final">بارگذاری فاکتور نهایی</button>' : ''}</div>${!settled(item) ? '<p class="invoice-file-hint">پس از تکمیل همه مراحل پرداخت و تسویه مبلغ صورتحساب، فاکتور نهایی قابل بارگذاری است.</p>' : ''}${fileRowsMarkup(item, 'final')}</section>`;
   }
   function paymentDialogMarkup(item) {
     if (!model.paymentFormOpen) return '';
@@ -82,13 +99,13 @@
     const labels = { proforma: 'پیش‌فاکتور', receipt: 'رسید پرداخت', final: 'فاکتور نهایی' };
     return `<dialog id="invoiceFileDialog" class="modal enterprise-modal"><form id="invoiceFileForm" method="dialog"><div class="modal-head"><div><h3>بارگذاری ${labels[editor.kind]}</h3><p>${esc(item.invoice_number)}${editor.paymentId ? ` · مرحله ${fa(payment(editor.paymentId)?.sequence_no)}` : ''}</p></div><button type="button" data-invoice-file-close aria-label="بستن">×</button></div>${editor.existing ? `<p class="invoice-file-hint">برای ادامه، همان فایل «${esc(editor.existing.file_name)}» را انتخاب کنید.</p>` : ''}${filePicker('file', labels[editor.kind], true)}${formStatus()}<div class="modal-actions"><button type="button" class="ghost" data-invoice-file-close>انصراف</button><button type="submit" class="primary">بارگذاری فایل</button></div></form></dialog>`;
   }
-  function showPaymentDialog(id = null) { if (!canFiles(invoice(model.selected))) return deny(); ++loadVersion; model.paymentEditor = id; model.paymentFormOpen = true; render(); q('#invoicePaymentDialog', root())?.showModal(); }
+  function showPaymentDialog(id = null) { if (!canPayments(invoice(model.selected))) return deny(); ++loadVersion; model.paymentEditor = id; model.paymentFormOpen = true; render(); q('#invoicePaymentDialog', root())?.showModal(); }
   function showInvoiceDialog(id = null) { if (!(id ? canEdit(invoice(id)) : canFeature('create'))) return deny(); ++loadVersion; model.invoiceEditor = id; render(); q('#invoiceDialog', root())?.showModal(); }
   function showFileDialog(kind, paymentId = null, existing = null) {
     const current = invoice(model.selected);
     if (!canFiles(current)) return deny();
     if (kind === 'final' && !settled(current)) return notify('ابتدا همه مراحل پرداخت را تکمیل کنید.', true);
-    if (kind === 'receipt' && String(payment(paymentId)?.invoice_id) !== String(current.id)) return deny();
+    if (kind === 'receipt' && (!canPayments(current) || String(payment(paymentId)?.invoice_id) !== String(current.id))) return deny();
     ++loadVersion; model.fileEditor = { kind, paymentId, existing }; render(); q('#invoiceFileDialog', root())?.showModal();
   }
   function saveStatus(form, message, error = false) { const node = q('[data-invoice-save-status]', form); if (node) { node.hidden = false; node.textContent = message; node.classList.toggle('error', error); } }
@@ -147,7 +164,7 @@
     event.preventDefault(); const form = event.target; if (activeMutation || form.dataset.busy === '1') return;
     const invoiceId = isPayment ? form.elements.invoice_id.value : null;
     const id = form._invoiceAttempt?.id ?? (form.elements[isPayment ? 'payment_id' : 'invoice_id'].value || null);
-    const allowed = form._invoiceAttempt?.row ? canFiles(invoice(isPayment ? invoiceId : form._invoiceAttempt.row.id)) : (isPayment ? canFiles(invoice(invoiceId)) : id ? canEdit(invoice(id)) : canFeature('create'));
+    const allowed = form._invoiceAttempt?.row ? (isPayment ? canPayments(invoice(invoiceId)) : canFiles(invoice(form._invoiceAttempt.row.id))) : (isPayment ? canPayments(invoice(invoiceId)) : id ? canEdit(invoice(id)) : canFeature('create'));
     if (!allowed) return deny();
     let attempt;
     try {
@@ -185,6 +202,8 @@
   async function saveFile(event) {
     event.preventDefault(); const form = event.target; if (activeMutation) return;
     const editor = model.fileEditor, current = invoice(model.selected); if (!editor || !canFiles(current)) return deny();
+    if (editor.kind === 'final' && !settled(current)) return notify('ابتدا همه مراحل پرداخت را تکمیل کنید.', true);
+    if (editor.kind === 'receipt' && (!canPayments(current) || String(payment(editor.paymentId)?.invoice_id) !== String(current.id))) return deny();
     try {
       if (!form._fileAttempt) {
         M()?.bind(form); if (!form.reportValidity()) return;
@@ -200,14 +219,48 @@
     finally { activeMutation = false; form.dataset.busy = '0'; lockForm(form, false, !!form._fileAttempt); }
   }
   async function downloadFile(id) {
-    const file = model.files.find(row => String(row.id) === String(id)); if (!file || !managedFile(file) || !canFiles(invoice(file.invoice_id))) return deny();
+    const file = model.files.find(row => String(row.id) === String(id)); if (!file || !managedFile(file) || file.upload_state !== 'ready' || !file.storage_path || !canFiles(invoice(file.invoice_id))) return deny();
     try {
       const userId = sessionIdentity();
       const response = await fileRequest(`/storage/v1/object/authenticated/${BUCKET}/${file.storage_path.split('/').map(encodeURIComponent).join('/')}`), blob = await response.blob();
       sameSession(userId);
+      if (!canFiles(invoice(file.invoice_id))) return deny();
       const url = URL.createObjectURL(blob), link = document.createElement('a');
       link.href = url; link.download = file.file_name; link.rel = 'noopener'; document.body.append(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch (error) { notify(error.message, true); }
+  }
+  async function deleteFile(id) {
+    if (activeMutation || pendingFileDelete) return;
+    const file = model.files.find(row => String(row.id) === String(id)), current = invoice(file?.invoice_id);
+    if (!file || !managedFile(file) || !canDeleteFile(current, file)) return deny();
+    const context = { file, userId: sessionIdentity(), invoiceId: String(current.id) };
+    pendingFileDelete = context;
+    const location = file.file_type === 'receipt' ? `رسید مرحله ${fa(payment(file.payment_id)?.sequence_no)}` : file.file_type === 'final' ? 'فاکتور نهایی' : 'پیش‌فاکتور';
+    const message = `فایل «${file.file_name}» از ${location} صورتحساب «${current.invoice_number}» حذف شود؟ پس از تأیید، فایل از فهرست و دسترسی برنامه حذف می‌شود و برای بارگذاری دوباره باید نسخهٔ آن را داشته باشید. نسخهٔ ذخیره‌شده فعلاً در فضای خصوصی باقی می‌ماند.`;
+    let started = false, buttons = [];
+    try {
+      const approved = window.bamcoConfirm ? await window.bamcoConfirm(message) : window.confirm(message);
+      if (!approved || activeMutation) return;
+      sameSession(context.userId);
+      // Recheck the exact row and selection after the asynchronous confirmation.
+      if (String(model.selected) !== context.invoiceId || model.files.find(row => String(row.id) === String(id)) !== file || !canDeleteFile(invoice(file.invoice_id), file)) return deny();
+      activeMutation = true; started = true; ++loadVersion;
+      const row = Array.from(root()?.querySelectorAll('[data-invoice-file-row]') || []).find(node => node.dataset.invoiceFileRow === String(file.id));
+      buttons = Array.from(row?.querySelectorAll('button') || []).map(button => ({ button, disabled: button.disabled }));
+      buttons.forEach(({ button }) => { button.disabled = true; });
+      const result = await rpc('delete_invoice_file', { p_file_id: String(file.id), p_invoice_id: context.invoiceId, p_payment_id: file.payment_id == null ? null : String(file.payment_id), p_file_type: file.file_type, p_file_request_id: file.client_request_id });
+      sameSession(context.userId);
+      if (!result || String(result.id) !== String(file.id) || String(result.invoice_id) !== context.invoiceId || String(result.payment_id ?? '') !== String(file.payment_id ?? '') || result.file_type !== file.file_type || typeof result.deleted !== 'boolean') throw Error('پاسخ معتبر حذف فایل دریافت نشد؛ دوباره تلاش کنید.');
+      // Only this exact attachment is removed; payment and invoice amounts stay intact.
+      model.files = model.files.filter(row => String(row.id) !== String(file.id));
+      render();
+      notify(result.deleted ? 'فایل از فهرست و دسترسی برنامه حذف شد.' : 'این فایل دیگر در فهرست قابل دسترسی موجود نیست.');
+      await load();
+    } catch (error) { notify(`حذف فایل تأیید نشد؛ می‌توانید دوباره تلاش کنید. ${error.message}`, true); }
+    finally {
+      if (started) { activeMutation = false; buttons.forEach(({ button, disabled }) => { if (button.isConnected) button.disabled = disabled; }); }
+      if (pendingFileDelete === context) pendingFileDelete = null;
+    }
   }
   async function deleteInvoice() {
     const current = invoice(model.selected); if (!canDelete(current)) return deny(); if (activeMutation) return;
@@ -233,7 +286,7 @@
       if (action === 'edit') return showInvoiceDialog(model.selected);
       if (action === 'delete') return void deleteInvoice();
       if (action === 'refresh') return void load();
-      if (action === 'back') { ++loadVersion; model.selected = null; model.paymentEditor = null; model.paymentFormOpen = false; model.fileEditor = null; return render(); }
+      if (action === 'back') { ++loadVersion; model.selected = null; model.paymentEditor = null; model.paymentFormOpen = false; model.fileEditor = null; render(); return scrollInvoiceStart(); }
       if (action === 'payment') return showPaymentDialog(null);
       if (event.target.closest('[data-invoice-close],[data-invoice-payment-close],[data-invoice-file-close]')) { model.invoiceEditor = null; model.paymentEditor = null; model.paymentFormOpen = false; model.fileEditor = null; event.target.closest('dialog')?.close(); return void load(); }
       const dateButton = event.target.closest('[data-invoice-date]'); if (dateButton) return openInvoiceDate(dateButton);
@@ -241,7 +294,8 @@
       const upload = event.target.closest('[data-invoice-file-kind]'); if (upload) return showFileDialog(upload.dataset.invoiceFileKind, upload.dataset.paymentId || null);
       const resume = event.target.closest('[data-invoice-file-resume]'); if (resume) { const row = model.files.find(file => String(file.id) === resume.dataset.invoiceFileResume); if (row) return showFileDialog(row.file_type, row.payment_id, row); }
       const download = event.target.closest('[data-invoice-file-download]'); if (download) return void downloadFile(download.dataset.invoiceFileDownload);
-      const select = event.target.closest('[data-invoice-select]'); if (select) { ++loadVersion; model.selected = select.dataset.invoiceSelect; model.paymentEditor = null; model.paymentFormOpen = false; model.fileEditor = null; render(); }
+      const fileDelete = event.target.closest('[data-invoice-file-delete]'); if (fileDelete) return void deleteFile(fileDelete.dataset.invoiceFileDelete);
+      const select = event.target.closest('[data-invoice-select]'); if (select) { ++loadVersion; model.selected = select.dataset.invoiceSelect; model.paymentEditor = null; model.paymentFormOpen = false; model.fileEditor = null; render(); scrollInvoiceStart(); }
     });
     host.addEventListener('submit', event => { if (event.target.id === 'invoiceForm') void saveEntity(event, false); if (event.target.id === 'invoicePaymentForm') void saveEntity(event, true); if (event.target.id === 'invoiceFileForm') void saveFile(event); });
   }

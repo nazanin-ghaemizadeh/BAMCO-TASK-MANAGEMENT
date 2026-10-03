@@ -26,7 +26,8 @@ async function fixture(options = {}) {
   w.bamcoTableSuite = { refresh: table => table.dataset.sharedSuite = 'true' }; w.bamcoShowHome = () => lifecycle.testReports.dispose();
   w.HTMLDialogElement.prototype.showModal = function () { this.open = true; }; w.HTMLDialogElement.prototype.close = function () { this.open = false; this.dispatchEvent(new w.Event('close')); };
   let urlIndex = 0; w.URL.createObjectURL = () => `blob:test-${++urlIndex}`; w.URL.revokeObjectURL = () => {};
-  w.eval(fs.readFileSync(path.join(__dirname, '../assets/js/reference-tables.js'), 'utf8'));
+  w.eval(fs.readFileSync(path.join(__dirname, '../assets/js/file-picker.js'), 'utf8'));
+  w.ensureBamcoXLSX = options.ensureBamcoXLSX || (async () => { throw Error('XLSX unavailable'); });
   w.eval(source); await wait(); await lifecycle.testReports.activate();
   const click = selector => { const el = d.querySelector(selector); assert.ok(el, `Missing ${selector}`); el.click(); };
   const branch = (domain = 'environment', type = 'research') => { click(`[data-report-domain="${domain}"]`); click(`[data-report-type="${type}"]`); };
@@ -53,13 +54,14 @@ test('scoped file lookup cannot cross domain, report type or year', () => {
   assert.throws(() => validateFile({ name: 'test.pdf', size: 25 * 1024 * 1024 + 1 }));
 });
 
-test('navigation renders two immutable roots, three categories, folders, breadcrumbs and shared file table', async t => {
+test('navigation renders two immutable roots, three categories, folders, breadcrumbs and shared document file rows', async t => {
   const f = await fixture({ years: [year()], files: [file()] }); t.after(() => f.dispose());
   assert.equal(f.d.querySelectorAll('[data-report-domain]').length, 2);
   assert.equal(f.d.querySelectorAll('[data-report-delete-year]').length, 0);
   f.click('[data-report-domain="environment"]'); assert.equal(f.d.querySelectorAll('[data-report-type]').length, 3);
   f.click('[data-report-type="research"]'); assert.match(f.d.querySelector('.test-report-card').textContent, /آخرین به‌روزرسانی:.*۱۴۰۵/);
-  f.click(`[data-report-year="${YEAR}"]`); assert.equal(f.d.querySelector('#testReportsTable').dataset.sharedSuite, 'true');
+  f.click(`[data-report-year="${YEAR}"]`); assert.ok(f.d.querySelector('#testReportsFileList.feature-document-list > .feature-document-row'));
+  assert.equal(f.d.querySelector('#testReportsBody table, #testReportsBody .panel'), null);
   assert.equal(f.d.querySelectorAll('[data-report-ancestor]').length, 3);
   assert.equal(f.d.querySelector('time').dateTime, stamp);
   f.click('[data-report-ancestor="domain"]'); assert.equal(f.d.querySelectorAll('[data-report-type]').length, 3);
@@ -69,7 +71,7 @@ test('navigation renders two immutable roots, three categories, folders, breadcr
 test('search remains in active branch and exposes matching file path navigation', async t => {
   const f = await fixture({ years: [year(), year(OTHER, 'standard')], files: [file(), file('other', OTHER, 'آزمایش دیگر')] }); t.after(() => f.dispose()); f.branch();
   const input = f.d.querySelector('#testReportsSearch'); input.value = 'آزمایش'; input.dispatchEvent(new f.w.Event('input', { bubbles: true }));
-  assert.equal(f.d.querySelectorAll('#testReportsTable tbody tr').length, 1); assert.equal(f.d.querySelector('[data-report-action="export"]').hidden, false);
+  assert.equal(f.d.querySelectorAll('#testReportsFileList .feature-document-row').length, 1); assert.equal(f.d.querySelector('[data-report-action="export"]').hidden, false);
   f.click(`[data-report-go-file="${FILE}"]`); assert.equal(f.w.bamcoTestReports.model.year, YEAR); assert.equal(f.d.querySelector('#testReportsSearch').value, '');
 });
 
@@ -141,23 +143,24 @@ test('session change clears old cached report rows; disposal removes listeners a
 test('catalog aliases reports to documents and integrates resources navigation without new permissions', () => {
   const catalog = fs.readFileSync(path.join(__dirname, '../assets/js/navigation-registry.js'), 'utf8');
   assert.match(catalog, /routes: \['documents', 'testReports', 'sitesAccess', 'userGuide'\]/);
-  assert.match(catalog, /\['testReports', 'documents', 'گزارش آزمایش‌ها'\]/);
+  assert.match(catalog, /\['testReports', 'documents', 'گزارش آزمون'\]/);
   const html = fs.readFileSync(path.join(__dirname, '../index.html'), 'utf8'); assert.match(html, /id="testReportsRoot" class="enterprise-feature-root"/);
   assert.doesNotMatch(source, /(?:insert|update)\('document_categories'/);
   assert.match(fs.readFileSync(path.join(__dirname, '../assets/js/visual-system.js'), 'utf8'), /testReports:'testReports'/);
 });
 
 
-test('shared reference table paginates beyond 25 files and column filters reset the page', async t => {
+test('document list keeps all files available beyond 25 and search filters the list in place', async t => {
   const files = Array.from({ length: 32 }, (_, index) => file(`file-${index}`, YEAR, `گزارش ${index}`));
   const f = await fixture({ years: [year()], files }); t.after(() => f.dispose()); f.branch(); f.click(`[data-report-year="${YEAR}"]`);
-  assert.equal(f.d.querySelectorAll('.reference-page-hidden').length, 7);
-  assert.equal(f.d.querySelectorAll('.reference-filters select').length, 6);
-  f.click('.reference-pagination [data-page="next"]'); assert.equal(f.d.querySelectorAll('.reference-page-hidden').length, 25);
-  const filter = f.d.querySelector('.reference-filters select'); filter.value = 'گزارش 0'; filter.dispatchEvent(new f.w.Event('change', { bubbles: true }));
-  assert.equal(f.d.querySelectorAll('.reference-filtered-out').length, 31);
-  assert.equal(f.d.querySelectorAll('tbody tr:not(.reference-filtered-out):not(.reference-page-hidden)').length, 1);
-  assert.equal(f.d.querySelector('.reference-pagination [data-page="next"]').disabled, true);
+  assert.equal(f.d.querySelectorAll('#testReportsFileList .feature-document-row').length, 32);
+  assert.equal(f.d.querySelector('table, .reference-pagination, .reference-filters'), null);
+  const input = f.d.querySelector('#testReportsSearch'); input.value = 'گزارش 30'; input.dispatchEvent(new f.w.Event('input', { bubbles: true }));
+  assert.equal(f.d.querySelectorAll('#testReportsFileList .feature-document-row').length, 1);
+  assert.equal(f.d.querySelector('#testReportsSearch'), input);
+  assert.equal(f.d.querySelector('[data-report-file-id]').dataset.reportFileId, 'file-30');
+  input.value = ''; input.dispatchEvent(new f.w.Event('input', { bubbles: true }));
+  assert.equal(f.d.querySelectorAll('#testReportsFileList .feature-document-row').length, 32);
 });
 
 
@@ -229,7 +232,7 @@ test('named id input shadowing the form.id property never blocks year or file su
 });
 
 
-test('export exists only for a rendered file table and search typing preserves the input node', async t => {
+test('export exists only for a rendered file list and search typing preserves the input node', async t => {
   const f = await fixture({ years: [year()], files: [file()] }); t.after(() => f.dispose());
   assert.equal(f.d.querySelector('[data-report-action="export"]'), null);
   f.click('[data-report-domain="environment"]'); assert.equal(f.d.querySelector('[data-report-action="export"]'), null);
@@ -248,13 +251,66 @@ test('metadata edit removes the irrelevant file picker and a new upload restores
   const f = await fixture({ years: [year()], files: [file()] }); t.after(() => f.dispose()); f.branch(); f.click(`[data-report-year="${YEAR}"]`); f.click(`[data-report-edit-file="${FILE}"]`);
   assert.equal(f.d.querySelector('#testReportFileForm [data-report-file-field]'), null); assert.equal(f.d.querySelector('#testReportFileForm [name="file"]'), null);
   f.click('#testReportFileDialog [data-report-close]'); f.click('[data-report-action="upload"]');
-  assert.ok(f.d.querySelector('#testReportFileForm [data-report-file-field]')); assert.equal(f.d.querySelector('#testReportFileForm [name="file"]').required, true);
+  assert.ok(f.d.querySelector('#testReportFileForm .document-file-picker[data-bamco-file-picker][data-report-file-field]')); assert.equal(f.d.querySelector('#testReportFileForm [name="file"]').required, true);
 });
 
 
 test('report heading follows shared enterprise header structure and content uses canonical insets', async t => {
   const f = await fixture(); t.after(() => f.dispose());
-  assert.equal(f.d.querySelector('#testReportsRoot > .enterprise-toolbar > div:first-child h3').textContent, 'گزارش آزمایش‌ها');
+  assert.equal(f.d.querySelector('#testReportsRoot > .enterprise-toolbar > div:first-child h3').textContent, 'گزارش آزمون');
   const css = fs.readFileSync(path.join(__dirname, '../assets/css/test-reports.css'), 'utf8');
   assert.match(css, /#testReportsBody, #testReportsBreadcrumbs, #testReportsStatus \{[^}]*padding-inline: 16px/);
+  assert.equal(f.d.querySelector('#testReportsBreadcrumbs').textContent, '', 'root title is not repeated below the buttons');
+  assert.equal(f.d.querySelectorAll('#testReportsBody h3, #testReportsBody h4').length, 0);
+  assert.match(css, /#testReportsRoot \{[^}]*gap: 0/);
+  assert.match(css, /\.test-reports-breadcrumbs \{[^}]*border-bottom: 1px solid var\(--ui-line/);
+  assert.match(css, /#testReportsBody \{[^}]*padding-block: 12px 16px/);
+});
+
+
+test('file rows clearly label descriptions, preserve stored timestamps and hide internal filenames', async t => {
+  const report = { ...file(), description: 'شرح واقعی آزمون\nادامه توضیحات <script>bad()</script>', original_file_name: 'internal-original.pdf' };
+  const f = await fixture({ years: [year()], files: [report] }); t.after(() => f.dispose()); f.branch(); f.click(`[data-report-year="${YEAR}"]`);
+  const row = f.d.querySelector('[data-report-file-id]');
+  assert.match(row.querySelector('.test-report-description').textContent, /^توضیحات: شرح واقعی آزمون/);
+  assert.equal(row.querySelector('.feature-file-icon').textContent, 'PDF');
+  assert.equal(row.querySelector('time').dateTime, stamp);
+  assert.equal(row.querySelector('script'), null);
+  assert.doesNotMatch(row.textContent, /internal-original/);
+  assert.equal(f.w.bamcoTestReports.model.files[0].original_file_name, 'internal-original.pdf');
+  assert.equal(row.querySelectorAll('.feature-row-actions button').length, 4);
+});
+
+test('download keeps original filename although the list displays the description', async t => {
+  const f = await fixture({ years: [year()], files: [{ ...file(), original_file_name: 'original-report.pdf', description: 'شرح آزمون' }], fetch: async () => ({ ok: true, blob: async () => new Blob(['file']) }) }); t.after(() => f.dispose());
+  let download; f.w.HTMLAnchorElement.prototype.click = function () { download = this.download; };
+  f.branch(); f.click(`[data-report-year="${YEAR}"]`); f.click(`[data-report-download="${FILE}"]`); await wait();
+  assert.equal(download, 'original-report.pdf'); assert.match(f.calls.find(call => call.url).url, /storage\/v1\/object\/authenticated\/test-reports-private/);
+});
+
+test('shared report picker shows one selected filename after metadata edit and reopening', async t => {
+  const f = await fixture({ years: [year()], files: [file()] }); t.after(() => f.dispose()); f.branch(); f.click(`[data-report-year="${YEAR}"]`);
+  f.click(`[data-report-edit-file="${FILE}"]`); f.click('#testReportFileDialog [data-report-close]'); f.click('[data-report-action="upload"]');
+  const form = f.d.querySelector('#testReportFileForm'), input = form.elements.file;
+  assert.equal(input.multiple, false); assert.equal(input.required, true);
+  Object.defineProperty(input, 'files', { configurable: true, value: [new f.w.File(['x'], 'انتخاب-شده.pdf', { type: 'application/pdf' })] });
+  input.dispatchEvent(new f.w.Event('change', { bubbles: true }));
+  assert.equal(form.querySelector('[data-file-name]').textContent, 'انتخاب-شده.pdf');
+  assert.equal(form.elements.title.value, 'انتخاب-شده');
+});
+
+test('Excel export contains the scoped search results and description without a hidden table', async t => {
+  let exported;
+  const X = { utils: { book_new: () => ({}), aoa_to_sheet: rows => rows, book_append_sheet: (book, sheet, name) => Object.assign(book, { sheet, name }) }, writeFile: (book, filename) => { exported = { book, filename }; } };
+  const f = await fixture({ years: [year(), year(OTHER, 'standard')], files: [{ ...file(), description: 'شرح منتخب' }, file('other', OTHER)], ensureBamcoXLSX: async () => X }); t.after(() => f.dispose()); f.branch();
+  const search = f.d.querySelector('#testReportsSearch'); search.value = 'شرح منتخب'; search.dispatchEvent(new f.w.Event('input', { bubbles: true })); f.click('[data-report-action="export"]'); await wait();
+  assert.equal(exported.filename, 'گزارش آزمون.xlsx'); assert.equal(exported.book.sheet.length, 2);
+  assert.equal(exported.book.sheet[0][1], 'توضیحات'); assert.equal(exported.book.sheet[1][1], 'شرح منتخب');
+  assert.equal(f.d.querySelector('table'), null);
+});
+
+test('Excel export rechecks permission after the shared loader resolves', async t => {
+  let resolve, wrote = false;
+  const f = await fixture({ years: [year()], files: [file()], ensureBamcoXLSX: () => new Promise(done => resolve = done) }); t.after(() => f.dispose()); f.branch(); f.click(`[data-report-year="${YEAR}"]`); f.click('[data-report-action="export"]');
+  f.grants.delete('export'); resolve({ writeFile: () => { wrote = true; } }); await wait(); assert.equal(wrote, false);
 });

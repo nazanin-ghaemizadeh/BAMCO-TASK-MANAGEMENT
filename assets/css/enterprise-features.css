@@ -270,9 +270,18 @@ html body #appView#appView #projectsView:not(.hidden){height:calc(100dvh - var(-
 #invoiceFeatureRoot .invoice-file-list small{display:block;margin-block-start:4px}
 #invoiceFeatureRoot .invoice-file-warning{color:#8b5316;font-size:12px}
 #invoiceFeatureRoot .invoice-file-hint,#invoiceFeatureRoot .invoice-file-empty{font-size:12px;color:#546d61;line-height:1.8}
-#invoiceFeatureRoot .invoice-file-picker{display:grid;gap:8px;padding:12px;border:1px dashed #9fc7b4;border-radius:9px;background:#f5faf7;min-width:0}
-#invoiceFeatureRoot .invoice-file-picker input{width:100%;min-width:0;box-sizing:border-box}
-#invoiceFeatureRoot .invoice-file-picker small{color:#546d61;font-size:11px}
+#invoiceFeatureRoot .invoice-file-picker{min-width:0}
+#invoiceFeatureRoot .invoice-file-actions{display:flex;align-items:center;gap:6px;margin-inline-start:auto}
+#invoiceFeatureRoot .invoice-file-action{display:inline-flex;align-items:center;justify-content:center;flex:none;width:36px;height:36px;min-height:36px;padding:7px;border-radius:8px}
+#invoiceFeatureRoot .invoice-file-action svg{display:block;pointer-events:none}
+#invoiceFeatureRoot .invoice-file-action:focus-visible{outline:2px solid #176b51;outline-offset:3px}
+#invoiceFeatureRoot .invoice-file-delete{color:#a33e34;border-color:#e5c5c0}
+#invoiceFeatureRoot .invoice-file-delete:hover:not(:disabled){background:#fff1ef;border-color:#c58075}
+#invoiceFeatureRoot .invoice-file-action:disabled{opacity:.45;cursor:not-allowed}
+#invoiceFeatureRoot .invoice-grid .invoice-list-card{min-height:162px;padding:17px;gap:14px}
+#invoiceFeatureRoot .invoice-grid .invoice-list-card strong{font-size:16px;line-height:1.7}
+#invoiceFeatureRoot .invoice-grid .invoice-list-card small{font-size:12px;line-height:1.7}
+#invoiceFeatureRoot .invoice-grid .invoice-list-card>span:last-child b{font-size:16px}
 #invoiceFeatureRoot .invoice-save-status{padding:10px 12px;line-height:1.9;background:#eaf5ee;color:#225b43;border-radius:8px;font-size:12px}
 #invoiceFeatureRoot .invoice-save-status.error{background:#fff4e6;color:#88501c}
 @media(max-width:600px){#invoiceFeatureRoot .invoice-attachments{padding:10px}#invoiceFeatureRoot .invoice-attachments>.panel-head,#invoiceFeatureRoot .payment-stage-receipts>.panel-head{flex-wrap:wrap;gap:8px}#invoiceFeatureRoot .invoice-file-list li{align-items:flex-start}#invoiceFeatureRoot .invoice-file-list li>span:first-child{flex-basis:100%}}

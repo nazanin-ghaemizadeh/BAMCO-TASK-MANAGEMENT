@@ -94,6 +94,98 @@ test('form serialization emits plain strings and leaves currency, quantity and s
   assert.equal(f.input.value, '234', 'rebinding does not duplicate the deletion handler');
 });
 
+test('Persian digit display is opt-in and public formatting remains backward-compatible', t => {
+  const f = setup('data-money-digits="fa"'); t.after(() => f.dom.window.close());
+  const exact = '9007199254740993123456789.00100';
+  assert.equal(f.money.format(exact), '9,007,199,254,740,993,123,456,789.00100');
+  assert.equal(f.money.format(exact, { digits: 'fa' }), '۹,۰۰۷,۱۹۹,۲۵۴,۷۴۰,۹۹۳,۱۲۳,۴۵۶,۷۸۹.۰۰۱۰۰');
+  assert.equal(f.money.format('۱۲۳۴٫۵۰'), '1,234.50');
+  f.set(exact);
+  assert.equal(f.input.value, '۹,۰۰۷,۱۹۹,۲۵۴,۷۴۰,۹۹۳,۱۲۳,۴۵۶,۷۸۹.۰۰۱۰۰');
+  assert.equal(f.money.raw(f.input), exact);
+  delete f.input.dataset.moneyDigits; f.money.bind(f.input);
+  assert.equal(f.input.value, '9,007,199,254,740,993,123,456,789.00100');
+  assert.equal(f.money.raw(f.input), exact);
+});
+
+test('Persian money typing and paste accept every digit set without losing decimal precision', t => {
+  const f = setup('data-money-digits="fa" data-money-scale="2" data-money-integer-digits="16"'); t.after(() => f.dom.window.close());
+  for (const text of ['1234567.05', '۱۲۳۴۵۶۷٫۰۵', '١٢٣٤٥٦٧٫٠٥']) {
+    f.set('');
+    for (const char of text) { f.edit(char); assert.equal(f.input.selectionStart, f.input.value.length); }
+    assert.equal(f.input.value, '۱,۲۳۴,۵۶۷.۰۵');
+    assert.equal(f.money.raw(f.input), '1234567.05');
+    assert.equal(f.input.validationMessage, '');
+  }
+  for (const text of ['9,007,199,254,740,993.01', '۹٬۰۰۷٬۱۹۹٬۲۵۴٬۷۴۰٬۹۹۳٫۰۱', '٩\u202f٠٠٧\u202f١٩٩\u202f٢٥٤\u202f٧٤٠\u202f٩٩٣٫٠١']) {
+    f.set(''); f.edit(text, 'insertFromPaste');
+    assert.equal(f.input.value, '۹,۰۰۷,۱۹۹,۲۵۴,۷۴۰,۹۹۳.۰۱');
+    assert.equal(f.money.raw(f.input), '9007199254740993.01');
+    assert.equal(f.input.selectionStart, f.input.value.length);
+  }
+  f.set('1234'); f.edit('٫'); assert.equal(f.input.value, '۱,۲۳۴.');
+  assert.equal(f.money.raw(f.input), '1234');
+  f.edit('۰'); assert.equal(f.input.value, '۱,۲۳۴.۰'); assert.equal(f.money.raw(f.input), '1234.0');
+  f.edit('٠'); assert.equal(f.input.value, '۱,۲۳۴.۰۰'); assert.equal(f.money.raw(f.input), '1234.00');
+  f.set('.۵'); assert.equal(f.input.value, '.۵'); assert.equal(f.money.raw(f.input), '0.5');
+  f.set('۰۰۱۲۳.۰۰'); assert.equal(f.input.value, '۰۰,۱۲۳.۰۰'); assert.equal(f.money.raw(f.input), '123.00');
+});
+
+test('Persian middle edits, selection and grouping deletion retain logical caret positions', t => {
+  const f = setup('data-money-digits="fa"'); t.after(() => f.dom.window.close());
+  for (const inserted of ['9', '۹', '٩']) {
+    f.set('12345'); f.input.setSelectionRange(3, 3); f.edit(inserted);
+    assert.equal(f.input.value, '۱۲۹,۳۴۵'); assert.equal(f.input.selectionStart, 3);
+  }
+  for (const text of ['1,234', '۱,۲۳۴', '١٬٢٣٤']) {
+    // Include not-yet-refreshed pasted digit sets in the beforeinput path.
+    f.input.value = text; f.input.setSelectionRange(2, 2); f.edit('', 'deleteContentBackward');
+    assert.equal(f.input.value, '۲۳۴'); assert.equal(f.input.selectionStart, 0);
+    f.input.value = text; f.input.setSelectionRange(1, 1); f.edit('', 'deleteContentForward');
+    assert.equal(f.input.value, '۱۳۴'); assert.equal(f.input.selectionStart, 1);
+  }
+  f.set('1234567.89'); f.input.setSelectionRange(2, 5); f.edit('٩۹', 'insertFromPaste');
+  assert.equal(f.input.value, '۱۹۹,۵۶۷.۸۹'); assert.equal(f.input.selectionStart, 3);
+  f.input.value = '1234567.89'; f.input.setSelectionRange(2, 6, 'backward');
+  f.input.dispatchEvent(new f.w.Event('input', { bubbles: true }));
+  assert.equal(f.input.value, '۱,۲۳۴,۵۶۷.۸۹');
+  assert.equal(f.input.selectionStart, 3); assert.equal(f.input.selectionEnd, 8); assert.equal(f.input.selectionDirection, 'backward');
+  f.input.setSelectionRange(0, f.input.value.length); f.edit('', 'deleteContentBackward');
+  assert.equal(f.input.value, ''); assert.throws(() => f.money.raw(f.input));
+});
+
+test('Persian monetary display never repairs malformed decimals or hides range violations', t => {
+  const f = setup('data-money-digits="fa" data-money-min="0" data-money-scale="2" data-money-integer-digits="16"'); t.after(() => f.dom.window.close());
+  for (const text of ['1.2.3', '۱٫۲٫۳', '١.٢٫٣', '۱.۲,۳', '--۱', '۱e۳']) {
+    f.set(text);
+    assert.equal(f.input.value, text, 'malformed input remains visible verbatim');
+    assert.throws(() => f.money.raw(f.input)); assert.ok(f.input.validationMessage);
+  }
+  f.set('1234.50'); f.edit('٫');
+  assert.equal(f.input.value, '۱,۲۳۴.۵۰٫'); assert.throws(() => f.money.raw(f.input));
+  f.edit('', 'deleteContentBackward');
+  assert.equal(f.input.value, '۱,۲۳۴.۵۰'); assert.equal(f.money.raw(f.input), '1234.50');
+  for (const [text, shown] of [['-100', '-۱۰۰'], ['1.001', '۱.۰۰۱'], ['10000000000000000', '۱۰,۰۰۰,۰۰۰,۰۰۰,۰۰۰,۰۰۰']]) {
+    f.set(text); assert.equal(f.input.value, shown);
+    assert.throws(() => f.money.raw(f.input)); assert.ok(f.input.validationMessage);
+  }
+});
+
+test('Persian invoice serialization stays exact while other fields retain their digit conventions', t => {
+  const f = setup('data-money-digits="fa"'); t.after(() => f.dom.window.close());
+  const other = f.w.document.createElement('input'); other.name = 'other_amount'; other.dataset.moneyInput = ''; other.value = '۱۲۳۴.۵۰';
+  f.form.append(other); f.money.bind(f.form);
+  f.set('9007199254740993.01');
+  assert.equal(f.input.value, '۹,۰۰۷,۱۹۹,۲۵۴,۷۴۰,۹۹۳.۰۱'); assert.equal(other.value, '1,234.50');
+  const data = new f.w.FormData(f.form), event = new f.w.Event('formdata'); Object.defineProperty(event, 'formData', { value: data }); f.form.dispatchEvent(event);
+  assert.equal(data.get('amount'), '9007199254740993.01'); assert.equal(data.get('other_amount'), '1234.50');
+  assert.equal(data.get('currency'), 'USD'); assert.equal(data.get('sequence_no'), '1234'); assert.equal(data.get('quantity'), '5678');
+  f.input.value = '1234'; f.input.dispatchEvent(new f.w.InputEvent('input', { bubbles: true, isComposing: true }));
+  assert.equal(f.input.value, '1234', 'composition is left undisturbed');
+  f.input.dispatchEvent(new f.w.CompositionEvent('compositionend', { bubbles: true }));
+  assert.equal(f.input.value, '۱,۲۳۴'); assert.equal(f.money.raw(f.input), '1234');
+});
+
 test('only actual money fields opt in and petty cash keeps exact read/write contracts', () => {
   const petty = fs.readFileSync('assets/js/petty-cash.js', 'utf8');
   assert.match(petty, /amount::text/); assert.match(petty, /data\.amount=window\.BamcoMoney\.raw\(f\.elements\.amount\)/);

@@ -1,0 +1,8 @@
+/* The same dashed file field as organizational documents, shared by reports and finance. */
+html body .document-file-picker[data-bamco-file-picker] { position: relative; cursor: pointer; display: flex; flex-direction: column; gap: 10px; padding: 16px; border: 1px dashed #9dbeb0; border-radius: 12px; background: #f7faf8; overflow: hidden; min-width: 0; }
+html body .document-file-picker[data-bamco-file-picker] input[type="file"] { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 1; }
+html body .document-file-picker[data-bamco-file-picker]:focus-within { outline: 2px solid #176b50; outline-offset: 3px; }
+html body .document-file-picker[data-bamco-file-picker] .document-file-choice { display: flex; align-items: center; gap: 12px; min-width: 0; }
+html body .document-file-picker[data-bamco-file-picker] .document-file-choice > .ghost { flex-shrink: 0; padding: 6px 14px; border: 1px solid #bbd1c7; border-radius: 8px; background: white; }
+html body .document-file-picker[data-bamco-file-picker] [data-file-name] { font-weight: 400; overflow-wrap: anywhere; unicode-bidi: plaintext; min-width: 0; }
+html body .document-file-picker[data-bamco-file-picker] [data-file-detail] { color: #527065; }

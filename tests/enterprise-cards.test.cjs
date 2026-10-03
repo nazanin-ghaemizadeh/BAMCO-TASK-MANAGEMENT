@@ -21,6 +21,7 @@ for(const [route,script,dialog,create,table] of [
  w.bamcoEnterprise={q:(s,r=w.document)=>r.querySelector(s),esc:String,fa:String,date:v=>v||'—',dateTime:v=>v||'—',money:String,progress:()=>'',statusText:String,personName:()=>'',fetchRows:async name=>data[name]||[],rpc:async name=>name==='list_invoice_workspace'?{invoices:data.invoices,payments:[],files:[]}:null,insert:async()=>[{id:2}],setBusy:()=>{},notify:()=>{}};
  w.BamcoAccess={can:()=>true,isSystemManager:()=>true};
  w.eval(fs.readFileSync('assets/js/money-input.js','utf8'));
+ w.eval(fs.readFileSync('assets/js/file-picker.js','utf8'));
  w.eval(fs.readFileSync(`assets/js/${script}`,'utf8'));w.document.dispatchEvent(new w.Event('DOMContentLoaded'));
  assert(registered.has(route));await registered.get(route).activate();
  assert.equal(w.document.querySelectorAll(`[data-${route==='projects'?'project':'invoice'}-select]`).length,1);

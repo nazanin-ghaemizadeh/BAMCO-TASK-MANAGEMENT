@@ -221,7 +221,7 @@ function installGuide(){
  renderGuide();
 }
 function wire(){
- q('#documentForm [name=file]')?.addEventListener('change',event=>{const file=event.target.files[0];q('[data-file-name]').textContent=file?.name||'فایلی انتخاب نشده است';q('[data-file-detail]').textContent=file?fmtBytes(file.size):'حداکثر حجم فایل: ۲۵ مگابایت'});
+ q('#documentForm [name=file]')?.addEventListener('change',event=>{const file=event.target.files[0],form=event.target.form;q('[data-file-name]',form).textContent=file?.name||'فایلی انتخاب نشده است';q('[data-file-detail]',form).textContent=file?fmtBytes(file.size):'حداکثر حجم فایل: ۲۵ مگابایت'});
  q('#documentsSearch')?.addEventListener('input',event=>{feature.docQuery=event.target.value;renderDocuments()});
  q('#documentsRefresh')?.addEventListener('click',()=>void loadDocuments(true).catch(error=>notice(error.message,true)));
  q('#addDocumentCategory')?.addEventListener('click',()=>openCategory());

@@ -38,13 +38,15 @@
   const newest = rows => rows.map(row => row.updated_at).filter(value => value && Number.isFinite(Date.parse(value))).sort((a, b) => Date.parse(b) - Date.parse(a))[0];
   const pathLabel = year => year ? `${DOMAINS.find(item => item.key === year.domain)?.title || ''} / ${TYPES.find(item => item.key === year.report_type)?.title || ''} / ${fa(year.jalali_year)}` : '';
 
-  const filePickerMarkup = '<label class="span-2" data-report-file-field>فایل گزارش<input name="file" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp,.gif,.txt,.csv,.xls,.xlsx,.docx"><small>حداکثر ۲۵ مگابایت؛ در ادامه بارگذاری، همان فایل قبلی را انتخاب کنید.</small></label>';
+  const filePickerMarkup = () => window.BamcoFilePicker.render({ name: 'file', label: 'فایل گزارش', accept: '.pdf,.png,.jpg,.jpeg,.webp,.gif,.txt,.csv,.xls,.xlsx,.docx', maxSizeText: 'حداکثر حجم فایل: ۲۵ مگابایت؛ برای ادامه بارگذاری، همان فایل قبلی را انتخاب کنید.', required: true, wrapperAttribute: 'data-report-file-field' });
+  const visibleFiles = () => scopedFiles(model.files, model.years, model).filter(file => matchesFile(file, model.query));
   function shell() {
     if (!root() || q('#testReportsBody', root())) return;
-    root().innerHTML = `<header class="feature-toolbar enterprise-toolbar test-reports-heading"><div><h3>گزارش آزمایش‌ها</h3></div></header><div class="bamco-command-bar test-reports-command" id="testReportsCommands"></div><nav class="test-reports-breadcrumbs" aria-label="مسیر گزارش آزمایش‌ها" id="testReportsBreadcrumbs"></nav><div id="testReportsStatus" role="status" aria-live="polite"></div><div id="testReportsBody"></div>
+    root().innerHTML = `<header class="feature-toolbar enterprise-toolbar test-reports-heading"><div><h3>گزارش آزمون</h3></div></header><div class="bamco-command-bar test-reports-command" id="testReportsCommands"></div><nav class="test-reports-breadcrumbs" aria-label="مسیر گزارش آزمون" id="testReportsBreadcrumbs"></nav><div id="testReportsStatus" role="status" aria-live="polite"></div><div id="testReportsBody"></div>
     <dialog class="modal small" id="testReportYearDialog"><form id="testReportYearForm"><div class="modal-head"><h3>پوشه سال شمسی</h3><button type="button" data-report-close aria-label="بستن">×</button></div><input name="id" type="hidden"><input name="domain" type="hidden"><input name="report_type" type="hidden"><label>سال شمسی<input name="jalali_year" type="text" inputmode="numeric" maxlength="4" required aria-describedby="testReportYearHint"></label><small id="testReportYearHint">سال چهاررقمی را وارد کنید؛ هر سال در این مسیر فقط یک پوشه دارد.</small><p class="feature-form-error" data-report-error role="alert"></p><div class="modal-actions"><button type="button" class="ghost" data-report-close>انصراف</button><button type="submit" class="primary">ذخیره پوشه</button></div></form></dialog>
-    <dialog class="modal" id="testReportFileDialog"><form id="testReportFileForm"><div class="modal-head"><div><h3>بارگذاری گزارش</h3><p data-report-file-path></p></div><button type="button" data-report-close aria-label="بستن">×</button></div><input name="id" type="hidden"><input name="year_id" type="hidden"><input name="mode" type="hidden"><div class="form-grid"><label class="span-2">عنوان گزارش<input name="title" maxlength="220" required></label><label class="span-2">توضیحات<textarea name="description" rows="3" maxlength="4000"></textarea></label>${filePickerMarkup}</div><p class="feature-form-error" data-report-error role="alert"></p><p data-report-progress role="status" aria-live="polite"></p><div class="modal-actions"><button type="button" class="ghost" data-report-close>انصراف</button><button type="submit" class="primary">ذخیره گزارش</button></div></form></dialog>
+    <dialog class="modal" id="testReportFileDialog"><form id="testReportFileForm"><div class="modal-head"><div><h3>بارگذاری گزارش</h3><p data-report-file-path></p></div><button type="button" data-report-close aria-label="بستن">×</button></div><input name="id" type="hidden"><input name="year_id" type="hidden"><input name="mode" type="hidden"><div class="form-grid"><label class="span-2">عنوان گزارش<input name="title" maxlength="220" required></label><label class="span-2">توضیحات<textarea name="description" rows="3" maxlength="4000"></textarea></label>${filePickerMarkup()}</div><p class="feature-form-error" data-report-error role="alert"></p><p data-report-progress role="status" aria-live="polite"></p><div class="modal-actions"><button type="button" class="ghost" data-report-close>انصراف</button><button type="submit" class="primary">ذخیره گزارش</button></div></form></dialog>
     <dialog class="modal feature-preview-modal" id="testReportPreview"><div class="modal-head"><h3>نمایش گزارش</h3><button type="button" data-report-close aria-label="بستن">×</button></div><div class="test-report-preview-body"></div></dialog>`;
+    window.BamcoFilePicker.bind(q('#testReportFileForm'));
     q('#testReportPreview').addEventListener('close', clearPreview);
     for (const dialog of root().querySelectorAll('dialog')) dialog.addEventListener('cancel', event => { if (dialogBusy && dialog.id !== 'testReportPreview') event.preventDefault(); });
   }
@@ -56,14 +58,14 @@
     const bar = q('#testReportsCommands'), existing = q('[data-report-action="export"]', bar);
     // Shared button display rules override the native hidden attribute. Keep an
     // unavailable export out of the DOM, preserving the live search input.
-    if (!can('export') || !q('#testReportsTable')) { existing?.remove(); return; }
+    if (!can('export') || !q('#testReportsFileList')) { existing?.remove(); return; }
     if (existing || !bar) return;
     const button = document.createElement('button'); button.type = 'button'; button.className = 'ghost';
     button.dataset.reportAction = 'export'; button.textContent = 'خروجی اکسل';
     bar.insertBefore(button, q('#testReportsSearch', bar));
   }
   function breadcrumbs() {
-    const links = [{ label: 'گزارش آزمایش‌ها', level: 'root' }];
+    const links = model.domain ? [{ label: 'گزارش آزمون', level: 'root' }] : [];
     if (model.domain) links.push({ label: DOMAINS.find(item => item.key === model.domain).title, level: 'domain' });
     if (model.type) links.push({ label: TYPES.find(item => item.key === model.type).title, level: 'type' });
     if (model.year) links.push({ label: `سال ${fa(yearById(model.year)?.jalali_year || '')}`, level: 'year' });
@@ -73,22 +75,37 @@
     const ids = new Set(rows.map(row => String(row.id))), count = model.files.filter(file => ids.has(String(file.year_id))).length;
     return `<article class="test-report-card"><button type="button" class="test-report-card-open" data-report-${kind}="${esc(id)}"><span class="test-report-card-icon" aria-hidden="true">${icon}</span><span><strong>${esc(title)}</strong><small>${fa(count)} فایل${kind !== 'year' ? ` · ${fa(rows.length)} پوشه سال` : ''}</small><small>آخرین به‌روزرسانی: <time datetime="${esc(newest(rows) || '')}">${esc(updatedDate(newest(rows)))}</time></small></span><span class="test-report-card-arrow" aria-hidden="true">‹</span></button>${actions ? `<div class="test-report-card-actions">${actions}</div>` : ''}</article>`;
   }
-  function fileTable(files) {
+  function fileList(files) {
     const showPath = !model.year;
-    return `<section class="panel test-reports-files"><div class="panel-head"><h4>${model.query ? 'نتیجه جست‌وجوی فایل‌ها در این مسیر' : 'فایل‌های گزارش'}</h4><span>${fa(files.length)} فایل</span></div><div class="table-wrap"><table id="testReportsTable" class="workspace-table" data-table-key="test-reports-files"><thead><tr><th>عنوان گزارش</th><th>نام فایل</th>${showPath ? '<th>مسیر پوشه</th>' : ''}<th>حجم</th><th>آخرین به‌روزرسانی شمسی</th><th>وضعیت</th><th>عملیات</th></tr></thead><tbody>${files.map(file => `<tr data-id="${esc(file.id)}"><td><b>${esc(file.title)}</b>${file.description ? `<small class="test-report-description">${esc(file.description)}</small>` : ''}</td><td>${esc(file.original_file_name)}</td>${showPath ? `<td><button type="button" class="ghost" data-report-go-file="${esc(file.id)}">${esc(pathLabel(yearById(file.year_id)))}</button></td>` : ''}<td>${bytes(file.file_size)}</td><td><time datetime="${esc(file.updated_at)}">${esc(updatedDate(file.updated_at))}</time></td><td>${esc(statusText(file))}</td><td><div class="feature-row-actions">${file.status === 'ready' ? `<button type="button" class="ghost" data-report-preview="${esc(file.id)}">نمایش</button><button type="button" class="ghost" data-report-download="${esc(file.id)}">دانلود</button>${can('edit') ? `<button type="button" class="ghost" data-report-edit-file="${esc(file.id)}">ویرایش</button>` : ''}` : file.status === 'pending' && can('create') && file.created_by === appState().user?.id ? `<button type="button" class="ghost" data-report-retry-file="${esc(file.id)}">ادامه بارگذاری</button>` : ''}${can('delete') ? `<button type="button" class="danger" data-report-delete-file="${esc(file.id)}">${file.status === 'deleting' ? 'تلاش دوباره حذف' : 'حذف'}</button>` : ''}</div></td></tr>`).join('')}</tbody></table></div></section>`;
+    return `<div id="testReportsFileList" class="feature-document-list test-reports-files" role="list" aria-label="${model.query ? 'نتیجه جست‌وجوی فایل‌ها در این مسیر' : 'فایل‌های گزارش'}">${files.map(file => `<div class="feature-document-row" data-report-file-id="${esc(file.id)}" role="listitem"><div class="feature-file-icon" aria-hidden="true">${esc((file.original_file_name.split('.').pop() || 'FILE').toUpperCase().slice(0, 5))}</div><div class="feature-file-main"><b>${esc(file.title)}</b><small>${bytes(file.file_size)} · آخرین به‌روزرسانی: <time datetime="${esc(file.updated_at)}">${esc(updatedDate(file.updated_at))}</time> · ${esc(statusText(file))}</small><p class="test-report-description"><span>توضیحات:</span> ${esc(file.description || 'بدون توضیحات')}</p>${showPath ? `<button type="button" class="ghost test-report-file-path" data-report-go-file="${esc(file.id)}">${esc(pathLabel(yearById(file.year_id)))}</button>` : ''}</div><div class="feature-row-actions">${file.status === 'ready' ? `<button type="button" class="ghost" data-report-preview="${esc(file.id)}">نمایش</button><button type="button" class="ghost" data-report-download="${esc(file.id)}">دانلود</button>${can('edit') ? `<button type="button" class="ghost" data-report-edit-file="${esc(file.id)}">ویرایش</button>` : ''}` : file.status === 'pending' && can('create') && file.created_by === appState().user?.id ? `<button type="button" class="ghost" data-report-retry-file="${esc(file.id)}">ادامه بارگذاری</button>` : ''}${can('delete') ? `<button type="button" class="danger" data-report-delete-file="${esc(file.id)}">${file.status === 'deleting' ? 'تلاش دوباره حذف' : 'حذف'}</button>` : ''}</div></div>`).join('')}</div>`;
+  }
+  async function exportFiles() {
+    if (!requireAccess('export') || !q('#testReportsFileList')) return;
+    const started = session(), files = visibleFiles();
+    if (!files.length) return;
+    const button = q('[data-report-action="export"]'); if (button) button.disabled = true;
+    try {
+      const X = await window.ensureBamcoXLSX();
+      if (!current(started) || !model.active || !can('export')) return;
+      const headers = ['عنوان گزارش', 'توضیحات', 'مسیر پوشه', 'حجم', 'آخرین به‌روزرسانی شمسی', 'وضعیت'];
+      const rows = files.map(file => [file.title, file.description || '', pathLabel(yearById(file.year_id)), bytes(file.file_size), updatedDate(file.updated_at), statusText(file)]);
+      const workbook = X.utils.book_new();
+      X.utils.book_append_sheet(workbook, X.utils.aoa_to_sheet([headers, ...rows]), 'گزارش آزمون');
+      X.writeFile(workbook, 'گزارش آزمون.xlsx');
+    } catch (error) { if (current(started)) notice(error.message || 'خروجی اکسل آماده نشد.', true); }
+    finally { if (button) button.disabled = false; }
   }
   function content() {
     const host = q('#testReportsBody'); if (!host) return;
     if (!can('view')) { host.innerHTML = '<div class="feature-empty">دسترسی مشاهده گزارش‌ها فعال نیست.</div>'; syncExportButton(); return; }
-    const files = scopedFiles(model.files, model.years, model).filter(file => matchesFile(file, model.query));
-    if (model.query || model.year) host.innerHTML = files.length ? fileTable(files) : `<div class="feature-empty">${model.loading && !model.loaded ? 'در حال دریافت فایل‌ها…' : model.query ? 'فایلی مطابق جست‌وجو در این مسیر پیدا نشد.' : 'هنوز گزارشی در این پوشه بارگذاری نشده است.'}</div>`;
+    const files = visibleFiles();
+    if (model.query || model.year) host.innerHTML = files.length ? fileList(files) : `<div class="feature-empty">${model.loading && !model.loaded ? 'در حال دریافت فایل‌ها…' : model.query ? 'فایلی مطابق جست‌وجو در این مسیر پیدا نشد.' : 'هنوز گزارشی در این پوشه بارگذاری نشده است.'}</div>`;
     else if (!model.domain) host.innerHTML = `<div class="test-report-grid">${DOMAINS.map(domain => card({ id: domain.key, title: domain.title, icon: domain.icon, kind: 'domain', rows: model.years.filter(year => year.domain === domain.key) })).join('')}</div>`;
     else if (!model.type) host.innerHTML = `<div class="test-report-grid">${TYPES.map(type => card({ id: type.key, title: type.title, kind: 'type', rows: model.years.filter(year => year.domain === model.domain && year.report_type === type.key) })).join('')}</div>`;
     else {
       const years = model.years.filter(year => year.domain === model.domain && year.report_type === model.type).sort((a, b) => b.jalali_year - a.jalali_year);
       host.innerHTML = years.length ? `<div class="test-report-grid">${years.map(year => card({ id: year.id, title: `سال ${fa(year.jalali_year)}`, kind: 'year', rows: [year], actions: `${can('edit') ? `<button type="button" class="ghost" data-report-edit-year="${esc(year.id)}">ویرایش سال</button>` : ''}${can('delete') ? `<button type="button" class="danger" data-report-delete-year="${esc(year.id)}">حذف پوشه</button>` : ''}` })).join('')}</div>` : `<div class="feature-empty">${model.loading && !model.loaded ? 'در حال دریافت پوشه‌ها…' : 'هنوز پوشه سالی ایجاد نشده است. برای شروع «پوشه سال جدید» را بزنید.'}</div>`;
     }
-    const table = q('#testReportsTable'); if (table) window.bamcoReferenceTable?.refresh?.(table, { filters: true });
     syncExportButton();
   }
   function render() {
@@ -118,7 +135,7 @@
       Object.assign(model, { years, files, loaded: true });
     } catch (error) {
       if (version !== loadVersion || !current(started)) return;
-      model.error = /test_report_|schema cache|404|does not exist/i.test(error.message) ? 'بخش گزارش آزمایش‌ها هنوز در سرور آماده نیست. مدیر سامانه باید تغییرات پایگاه داده و سرویس گزارش‌ها را نصب کند.' : error.message || 'دریافت گزارش‌ها انجام نشد.';
+      model.error = /test_report_|schema cache|404|does not exist/i.test(error.message) ? 'بخش گزارش آزمون هنوز در سرور آماده نیست. مدیر سامانه باید تغییرات پایگاه داده و سرویس گزارش‌ها را نصب کند.' : error.message || 'دریافت گزارش‌ها انجام نشد.';
     } finally { if (version === loadVersion && current(started)) { model.loading = false; render(); } }
   }
   function clearPreview() { previewVersion++; if (previewUrl) URL.revokeObjectURL(previewUrl); previewUrl = ''; q('#testReportPreview .test-report-preview-body')?.replaceChildren(); }
@@ -139,7 +156,7 @@
     form.elements.title.value = file?.title || ''; form.elements.description.value = file?.description || ''; form.elements.title.readOnly = retry; form.elements.description.readOnly = retry;
     const picker = q('[data-report-file-field]', form);
     if (file && !retry) picker?.remove();
-    else { if (!picker) q('.form-grid', form).insertAdjacentHTML('beforeend', filePickerMarkup); form.elements.file.required = true; }
+    else { if (!picker) q('.form-grid', form).insertAdjacentHTML('beforeend', filePickerMarkup()); form.elements.file.required = true; window.BamcoFilePicker.bind(form); }
     q('[data-report-error]', form).textContent = ''; q('[data-report-progress]', form).textContent = ''; q('[data-report-file-path]', form).textContent = pathLabel(year);
     q('h3', form).textContent = retry ? 'ادامه بارگذاری ناتمام' : file ? 'ویرایش گزارش' : 'بارگذاری گزارش'; q('#testReportFileDialog').showModal();
   }
@@ -241,7 +258,7 @@
       if (action === 'refresh') return void load();
       if (action === 'new-year') return openYear();
       if (action === 'upload') return openFile();
-      if (action === 'export' && requireAccess('export')) { const table = q('#testReportsTable'); if (table) void window.bamcoExportTable?.(table); return; }
+      if (action === 'export') return void exportFiles();
       if (button.dataset.reportAncestor) return move(button.dataset.reportAncestor);
       if (button.dataset.reportDomain) return move('domain', button.dataset.reportDomain);
       if (button.dataset.reportType) return move('type', button.dataset.reportType);
@@ -264,7 +281,6 @@
     window.addEventListener('bamco:feature-access-changed', () => { if (!can('view')) { reset(); if (root()) render(); } else if (model.active) void load(); });
     const view = q('#testReportsView'); if (view) new MutationObserver(() => { if (model.active && view.classList.contains('hidden')) dispose(); }).observe(view, { attributes: true, attributeFilter: ['class'] });
     const app = q('#appView'); if (app) new MutationObserver(() => { if (app.classList.contains('hidden')) { dispose(); reset(); render(); } }).observe(app, { attributes: true, attributeFilter: ['class'] });
-    document.addEventListener('bamco-table-suite-ready', () => { const table = q('#testReportsTable'); if (table) window.bamcoReferenceTable?.refresh?.(table, { filters: true }); });
   }
   window.bamcoTestReports = { model, load, activate, dispose, reset };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true }); else boot();
