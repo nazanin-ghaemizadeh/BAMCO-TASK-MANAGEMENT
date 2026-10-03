@@ -22,6 +22,7 @@
   const filter=rows=>rows.filter(row=>[...url.searchParams].every(([k,v])=>!v.startsWith('eq.')||String(row[k])===v.slice(3)));
   let data=[];
   if(endpoint==='token')data={access_token:'browser-fixture-token',refresh_token:'browser-fixture-refresh',expires_in:3600,user:{id:api.actor.id}};
+  else if(endpoint==='list_invoice_workspace')data={invoices:[],payments:[],files:[]};
   else if(endpoint==='document_categories')data=[{id:10,title:'راهنمای استفاده سامانه'}];
   else if(endpoint==='documents')data=[{id:20,category_id:10,title:'راهنمای استفاده سامانه',version:api.guideVersion||1,updated_at:iso,original_file_name:'BAMCO-User-Guide.pdf',file_size:3355443,storage_path:'guide.pdf',mime_type:'application/pdf'}];
   else if(endpoint==='document-library'){api.guideVersion=(api.guideVersion||1)+1;data={ok:true,document:{id:20,category_id:10,title:'راهنمای استفاده سامانه',version:api.guideVersion,updated_at:iso,original_file_name:'BAMCO-User-Guide.pdf',file_size:3355443,storage_path:'guide.pdf',mime_type:'application/pdf'}}}

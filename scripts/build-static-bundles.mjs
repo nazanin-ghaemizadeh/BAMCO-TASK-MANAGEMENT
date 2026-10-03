@@ -16,6 +16,7 @@ const javascript = [
   'assets/js/task-options.js',
   'assets/js/dashboard-metrics.js',
   'assets/js/app.js',
+  'assets/js/money-input.js',
   'assets/js/enterprise-core.js',
   'assets/js/organization-structure.js',
   'assets/js/approval-center.js',
@@ -69,6 +70,7 @@ const javascript = [
   'assets/js/task-actions.js',
   'assets/js/task-toolbar.js',
   'assets/js/documents-sites.js',
+  'assets/js/test-reports.js',
   'assets/js/feature-structure.js',
   'assets/js/feature-prefetch.js',
   'assets/js/access-editor.js',
@@ -79,6 +81,7 @@ const javascript = [
 const stylesheets = [
   'assets/css/app.css',
   'assets/css/documents-sites.css',
+  'assets/css/test-reports.css',
   'assets/css/department-entry.css',
   'assets/css/access-editor.css',
   'assets/css/letters-push.css',

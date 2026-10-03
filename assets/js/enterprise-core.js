@@ -8,7 +8,7 @@
   const qa = (selector, scope = document) => [...(scope?.querySelectorAll?.(selector) || [])];
   const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
   const fa = value => String(value ?? '').replace(/\d/g, digit => '۰۱۲۳۴۵۶۷۸۹'[digit]);
-  const money = (value, currency = 'ریال') => `${fa(Number(value || 0).toLocaleString('en-US'))} ${esc(currency)}`;
+  const money = (value, currency = 'ریال') => `${esc(fa(root.BamcoMoney.format(value ?? '0')))} ${esc(currency)}`;
   const date = value => value ? (typeof jalaliText === 'function' ? jalaliText(value) : String(value).slice(0, 10)) : '—';
   const dateTime = value => value ? (typeof jalaliDateTime === 'function' ? jalaliDateTime(value) : String(value)) : '—';
   const progress = value => `<div class="enterprise-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.max(0, Math.min(100, Number(value || 0)))}"><span style="width:${Math.max(0, Math.min(100, Number(value || 0)))}%"></span></div>`;

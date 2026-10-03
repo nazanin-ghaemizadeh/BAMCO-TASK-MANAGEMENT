@@ -66,7 +66,7 @@ test('enterprise navigation places new modules in the approved groups', () => {
   assert.match(catalog, /key: 'reports'[\s\S]*routes: \['dashboard', 'performanceReport'\]/);
   assert.match(catalog, /key: 'tasks'[\s\S]*'taskTimeline', 'projects', 'approvals'/);
   assert.match(catalog, /key: 'delivery'[\s\S]*title: 'مدیریت مالی'[\s\S]*routes: \['pettyCash', 'invoices'\]/);
-  assert.match(catalog, /key: 'resources'[\s\S]*'documents', 'sitesAccess', 'lettersIncoming', 'lettersOutgoing', 'userGuide'/);
+  assert.match(catalog, /key: 'resources'[\s\S]*'documents', 'testReports', 'sitesAccess', 'lettersIncoming', 'lettersOutgoing', 'userGuide'/);
   assert.match(sidebar, /BamcoNavigationCatalog/);
   assert.match(runtime, /const ORDER=Object\.fromEntries\(catalog\.groups/);
   assert.doesNotMatch(catalog, /key: 'organization'/);

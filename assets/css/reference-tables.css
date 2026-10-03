@@ -83,6 +83,7 @@ html body #appView#appView#appView#appView#appView .view:has(table) :is(.task-to
   padding:7px 10px!important;
   margin:0!important;
   border:0!important;
+  border-top:1px solid var(--register-line)!important;
   border-bottom:1px solid var(--register-line)!important;
   border-radius:0!important;
   background:var(--register-toolbar)!important;

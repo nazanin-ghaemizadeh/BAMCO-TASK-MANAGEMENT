@@ -254,7 +254,8 @@ test('enterprise pages keep a stable shared shell and persist the project, part 
   assert.equal(d.querySelector('#invoiceFeatureRoot .invoice-top-command-row [data-home-action]'), null);
   assert.equal(d.querySelector('#invoiceFeatureRoot .invoice-detail > [data-invoice-action="back"]'), null);
   assert.equal(d.querySelector('#invoiceFeatureRoot .invoice-detail .project-actions [data-invoice-action="payment"]'), null);
-  assert.equal(tables.invoices[0].total_amount, 500000000);
+  assert.equal(tables.invoices[0].total_amount, '500000000');
+  assert.equal(calls.filter(call => call.endpoint === 'save_invoice').length, 1, 'invoice is saved through one authoritative idempotent RPC');
   assert.equal(tables.invoices[0].account_party, 'آزمایشگاه نمونه');
 
   for (const [sequence, amount] of [[1, 100000000], [2, 200000000], [3, 200000000]]) {
@@ -271,7 +272,7 @@ test('enterprise pages keep a stable shared shell and persist the project, part 
     await until(() => tables.invoice_payments.length === sequence);
     assertActiveRoute('invoices');
   }
-  assert.equal(tables.invoice_payments.reduce((sum, item) => sum + item.amount, 0), 500000000);
+  assert.equal(tables.invoice_payments.reduce((sum, item) => sum + Number(item.amount), 0), 500000000);
   assert.match(d.querySelector('#invoiceFeatureRoot').textContent, /۱۰۰٪/);
   assert.match(d.querySelector('#invoiceFeatureRoot').textContent, /پرداخت‌شده/);
   assert.ok(d.querySelector('.payment-late-icon'), 'پرداخت پس از تاریخ برنامه‌ای با علامت دیرکرد مشخص است');
@@ -281,7 +282,7 @@ test('enterprise pages keep a stable shared shell and persist the project, part 
   assert.equal(editPaymentForm.elements.payment_id.value, '1002');
   field(editPaymentForm, 'amount', '150000000');
   submit(w, editPaymentForm);
-  await until(() => tables.invoice_payments.find(item => item.id === 1002)?.amount === 150000000);
+  await until(() => tables.invoice_payments.find(item => item.id === 1002)?.amount === '150000000');
   assert.match(d.querySelector('#invoiceFeatureRoot').textContent, /۹۰٪/);
   assert.match(d.querySelector('#invoiceFeatureRoot').textContent, /۵۰,۰۰۰,۰۰۰ ریال/);
 
@@ -290,7 +291,7 @@ test('enterprise pages keep a stable shared shell and persist the project, part 
   assert.equal(editInvoiceForm.elements.invoice_id.value, '1000');
   field(editInvoiceForm, 'total_amount', '600000000');
   submit(w, editInvoiceForm);
-  await until(() => tables.invoices[0]?.total_amount === 600000000);
+  await until(() => tables.invoices[0]?.total_amount === '600000000');
   assert.match(d.querySelector('#invoiceFeatureRoot').textContent, /۷۵٪/);
 
   await f.open('parts');

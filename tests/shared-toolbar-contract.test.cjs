@@ -61,3 +61,42 @@ test('the shared mobile rule covers every toolbar without depending on table pre
   assert.ok(!reference.includes('>:is(input[type=search],input.search,.toolbar-search,.vehicle-search)'),'register layer must not reintroduce competing search geometry');
   dom.window.close();
 });
+
+test('actual phonebook transitions keep both toolbar borders when the register stylesheet activates',async t=>{
+  const personal=fs.readFileSync('assets/css/personal-workspace.css','utf8');
+  const dom=new JSDOM(`<style>${personal}\n${unified}\n${reference}</style><main id="appView"><nav id="nav"></nav><div class="workspace"></div></main>`,{url:'https://example.test/',runScripts:'outside-only'});
+  t.after(()=>dom.window.close());
+  const w=dom.window,d=w.document;
+  w.Bamco={state:{token:'test',user:{id:'user-1'}}};
+  w.BamcoData={select:async table=>table==='phonebook_units'?[{id:1,category:'office',title:'واحد نمونه'}]:[]};
+  w.BamcoAccess={can:()=>true};
+  w.BamcoNavigation={configure(){},registerView(){},navigate(){return true}};
+  w.eval(fs.readFileSync('assets/js/phonebook-directory-v2.js','utf8'));
+  d.dispatchEvent(new w.Event('DOMContentLoaded'));
+  w.bamcoPhonebook.open('office');
+  await new Promise(resolve=>setTimeout(resolve,0));
+  const toolbarRules=[...d.styleSheets[0].cssRules].filter(rule=>rule.selectorText?.includes('.bamco-command-bar')&&rule.style?.getPropertyValue('min-height')==='48px');
+  function checkToolbar(inRegister){
+    const view=d.querySelector('#phoneBookView'),bar=view.querySelector('.phonebook-command');
+    assert.equal(view.matches('.view:has(table)'),inRegister);
+    const applicable=toolbarRules.filter(rule=>bar.matches(rule.selectorText));
+    assert.equal(applicable.length,inRegister?2:1,'a real unit table activates the later shared register rule');
+    // jsdom does not resolve custom-property border shorthands reliably. Check
+    // each applicable owning rule, including the later register cascade layer.
+    for(const rule of applicable){
+      const token=rule.selectorText.includes('.view:has(table)')?'--register-line':'--ui-line';
+      assert.equal(rule.style.getPropertyValue('border-top'),`1px solid var(${token})`);
+      assert.equal(rule.style.getPropertyValue('border-bottom'),`1px solid var(${token})`);
+    }
+  }
+  checkToolbar(false);
+  d.querySelector('[data-phonebook-unit-select="1"]').click();
+  assert(d.querySelector('.phonebook-unit-workspace .phonebook-table-command'));
+  checkToolbar(true);
+  d.querySelector('[data-phonebook-home]').click();checkToolbar(false);
+  d.querySelector('[data-phonebook-manage-units]').click();
+  assert(d.querySelector('.phonebook-management-workspace .phonebook-command'));checkToolbar(false);
+  d.querySelector('[data-phonebook-manage-unit-select="1"]').click();checkToolbar(false);
+  assert.match(unified,/order:0!important;border:0!important;border-top:1px solid var\(--ui-line\)!important;border-bottom:1px solid var\(--ui-line\)!important/);
+  assert.match(reference,/border-top:1px solid var\(--register-line\)!important;\s*border-bottom:1px solid var\(--register-line\)!important/);
+});

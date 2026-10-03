@@ -35,10 +35,10 @@ test('people access matrix mirrors aliases and saves through the canonical acces
       'گزارش تنخواه', 'صورتحساب‌ها و تعهدات مالی',
       'تحویل دائم خودرو', 'تحویل موقت خودرو', 'مدیریت قطعات', 'مدیریت ابزار',
       'گفت‌وگوی عمومی و گروه‌ها', 'گفت‌وگوی خصوصی', 'گفت‌وگوی مرتبط با وظیفه',
-      'فرم‌ها و مستندات', 'سایت‌ها و دسترسی‌ها', 'راهنمای استفاده سامانه', 'نامه‌های ورودی', 'نامه‌های خروجی', 'دفتر تلفن', 'یادداشت‌ها', 'دستیار هوشمند'
+      'فرم‌ها و مستندات', 'گزارش آزمایش‌ها', 'سایت‌ها و دسترسی‌ها', 'راهنمای استفاده سامانه', 'نامه‌های ورودی', 'نامه‌های خروجی', 'دفتر تلفن', 'یادداشت‌ها', 'دستیار هوشمند'
     ];
     const actualTabs = [...f.d.querySelectorAll('.access-matrix-route > th > span')].map(cell => cell.textContent.trim());
-    assert.equal(actualTabs.length, 35, 'ماتریس همهٔ تب‌های قابل‌واگذاری را دارد و دسترسی مدیر سامانه را فهرست نمی‌کند');
+    assert.equal(actualTabs.length, 36, 'ماتریس همهٔ تب‌های قابل‌واگذاری را دارد و دسترسی مدیر سامانه را فهرست نمی‌کند');
     assert.deepEqual(actualTabs, expectedTabs, 'عنوان و ترتیب تب‌های قابل‌واگذاری دقیقاً با صفحهٔ اصلی یکسان است');
     assert.equal(actualTabs.includes('دسترسی‌ها'), false, 'تب دسترسی مدیر سامانه داخل ماتریس قابل‌واگذاری نیست');
     assert.equal(f.d.querySelector('.access-matrix-table').textContent.includes('قالب‌ها'), false);
@@ -60,6 +60,11 @@ test('people access matrix mirrors aliases and saves through the canonical acces
     await new Promise(resolve => setTimeout(resolve, 0));
     assert.equal(f.d.querySelector('.access-matrix-table'), tableBeforeAccessRefresh, 'تازه‌سازی نشست، جدول در حال کار را دوباره بارگذاری نمی‌کند');
     assert.equal(f.d.querySelector('#accessMatrixView .access-matrix-status'), null);
+
+    const documentCells = [...f.d.querySelectorAll('[data-access-feature="documents"][data-access-user="test-owner"]')];
+    assert.equal(documentCells.length, 2, 'فرم‌ها و گزارش آزمایش‌ها دسترسی مشترک مستندات دارند');
+    documentCells[0].click();
+    assert.ok([...f.d.querySelectorAll('[data-access-feature="documents"][data-access-user="test-owner"]')].every(button => button.getAttribute('aria-pressed') === 'true'));
 
     const letterCells = [...f.d.querySelectorAll('[data-access-feature="letters"][data-access-user="test-owner"]')];
     assert.equal(letterCells.length, 2, 'نامه‌های ورودی و خروجی یک منبع دسترسی مشترک دارند');

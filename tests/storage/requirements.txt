@@ -1,0 +1,2 @@
+# Official PyPI package. Exact version is shared with the concurrency acceptance job.
+psycopg[binary]==3.2.10

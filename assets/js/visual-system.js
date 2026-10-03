@@ -9,6 +9,7 @@ const paths={
  phonebook:'M4 3h14v18H4zM7 7h8M7 12h8M7 17h5M18 6h3v12h-3',
  phoneDirectory:'M22 16.92v3a2 2 0 0 1-2.18 2A19.79 19.79 0 0 1 3.08 5.18 2 2 0 0 1 5.07 3h3a2 2 0 0 1 2 1.72c.12.9.33 1.77.62 2.6a2 2 0 0 1-.45 2.11L9.1 10.57a16 16 0 0 0 4.33 4.33l1.14-1.14a2 2 0 0 1 2.11-.45c.83.29 1.7.5 2.6.62A2 2 0 0 1 22 16.92z',
  documents:'M6 2h8l4 4v16H6zM14 2v5h4M9 11h6M9 15h6M9 19h4',
+ testReports:'M9 3h6M10 3v6l-6 10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2L14 9V3M8 14h8M9 18h.01M14 17h.01',
  letters:'M3 6h18v14H3zM3 7l9 7 9-7M7 3h10',
  letterIncoming:'M3 7h18v14H3zM3 8l9 7 9-7M12 3v8M8 7l4 4 4-4',
  letterOutgoing:'M3 7h18v14H3zM3 8l9 7 9-7M12 11V3M8 7l4-4 4 4',
@@ -60,7 +61,7 @@ const paths={
  notes:'M4 3h16v18H4zM8 8h8M8 12h8M8 16h5M16 3v5h4',
  voiceAssistant:'M12 3a4 4 0 0 0-4 4v3a4 4 0 0 0 8 0V7a4 4 0 0 0-4-4ZM5 10a7 7 0 0 0 14 0M12 17v4M8 21h8'
 };
-const views={userGuide:'guide',documents:'documents',letters:'letters',lettersIncoming:'letterIncoming',lettersOutgoing:'letterOutgoing',sitesAccess:'sitesAccess',projects:'projects',parts:'parts',invoices:'invoices',pettyCash:'cash',organization:'organization',tools:'tools',kanban:'kanban',archive:'archive',taskTimeline:'calendar',approvals:'check',requestHistory:'history',people:'peopleDirectory',accessMatrix:'accessMatrix',loginActivity:'login',activeSessions:'screen',messages:'inbox',messageCenter:'send',sentMessages:'sentLog',templates:'text',stickers:'sticker',vehiclePermanent:'vehiclePermanent',vehicleTemporary:'temporary',dashboard:'dashboard',performanceReport:'performance',messageReport:'messages',requestReport:'tasks',loginReport:'login',systemOptions:'options',alertSettings:'bell',emailSettings:'mailSettings',settings:'user',groupChat:'groupChat',directMessages:'directMessages',taskChats:'taskChats',notes:'notes',voiceAssistant:'voiceAssistant',phoneBook:'phoneDirectory'};
+const views={userGuide:'guide',documents:'documents',testReports:'testReports',letters:'letters',lettersIncoming:'letterIncoming',lettersOutgoing:'letterOutgoing',sitesAccess:'sitesAccess',projects:'projects',parts:'parts',invoices:'invoices',pettyCash:'cash',organization:'organization',tools:'tools',kanban:'kanban',archive:'archive',taskTimeline:'calendar',approvals:'check',requestHistory:'history',people:'peopleDirectory',accessMatrix:'accessMatrix',loginActivity:'login',activeSessions:'screen',messages:'inbox',messageCenter:'send',sentMessages:'sentLog',templates:'text',stickers:'sticker',vehiclePermanent:'vehiclePermanent',vehicleTemporary:'temporary',dashboard:'dashboard',performanceReport:'performance',messageReport:'messages',requestReport:'tasks',loginReport:'login',systemOptions:'options',alertSettings:'bell',emailSettings:'mailSettings',settings:'user',groupChat:'groupChat',directMessages:'directMessages',taskChats:'taskChats',notes:'notes',voiceAssistant:'voiceAssistant',phoneBook:'phoneDirectory'};
 const svg=key=>paths[key]?`<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="${paths[key]}"/></svg>`:'';
 window.BamcoIcons=Object.freeze({forGroup:key=>svg(key),forRoute:route=>svg(views[route]),keyForRoute:route=>views[route]||null});
 function install(){

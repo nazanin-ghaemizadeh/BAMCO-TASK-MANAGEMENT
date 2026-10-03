@@ -16,9 +16,11 @@ for(const [route,script,dialog,create,table] of [
 ])test(`${route}: create opens and selecting a card reveals details`,async()=>{
  const dom=new JSDOM(`<section id="${route}View"><div id="${route==='projects'?'project':'invoice'}FeatureRoot"></div></section>`,{url:'https://example.test/',runScripts:'outside-only'});
  const w=dom.window,registered=new Map();w.HTMLDialogElement.prototype.showModal=function(){this.open=true};w.HTMLDialogElement.prototype.close=function(){this.open=false};
- w.state={profile:{id:'a'},user:{id:'a'},profiles:[]};w.BamcoNavigation={registerView:(id,options)=>registered.set(id,options)};
+ w.state={profile:{id:'a',role:'manager'},user:{id:'a'},token:'fixture-token',profiles:[]};w.BamcoNavigation={registerView:(id,options)=>registered.set(id,options)};
  const data={projects:[{id:1,title:'پروژه نمونه',project_code:'P1',owner_id:'a',status:'draft'}],invoices:[{id:1,title:'صورت‌حساب نمونه',invoice_number:'I1',account_party:'طرف حساب',total_amount:100,status:'planned'}]};
- w.bamcoEnterprise={q:(s,r=w.document)=>r.querySelector(s),esc:String,fa:String,date:v=>v||'—',dateTime:v=>v||'—',money:String,progress:()=>'',statusText:String,personName:()=>'',fetchRows:async name=>data[name]||[],insert:async()=>[{id:2}],setBusy:()=>{},notify:()=>{}};
+ w.bamcoEnterprise={q:(s,r=w.document)=>r.querySelector(s),esc:String,fa:String,date:v=>v||'—',dateTime:v=>v||'—',money:String,progress:()=>'',statusText:String,personName:()=>'',fetchRows:async name=>data[name]||[],rpc:async name=>name==='list_invoice_workspace'?{invoices:data.invoices,payments:[],files:[]}:null,insert:async()=>[{id:2}],setBusy:()=>{},notify:()=>{}};
+ w.BamcoAccess={can:()=>true,isSystemManager:()=>true};
+ w.eval(fs.readFileSync('assets/js/money-input.js','utf8'));
  w.eval(fs.readFileSync(`assets/js/${script}`,'utf8'));w.document.dispatchEvent(new w.Event('DOMContentLoaded'));
  assert(registered.has(route));await registered.get(route).activate();
  assert.equal(w.document.querySelectorAll(`[data-${route==='projects'?'project':'invoice'}-select]`).length,1);

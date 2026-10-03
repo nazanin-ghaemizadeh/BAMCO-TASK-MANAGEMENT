@@ -24,6 +24,12 @@ jobs:
     timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Build canonical assets before measuring source changes
+        run: npm ci && npm run build:assets && npm run check:assets
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'

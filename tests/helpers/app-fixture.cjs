@@ -40,6 +40,8 @@ async function fixture(options={}){
   };
  };
  const threads=[{id:'test-room',thread_type:'public',title:'گفت‌وگوی عمومی',is_active:true}],members=[],messages=[],uploads=[];
+ const invoiceRequests=new Map(),paymentRequests=new Map();
+ const exactFinancialRow=row=>Object.fromEntries(Object.entries(row).map(([key,value])=>[key,value!=null&&['id','invoice_id','payment_id','total_amount','amount','percent_of_total','size_bytes'].includes(key)?String(value):value]));
  const calls=[],errors=[],downloads=[],observers=[],blobs=new Map();let failSave=false;const failures=new Set();
 
  const vc=new VirtualConsole();vc.on('jsdomError',e=>errors.push(e.message));vc.on('error',(...args)=>errors.push(args.map(String).join(' ')));
@@ -80,6 +82,27 @@ async function fixture(options={}){
     const id=1000+(tables.approval_chains||[]).length,old=(tables.approval_chains||[]).find(c=>c.id===body.p_chain_id);if(old){old.active=false;old.superseded_by=id}
     tables.approval_chains.push({id,name:body.p_name,is_default:body.p_is_default,active:true,superseded_by:null});body.p_member_ids.forEach(user_id=>tables.approval_chain_members.push({chain_id:id,user_id}));
     body.p_stages.forEach((s,i)=>{const sid=1000+tables.approval_chain_stages.length;tables.approval_chain_stages.push({id:sid,chain_id:id,stage_no:i+1,title:s.title,approval_rule:s.rule});s.approvers.forEach(approver_id=>tables.approval_stage_approvers.push({stage_id:sid,approver_id}))});data=id;
+   }
+   if(endpoint==='list_invoice_workspace')data={invoices:(tables.invoices||[]).map(exactFinancialRow),payments:(tables.invoice_payments||[]).map(exactFinancialRow),files:(tables.invoice_files||[]).map(exactFinancialRow)};
+   if(endpoint==='save_invoice'){
+    let row=invoiceRequests.get(body.p_request_id);
+    if(!row){
+     row=body.p_invoice_id==null?null:(tables.invoices||[]).find(item=>String(item.id)===String(body.p_invoice_id));
+     if(row)Object.assign(row,body.p_payload);
+     else{row={id:1000+(tables.invoices||[]).length,created_by:actor.id,follow_up_owner_id:actor.id,status:'initial',...body.p_payload};(tables.invoices||=[]).push(row)}
+     invoiceRequests.set(body.p_request_id,row);
+    }
+    data=exactFinancialRow(row);
+   }
+   if(endpoint==='save_invoice_payment'){
+    let row=paymentRequests.get(body.p_request_id);
+    if(!row){
+     row=body.p_payment_id==null?null:(tables.invoice_payments||[]).find(item=>String(item.id)===String(body.p_payment_id));
+     if(row)Object.assign(row,body.p_payload);
+     else{row={id:1000+(tables.invoice_payments||[]).length,...body.p_payload};(tables.invoice_payments||=[]).push(row)}
+     paymentRequests.set(body.p_request_id,row);
+    }
+    data=exactFinancialRow(row);
    }
    if(endpoint==='save_organization_position'){
     let position=body.p_position_id==null?null:tables.organization_positions.find(row=>String(row.id)===String(body.p_position_id));
