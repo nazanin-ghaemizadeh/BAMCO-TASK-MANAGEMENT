@@ -78,7 +78,7 @@
     ['directMessages', 'directMessages', 'گفت‌وگوی خصوصی'],
     ['taskChats', 'taskChats', 'گفت‌وگوی مرتبط با وظیفه'],
     ['documents', 'documents', 'فرم‌ها و مستندات'],
-    ['testReports', 'documents', 'گزارش آزمایش‌ها'],
+    ['testReports', 'documents', 'گزارش آزمون'],
     ['sitesAccess', 'sitesAccess', 'سایت‌ها و دسترسی‌ها'],
     ['lettersIncoming', 'letters', 'نامه‌های ورودی'],
     ['lettersOutgoing', 'letters', 'نامه‌های خروجی'],

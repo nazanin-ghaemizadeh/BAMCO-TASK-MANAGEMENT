@@ -3,7 +3,7 @@
   const earlier = window.fetch;
   const stamp = () => new Date().toISOString();
   const store = window.__featureFiles = {
-    invoices: [], payments: [], files: [], years: [], reports: [], operations: new Map(), uploads: [], calls: [], failNext: null
+    invoices: [], payments: [], files: [], years: [], reports: [], operations: new Map(), fileBodies: new Map(), uploads: [], calls: [], failNext: null
   };
   const response = (data, status = 200) => new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } });
   const uid = () => window.__testApi.actor.id;
@@ -44,12 +44,22 @@
       const row=store.files.find(item=>String(item.id)===String(body.get('file_id')));
       const file=body.get('file');
       if(!row||!file||file.name!==row.file_name||file.size!==Number(row.size_bytes))return response({error:'فایل با درخواست رزروشده مطابقت ندارد'},409);
-      store.uploads.push({path:row.storage_path,bytes:file.size,transport:'authorized-edge'});
-      row.upload_state='ready';return response({file:exact(row)});
+      store.uploads.push({path:row.storage_path,bytes:file.size,transport:'authorized-edge'}); store.fileBodies.set('invoices-private/'+row.storage_path,file);
+      row.upload_state='ready'; if(row.file_type==='receipt'){const payment=store.payments.find(item=>String(item.id)===String(row.payment_id));if(payment)payment.receipt_path=row.storage_path;} return response({file:exact(row)});
     }
     if (endpoint === 'finalize_invoice_file') {
       const row = store.files.find(item => String(item.id) === String(body.p_file_id)); if (!row) return response({ message: 'فایل پیدا نشد' }, 404);
       row.upload_state = 'ready'; return response(exact(row));
+    }
+    if (endpoint === 'delete_invoice_file') {
+      const row=store.files.find(item=>String(item.id)===String(body.p_file_id));
+      const result={id:String(body.p_file_id),invoice_id:String(body.p_invoice_id),payment_id:body.p_payment_id==null?null:String(body.p_payment_id),file_type:body.p_file_type,deleted:false};
+      if(!row)return response(result);
+      if(String(row.invoice_id)!==String(body.p_invoice_id)||String(row.payment_id??'')!==String(body.p_payment_id??'')||row.file_type!==body.p_file_type||row.client_request_id!==body.p_file_request_id)return response({message:'File identity mismatch'},400);
+      store.files=store.files.filter(item=>item!==row);
+      const payment=store.payments.find(item=>String(item.id)===String(row.payment_id));
+      if(payment&&payment.receipt_path===row.storage_path)payment.receipt_path=null;
+      return response({...result,deleted:true});
     }
     if (endpoint === 'invoices' && method === 'DELETE') {
       const id = url.searchParams.get('id')?.replace(/^eq\./, '');
@@ -69,7 +79,7 @@
       if (action === 'delete_year') { const count = store.reports.filter(row => row.year_id === yearId).length; if (count) return response({ error: 'ابتدا فایل‌های داخل پوشه را حذف کنید', code: 'folder_not_empty', count }, 409); store.years = store.years.filter(row => row.id !== yearId); return response({ ok: true }); }
       if (action === 'upload') {
         let file = store.reports.find(row => row.id === id);
-        if (!file) { const picked = body.get('file'); file = { id, year_id: yearId, title: body.get('title'), description: body.get('description'), original_file_name: picked.name, storage_path: `years/${yearId}/${id}.pdf`, mime_type: picked.type, file_size: picked.size, sha256: 'a'.repeat(64), status: 'ready', created_by: uid(), created_at: stamp(), updated_at: stamp() }; store.reports.push(file); }
+        if (!file) { const picked = body.get('file'); file = { id, year_id: yearId, title: body.get('title'), description: body.get('description'), original_file_name: picked.name, storage_path: `years/${yearId}/${id}.pdf`, mime_type: picked.type, file_size: picked.size, sha256: 'a'.repeat(64), status: 'ready', created_by: uid(), created_at: stamp(), updated_at: stamp() }; store.reports.push(file); store.fileBodies.set('test-reports-private/'+file.storage_path,picked); }
         touchYear(yearId); return response({ ok: true, file });
       }
       if (action === 'update') { const file = store.reports.find(row => row.id === fileId); Object.assign(file, { title: body.get('title'), description: body.get('description'), updated_at: stamp() }); touchYear(file.year_id); return response({ ok: true, file }); }
@@ -77,7 +87,7 @@
     }
     if (url.pathname.includes('/storage/v1/object/') && /invoices-private|test-reports-private/.test(url.pathname)) {
       if (method === 'POST') { store.uploads.push({ path: url.pathname, bytes: body?.size || body?.get?.('')?.size }); return response({ Key: url.pathname }); }
-      return new Response('%PDF-1.7\n%Isolated fixture only', { headers: { 'Content-Type': 'application/pdf' } });
+      const path=decodeURIComponent(url.pathname.split('/object/authenticated/')[1] || ''); const bytes=store.fileBodies.get(path); if (!bytes) return response({error:'Fixture file missing'},404); return new Response(bytes, { headers: { 'Content-Type': bytes.type || 'application/octet-stream' } });
     }
     if (endpoint === 'phonebook_units') return response([{ id: 1, category: 'office', title: 'معاونت فنی، مهندسی و کیفیت' }]);
     if (endpoint === 'contact_directory') return response([]);

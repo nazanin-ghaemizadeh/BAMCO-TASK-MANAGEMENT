@@ -210,6 +210,7 @@ class Harness:
         proposal = (ROOT / "supabase/schema-proposals/invoice-attachments.sql").read_text()
         self.observer.execute(proposal, prepare=False)
         self.observer.execute(proposal, prepare=False)
+        self.observer.execute((ROOT / "supabase/schema-proposals/invoice-attachment-delete.sql").read_text(), prepare=False)
         self.actor = self.connect()
         print(f"SETUP PostgreSQL {version}; isolated synthetic database; proposal reapplied; real independent backends", flush=True)
 
@@ -263,6 +264,9 @@ class Harness:
 
     def finalize(self, connection, row):
         return self.rpc(connection, "finalize_invoice_file", row["id"])
+
+    def delete_file(self, connection, row):
+        return self.rpc(connection, "delete_invoice_file", row["id"], row["invoice_id"], row["payment_id"], row["file_type"], row["client_request_id"])
 
     def workspace(self):
         return self.rpc(self.actor, "list_invoice_workspace")
@@ -539,6 +543,34 @@ class Harness:
             require(self.observer.execute("select count(*) from private.invoice_mutation_requests where request_id=%s", (pending["client_request_id"],)).fetchone()[0] == 1, "cleanup acknowledgment erased request tombstone")
             self.pass_test(f"{parent} cascade serializes upload authorization, queues ready/pending files, and retains replay tombstone")
 
+    def attachment_delete_races(self):
+        for kind in ("proforma", "receipt", "final"):
+            for deletion_first in (True, False):
+                label = f"selected-file-delete/{kind}/{'delete-first' if deletion_first else 'finalize-first'}"
+                invoice, payment, _ = self.settled(label)
+                row = self.reserve(self.actor, invoice["id"], payment["id"] if kind == "receipt" else None, kind)
+                self.upload(self.actor, row)
+                remove = lambda connection: self.delete_file(connection, row)
+                finalize = lambda connection: self.finalize(connection, row)
+                if deletion_first:
+                    removed, _ = self.race(label, remove, finalize, rejection=(("42501",), "access denied"))
+                else:
+                    _, removed = self.race(label, finalize, remove)
+                require(removed["deleted"] is True, "selected delete did not acknowledge its exact row")
+                require(self.observer.execute("select count(*) from public.invoice_files where id=%s", (row["id"],)).fetchone()[0] == 0, "selected file row remains")
+                require(self.observer.execute("select count(*) from private.invoice_storage_cleanup where file_id=%s", (row["id"],)).fetchone()[0] == 1, "selected deletion must retain one bounded tombstone")
+                current = self.observer.execute("select amount::text,receipt_path from public.invoice_payments where id=%s", (payment["id"],)).fetchone()
+                require(current[0] == payment["amount"] and current[1] is None, "file deletion changed payment amount or retained stale receipt")
+                require(self.delete_file(self.actor, row)["deleted"] is False, "retry must explicitly report already absent")
+                self.pass_test(label + ": exact tombstone and payment preservation")
+        invoice, _, _ = self.settled("same-selected-file-delete")
+        row = self.reserve(self.actor, invoice["id"])
+        self.upload(self.actor, row)
+        self.finalize(self.actor, row)
+        first, repeated = self.race("same-selected-file-delete", lambda c: self.delete_file(c,row), lambda c: self.delete_file(c,row))
+        require(first["deleted"] is True and repeated["deleted"] is False, "concurrent delete replay must converge without claiming two deletions")
+        self.pass_test("concurrent selected-file deletion converges without duplicate tombstones")
+
     def access_scope(self):
         invoice, payment, _ = self.settled("view-only-scope")
         view = self.connect(permissions={**PERMISSIONS, "edit": False})
@@ -583,6 +615,7 @@ class Harness:
         self.settlement_and_overpayment()
         self.exact_money_and_receipts()
         self.storage_and_cascade_races()
+        self.attachment_delete_races()
         self.access_scope()
 
 

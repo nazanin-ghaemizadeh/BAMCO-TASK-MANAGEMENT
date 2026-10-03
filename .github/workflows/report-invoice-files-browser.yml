@@ -77,7 +77,7 @@ jobs:
           python-version: '3.12'
       - run: npm ci
       - name: Verify invoice SQL and RLS in isolation
-        run: npm run test:invoice-files-db
+        run: npm run test:invoice-files-db && node scripts/test-invoice-attachment-delete-sql.mjs
       - name: Install pinned PostgreSQL test client
         run: python -m pip install "psycopg[binary]==3.2.10"
       - name: Verify real concurrent PostgreSQL sessions

@@ -35,7 +35,7 @@ test('people access matrix mirrors aliases and saves through the canonical acces
       'گزارش تنخواه', 'صورتحساب‌ها و تعهدات مالی',
       'تحویل دائم خودرو', 'تحویل موقت خودرو', 'مدیریت قطعات', 'مدیریت ابزار',
       'گفت‌وگوی عمومی و گروه‌ها', 'گفت‌وگوی خصوصی', 'گفت‌وگوی مرتبط با وظیفه',
-      'فرم‌ها و مستندات', 'گزارش آزمایش‌ها', 'سایت‌ها و دسترسی‌ها', 'راهنمای استفاده سامانه', 'نامه‌های ورودی', 'نامه‌های خروجی', 'دفتر تلفن', 'یادداشت‌ها', 'دستیار هوشمند'
+      'فرم‌ها و مستندات', 'گزارش آزمون', 'سایت‌ها و دسترسی‌ها', 'راهنمای استفاده سامانه', 'نامه‌های ورودی', 'نامه‌های خروجی', 'دفتر تلفن', 'یادداشت‌ها', 'دستیار هوشمند'
     ];
     const actualTabs = [...f.d.querySelectorAll('.access-matrix-route > th > span')].map(cell => cell.textContent.trim());
     assert.equal(actualTabs.length, 36, 'ماتریس همهٔ تب‌های قابل‌واگذاری را دارد و دسترسی مدیر سامانه را فهرست نمی‌کند');
@@ -62,7 +62,7 @@ test('people access matrix mirrors aliases and saves through the canonical acces
     assert.equal(f.d.querySelector('#accessMatrixView .access-matrix-status'), null);
 
     const documentCells = [...f.d.querySelectorAll('[data-access-feature="documents"][data-access-user="test-owner"]')];
-    assert.equal(documentCells.length, 2, 'فرم‌ها و گزارش آزمایش‌ها دسترسی مشترک مستندات دارند');
+    assert.equal(documentCells.length, 2, 'فرم‌ها و گزارش آزمون دسترسی مشترک مستندات دارند');
     documentCells[0].click();
     assert.ok([...f.d.querySelectorAll('[data-access-feature="documents"][data-access-user="test-owner"]')].every(button => button.getAttribute('aria-pressed') === 'true'));
 

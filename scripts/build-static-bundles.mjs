@@ -17,6 +17,7 @@ const javascript = [
   'assets/js/dashboard-metrics.js',
   'assets/js/app.js',
   'assets/js/money-input.js',
+  'assets/js/file-picker.js',
   'assets/js/enterprise-core.js',
   'assets/js/organization-structure.js',
   'assets/js/approval-center.js',
@@ -81,6 +82,7 @@ const javascript = [
 const stylesheets = [
   'assets/css/app.css',
   'assets/css/documents-sites.css',
+  'assets/css/file-picker.css',
   'assets/css/test-reports.css',
   'assets/css/department-entry.css',
   'assets/css/access-editor.css',

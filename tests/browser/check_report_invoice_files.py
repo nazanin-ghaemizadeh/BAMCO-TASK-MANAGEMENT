@@ -6,15 +6,31 @@ from run_smoke import MOCK, MSG_MOCK, login, click_route, settled, home
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / 'test-results' / 'report-invoice-files'
 FEATURE_MOCK = (Path(__file__).parent / 'mock-feature-files-api.js').read_text()
-PDF = {'name': 'report-fixture.pdf', 'mimeType': 'application/pdf', 'buffer': b'%PDF-1.7\n% Isolated acceptance fixture'}
+def fixture_pdf():
+    stream = b'BT /F1 12 Tf 40 100 Td (Isolated report acceptance) Tj ET'
+    objects = [b'<< /Type /Catalog /Pages 2 0 R >>', b'<< /Type /Pages /Kids [3 0 R] /Count 1 >>', b'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 160] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>', b'<< /Length '+str(len(stream)).encode()+b' >>\nstream\n'+stream+b'\nendstream', b'<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>']
+    data=b'%PDF-1.4\n'; offsets=[0]
+    for number, body in enumerate(objects,1):
+        offsets.append(len(data)); data+=str(number).encode()+b' 0 obj\n'+body+b'\nendobj\n'
+    start=len(data); data+=b'xref\n0 6\n0000000000 65535 f \n'
+    for offset in offsets[1:]: data+=f'{offset:010d} 00000 n \n'.encode()
+    return data+b'trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n'+str(start).encode()+b'\n%%EOF'
+PDF = {'name': 'report-fixture.pdf', 'mimeType': 'application/pdf', 'buffer': fixture_pdf()}
 
 async def snapshot(page, name):
-    # Capture the actual UI, including any live notice; do not alter controls.
+    # Dismiss visible transient notices through their real controls, never behind a modal.
+    if await page.locator('dialog[open]').count() == 0:
+        for _ in range(8):
+            close=page.locator('.bamco-toast-close').first
+            if not await close.count() or not await close.is_visible(): break
+            await close.click()
     await page.screenshot(path=str(OUT / name), full_page=True)
 
 async def check_report(page, width):
     await click_route(page, 'testReports'); await settled(page, 'testReports')
     await expect(page.locator('[data-report-domain]')).to_have_count(2)
+    await expect(page.locator('#testReportsView')).to_contain_text('گزارش آزمون')
+    await expect(page.locator('#testReportsBreadcrumbs')).not_to_contain_text('گزارش آزمون')
     await page.locator('[data-report-domain="environment"]').click()
     await expect(page.locator('[data-report-type]')).to_have_count(3)
     assert await page.locator('[data-report-type] strong').all_text_contents() == ['تحقیقاتی', 'انطباق تولید', 'تأیید نوع و تغییرات مهندسی']
@@ -39,19 +55,35 @@ async def check_report(page, width):
     await page.locator('[data-report-year]').click(); await expect(page.locator('#testReportsBody')).to_contain_text('هنوز گزارشی')
     await page.locator('[data-report-action="upload"]').click()
     form = page.locator('#testReportFileForm')
-    await form.locator('[name="title"]').fill('گزارش آزمایش اولیه')
+    await form.locator('[name="title"]').fill('گزارش آزمون اولیه')
+    await form.locator('[name="description"]').fill('شرح قابل مشاهده گزارش آزمون')
+    await expect(form.locator('[data-bamco-file-picker]')).to_have_count(1)
+    await expect(form.locator('[name="file"]')).not_to_have_attribute('multiple','')
     await form.locator('[name="file"]').set_input_files(PDF)
+    await expect(form.locator('[data-file-name]')).to_have_text(PDF['name'])
+    await snapshot(page, f'{width}-report-upload.png')
     await form.locator('[type="submit"]').click()
-    await expect(page.locator('#testReportsTable tbody')).to_contain_text('گزارش آزمایش اولیه')
-    await expect(page.locator('#testReportsTable time')).not_to_have_attribute('datetime', '')
+    await expect(page.locator('#testReportsFileList')).to_contain_text('گزارش آزمون اولیه')
+    await expect(page.locator('#testReportsFileList time')).not_to_have_attribute('datetime', '')
     await page.locator('[data-report-edit-file]').click()
     await form.locator('[name="title"]').fill('گزارش آزمایش بازبینی‌شده'); await form.locator('[type="submit"]').click()
-    await expect(page.locator('#testReportsTable tbody')).to_contain_text('بازبینی‌شده')
+    await expect(page.locator('#testReportsFileList')).to_contain_text('بازبینی‌شده')
     await page.locator('#testReportsSearch').fill('ناموجود'); await expect(page.locator('#testReportsBody')).to_contain_text('پیدا نشد')
     await page.locator('#testReportsSearch').fill('')
-    await expect(page.locator('#testReportsView .reference-pagination')).to_have_count(1)
-    await expect(page.locator('#testReportsTable .reference-filters')).to_have_count(1)
-    await expect(page.locator('#testReportsView .suite-table-options')).to_have_count(1)
+    await expect(page.locator('#testReportsView table')).to_have_count(0)
+    await expect(page.locator('#testReportsFileList > .feature-document-row')).to_have_count(1)
+    await expect(page.locator('.test-report-description')).to_contain_text('شرح قابل مشاهده گزارش آزمون')
+    border=await page.locator('#testReportsBreadcrumbs').evaluate("e=>getComputedStyle(e).borderBottomWidth")
+    assert border=='1px',border
+    await page.locator('[data-report-preview]').click()
+    await expect(page.locator('#testReportPreview')).to_be_visible()
+    await expect(page.locator('#testReportPreview iframe')).to_have_count(1)
+    await page.locator('#testReportPreview [data-report-close]').click()
+    async with page.expect_download() as downloaded:
+        await page.locator('[data-report-download]').click()
+    file=await downloaded.value
+    assert file.suggested_filename==PDF['name']
+    assert Path(await file.path()).read_bytes()==PDF['buffer']
     await snapshot(page, f'{width}-report-files.png')
     await page.locator('[data-report-action="back"]').click()
     await page.locator('[data-report-delete-year]').click()
@@ -79,9 +111,11 @@ async def check_invoice(page, width):
     await form.locator('[name="company_name"]').fill('آزمایشگاه نمونه')
     await form.locator('[name="currency"]').select_option('IRT')
     amount = form.locator('[name="total_amount"]'); await amount.fill('۱۲۳۴۵۶۷۸۹۰.۲۵')
-    await expect(amount).to_have_value('1,234,567,890.25')
+    await expect(amount).to_have_value('۱,۲۳۴,۵۶۷,۸۹۰.۲۵')
     await expect(amount).to_have_attribute('dir', 'ltr')
+    await expect(form.locator('[data-bamco-file-picker]')).to_have_count(1)
     await form.locator('[name="proforma_file"]').set_input_files({**PDF, 'name':'proforma.pdf'})
+    await expect(form.locator('[data-file-name]')).to_have_text('proforma.pdf')
     await snapshot(page, f'{width}-invoice-create.png')
     await form.locator('[type="submit"]').click()
     await expect(page.locator('#invoiceDialog')).not_to_be_visible()
@@ -111,7 +145,39 @@ async def check_invoice(page, width):
     assert await page.evaluate('__featureFiles.invoices.length') == 1
     assert await page.evaluate('__featureFiles.payments.length') == 2
     assert await page.evaluate('__featureFiles.files.length') == 4
-    await page.locator('[data-invoice-action="back"]').click(); await home(page)
+    # Each persisted action targets the actual original bytes and selected metadata row.
+    file_id=await page.evaluate("__featureFiles.files.find(x=>x.file_type==='proforma').id")
+    row=page.locator(f'[data-invoice-file-row="{file_id}"]')
+    await expect(row.locator('[data-invoice-file-download] svg')).to_have_count(1)
+    await expect(row.locator('[data-invoice-file-delete] svg')).to_have_count(1)
+    async with page.expect_download() as downloaded:
+        await row.locator('[data-invoice-file-download]').click()
+    file=await downloaded.value
+    assert file.suggested_filename=='proforma.pdf'
+    assert Path(await file.path()).read_bytes()==PDF['buffer']
+    await row.locator('[data-invoice-file-delete]').click()
+    await expect(page.locator('#bamcoNoticeDialog')).to_be_visible()
+    await page.locator('[data-notice-cancel]').click()
+    assert await page.evaluate('__featureFiles.files.length') == 4
+    await page.evaluate("__featureFiles.failNext='delete_invoice_file'")
+    await row.locator('[data-invoice-file-delete]').click(); await page.locator('[data-notice-ok]').click()
+    await expect(page.locator('.bamco-toast[data-kind=error]').last).to_contain_text('حذف فایل تأیید نشد')
+    assert await page.evaluate('__featureFiles.files.length') == 4
+    await row.locator('[data-invoice-file-delete]').click(); await page.locator('[data-notice-ok]').click()
+    await expect(row).to_have_count(0)
+    assert await page.evaluate('__featureFiles.files.length') == 3
+    assert await page.evaluate('__featureFiles.payments.length') == 2
+    receipt_id=await page.evaluate("__featureFiles.files.find(x=>x.file_type==='receipt').id")
+    await page.locator(f'[data-invoice-file-delete="{receipt_id}"]').click(); await page.locator('[data-notice-ok]').click()
+    await expect(page.locator(f'[data-invoice-file-row="{receipt_id}"]')).to_have_count(0)
+    assert await page.evaluate("__featureFiles.files.filter(x=>x.file_type==='receipt').length") == 1
+    assert await page.evaluate('__featureFiles.payments.length') == 2
+    await page.locator('[data-invoice-action="back"]').click()
+    await expect(page.locator('.invoice-list-card')).to_have_count(1)
+    card=await page.locator('.invoice-list-card').bounding_box()
+    assert card['height']>=90,card
+    await snapshot(page, f'{width}-invoice-cards.png')
+    await home(page)
 
 async def check_phonebook(page, width):
     await click_route(page, 'phoneBook'); await settled(page, 'phoneBook')
