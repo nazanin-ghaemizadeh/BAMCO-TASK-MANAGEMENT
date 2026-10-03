@@ -41,7 +41,11 @@ try {
   const newer = await ready(await reserve(invoice.id));
   const pending = await reserve(invoice.id);
   const final = await ready(await reserve(invoice.id, null, 'final'));
+  await deny(db.query('update public.invoice_files set id=id+100000 where id=$1', [newer.id]), /primary key is immutable/);
+  assert.equal((await db.query('update public.invoice_files set id=id where id=$1 returning id::text', [newer.id])).rows[0].id, newer.id);
   const before = await rpc('list_invoice_workspace', []);
+  assert(before.files.some(row=>row.id===newer.id));
+  console.log('PASS immutable attachment primary key without changing valid no-op updates or stored records');
   await deny(remove(first, { payment_id: stages[1].id }));
   await deny(remove(first, { file_type: 'proforma', payment_id: null }));
   await deny(remove(first, { client_request_id: randomUUID() }));
@@ -84,5 +88,7 @@ try {
   assert(await one('select file_id from private.invoice_storage_cleanup where file_id=$1', [pending.id]));
   const flags = await one("select prosecdef,proconfig from pg_proc where oid='public.delete_invoice_file(bigint,bigint,bigint,text,uuid)'::regprocedure");
   assert.equal(flags.prosecdef, false); assert(flags.proconfig.includes('search_path=""'));
+  const guard = await one("select prosecdef,has_function_privilege('authenticated','private.guard_invoice_file_primary_key()','execute') as executable from pg_proc where oid='private.guard_invoice_file_primary_key()'::regprocedure");
+  assert.equal(guard.prosecdef,false);assert.equal(guard.executable,false);
   console.log('PASS manager scope, hidden pending privacy, uploader cancellation, SECURITY INVOKER and empty search_path');
 } finally { await db.close(); }

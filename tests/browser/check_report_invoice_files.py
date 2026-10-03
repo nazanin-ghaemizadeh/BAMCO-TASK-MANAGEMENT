@@ -175,6 +175,8 @@ async def check_invoice(page, width):
     await page.locator('[data-invoice-action="back"]').click()
     await expect(page.locator('.invoice-list-card')).to_have_count(1)
     card=await page.locator('.invoice-list-card').bounding_box()
+    heading=await page.locator('#invoiceFeatureRoot > .feature-toolbar').bounding_box()
+    assert heading['y']>=0,heading
     assert card['height']>=90,card
     await snapshot(page, f'{width}-invoice-cards.png')
     await home(page)

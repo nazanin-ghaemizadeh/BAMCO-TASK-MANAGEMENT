@@ -15,6 +15,7 @@
   }
   function resetChangedIdentity() { if (modelIdentity !== sessionIdentity()) clear(); }
   const root = () => q('#invoiceFeatureRoot');
+  const scrollInvoiceStart = () => root()?.scrollIntoView?.({ block: 'start', inline: 'nearest', behavior: 'auto' });
   const M = () => window.BamcoMoney;
   const invoice = id => model.invoices.find(item => String(item.id) === String(id));
   const payments = id => model.payments.filter(item => String(item.invoice_id) === String(id));
@@ -285,7 +286,7 @@
       if (action === 'edit') return showInvoiceDialog(model.selected);
       if (action === 'delete') return void deleteInvoice();
       if (action === 'refresh') return void load();
-      if (action === 'back') { ++loadVersion; model.selected = null; model.paymentEditor = null; model.paymentFormOpen = false; model.fileEditor = null; return render(); }
+      if (action === 'back') { ++loadVersion; model.selected = null; model.paymentEditor = null; model.paymentFormOpen = false; model.fileEditor = null; render(); return scrollInvoiceStart(); }
       if (action === 'payment') return showPaymentDialog(null);
       if (event.target.closest('[data-invoice-close],[data-invoice-payment-close],[data-invoice-file-close]')) { model.invoiceEditor = null; model.paymentEditor = null; model.paymentFormOpen = false; model.fileEditor = null; event.target.closest('dialog')?.close(); return void load(); }
       const dateButton = event.target.closest('[data-invoice-date]'); if (dateButton) return openInvoiceDate(dateButton);
@@ -294,7 +295,7 @@
       const resume = event.target.closest('[data-invoice-file-resume]'); if (resume) { const row = model.files.find(file => String(file.id) === resume.dataset.invoiceFileResume); if (row) return showFileDialog(row.file_type, row.payment_id, row); }
       const download = event.target.closest('[data-invoice-file-download]'); if (download) return void downloadFile(download.dataset.invoiceFileDownload);
       const fileDelete = event.target.closest('[data-invoice-file-delete]'); if (fileDelete) return void deleteFile(fileDelete.dataset.invoiceFileDelete);
-      const select = event.target.closest('[data-invoice-select]'); if (select) { ++loadVersion; model.selected = select.dataset.invoiceSelect; model.paymentEditor = null; model.paymentFormOpen = false; model.fileEditor = null; render(); }
+      const select = event.target.closest('[data-invoice-select]'); if (select) { ++loadVersion; model.selected = select.dataset.invoiceSelect; model.paymentEditor = null; model.paymentFormOpen = false; model.fileEditor = null; render(); scrollInvoiceStart(); }
     });
     host.addEventListener('submit', event => { if (event.target.id === 'invoiceForm') void saveEntity(event, false); if (event.target.id === 'invoicePaymentForm') void saveEntity(event, true); if (event.target.id === 'invoiceFileForm') void saveFile(event); });
   }

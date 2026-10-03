@@ -406,3 +406,19 @@ test('a download completing after invoice access revocation does not open a stal
   f.d.querySelector('[data-invoice-file-download="71"]').click(); await until(() => f.downloads.length === 1); allowed.splice(0); finish(); await tick(); await tick();
   assert.equal(f.downloadLinks.length, 0);
 });
+
+test('only explicit invoice card navigation scrolls the root to its header', async t => {
+  const f = fixture({ invoices: [baseInvoice()], storage: (_url, _init, attempt) => ({ ok: attempt > 1, json: async () => ({ message: 'offline' }) }) }); t.after(f.close);
+  const host = f.d.querySelector('#invoiceFeatureRoot'), scrolls = [];
+  host.scrollIntoView = options => scrolls.push({ ...options });
+  await f.load(); assert.equal(scrolls.length, 0, 'initial loading does not move the viewport');
+  select(f); assert.deepEqual(scrolls, [{ block: 'start', inline: 'nearest', behavior: 'auto' }]);
+  f.d.querySelector('[data-invoice-file-kind="proforma"]').click();
+  const form = f.d.querySelector('#invoiceFileForm'); pick(f, form.elements.file); submit(f, form);
+  await until(() => form.dataset.busy === '0'); assert.equal(scrolls.length, 1, 'opening and a failed upload retain scroll');
+  submit(f, form); await until(() => !form.isConnected); assert.equal(scrolls.length, 1, 'upload retry and success reload retain scroll');
+  f.d.querySelector('[data-invoice-action="back"]').click(); assert.equal(scrolls.length, 2); assert.equal(scrolls[1].block, 'start');
+  const search = f.d.querySelector('#invoiceSearch'); search.value = 'INV'; search.dispatchEvent(new f.w.Event('input', { bubbles: true }));
+  f.w.dispatchEvent(new f.w.Event('bamco:feature-access-changed')); await f.load();
+  assert.equal(scrolls.length, 2, 'search, access rerender and ordinary reload retain scroll');
+});

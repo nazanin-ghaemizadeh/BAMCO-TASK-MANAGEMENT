@@ -1,11 +1,26 @@
 -- STAGED PROPOSAL ONLY. Review and apply separately before publishing the UI.
 -- Requires 20261003114607_invoice_attachment_upload_gate.sql.
--- No table/policy/Storage changes. Existing invoice-file RLS, receipt linkage,
+-- No data/policy/Storage changes. Existing invoice-file RLS, receipt linkage,
 -- request retirement and cleanup tombstone triggers remain authoritative.
 -- This removes the selected attachment's database record, not Storage bytes.
 -- Existing private cleanup outbox entries/tombstones are retained. No automatic
 -- byte purge is scheduled by this proposal or implied by the deletion result.
 BEGIN;
+
+-- Primary keys anchor upload request and cleanup identity. The existing guard
+-- already freezes the other attachment fields; close only this missing ID check.
+CREATE OR REPLACE FUNCTION private.guard_invoice_file_primary_key() RETURNS trigger
+LANGUAGE plpgsql SECURITY INVOKER SET search_path='' AS $$
+BEGIN
+ IF NEW.id IS DISTINCT FROM OLD.id THEN
+  RAISE EXCEPTION 'attachment primary key is immutable' USING ERRCODE='22023';
+ END IF;
+ RETURN NEW;
+END $$;
+REVOKE ALL ON FUNCTION private.guard_invoice_file_primary_key() FROM PUBLIC,anon,authenticated;
+DROP TRIGGER IF EXISTS invoice_files_immutable_primary_key ON public.invoice_files;
+CREATE TRIGGER invoice_files_immutable_primary_key BEFORE UPDATE OF id ON public.invoice_files
+ FOR EACH ROW EXECUTE FUNCTION private.guard_invoice_file_primary_key();
 
 CREATE OR REPLACE FUNCTION public.delete_invoice_file(
  p_file_id bigint, p_invoice_id bigint, p_payment_id bigint,

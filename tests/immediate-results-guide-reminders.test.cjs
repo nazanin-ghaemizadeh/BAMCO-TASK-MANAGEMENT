@@ -36,3 +36,14 @@ test('a stalled guide upload has a deadline, preserves the selected file and rel
  const originalTimer=f.w.setTimeout.bind(f.w);f.w.setTimeout=(fn,ms,...args)=>originalTimer(fn,ms===120000?30:ms,...args);
  const form=f.d.querySelector('#documentForm');Object.defineProperty(form.elements.file,'files',{value:[new f.w.File(['%PDF-1.7'],'guide.pdf',{type:'application/pdf'})]});form.dispatchEvent(new f.w.Event('submit',{bubbles:true,cancelable:true}));await until(()=>request);await until(()=>!form.querySelector('[type=submit]').disabled);assert.match(f.d.querySelector('#documentUploadStatus').textContent,/وضعیت ذخیره فایل مشخص نیست/);assert.equal(form.elements.file.files[0].name,'guide.pdf');assert.equal(f.d.querySelector('#documentDialog').open,true);request({ok:true,document:original});
 });
+
+
+test('document file selection updates only its own chooser beside report and invoice pickers',async t=>{
+ const original={id:20,category_id:10,title:'راهنما',version:2,updated_at:'2026-09-13',original_file_name:'guide.pdf',file_size:100,storage_path:'guide.pdf'};
+ const f=await fixture({tables:{document_categories:[{id:10,title:'راهنمای استفاده سامانه'}],documents:[original]}});t.after(()=>f.dispose());
+ const reportName=f.d.querySelector('#testReportsRoot [data-file-name]');assert(reportName);const before=reportName.textContent;
+ await f.open('userGuide');await until(()=>f.d.querySelector('[data-guide-preview]'));f.d.querySelector('[data-guide-upload]').click();await until(()=>f.d.querySelector('#documentDialog').open);
+ const form=f.d.querySelector('#documentForm');Object.defineProperty(form.elements.file,'files',{configurable:true,value:[new f.w.File(['%PDF-1.7'],'BAMCO-User-Guide.pdf',{type:'application/pdf'})]});
+ form.elements.file.dispatchEvent(new f.w.Event('change',{bubbles:true}));
+ assert.equal(form.querySelector('[data-file-name]').textContent,'BAMCO-User-Guide.pdf');assert.equal(reportName.textContent,before);assert.deepEqual(f.errors,[]);
+});
