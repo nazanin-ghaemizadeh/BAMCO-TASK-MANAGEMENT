@@ -61,3 +61,16 @@ test('the shared mobile rule covers every toolbar without depending on table pre
   assert.ok(!reference.includes('>:is(input[type=search],input.search,.toolbar-search,.vehicle-search)'),'register layer must not reintroduce competing search geometry');
   dom.window.close();
 });
+
+test('phonebook category, unit and management command bars retain both shared horizontal borders',()=>{
+  const dom=new JSDOM(`<style>${unified}</style><main id="appView"><section id="phoneBookView" class="view"><section class="phonebook-shell enterprise-feature-root"><div class="phonebook-command bamco-command-bar"></div><section class="phonebook-unit-workspace"><div class="phonebook-command phonebook-table-command bamco-command-bar"></div></section><section class="phonebook-management-workspace"><div class="phonebook-command bamco-command-bar"></div></section></section></section></main>`);
+  const shared=[...dom.window.document.styleSheets[0].cssRules].find(rule=>rule.selectorText?.includes('.enterprise-feature-root :is(.bamco-command-bar,.feature-toolbar-actions)')&&rule.style?.getPropertyValue('min-height')==='48px');
+  assert(shared);
+  // jsdom does not resolve the shared custom-property border shorthand. Check
+  // the owning CSS rule rather than masking the real cascade with inline CSS.
+  assert.equal(shared.style.getPropertyValue('border-top'),'1px solid var(--ui-line)');
+  assert.equal(shared.style.getPropertyValue('border-bottom'),'1px solid var(--ui-line)');
+  assert.match(unified,/order:0!important;border:0!important;border-top:1px solid var\(--ui-line\)!important;border-bottom:1px solid var\(--ui-line\)!important/);
+  for(const bar of dom.window.document.querySelectorAll('.phonebook-command'))assert(bar.matches(shared.selectorText));
+  dom.window.close();
+});

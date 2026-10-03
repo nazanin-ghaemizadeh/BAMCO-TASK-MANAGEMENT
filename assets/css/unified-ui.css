@@ -121,7 +121,7 @@ html body #appView#appView :is(#kanbanView,#archiveView,.bamco-interior).bamco-i
 html body #appView#appView .enterprise-feature-root :is(.bamco-command-bar,.feature-toolbar-actions){
  display:flex!important;flex:0 0 auto!important;flex-wrap:nowrap!important;align-items:center!important;justify-content:flex-start!important;
  gap:7px!important;min-height:48px!important;width:100%!important;box-sizing:border-box!important;overflow-x:auto!important;overflow-y:hidden!important;
- margin:0!important;padding:6px 10px!important;order:0!important;border:0!important;border-bottom:1px solid var(--ui-line)!important;
+ margin:0!important;padding:6px 10px!important;order:0!important;border:0!important;border-top:1px solid var(--ui-line)!important;border-bottom:1px solid var(--ui-line)!important;
  border-radius:0!important;background:#f5f8f6!important;direction:rtl!important;
 }
 html body #appView#appView :is(#kanbanView,#archiveView,.bamco-interior).bamco-interior :where(button.primary,button.ghost,button.danger,.bamco-command-bar>button,.bamco-page-heading>button,.workspace-report-tools button,.response-quick button,.tt-mode,.workspace-settings-form button,.option-editor button,.option-create button,.desktop-template-fieldset button),

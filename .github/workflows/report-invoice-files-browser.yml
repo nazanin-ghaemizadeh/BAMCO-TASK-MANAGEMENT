@@ -1,0 +1,50 @@
+name: Report and invoice file acceptance
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'assets/**'
+      - 'index.html'
+      - 'tests/browser/check_report_invoice_files.py'
+      - 'tests/browser/mock-feature-files-api.js'
+      - 'tests/browser/mock-api.js'
+      - 'tests/browser/mock-messaging-api.js'
+      - 'tests/browser/run_smoke.py'
+      - '.github/workflows/report-invoice-files-browser.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  isolated-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: npm ci
+      - run: npm run build:assets && npm run check:assets
+      - name: Verify invoice file SQL against isolated PostgreSQL
+        run: npm run test:invoice-files-db
+      - name: Install pinned browser test dependency
+        run: python -m pip install playwright==1.62.0
+      - name: Install Chromium with required system libraries
+        run: python -m playwright install --with-deps chromium
+      - name: Run isolated report and invoice file journeys
+        run: python tests/browser/check_report_invoice_files.py
+      - name: Save screenshots and acceptance results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: report-invoice-file-acceptance
+          path: test-results/report-invoice-files/
+          if-no-files-found: warn
+          retention-days: 14
