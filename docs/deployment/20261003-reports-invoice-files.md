@@ -1,6 +1,6 @@
 # Report folders and financial file activation
 
-Status: implementation/review package only. No production migration, bucket, function, scheduler, merge, deployment or invoice import has been performed by this change.
+Status: approved backend migrations and the two upload/report Edge functions are active and verified. Frontend release `2026.10.03.1` is gated on final exact-head checks. No cleanup scheduler or Excel import has been performed.
 
 Base: `4496f0b6fd49ac4ed11441b2da00ba00d5df9df2`, release `2026.10.01.1`.
 
@@ -38,22 +38,23 @@ The Excel import is intentionally not performed. The user's workbook has not bee
 5. `supabase/functions/invoice-file-cleanup/`
    - Trusted server-only cleanup calls Storage API, never deletes Storage metadata directly through SQL
    - Retained tombstones reconcile delayed uploads; initial five-minute grace and later hourly rechecks
-   - Must be activated with its server-side scheduler before rollout. No credential belongs in browser code, repository, logs or a public scheduler request
+   - Optional and NOT activated for this release. No cleanup function, cron, or new credential is deployed. Removed managed files remain private in the bucket and their paths are retained in the private outbox; no automatic permanent purge occurs
 
-SQL is deliberately staged outside migration history because the Supabase CLI was unavailable in the implementation environment. Before activation, generate migration entries using the supported CLI, reconcile with the then-current live schema, and copy the reviewed SQL into those generated entries. Do not invent migration history or apply these proposals blindly.
+Migration entries were generated with the official Supabase CLI. Reviewed proposal SQL was applied after live read-only preflight; filenames match the authoritative production migration history: `20261003114419_test_report_library.sql` and `20261003114607_invoice_attachment_upload_gate.sql`. Proposal and migration contents are identical.
 
-## Approval and rollout gates
+## Approved rollout and verification
 
-Do not merge/deploy the frontend before the backend gates below pass. Publication of the draft branch and read-only tests is separate from production approval.
+- The user approved this feature release, compatible database changes and publication. The temporary pinned build job may commit only the two canonical bundle files on the feature branch; it must be removed before merge
+- Production migrations `20261003114419` and `20261003114607` applied successfully on 2026-10-03. Existing counts remain one invoice, one payment, zero invoice files; no business records were created or changed
+- `test-report-library` and `invoice-file-upload` are ACTIVE version 1 with JWT verification enabled. Readback matches every deployed source file exactly
+- Private buckets: `test-reports-private` 25 MiB and `invoices-private` 6 MiB. All six public invoice RPCs are SECURITY INVOKER, and RLS remains enabled on all affected business tables
+- Source head `7dd69161eb449b794df01e1f483812e2025aea43`: report/invoice Chromium desktop and mobile journeys, real-local Storage/Auth/REST/Edge acceptance, and concurrent PostgreSQL sessions passed in run `37120683383`
+- Production backup/rollback posture: additive schema and preserved existing records; prior invoice trigger definitions and counts were captured before apply. If a frontend rollback is needed, restore the previous release while retaining additive tables/buckets and user files. Do not drop storage or new user data as rollback
+- No cleanup Edge, cron, token or new service credential was enabled. Automated permanent purge requires separate approval; it is not required for safe upload/read behavior
+- Report deletion confirms the selected file and removes its bytes before metadata; interrupted deletion is retriable. Nonempty year deletion is blocked. Invoice/payment deletion follows the existing confirmation flow and queues only newly managed object paths without purging them
+- Excel row-by-row import remains pending the user's workbook
 
-1. Obtain explicit approval for the exact reviewed backend package, private bucket policies, Edge deployment and server-only recurring cleanup setup
-2. Recheck live schema/migrations and take the normal recoverable database backup/snapshot; never replace existing tables or policies wholesale
-3. Run the isolated PostgreSQL, true multi-session and browser acceptance checks at the exact reviewed source revision
-4. In an approved isolated Supabase environment, verify actual Storage multipart metadata, RLS preflight/upsert, signed/authenticated download, pending retry and delete cleanup behavior. The SQL fixtures simulate Storage metadata; they do not prove physical object API behavior
-5. Apply approved generated migrations, deploy the report, invoice upload and cleanup functions, and configure the approved server-only cleanup schedule using an existing authorized secret mechanism
-6. Check advisors and schema/RPC availability, verify private bucket flags and scheduler health, and perform authorized smoke validation without fabricated production business records
-7. Build committed canonical assets, rerun exact-head gates, then obtain the separate release/merge approval
-8. Verify the deployed release marker and cache update, navigation and access after the approved release
+Final publication still requires fresh committed bundles, removal of the temporary workflow, exact-head read-only checks, merge and live release/cache verification.
 
 ## Known inherited finance rule
 
