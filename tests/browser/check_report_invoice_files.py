@@ -9,10 +9,9 @@ FEATURE_MOCK = (Path(__file__).parent / 'mock-feature-files-api.js').read_text()
 PDF = {'name': 'report-fixture.pdf', 'mimeType': 'application/pdf', 'buffer': b'%PDF-1.7\n% Isolated acceptance fixture'}
 
 async def snapshot(page, name):
-    for _ in range(5):
-        buttons=page.locator('.bamco-toast-close:visible')
-        if not await buttons.count(): break
-        await buttons.first.click()
+    # Toasts can live behind an open native modal and are not clickable there.
+    # Let their normal bounded lifetime finish; never mutate application DOM.
+    await page.wait_for_function("() => !document.querySelector('.bamco-toast')", timeout=12000)
     await page.screenshot(path=str(OUT / name), full_page=True)
 
 async def check_report(page, width):
