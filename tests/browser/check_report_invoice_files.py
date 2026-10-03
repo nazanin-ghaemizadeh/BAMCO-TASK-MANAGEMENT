@@ -1,5 +1,5 @@
 """Feature acceptance in real Chromium with wholly isolated in-memory API data."""
-import asyncio, functools, http.server, json, os, shutil, threading
+import asyncio, functools, http.server, json, os, shutil, threading, traceback
 from pathlib import Path
 from playwright.async_api import async_playwright, expect
 from run_smoke import MOCK, MSG_MOCK, login, click_route, settled, home
@@ -8,13 +8,18 @@ OUT = ROOT / 'test-results' / 'report-invoice-files'
 FEATURE_MOCK = (Path(__file__).parent / 'mock-feature-files-api.js').read_text()
 PDF = {'name': 'report-fixture.pdf', 'mimeType': 'application/pdf', 'buffer': b'%PDF-1.7\n% Isolated acceptance fixture'}
 
+async def snapshot(page, name):
+    for button in await page.locator('.bamco-toast-close:visible').all():
+        await button.click()
+    await page.screenshot(path=str(OUT / name), full_page=True)
+
 async def check_report(page, width):
     await click_route(page, 'testReports'); await settled(page, 'testReports')
     await expect(page.locator('[data-report-domain]')).to_have_count(2)
     await page.locator('[data-report-domain="environment"]').click()
     await expect(page.locator('[data-report-type]')).to_have_count(3)
     assert await page.locator('[data-report-type] strong').all_text_contents() == ['تحقیقاتی', 'انطباق تولید', 'تأیید نوع و تغییرات مهندسی']
-    await page.screenshot(path=str(OUT / f'{width}-report-types.png'), full_page=True)
+    await snapshot(page, f'{width}-report-types.png')
     await page.locator('[data-report-type="research"]').click()
     await page.locator('[data-report-action="new-year"]').click()
     yearform = page.locator('#testReportYearForm')
@@ -48,7 +53,7 @@ async def check_report(page, width):
     await expect(page.locator('#testReportsView .reference-pagination')).to_have_count(1)
     await expect(page.locator('#testReportsTable .reference-filters')).to_have_count(1)
     await expect(page.locator('#testReportsView .suite-table-options')).to_have_count(1)
-    await page.screenshot(path=str(OUT / f'{width}-report-files.png'), full_page=True)
+    await snapshot(page, f'{width}-report-files.png')
     await page.locator('[data-report-action="back"]').click()
     await page.locator('[data-report-delete-year]').click()
     await expect(page.locator('.bamco-toast[data-kind=error]').last).to_contain_text('فایل')
@@ -78,7 +83,7 @@ async def check_invoice(page, width):
     await expect(amount).to_have_value('1,234,567,890.25')
     await expect(amount).to_have_attribute('dir', 'ltr')
     await form.locator('[name="proforma_file"]').set_input_files({**PDF, 'name':'proforma.pdf'})
-    await page.screenshot(path=str(OUT / f'{width}-invoice-create.png'), full_page=True)
+    await snapshot(page, f'{width}-invoice-create.png')
     await form.locator('[type="submit"]').click()
     await expect(page.locator('#invoiceDialog')).not_to_be_visible()
     await expect(page.locator('.invoice-detail')).to_contain_text('proforma.pdf')
@@ -101,7 +106,9 @@ async def check_invoice(page, width):
     await page.locator('#invoiceFileForm [type="submit"]').click()
     await expect(page.locator('#invoiceFileDialog')).not_to_be_visible()
     await expect(page.locator('.invoice-detail')).to_contain_text('final-invoice.pdf')
-    await page.screenshot(path=str(OUT / f'{width}-invoice-settled.png'), full_page=True)
+    await snapshot(page, f'{width}-invoice-settled.png')
+    await page.locator('.invoice-detail .project-detail-head').scroll_into_view_if_needed()
+    await snapshot(page, f'{width}-invoice-overview.png')
     assert await page.evaluate('__featureFiles.invoices.length') == 1
     assert await page.evaluate('__featureFiles.payments.length') == 2
     assert await page.evaluate('__featureFiles.files.length') == 4
@@ -112,10 +119,11 @@ async def check_phonebook(page, width):
     await expect(page.locator('.phonebook-command')).to_be_visible()
     border=await page.locator('.phonebook-command').evaluate("element=>({top:getComputedStyle(element).borderTopWidth,bottom:getComputedStyle(element).borderBottomWidth,style:getComputedStyle(element).borderTopStyle})")
     assert border['top']=='1px' and border['bottom']=='1px' and border['style']=='solid',border
-    await page.screenshot(path=str(OUT / f'{width}-phonebook-toolbar.png'),full_page=True)
+    await snapshot(page, f'{width}-phonebook-toolbar.png')
     await page.locator('[data-phonebook-unit-select]').click()
     await expect(page.locator('.phonebook-table-command')).to_be_visible()
-    assert await page.locator('.phonebook-table-command').evaluate("element=>getComputedStyle(element).borderTopWidth")=='1px'
+    unit_border=await page.locator('.phonebook-table-command').evaluate("element=>({top:getComputedStyle(element).borderTopWidth,bottom:getComputedStyle(element).borderBottomWidth,classes:element.className,parent:element.parentElement.className})")
+    assert unit_border['top']=='1px',unit_border
     await home(page)
 
 async def main():
@@ -143,7 +151,7 @@ async def main():
                 except Exception as error:
                     await page.screenshot(path=str(OUT/f'{width}-failure.png'),full_page=True)
                     diagnostic=await page.evaluate("() => ({years:window.__featureFiles?.years,reports:window.__featureFiles?.reports,invoices:window.__featureFiles?.invoices,payments:window.__featureFiles?.payments,forms:[...document.querySelectorAll('dialog[open] form')].map(f=>({id:f.getAttribute('id'),namedId:typeof f.id,valid:f.checkValidity(),error:f.querySelector('[data-report-error],[data-invoice-save-status]')?.textContent})),lastCalls:(window.__featureFiles?.calls||[]).slice(-12).map(c=>({endpoint:c.endpoint,method:c.method,body:c.body instanceof FormData?Object.fromEntries(c.body.entries()):c.body}))})")
-                    results.append({'width':width,'status':'failed','error':str(error),'errors':errors,'diagnostic':diagnostic})
+                    results.append({'width':width,'status':'failed','error':traceback.format_exc(),'errors':errors,'diagnostic':diagnostic})
                 await context.close()
             await browser.close()
     finally:

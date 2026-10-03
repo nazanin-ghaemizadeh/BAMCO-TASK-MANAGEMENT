@@ -26,6 +26,7 @@
       let row = rows.find(item => String(item.id) === String(id));
       if (row) Object.assign(row, body.p_payload, { updated_at: stamp() });
       else { row = { id: String(1000 + rows.length), created_by: uid(), follow_up_owner_id: uid(), status: 'initial', created_at: stamp(), updated_at: stamp(), ...body.p_payload }; rows.push(row); }
+      if(payment){const inv=store.invoices.find(item=>String(item.id)===String(row.invoice_id));const total=inv&&cents(inv.total_amount);if(total>0n){const ratio=(cents(row.amount)*100000n+total/2n)/total;row.percent_of_total=String(ratio/1000n)+'.'+String(ratio%1000n).padStart(3,'0')}}
       store.operations.set(key, row); return response(exact(row));
     }
     if (endpoint === 'reserve_invoice_file') {
