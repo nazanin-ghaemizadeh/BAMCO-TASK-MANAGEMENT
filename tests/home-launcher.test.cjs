@@ -68,3 +68,23 @@ test('every home category and subroute has its own centered vector icon',async()
   assert.deepEqual(f.errors,[]);
  }finally{await f.dispose()}
 });
+
+test('launcher tracks actual pointer/keyboard input without dropping route focus',async()=>{
+ const f=await fixture();
+ try{
+  const {d,w}=f,trigger=d.querySelector('#nav .nav-group[data-group="tasks"] .home-group-trigger');
+  trigger.dispatchEvent(new w.MouseEvent('click',{bubbles:true,detail:1}));
+  const dialog=d.querySelector('.home-launcher-dialog');
+  assert.equal(dialog.open,true);
+  assert.equal(dialog.dataset.focusOrigin,'pointer');
+  assert.equal(d.activeElement,dialog.querySelector('.home-launcher-route'));
+  dialog.dispatchEvent(new w.KeyboardEvent('keydown',{bubbles:true,key:'Tab'}));
+  assert.equal(dialog.dataset.focusOrigin,'keyboard');
+  dialog.querySelector('.home-launcher-route').dispatchEvent(new w.Event('pointerdown',{bubbles:true}));
+  assert.equal(dialog.dataset.focusOrigin,'pointer');
+  dialog.close();
+  trigger.dispatchEvent(new w.MouseEvent('click',{bubbles:true,detail:0}));
+  assert.equal(dialog.dataset.focusOrigin,'keyboard');
+  assert.equal(d.activeElement,dialog.querySelector('.home-launcher-route'));
+ }finally{await f.dispose()}
+});

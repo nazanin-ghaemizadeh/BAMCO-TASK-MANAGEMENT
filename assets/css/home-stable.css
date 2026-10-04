@@ -146,7 +146,7 @@ html body.card-navigation #appView #homeView #nav .home-group-symbol svg{
   stroke-width:1.7!important;stroke-linecap:round!important;stroke-linejoin:round!important;
 }
 html body.card-navigation #appView #homeView #nav .home-group-symbol .home-group-badge{position:absolute!important;top:-5px!important;right:-5px!important;z-index:3!important;display:grid!important;place-items:center!important;min-width:25px!important;height:25px!important;padding:0 6px!important;border:2px solid #fff!important;border-radius:999px!important;background:#cf303d!important;color:#fff!important;font:700 13px/1 Tahoma,sans-serif!important;box-shadow:0 3px 10px #8f1a2550!important}
-html body.card-navigation #appView #homeView #nav .home-group-label{display:block;min-height:32px;max-width:100%;padding-inline:4px;box-sizing:border-box;text-align:center;white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;line-height:1.6}
+html body.card-navigation #appView #homeView #nav .home-group-label{display:block;min-height:32px;max-width:100%;padding-inline:4px;box-sizing:border-box;text-align:center!important;text-align-last:center!important;white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;line-height:1.6}
 html body.card-navigation #appView #homeView[data-layout="custom"] #nav .home-group-trigger{cursor:grab!important}
 html body.card-navigation #appView #homeView[data-layout="custom"] #nav .home-group-trigger:active{cursor:grabbing!important}
 
@@ -169,14 +169,19 @@ html body.card-navigation #appView #homeView[data-layout="custom"] #nav .home-gr
 .home-launcher-close{display:grid;place-items:center;flex:none;width:42px;height:42px;border:0;border-radius:50%;background:#e6f0ea;color:#194e38;font-size:32px;line-height:1;cursor:pointer}
 .home-launcher-routes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));justify-items:center;gap:12px 8px;padding:20px 0 12px;overflow:visible}
 .home-launcher-route{position:relative;display:flex;width:100%;min-width:0;flex-direction:column;align-items:center;justify-content:flex-start;gap:9px;padding:4px;border:0;border-radius:16px;background:transparent;color:#255a41;text-align:center;font:700 21px/1.5 var(--fa-font,'B Nazanin',serif);cursor:pointer}
-.home-launcher-route>span:last-child{display:block;max-width:100%;min-height:32px;padding-inline:3px;box-sizing:border-box;font-weight:900;white-space:normal;overflow:visible;overflow-wrap:anywhere;line-height:1.6}
+.home-launcher-route>span:last-child{display:block;max-width:100%;min-height:32px;padding-inline:3px;box-sizing:border-box;font-weight:900;text-align:center!important;text-align-last:center!important;white-space:normal;overflow:visible;overflow-wrap:anywhere;line-height:1.6}
 .home-launcher-route-badge{position:absolute;top:0;right:calc(50% - var(--launcher-circle)/2 + 2px);z-index:2;display:grid;place-items:center;min-width:25px;height:25px;padding:0 6px;border:2px solid #fff;border-radius:999px;background:#cf303d;color:#fff;font:700 13px/1 Tahoma,sans-serif;box-shadow:0 3px 10px #8f1a2550}
 .home-launcher-route:hover{transform:none}
 .home-launcher-route-icon{position:relative;display:grid;place-items:center;flex:none;width:var(--launcher-circle);height:var(--launcher-circle);box-sizing:border-box;border:2px solid #d4e8db;border-radius:50%;background:linear-gradient(145deg,#fff,#e4f1e9);color:#126c4b;font-size:45px;line-height:0;box-shadow:0 9px 22px #0b51331b}
 .home-launcher-route:hover .home-launcher-route-icon{background:#e0f0e6;border-color:#7fb99b}
 .home-launcher-route-icon svg{position:absolute;top:50%;left:50%;display:block;width:58%;height:58%;margin:0;transform:translate(-50%,-50%);fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
 .home-launcher-route-icon b{display:grid;place-items:center;width:100%;height:100%;margin:0;font-weight:900;line-height:1}
-.home-launcher-dialog :is(button:focus-visible){outline:3px solid #1f8059;outline-offset:2px}
+/* Focus stays on the first route for keyboard/assistive navigation. A touch
+   opening must not paint an automatic rectangular selection around that route. */
+.home-launcher-dialog .home-launcher-route{--bamco-dialog-focus-outline:none}
+.home-launcher-dialog .home-launcher-route:focus{outline:none!important;box-shadow:none!important}
+.home-launcher-dialog[data-focus-origin="keyboard"] .home-launcher-route:focus .home-launcher-route-icon{outline:3px solid #1f8059;outline-offset:3px}
+.home-launcher-dialog .home-launcher-close:focus-visible{outline:3px solid #1f8059;outline-offset:2px}
 
 .home-layout-settings{margin:22px 0;padding:20px;border:1px solid #d4e6dc;border-radius:18px;background:#f8fcf9}
 .home-layout-settings-head h4{margin:0 0 4px;font-size:22px;color:#194e38}
