@@ -146,11 +146,19 @@ function install(){
  }
  return true;
 }
- function openGroup(group){
+ function openGroup(group,event){
   if(!group||group.classList.contains('hidden')||!fillGroup(group))return;
   openGroupKey=group.dataset.group;lastTrigger=group.querySelector('.home-group-trigger');
-  groupDialog.showModal();groupDialog.querySelector('.home-launcher-route')?.focus();
+  // Safari may consider programmatic focus after showModal keyboard-visible
+  // even when a finger opened the launcher. Keep focus for accessibility, but
+  // choose its visual treatment from the actual activating input.
+  groupDialog.dataset.focusOrigin=event?.detail>0?'pointer':'keyboard';
+  groupDialog.showModal();groupDialog.querySelector('.home-launcher-route')?.focus({preventScroll:true});
  }
+ groupDialog.addEventListener('pointerdown',()=>{groupDialog.dataset.focusOrigin='pointer'});
+ groupDialog.addEventListener('keydown',event=>{
+  if(!event.metaKey&&!event.ctrlKey&&!event.altKey)groupDialog.dataset.focusOrigin='keyboard';
+ });
  groupDialog.querySelector('.home-launcher-close').addEventListener('click',()=>groupDialog.close());
  groupDialog.addEventListener('click',event=>{if(event.target===groupDialog)groupDialog.close()});
  groupDialog.addEventListener('close',()=>{
@@ -166,7 +174,7 @@ function install(){
    const symbol=document.createElement('span');symbol.className='home-group-symbol';symbol.setAttribute('aria-hidden','true');
    const groupIcon=window.BamcoIcons?.forGroup(key);if(groupIcon)symbol.innerHTML=groupIcon;else symbol.textContent=entry.icon;
    const label=document.createElement('span');label.className='home-group-label';label.textContent=entry.title;
-   button.append(symbol,label);button.addEventListener('click',()=>openGroup(group));
+   button.append(symbol,label);button.addEventListener('click',event=>openGroup(group,event));
    group.prepend(button);
   }
  }
