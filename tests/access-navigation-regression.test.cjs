@@ -47,7 +47,7 @@ test('authorization has a dedicated denial state and cannot own renderer hidden 
 test('an RLS-filtered realtime access change refreshes the recipient portal immediately',()=>{
   const source=fs.readFileSync(path.join(__dirname,'../assets/js/navigation-registry.js'),'utf8');
   assert.match(source,/document\.addEventListener\('bamco:domain-invalidated'/);
-  assert.match(source,/event\.detail\?\.domain === 'access'/);
+  assert.match(source,/\['access', 'organization'\]\.includes\(event\.detail\?\.domain\)/);
   assert.match(source,/void invalidate\(\)/);
 });
 

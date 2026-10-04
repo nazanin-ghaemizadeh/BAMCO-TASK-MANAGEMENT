@@ -16,11 +16,12 @@
     const access=window.BamcoAccess;
     const route=window.BamcoNavigationCatalog?.routeFor?.(view);
     const feature=route?.featureKey||window.BamcoNavigationCatalog?.featureForRoute?.(view);
+    const action=route?.action||'view';
     if(feature&&access&&access.isReady?.()===false&&typeof access.refresh==='function'){
       window.bamcoToast?.('در حال آماده‌سازی دسترسی بخش…');
       Promise.resolve(access.refresh()).catch(()=>null).then(()=>{
-        if(access.can?.(feature,'view')===true)nativeNavigate(view);
-        else access.denied?.(feature,'view',{route:view});
+        if(access.can?.(feature,action)===true)nativeNavigate(view);
+        else access.denied?.(feature,action,{route:view});
       });
       return true;
     }

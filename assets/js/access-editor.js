@@ -225,8 +225,8 @@
       view.className = 'view hidden';
       document.querySelector('.workspace')?.append(view);
     }
-    view.dataset.featureKey = 'people';
-    view.dataset.featureAction = 'view';
+    view.dataset.featureKey = 'settings';
+    view.dataset.featureAction = 'manage_access';
     if (!view.querySelector('.access-matrix-shell')) {
       view.innerHTML = `<section id="accessMatrixFeatureRoot" class="access-matrix-shell enterprise-feature-root"><div class="feature-toolbar enterprise-toolbar"><div><h3>دسترسی‌ها</h3></div></div><div class="manager-toolbar bamco-command-bar access-matrix-toolbar"><button type="button" class="content-back ghost" data-home-action>بازگشت به خانه</button><button type="button" class="ghost" data-access-matrix-refresh>تازه‌سازی</button><button type="button" class="primary" data-access-matrix-save disabled>ذخیره تغییرات</button><input type="search" class="search" data-access-matrix-search placeholder="جست‌وجوی فرد…" aria-label="جست‌وجوی فرد"><span data-feature-access-suppressed="true" hidden></span></div><div class="access-matrix-content" aria-live="polite"><p class="access-matrix-status">برای دریافت دسترسی‌ها، تازه‌سازی کنید.</p></div></section>`;
     }

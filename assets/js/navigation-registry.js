@@ -47,7 +47,7 @@
   // bypass the access service by using an alias.
   const routeDefinitions = Object.freeze([
     ['people', 'people', 'افراد و نقش‌ها'],
-    ['accessMatrix', 'people', 'دسترسی‌ها'],
+    ['accessMatrix', 'settings', 'دسترسی‌ها', 'manage_access'],
     ['organization', 'organization', 'ساختار سازمانی'],
     ['activeSessions', 'activeSessions', 'نشست‌های فعال'],
     ['loginActivity', 'loginActivity', 'ورود و خروج'],
@@ -86,7 +86,7 @@
     ['phoneBook', 'phonebook', 'دفتر تلفن'],
     ['notes', 'notes', 'یادداشت‌ها'],
     ['voiceAssistant', 'voiceAssistant', 'دستیار هوشمند']
-  ].map(([route, featureKey, title]) => Object.freeze({ route, featureKey, title, groupKey: null })));
+  ].map(([route, featureKey, title, action = 'view']) => Object.freeze({ route, featureKey, title, action, groupKey: null })));
 
   const byKey = Object.freeze(Object.fromEntries(groups.map(group => [group.key, group])));
   const routeGroup = Object.freeze(Object.fromEntries(groups.flatMap(group => group.routes.map(route => [route, group.key]))));
@@ -111,7 +111,9 @@
     routesForFeature: featureKey => [...(featureRoutes[String(featureKey || '')] || [])],
     isFeatureOwnedRoute: route => featureOwnedRoutes.has(String(route || '')),
     featureTitle: featureKey => {
-      const route = Object.values(byRoute).find(item => item.featureKey === String(featureKey || ''));
+      const key = String(featureKey || '');
+      const route = byRoute[key] || Object.values(byRoute).find(item => item.featureKey === key && item.action === 'view')
+        || Object.values(byRoute).find(item => item.featureKey === key);
       return route?.title || String(featureKey || '');
     }
   });
@@ -129,14 +131,23 @@
   let unavailable = false;
   let lastError = null;
   let loadingIdentity = null;
+  let loadedIdentity = null;
+  let refreshGeneration = 0;
   let deniedAt = '';
 
   const state = () => window.Bamco?.state || window.state || {};
   const actor = () => state().user?.id || state().profile?.id || null;
-  const identity = () => `${actor() || ''}:${state().token || ''}`;
+  // Token rotation is part of the same authenticated session. Use the auth
+  // generation so a valid response survives refresh, but never a new login.
+  const identity = () => {
+    if (!actor() || !state().token) return '';
+    const session = window.bamcoAuth?.snapshot?.();
+    return `${actor()}:${session ? session.generation : state().token}`;
+  };
   const systemManager = () => {
     const profile = state().profile;
-    return !!profile && profile.active !== false && (profile.system_access === true || profile.role === 'manager');
+    return !!profile && String(profile.id || '') === String(actor() || '') && profile.active !== false
+      && (profile.system_access === true || profile.role === 'manager');
   };
   const asBoolean = value => value === true || value === 1 || value === '1' || String(value || '').toLowerCase() === 'true';
   const emptyGrant = () => ({ can_view: false, can_create: false, can_edit: false, can_delete: false, can_export: false, can_manage_access: false, can_bypass_approval: false });
@@ -177,10 +188,10 @@
   function actionField(action) { return ACTION_FIELD[String(action || 'view')] || ACTION_FIELD.view; }
   function can(featureKey, action = 'view') {
     const feature = String(featureKey || '');
-    if (!feature) return false;
+    if (!feature || !state().token || !actor() || state().profile?.active === false
+      || (state().profile?.id && String(state().profile.id) !== String(actor()))) return false;
     if (systemManager()) return true;
-    if (!state().token) return false;
-    if (!loaded) return false;
+    if (!loaded || loadedIdentity !== identity()) return false;
     if (unavailable && SAFE_WHEN_UNAVAILABLE.has(feature) && action === 'view') return true;
     return grants.get(feature)?.[actionField(action)] === true;
   }
@@ -229,9 +240,9 @@
   function applyNavigation() {
     if (!loaded || !document?.querySelectorAll) return;
     document.querySelectorAll('#nav button[data-view]').forEach(button => {
-      const feature = catalog.featureForRoute(button.dataset.view);
+      const route = catalog.routeFor(button.dataset.view), feature = route?.featureKey;
       if (!feature) return;
-      const allowed = can(feature, 'view');
+      const allowed = can(feature, route.action);
       button.classList.toggle('hidden', !allowed);
       // Remove unavailable routes from layout instead of leaving blank cards.
       button.hidden = !allowed;
@@ -258,8 +269,8 @@
       }
     });
     const current = state().view;
-    const feature = catalog.featureForRoute(current);
-    if (feature && !can(feature, 'view')) {
+    const route = catalog.routeFor(current), feature = route?.featureKey;
+    if (feature && !can(feature, route.action)) {
       // A background access refresh is not a user navigation attempt. Return
       // to the card home silently so focus/realtime refreshes cannot spam the
       // user with repeated "access is not active" notifications.
@@ -289,9 +300,15 @@
   }
   async function refresh({ force = false } = {}) {
     const currentIdentity = identity();
-    if (!currentIdentity || currentIdentity === ':') { clear(); return snapshot(); }
+    if (!currentIdentity) { clear(); return snapshot(); }
     if (loading && !force && loadingIdentity === currentIdentity) return loading;
     loadingIdentity = currentIdentity;
+    const generation = ++refreshGeneration;
+    const current = () => identity() === currentIdentity && generation === refreshGeneration;
+    // An initial route may be awaiting the earlier promise. If invalidation
+    // supersedes it, wait for the replacement instead of reporting "ready"
+    // before the authoritative grants have arrived.
+    const superseded = () => identity() === currentIdentity && loading && loading !== job ? loading : snapshot();
     const job = (async () => {
       let rows = [], source = 'server';
       try {
@@ -299,14 +316,14 @@
         const result = grantRowsFrom(payload);
         if (!result.structured) throw new Error('پاسخ سرویس دسترسی معتبر نیست.');
         rows = result.rows;
-        if (identity() !== currentIdentity) return snapshot();
-        storeRows(rows); unavailable = false; lastError = null; loaded = true;
+        if (!current()) return superseded();
+        storeRows(rows); unavailable = false; lastError = null; loaded = true; loadedIdentity = currentIdentity;
       } catch (error) {
-        if (identity() !== currentIdentity) return snapshot();
+        if (!current()) return superseded();
         // There is no legacy per-feature fallback: a failed or malformed
         // canonical response is fail-closed. Settings remains available so a
         // signed-in user can recover their session or contact an administrator.
-        storeRows([]); unavailable = true; lastError = error; loaded = true; source = 'unavailable';
+        storeRows([]); unavailable = true; lastError = error; loaded = true; loadedIdentity = currentIdentity; source = 'unavailable';
       }
       applyNavigation();
       const detail = { ...snapshot(), source };
@@ -322,7 +339,8 @@
     finally { if (loading === job) { loading = null; loadingIdentity = null; } }
   }
   function clear() {
-    grants = new Map(); loaded = false; unavailable = false; lastError = null; loading = null; loadingIdentity = null;
+    refreshGeneration++;
+    grants = new Map(); loaded = false; unavailable = false; lastError = null; loading = null; loadingIdentity = null; loadedIdentity = null;
   }
   function invalidate() { return refresh({ force: true }); }
   function snapshot() {
@@ -334,7 +352,7 @@
 
   window.BamcoAccess = Object.freeze({
     refresh, invalidate, clear, snapshot, can, denied, applyNavigation,
-    isReady: () => loaded,
+    isReady: () => loaded && loadedIdentity === identity(),
     isSystemManager: systemManager,
     featureTitle: catalog.featureTitle,
     routeFeature: catalog.featureForRoute
@@ -372,7 +390,13 @@
   // this bridge a saved grant reaches the database but an already-open portal
   // keeps its old navigation until the next focus or login.
   document.addEventListener('bamco:domain-invalidated', event => {
-    if (event.detail?.domain === 'access' && state().token) void invalidate();
+    if (['access', 'organization'].includes(event.detail?.domain) && state().token) void invalidate();
   });
+  document.addEventListener('bamco:profiles-updated', event => {
+    if (state().token && event.detail?.ids?.includes(String(actor()))) void invalidate();
+  });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && state().token) void refresh(); });
+  window.addEventListener('pageshow', () => { if (state().token) void refresh(); });
+  window.addEventListener('online', () => { if (state().token) void invalidate(); });
   window.addEventListener('focus', () => { if (state().token) void refresh(); });
 })();

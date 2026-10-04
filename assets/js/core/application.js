@@ -64,8 +64,9 @@
       const route=root.BamcoNavigationCatalog?.routeFor?.(view);
       const featureKey=route?.featureKey||root.BamcoNavigationCatalog?.featureForRoute?.(view);
       const access=root.BamcoAccess;
-      if(featureKey&&access&&access.can(featureKey,'view')!==true){
-        access.denied?.(featureKey,'view',{route:view});
+      const action=route?.action||'view';
+      if(featureKey&&access&&access.can(featureKey,action)!==true){
+        access.denied?.(featureKey,action,{route:view});
         return false;
       }
       const previous=currentView;
