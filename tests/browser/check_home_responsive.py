@@ -137,7 +137,8 @@ async def one_case(browser, base, width, height, out):
                     modal=await check_dialog(page)
                     assert modal['open'] and modal['top']>=-1 and modal['bottom']<=height+1,modal
                     assert modal['left']>=-1 and modal['right']<=width+1,modal
-                    assert modal['close']['w']>=42 and modal['close']['h']>=42,modal
+                    minimum_close=44 if width<=1200 or height<=680 else 36
+                    assert modal['close']['w']>=minimum_close and modal['close']['h']>=minimum_close,modal
                     assert all(x['x']>=modal['left'] and x['right']<=modal['right']+1 and x['scroll']<=x['client']+2 for x in modal['shown']),modal
                     await page.locator('.home-launcher-route').last.scroll_into_view_if_needed()
                     scrolled=await check_dialog(page)

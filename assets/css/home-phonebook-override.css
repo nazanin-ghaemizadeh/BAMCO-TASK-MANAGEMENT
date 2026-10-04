@@ -66,7 +66,7 @@ html body dialog.home-launcher-dialog[open]{display:flex;flex-direction:column}
 .home-launcher-head{flex:none;min-width:0;gap:8px}
 .home-launcher-head>div{min-width:0}
 .home-launcher-head h2{font-size:23px;overflow-wrap:anywhere}
-.home-launcher-close{width:44px;height:44px}
+.home-launcher-close{--bamco-icon-button-size:44px;width:44px!important;height:44px!important;min-width:44px!important;min-height:44px!important;flex:0 0 44px!important}
 .home-launcher-routes{min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 .home-launcher-route{min-height:44px}
 }
