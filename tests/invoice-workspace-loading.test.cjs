@@ -173,14 +173,14 @@ test('normal token renewal preserves an in-flight read within the same auth gene
 });
 
 
-test('cross-owner invoice editing does not grant payments, files, or invoice deletion', async t => {
+test('cross-owner invoice grants expose the same payment, file, and deletion actions', async t => {
   const row = { ...invoice(), created_by: 'other-fixture-user', follow_up_owner_id: 'other-fixture-user' };
   const foreign = workspace([row]);
   foreign.payments = [{ id: '31', invoice_id: row.id, sequence_no: 1, amount: '10.00', status: 'planned' }];
   foreign.files = [{ id: '41', invoice_id: row.id, payment_id: '31', file_type: 'receipt', file_name: 'fixture.pdf', bucket_id: 'invoices-private', client_request_id: 'synthetic-request', storage_path: 'synthetic/path.pdf', upload_state: 'ready' }];
   const f = fixture(t, { allowed: ['view', 'edit', 'delete'], read: async () => foreign }); await f.load(); f.cards()[0].click();
   assert(f.d.querySelector('[data-invoice-action="edit"]'));
-  for (const selector of ['[data-invoice-action="payment"]', '[data-invoice-payment-edit]', '[data-invoice-file-kind]', '[data-invoice-file-delete]', '[data-invoice-action="delete"]']) assert.equal(f.d.querySelector(selector), null, selector);
+  for (const selector of ['[data-invoice-action="payment"]', '[data-invoice-payment-edit]', '[data-invoice-file-kind]', '[data-invoice-file-delete]', '[data-invoice-action="delete"]']) assert.equal(f.d.querySelector(selector)?.disabled, false, selector);
   assert.equal(f.d.querySelector('[data-invoice-file-download]').disabled, false);
   f.d.querySelector('[data-invoice-action="edit"]').click();
   assert(f.d.querySelector('#invoiceDialog').open); assert.equal(f.d.querySelector('#invoiceForm').elements.title.value, row.title);
@@ -210,13 +210,15 @@ const foreignFileWorkspace = (state = 'ready') => {
   return { ...workspace([row]), files: [{ id: '41', invoice_id: row.id, payment_id: null, file_type: 'proforma', file_name: 'fixture.pdf', bucket_id: 'invoices-private', client_request_id: 'synthetic-request', storage_path: 'synthetic/file name.pdf', upload_state: state }] };
 };
 
-test('a view-only nonowner can download a ready attachment without gaining mutation controls', async t => {
+test('a view-only nonowner downloads ready files with the same file scope and payment restrictions as owners', async t => {
   const f = fixture(t, { allowed: ['view'], read: async () => foreignFileWorkspace() }); await f.load(); f.cards()[0].click();
   const button = f.d.querySelector('[data-invoice-file-download]'); assert.equal(button.disabled, false); button.click(); await tick();
   assert.equal(f.downloads.length, 1); assert.equal(f.downloads[0].url, 'https://fixture.test/storage/v1/object/authenticated/invoices-private/synthetic/file%20name.pdf');
   assert.equal(f.downloads[0].init.headers.Authorization, 'Bearer synthetic-token');
   assert.equal(f.links.length, 1); assert.equal(f.links[0].name, 'fixture.pdf');
-  for (const selector of ['[data-invoice-action="edit"]', '[data-invoice-action="payment"]', '[data-invoice-file-kind]', '[data-invoice-file-delete]']) assert.equal(f.d.querySelector(selector), null, selector);
+  for (const selector of ['[data-invoice-action="edit"]', '[data-invoice-action="delete"]']) assert.equal(f.d.querySelector(selector), null, selector);
+  assert.equal(f.d.querySelector('[data-invoice-action="payment"]').disabled, true);
+  for (const selector of ['[data-invoice-file-kind="proforma"]', '[data-invoice-file-delete]']) assert.equal(f.d.querySelector(selector).disabled, false);
 });
 
 for (const reason of ['denied', 'inactive', 'signed-out', 'pending']) test(`a nonowner attachment cannot start downloading when ${reason}`, async t => {
@@ -226,7 +228,10 @@ for (const reason of ['denied', 'inactive', 'signed-out', 'pending']) test(`a no
   if (reason === 'inactive') f.w.state.profile.active = false;
   if (reason === 'signed-out') f.w.state.token = '';
   // Dispatch deliberately also exercises the runtime guard, not just disabled UI.
-  button.dispatchEvent(new f.w.MouseEvent('click', { bubbles: true })); await tick();
+  if (reason === 'pending') {
+    assert.equal(button, null); assert.equal(f.w.bamcoInvoices.model.files.length, 0);
+  } else button.dispatchEvent(new f.w.MouseEvent('click', { bubbles: true }));
+  await tick();
   assert.equal(f.downloads.length, 0); assert.equal(f.links.length, 0);
 });
 

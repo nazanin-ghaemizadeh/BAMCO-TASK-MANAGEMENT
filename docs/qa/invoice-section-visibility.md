@@ -1,5 +1,7 @@
 # Invoice section visibility and authorization contract
 
+Historical first-stage contract: its creator-scoped mutation boundary is superseded by [invoice capability parity](invoice-capability-parity.md). The original proposal and tests remain intact to verify the migration sequence and the earlier boundary before the parity upgrade.
+
 ## Status and boundary
 
 This document separates the schema proposal and test evidence from rollout evidence. Keeping SQL under `supabase/schema-proposals/` does not establish that a remote database has been changed. Record the actual approved deployment and its database-reported migration version separately; do not infer activation from this file or use a mismatched migration timestamp. Local preparation uses synthetic records and does not impersonate production users.
