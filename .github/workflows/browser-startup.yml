@@ -83,3 +83,34 @@ jobs:
           name: access-visibility-${{ matrix.width }}
           path: test-results/access-visibility/
           retention-days: 7
+
+  responsive-home:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, webkit]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci && npm run build:assets && npm run check:assets
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pinned browser engine
+        run: |
+          python -m pip install playwright==1.57.0
+          python -m playwright install --with-deps ${{ matrix.browser }}
+      - name: Verify mobile home bounds and repeated navigation
+        run: python tests/browser/check_home_responsive.py --browser ${{ matrix.browser }}
+      - name: Upload responsive home screenshots and geometry
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: home-responsive-${{ matrix.browser }}
+          path: test-results/home-responsive/
+          retention-days: 7
