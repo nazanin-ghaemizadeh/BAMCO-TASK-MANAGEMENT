@@ -186,7 +186,7 @@ function enhancePerformanceReport(){
   const marker=document.createElement('th');marker.dataset.monthAssigned='1';marker.textContent='محول‌شده در این ماه';head.insertBefore(marker,head.cells[6]);
   const range=currentMonthRange();
   qa('tbody tr[data-workspace-index]',table).forEach(row=>{
-    const ownerId=row.cells[0]?.textContent.trim(),due=range?(state.tasks||[]).filter(t=>String(t.owner_id)===String(ownerId)&&t.due_date&&t.due_date.slice(0,10)>=range.from&&t.due_date.slice(0,10)<range.to):[],done=due.filter(t=>window.bamcoOptions?.completed(t)).length,pct=due.length?Math.round(done/due.length*100):0;
+    const ownerId=row.cells[0]?.textContent.trim(),due=range?(window.BamcoSectionReports?.peek?.('performanceReport')?.tasks||[]).filter(t=>String(t.owner_id)===String(ownerId)&&t.due_date&&t.due_date.slice(0,10)>=range.from&&t.due_date.slice(0,10)<range.to):[],done=due.filter(t=>window.bamcoOptions?.completed(t)).length,pct=due.length?Math.round(done/due.length*100):0;
     const assigned=document.createElement('td');assigned.textContent=fa(due.length);row.insertBefore(assigned,row.cells[6]);
     if(row.cells[7])row.cells[7].textContent=fa(done);
     const pctCell=row.cells[8];if(pctCell){pctCell.classList.add('completion-cell');const level=pct>=80?'high':pct>=50?'medium':'low';pctCell.innerHTML=`<div class="performance-progress ${level}" style="--p:${Math.max(0,Math.min(100,pct))}%"><i></i><span>${fa(pct)}٪</span></div>`}

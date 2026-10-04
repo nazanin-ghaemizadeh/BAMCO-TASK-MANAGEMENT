@@ -11,18 +11,20 @@ async function setup({ projects, items, rpcResult = { applied_directly: false } 
   w.HTMLDialogElement.prototype.showModal = function () { this.open = true; };
   w.HTMLDialogElement.prototype.close = function () { this.open = false; };
   w.state = {
+    token: 'synthetic-session',
     profile: { id: 'expert', role: 'owner', display_name: 'کارشناس' },
     user: { id: 'expert' },
     organizationScope: { descendantUserIds: [], directReportUserIds: [] },
     profiles: [{ id: 'expert', display_name: 'کارشناس', active: true }]
   };
+  w.BamcoAccess = { can: () => true };
   w.BamcoNavigation = { registerView: (id, options) => registered.set(id, options) };
   const tables = { projects, project_items: items, project_dependencies: [] };
   w.bamcoEnterprise = {
     q: (selector, root = w.document) => root.querySelector(selector), esc: String, fa: String,
     date: value => value || '—', dateTime: value => value || '—', progress: () => '', statusText: String,
     fetchRows: async table => tables[table] || [], insert: async (table, payload) => { tables[table].push({ id: 1000 + tables[table].length, ...payload }); return tables[table].slice(-1); },
-    update: async () => [], removeRows: async () => [], rpc: async (name, payload) => { calls.push({ name, payload }); return rpcResult; },
+    update: async () => [], removeRows: async () => [], rpc: async (name, payload) => { if (name === 'list_project_workspace') return { create_owner_ids: ['expert'], projects: tables.projects.map(p => ({ ...p, protected: { can_delete: true, can_create_activity: true, can_change_owner: !tables.project_items.some(i => i.project_id === p.id), owner_lock_reason: tables.project_items.some(i => i.project_id === p.id) ? 'items' : null, owner_choice_ids: ['expert'] } })), items: tables.project_items.map(i => ({ ...i, protected: { can_edit: true, can_delete: true } })), dependencies: tables.project_dependencies }; calls.push({ name, payload }); return rpcResult; },
     setBusy: () => {}, notify: (message, error = false) => notices.push({ message, error })
   };
   w.eval(fs.readFileSync('assets/js/project-management.js', 'utf8'));

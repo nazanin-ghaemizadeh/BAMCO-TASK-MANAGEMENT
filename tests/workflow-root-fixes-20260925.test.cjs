@@ -47,7 +47,7 @@ test('request history never presents a requester cancellation as a manager note'
   assert.deepEqual(f.errors, []);
 });
 
-test('calendar and Gantt task routes open an exact one-row Kanban filter', async t => {
+test('calendar and Gantt task routes show readonly report details and preserve Kanban scope', async t => {
   const tasks = [
     { id: 91, legacy_id: 1428, title: 'امر بدون زمان‌بندی', description: '', owner_id: 'test-manager', status: 'ثبت شده', priority: 'متوسط', start_date: null, due_date: null, done_date: null, reminder_days: 0, manager_notes: '', archived: false },
     { id: 92, legacy_id: 1429, title: 'امر دیگر', description: '', owner_id: 'test-manager', status: 'در حال انجام', priority: 'متوسط', start_date: '2026-09-01', due_date: '2026-09-30', done_date: null, reminder_days: 0, manager_notes: '', archived: false }
@@ -57,16 +57,32 @@ test('calendar and Gantt task routes open an exact one-row Kanban filter', async
   f.d.querySelector('#ttUnscheduled').click();
   const route = f.d.querySelector('#ttUnscheduledList [data-task="91"]'); assert.ok(route);
   route.click();
-  await until(() => !f.d.querySelector('#kanbanView').classList.contains('hidden'));
-  await until(() => f.d.querySelectorAll('#kanbanBody tr[data-task-id]').length === 1);
-  assert.equal(f.d.querySelector('#kanbanSearch').value, '۱۴۲۸');
-  assert.equal(f.d.querySelector('#kanbanSearch').dataset.taskFocusId, '91');
-  assert.equal(f.d.querySelector('#kanbanBody tr[data-task-id]').dataset.taskId, '91');
-  assert.equal(f.d.querySelector('#kanbanBody tr[data-task-id="91"]').getAttribute('aria-selected'), 'true');
-  await f.open('people');await f.open('kanban');
-  assert.equal(f.d.querySelector('#kanbanSearch').value,'');
-  assert.equal(f.d.querySelector('#kanbanSearch').dataset.taskFocusId,undefined);
-  assert.equal(f.d.querySelectorAll('#kanbanBody tr[data-task-id]').length,2);
+  await until(() => f.d.querySelector('#timelineReadonlyDetail')?.open);
+  assert.equal(f.w.Bamco.state.view, 'taskTimeline');
+  assert.equal(f.d.querySelector('#kanbanView').classList.contains('hidden'), true);
+  assert.match(f.d.querySelector('#timelineReadonlyDetail').textContent, /امر بدون زمان‌بندی/);
+  assert.equal(f.d.querySelector('#timelineReadonlyDetail input, #timelineReadonlyDetail textarea, #timelineReadonlyDetail select'), null);
+  assert.equal(f.d.querySelector('#kanbanSearch').dataset.taskFocusId, undefined);
+  const personalTasks = JSON.stringify(f.w.Bamco.state.tasks);
+  f.d.querySelector('#timelineReadonlyDetail button').click();
+  assert.equal(f.d.querySelector('#timelineReadonlyDetail').open, false);
+  // Repeat from the Gantt view using a task in the currently displayed month.
+  const today = new Date().toISOString().slice(0, 10);
+  Object.assign(f.tables.tasks[1], { start_date: today, due_date: today });
+  f.w.BamcoSectionReports.clear('taskTimeline');
+  f.w.bamcoTimelineRefresh();
+  f.d.querySelector('.tt-mode[data-mode="gantt"]').click();
+  await until(() => f.d.querySelector('.tt-bar[data-task="92"]'));
+  f.d.querySelector('.tt-bar[data-task="92"]').click();
+  assert.equal(f.d.querySelector('#timelineReadonlyDetail').open, true);
+  assert.match(f.d.querySelector('#timelineReadonlyDetail').textContent, /امر دیگر/);
+  assert.equal(f.w.Bamco.state.view, 'taskTimeline');
+  assert.equal(JSON.stringify(f.w.Bamco.state.tasks), personalTasks);
+  f.d.querySelector('#timelineReadonlyDetail button').click();
+  await f.open('people'); await f.open('kanban');
+  assert.equal(f.d.querySelector('#kanbanSearch').value, '');
+  assert.equal(f.d.querySelector('#kanbanSearch').dataset.taskFocusId, undefined);
+  assert.equal(f.d.querySelectorAll('#kanbanBody tr[data-task-id]').length, 2);
   assert.deepEqual(f.errors, []);
 });
 

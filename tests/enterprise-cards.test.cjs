@@ -16,9 +16,9 @@ for(const [route,script,dialog,create,table] of [
 ])test(`${route}: create opens and selecting a card reveals details`,async()=>{
  const dom=new JSDOM(`<section id="${route}View"><div id="${route==='projects'?'project':'invoice'}FeatureRoot"></div></section>`,{url:'https://example.test/',runScripts:'outside-only'});
  const w=dom.window,registered=new Map();w.HTMLDialogElement.prototype.showModal=function(){this.open=true};w.HTMLDialogElement.prototype.close=function(){this.open=false};
- w.state={profile:{id:'a',role:'manager'},user:{id:'a'},token:'fixture-token',profiles:[]};w.BamcoNavigation={registerView:(id,options)=>registered.set(id,options)};
+ w.state={profile:{id:'a',role:'manager'},user:{id:'a'},token:'fixture-token',profiles:[]};w.BamcoNavigation={registerView:(id,options)=>registered.set(id,options)};w.BamcoAccess={can:()=>true};
  const data={projects:[{id:1,title:'پروژه نمونه',project_code:'P1',owner_id:'a',status:'draft'}],invoices:[{id:1,title:'صورت‌حساب نمونه',invoice_number:'I1',account_party:'طرف حساب',total_amount:100,status:'planned'}]};
- w.bamcoEnterprise={q:(s,r=w.document)=>r.querySelector(s),esc:String,fa:String,date:v=>v||'—',dateTime:v=>v||'—',money:String,progress:()=>'',statusText:String,personName:()=>'',fetchRows:async name=>data[name]||[],rpc:async name=>name==='list_invoice_workspace'?{invoices:data.invoices,payments:[],files:[]}:null,insert:async()=>[{id:2}],setBusy:()=>{},notify:()=>{}};
+ w.bamcoEnterprise={q:(s,r=w.document)=>r.querySelector(s),esc:String,fa:String,date:v=>v||'—',dateTime:v=>v||'—',money:String,progress:()=>'',statusText:String,personName:()=>'',fetchRows:async name=>data[name]||[],rpc:async name=>name==='list_project_workspace'?{projects:data.projects,items:[],dependencies:[]}:name==='list_invoice_workspace'?{invoices:data.invoices,payments:[],files:[]}:null,insert:async()=>[{id:2}],setBusy:()=>{},notify:()=>{}};
  w.BamcoAccess={can:()=>true,isSystemManager:()=>true};
  w.eval(fs.readFileSync('assets/js/money-input.js','utf8'));
  w.eval(fs.readFileSync('assets/js/file-picker.js','utf8'));
@@ -45,8 +45,8 @@ for(const [route,script,dialog,create,table] of [
 test('projects: project owner choices are limited to the creator and organizational descendants',async()=>{
  const dom=new JSDOM('<section id="projectsView"><div id="projectFeatureRoot"></div></section>',{url:'https://example.test/',runScripts:'outside-only'});
  const w=dom.window,registered=new Map();let saved=null;w.HTMLDialogElement.prototype.showModal=function(){this.open=true};
- w.state={profile:{id:'lead',role:'supervisor'},user:{id:'lead'},organizationScope:{descendantUserIds:['expert']},profiles:[{id:'lead',display_name:'سرپرست'},{id:'expert',display_name:'کارشناس'},{id:'outside',display_name:'نامرتبط'}]};w.BamcoNavigation={registerView:(id,options)=>registered.set(id,options)};
- w.bamcoEnterprise={q:(s,r=w.document)=>r.querySelector(s),esc:String,fa:String,date:v=>v||'—',dateTime:v=>v||'—',progress:()=>'',statusText:String,personName:()=>'',fetchRows:async name=>name==='projects'?[]:[],insert:async(name,payload)=>{saved=payload;return[{id:2,...payload}]},setBusy:()=>{},notify:()=>{}};
+ w.state={token:'synthetic-session',profile:{id:'lead',role:'supervisor'},user:{id:'lead'},organizationScope:{descendantUserIds:['expert']},profiles:[{id:'lead',display_name:'سرپرست'},{id:'expert',display_name:'کارشناس'},{id:'outside',display_name:'نامرتبط'}]};w.BamcoNavigation={registerView:(id,options)=>registered.set(id,options)};w.BamcoAccess={can:()=>true};
+ w.bamcoEnterprise={q:(s,r=w.document)=>r.querySelector(s),esc:String,fa:String,date:v=>v||'—',dateTime:v=>v||'—',progress:()=>'',statusText:String,personName:()=>'',rpc:async()=>({create_owner_ids:[w.state.user.id,...(w.state.organizationScope?.descendantUserIds||[])],projects:[],items:[],dependencies:[]}),fetchRows:async name=>name==='projects'?[]:[],insert:async(name,payload)=>{saved=payload;return[{id:2,...payload}]},setBusy:()=>{},notify:()=>{}};
  w.eval(fs.readFileSync('assets/js/project-management.js','utf8'));w.document.dispatchEvent(new w.Event('DOMContentLoaded'));await registered.get('projects').activate();
  w.document.querySelector('[data-project-action="new"]').click();
  const owner=w.document.querySelector('[name="project_owner_id"]');
@@ -57,14 +57,14 @@ test('projects: project owner choices are limited to the creator and organizatio
  owner.value='expert';const form=w.document.querySelector('#projectForm');form.elements.title.value='پروژهٔ کارشناس';form.dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));
  await new Promise(resolve=>setTimeout(resolve,0));
  assert.equal(saved.owner_id,'expert');assert.equal(saved.manager_id,'expert');assert.equal(saved.created_by,'lead');
- assert.match(w.document.querySelector('.panel-head h3').textContent,/زیرمجموعه/);dom.window.close();
+ assert.match(w.document.querySelector('.panel-head h3').textContent,/همه پروژه/);dom.window.close();
 });
 
 test('projects: an expert can assign a project only to themself',async()=>{
  const dom=new JSDOM('<section id="projectsView"><div id="projectFeatureRoot"></div></section>',{url:'https://example.test/',runScripts:'outside-only'});
  const w=dom.window,registered=new Map();w.HTMLDialogElement.prototype.showModal=function(){this.open=true};
- w.state={profile:{id:'expert',role:'owner',display_name:'کارشناس'},user:{id:'expert'},organizationScope:{descendantUserIds:[],directReportUserIds:[]},profiles:[{id:'expert',display_name:'کارشناس'},{id:'outside',display_name:'نامرتبط'}]};w.BamcoNavigation={registerView:(id,options)=>registered.set(id,options)};
- w.bamcoEnterprise={q:(s,r=w.document)=>r.querySelector(s),esc:String,fa:String,date:v=>v||'—',dateTime:v=>v||'—',progress:()=>'',statusText:String,personName:()=>'',fetchRows:async()=>[],insert:async()=>[{id:2}],setBusy:()=>{},notify:()=>{}};
+ w.state={token:'synthetic-session',profile:{id:'expert',role:'owner',display_name:'کارشناس'},user:{id:'expert'},organizationScope:{descendantUserIds:[],directReportUserIds:[]},profiles:[{id:'expert',display_name:'کارشناس'},{id:'outside',display_name:'نامرتبط'}]};w.BamcoNavigation={registerView:(id,options)=>registered.set(id,options)};w.BamcoAccess={can:()=>true};
+ w.bamcoEnterprise={q:(s,r=w.document)=>r.querySelector(s),esc:String,fa:String,date:v=>v||'—',dateTime:v=>v||'—',progress:()=>'',statusText:String,personName:()=>'',rpc:async()=>({create_owner_ids:[w.state.user.id,...(w.state.organizationScope?.descendantUserIds||[])],projects:[],items:[],dependencies:[]}),fetchRows:async()=>[],insert:async()=>[{id:2}],setBusy:()=>{},notify:()=>{}};
  w.eval(fs.readFileSync('assets/js/project-management.js','utf8'));w.document.dispatchEvent(new w.Event('DOMContentLoaded'));await registered.get('projects').activate();
  w.document.querySelector('[data-project-action="new"]').click();
  const owner=w.document.querySelector('[name="project_owner_id"]');

@@ -8,11 +8,19 @@ on:
       - 'index.html'
       - 'supabase/**'
       - 'scripts/test-invoice*'
+      - 'scripts/test-project*'
+      - 'scripts/test-section-report*'
+      - 'tests/project*'
+      - 'tests/section-report*'
       - 'tests/sql/**'
       - 'tests/storage/**'
       - 'tests/invoice*'
       - 'tests/browser/check_report_invoice_files.py'
       - 'tests/browser/mock-feature-files-api.js'
+      - 'tests/browser/check_project_report_scope.py'
+      - 'tests/browser/mock-project-report-api.js'
+      - 'tests/project-report-browser-fixture.test.cjs'
+      - 'docs/project-report-browser-acceptance.md'
       - 'tests/browser/mock-api.js'
       - 'tests/browser/mock-messaging-api.js'
       - 'tests/browser/run_smoke.py'
@@ -43,6 +51,18 @@ jobs:
         run: python -m playwright install --with-deps chromium
       - name: Run isolated report and invoice file journeys
         run: python tests/browser/check_report_invoice_files.py
+      - name: Verify isolated project/report fixture contracts
+        run: node --test tests/project-report-browser-fixture.test.cjs
+      - name: Run isolated project and report scope journeys
+        run: python tests/browser/check_project_report_scope.py
+      - name: Save project and report scope acceptance results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: project-report-scope-acceptance
+          path: test-results/project-report-scope/
+          if-no-files-found: warn
+          retention-days: 14
       - name: Save screenshots and acceptance results
         if: always()
         uses: actions/upload-artifact@v4
@@ -85,6 +105,13 @@ jobs:
           BAMCO_TEST_POSTGRES_URL: postgresql://postgres:isolated-fixture-only@127.0.0.1:5432/postgres
           BAMCO_TEST_POSTGRES_DISPOSABLE: '1'
         run: python scripts/test-invoice-attachments-concurrency.py
+      - name: Verify source-derived project trigger and report boundaries
+        run: node scripts/test-project-live-triggers-sql.mjs
+      - name: Verify project graph and revocation concurrency
+        env:
+          BAMCO_TEST_POSTGRES_URL: postgresql://postgres:isolated-fixture-only@127.0.0.1:5432/postgres
+          BAMCO_TEST_POSTGRES_DISPOSABLE: '1'
+        run: python scripts/test-project-report-concurrency.py
   real-storage-api:
     runs-on: ubuntu-latest
     timeout-minutes: 20

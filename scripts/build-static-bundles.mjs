@@ -32,6 +32,7 @@ const javascript = [
   'assets/js/petty-cash.js',
   'assets/js/tasks-io.js',
   'assets/js/table-ui.js',
+  'assets/js/section-report-data.js',
   'assets/js/timeline.js',
   'assets/js/tables.js',
   'assets/js/ui-helpers.js',

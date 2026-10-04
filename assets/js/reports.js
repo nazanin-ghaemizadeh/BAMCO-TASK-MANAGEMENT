@@ -6,7 +6,7 @@ const q=(s,r=document)=>r?.querySelector?.(s)||null;
 const qa=(s,r=document)=>[...(r?.querySelectorAll?.(s)||[])];
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const digits=v=>typeof fa==='function'?fa(v):String(v??'').replace(/\d/g,d=>'۰۱۲۳۴۵۶۷۸۹'[d]);
-let responseRows=[],dateTarget=null,rawTabRender=null,responseDeleting=false,monitoringStartedAt=null,domainRefreshTimer=0;
+let responseRows=[],dateTarget=null,rawTabRender=null,responseDeleting=false,domainRefreshTimer=0;
 function installCss(){
  q('#bamcoCanonicalReportCss')?.remove();const s=document.createElement('style');s.id='bamcoCanonicalReportCss';s.textContent=`
  #performanceReportView .canonical-report,#responseReportView .canonical-report{min-height:160px}
@@ -47,43 +47,24 @@ function inputIso(input){const raw=typeof en==='function'?en(input?.value||''):S
 function profileFor(id){return window.BamcoProfiles?.get?.(id)||(state.profiles||[]).find(x=>String(x.id)===String(id))||null}
 function personName(id,fallback='—'){const canonical=window.BamcoProfiles?.label?.(id,'');return canonical||profileFor(id)?.display_name||profileFor(id)?.full_name||profileFor(id)?.email||fallback}
 function personRole(id){return profileFor(id)?.role||''}
-const uniqueWorkflowRows=rows=>[...new Map((rows||[]).filter(Boolean).map((row,index)=>[row?.id==null?`snapshot-${index}`:String(row.id),row])).values()];
-function workflowRows(){return uniqueWorkflowRows(state.definitionRequests?.length?state.definitionRequests:[...(state.requests||[]),...(state.requestHistory||[])]);}
-async function refreshWorkflowRows(){
- const actor=state.user?.id,token=state.token,load=window.bamcoLoadRequestWorkflow;
- if(!actor||!token)return workflowRows();
- if(typeof load!=='function')throw Error('کارتابل تأیید هنوز آماده نیست.');
- const workflow=await load();
- if(actor!==state.user?.id||token!==state.token)return[];
- state.requests=workflow.requests||[];
- state.requestHistory=workflow.history||[];
- state.requestRoutes=workflow.routes||[];
- state.definitionRequests=uniqueWorkflowRows([...state.requests,...state.requestHistory]);
- return workflowRows();
-}
 function within(value,from,to){const day=String(value||'').slice(0,10);return !!day&&(!from||day>=from)&&(!to||day<=to)}
-function afterMonitoringStart(value){return !monitoringStartedAt||String(value||'')>=monitoringStartedAt}
-async function loadMonitoringStart(){
- if(monitoringStartedAt!==null)return monitoringStartedAt;
- try{const rows=await selectAll('app_settings','select=key,value&key=eq.performance_monitoring_started_at&limit=1'),raw=rows?.[0]?.value;monitoringStartedAt=String(raw?.value||raw||'').trim()}catch{}
- if(!monitoringStartedAt)monitoringStartedAt='2026-09-05T20:30:00Z';
- return monitoringStartedAt;
-}
 function temporal(t){try{return window.bamcoTaskPresentation?.(t)?.temporal||String(t?.due_state||'')}catch{return String(t?.due_state||'')}}
 function terminal(t){try{return !!window.bamcoOptions?.terminal?.(t)}catch{return false}}
 function completed(t){try{if(window.bamcoOptions?.completed?.(t))return true}catch{}const value=String(t?.status||t?.status_key||'').replace(/\u200c/g,' ').trim();return ['انجام شده','انجام‌شده','completed','done'].includes(value.toLowerCase())}
 const renderEpoch={performanceReport:0,responseReport:0};
 function perfTools(range){return `<div class="workspace-report-tools canonical-report-tools performance-command-row"><div class="canonical-date-controls"><label><span>تاریخ شروع</span><span class="canonical-date-field"><input id="canonicalPerfFrom" data-performance-from class="jalali-input" readonly value="${esc(range?.fromText||'')}"><button type="button" class="ghost" data-canonical-date="perf-from" aria-label="انتخاب تاریخ شروع">▦</button></span></label><label><span>تاریخ پایان</span><span class="canonical-date-field"><input id="canonicalPerfTo" data-performance-to class="jalali-input" readonly value="${esc(range?.toText||'')}"><button type="button" class="ghost" data-canonical-date="perf-to" aria-label="انتخاب تاریخ پایان">▦</button></span></label><button type="button" class="ghost" data-canonical-perf-clear data-performance-clear>حذف بازه</button></div><button type="button" class="ghost" data-canonical-refresh="performanceReport">تازه‌سازی</button><button type="button" class="ghost" data-canonical-export="performance">خروجی اکسل</button></div>`}
 async function renderPerformance(force=false,resetRange=false){
- const epoch=++renderEpoch.performanceReport,view=q('#performanceReportView');if(!view)return;const range=currentMonthRange();
+ const epoch=++renderEpoch.performanceReport,view=q('#performanceReportView');if(!view)return;const range=currentMonthRange(),session=window.BamcoSectionReports?.identity?.();
+ const current=()=>epoch===renderEpoch.performanceReport&&state.view==='performanceReport'&&session===window.BamcoSectionReports?.identity?.()&&window.BamcoSectionReports?.allowed?.('performanceReport');
  if(force||!q('.canonical-report',view))panel(view,'گزارش عملکرد',perfTools(range),'<div class="table-wrap"><table class="workspace-table"><thead></thead><tbody><tr><td class="empty">در حال دریافت اطلاعات…</td></tr></tbody></table></div>');else if(resetRange&&range){q('#canonicalPerfFrom',view).value=range.fromText;q('#canonicalPerfTo',view).value=range.toText}window.bamcoInteriorUI?.decorateView?.(view);
  const from=inputIso(q('#canonicalPerfFrom')),to=inputIso(q('#canonicalPerfTo'));
- try{await Promise.all([loadMonitoringStart(),refreshWorkflowRows()])}catch(err){if(epoch===renderEpoch.performanceReport&&state.view==='performanceReport')showError(view,err,'performanceReport');return}
- if(epoch!==renderEpoch.performanceReport||state.view!=='performanceReport')return;const table=q('table',view);if(!table)return;
- const tasks=state.tasks||[],requests=workflowRows(),usageStart=String(monitoringStartedAt||'2026-09-05T20:30:00Z').slice(0,10),definitionFrom=from&&from>usageStart?from:usageStart,scopedTasks=tasks.filter(t=>within(t.due_date,from,to)),metrics=window.bamcoDashboardMetrics,definitionEvents=metrics?.definitionEvents?metrics.definitionEvents({tasks,requests,baseline:definitionFrom,from:definitionFrom,to,taskSources:['web','project']}):tasks.filter(t=>['web','project'].includes(String(t?.source||'').toLowerCase())&&within(t.created_at,definitionFrom,to)).map(t=>({actorId:t.created_by,ownerId:t.owner_id||t.created_by})),ids=[...new Set([...scopedTasks.map(t=>t.owner_id),...scopedTasks.map(t=>t.created_by),...definitionEvents.map(event=>event.actorId)])].filter(Boolean);
+ let feed;try{feed=await window.BamcoSectionReports.load('performanceReport',{force})}catch(err){if(epoch===renderEpoch.performanceReport&&session===window.BamcoSectionReports?.identity?.())showError(view,err,'performanceReport');return}
+ if(!current())return;const table=q('table',view);if(!table)return;
+ const tasks=feed.tasks,usageStart=String(feed.monitoring_started_at||'2026-09-05T20:30:00Z').slice(0,10),definitionFrom=from&&from>usageStart?from:usageStart,scopedTasks=tasks.filter(t=>within(t.due_date,from,to)),definitionEvents=feed.definition_events.filter(event=>within(event.createdAt,definitionFrom,to)),ids=[...new Set([...scopedTasks.map(t=>t.owner_id),...scopedTasks.map(t=>t.created_by),...definitionEvents.map(event=>event.actorId)])].filter(Boolean);
+ const reportName=id=>feed.profiles.find(person=>String(person.id)===String(id))?.display_name||'—';
  const headers=['متولی','کل واگذارشده','فعال','هشدار','دیرکرد','محول‌شده در بازه','انجام‌شده در بازه','درصد تکمیل','تعریف وظیفه در بازه انتخاب‌شده (برای دیگران)','تعریف وظیفه در بازه انتخاب‌شده (برای خود)'];
  table.tHead.innerHTML='<tr>'+headers.map(h=>`<th>${esc(h)}</th>`).join('')+'</tr>';
- table.tBodies[0].innerHTML=ids.map((id,i)=>{const all=scopedTasks.filter(t=>String(t.owner_id)===String(id)),active=all.filter(t=>!t.archived&&!terminal(t)),due=all,done=due.filter(completed),pct=due.length?Math.round(done.length/due.length*100):0,level=pct>=80?'high':pct>=60?'medium':pct>=40?'warning':'low',definitions=definitionEvents.filter(event=>String(event.actorId)===String(id)),forSelf=definitions.filter(event=>String(event.ownerId||event.actorId)===String(event.actorId)).length,forOthers=definitions.length-forSelf;return `<tr data-canonical-row="1" data-workspace-index="${i}"><td>${esc(personName(id))}</td><td>${digits(all.length)}</td><td>${digits(active.length)}</td><td>${digits(active.filter(t=>temporal(t)==='دوره هشدار').length)}</td><td>${digits(active.filter(t=>temporal(t)==='دیرکرد').length)}</td><td>${digits(due.length)}</td><td>${digits(done.length)}</td><td class="completion-cell"><div class="performance-progress ${level}" style="--p:${Math.max(0,Math.min(100,pct))}%"><i></i><span>${digits(pct)}٪</span></div></td><td title="وظایف تعریف‌شده برای دیگران" data-definition-metric="for-others">${digits(forOthers)}</td><td title="وظایف تعریف‌شده برای خود" data-definition-metric="for-self">${digits(forSelf)}</td></tr>`}).join('')||'<tr><td colspan="10" class="empty">رکوردی ثبت نشده است.</td></tr>';
+ table.tBodies[0].innerHTML=ids.map((id,i)=>{const all=scopedTasks.filter(t=>String(t.owner_id)===String(id)),active=all.filter(t=>!t.archived&&!terminal(t)),due=all,done=due.filter(completed),pct=due.length?Math.round(done.length/due.length*100):0,level=pct>=80?'high':pct>=60?'medium':pct>=40?'warning':'low',definitions=definitionEvents.filter(event=>String(event.actorId)===String(id)),forSelf=definitions.filter(event=>String(event.ownerId||event.actorId)===String(event.actorId)).reduce((sum,event)=>sum+Number(event.count||0),0),forOthers=definitions.reduce((sum,event)=>sum+Number(event.count||0),0)-forSelf;return `<tr data-canonical-row="1" data-workspace-index="${i}"><td>${esc(reportName(id))}</td><td>${digits(all.length)}</td><td>${digits(active.length)}</td><td>${digits(active.filter(t=>temporal(t)==='دوره هشدار').length)}</td><td>${digits(active.filter(t=>temporal(t)==='دیرکرد').length)}</td><td>${digits(due.length)}</td><td>${digits(done.length)}</td><td class="completion-cell"><div class="performance-progress ${level}" style="--p:${Math.max(0,Math.min(100,pct))}%"><i></i><span>${digits(pct)}٪</span></div></td><td title="وظایف تعریف‌شده برای دیگران" data-definition-metric="for-others">${digits(forOthers)}</td><td title="وظایف تعریف‌شده برای خود" data-definition-metric="for-self">${digits(forSelf)}</td></tr>`}).join('')||'<tr><td colspan="10" class="empty">رکوردی ثبت نشده است.</td></tr>';
 }
 function responseLabel(v){return({replied:'پاسخ داده',awaiting:'بدون پاسخ',failed:'خطای ارسال',reminder_needed:'نیازمند یادآوری'})[v]||v||'—'}
 function channel(v){return v==='email'?'ایمیل':v==='portal'?'داخل سامانه':v==='both'?'هر دو':v||'—'}
@@ -101,23 +82,26 @@ async function renderResponse(force=false){
 async function deleteResponses(){const ids=(window.bamcoSelection?.ids?.('#responseReportBody')||[]).map(Number).filter(Number.isFinite);if(!ids.length)return;if(!await window.bamcoConfirm(ids.length===1?'رکورد انتخاب‌شده حذف شود؟':`${digits(ids.length)} رکورد انتخاب‌شده حذف شوند؟`))return;responseDeleting=true;syncResponseDelete();try{const changed=await rpc('cancel_message_deliveries',{p_ids:ids});if(Number(changed)!==ids.length)throw Error('حذف همه ردیف‌های انتخاب‌شده تأیید نشد.');responseRows=responseRows.filter(x=>!ids.includes(Number(x.delivery_id)));window.bamcoSelection?.clear?.('#responseReportBody');renderResponseRows();toast(`${digits(ids.length)} رکورد حذف شد.`)}catch(err){toast(err.message,true)}finally{responseDeleting=false;syncResponseDelete()}}
 function showError(view,err,id){const box=q('.canonical-report',view);if(box)box.innerHTML=`<div class="workspace-error" role="alert"><b>اطلاعات گزارش دریافت نشد.</b><p>${esc(err?.message||'خطای نامشخص')}</p><button type="button" class="ghost" data-canonical-refresh="${id}">تلاش مجدد</button></div>`}
 async function exportReport(kind){
+ if(kind==='performance'&&!window.BamcoSectionReports?.peek?.('performanceReport'))throw Error('گزارش تازه و دسترسی فعال برای خروجی لازم است.');
+ const reportSession=window.BamcoSectionReports?.identity?.();
  const view=q(kind==='performance'?'#performanceReportView':'#responseReportView');if(!view)return;
  let data;
  if(kind==='response'){
   const list=responseVisible(),headers=['ردیف','فرد','کانال','موضوع','ارسال','وضعیت پاسخ','پاسخ','کانال پاسخ','تاریخ پاسخ','تعداد یادآوری'];
   data=[headers,...list.map((x,i)=>[list.length-i,personName(x.recipient_id,x.recipient_name||x.recipient_email||'—'),channel(x.channel),x.subject||'—',x.sent_at?jalaliDateTime(x.sent_at):'—',responseLabel(x.response_status),x.reply_text||'—',channel(x.reply_channel),x.replied_at?jalaliDateTime(x.replied_at):'—',x.reminder_count||0])];
  }else{const table=q('table',view);if(!table)return;data=[...table.rows].filter(r=>!r.hidden).map(r=>[...r.cells].map(c=>c.textContent.trim()))}
- if(!data.length)return;const X=await window.ensureBamcoXLSX(),ws=X.utils.aoa_to_sheet(data),wb=X.utils.book_new();ws['!views']=[{rightToLeft:true}];ws['!autofilter']={ref:X.utils.encode_range({s:{r:0,c:0},e:{r:Math.max(0,data.length-1),c:Math.max(0,data[0].length-1)}})};ws['!cols']=data[0].map((_,i)=>({wch:kind==='response'?[8,22,15,32,20,18,34,16,20,14][i]:i===0?24:16}));wb.Workbook={Views:[{RTL:true}]};X.utils.book_append_sheet(wb,ws,kind==='performance'?'گزارش عملکرد':'گزارش پاسخ‌ها');X.writeFile(wb,(kind==='performance'?'گزارش عملکرد':'گزارش پاسخ‌ها')+'.xlsx',{compression:true})
+ if(!data.length)return;const X=await window.ensureBamcoXLSX(),ws=X.utils.aoa_to_sheet(data),wb=X.utils.book_new();ws['!views']=[{rightToLeft:true}];ws['!autofilter']={ref:X.utils.encode_range({s:{r:0,c:0},e:{r:Math.max(0,data.length-1),c:Math.max(0,data[0].length-1)}})};ws['!cols']=data[0].map((_,i)=>({wch:kind==='response'?[8,22,15,32,20,18,34,16,20,14][i]:i===0?24:16}));wb.Workbook={Views:[{RTL:true}]};X.utils.book_append_sheet(wb,ws,kind==='performance'?'گزارش عملکرد':'گزارش پاسخ‌ها');if(kind==='performance'&&(reportSession!==window.BamcoSectionReports?.identity?.()||!window.BamcoSectionReports?.peek?.('performanceReport')))throw Error('نشست یا دسترسی گزارش تغییر کرده است.');X.writeFile(wb,(kind==='performance'?'گزارش عملکرد':'گزارش پاسخ‌ها')+'.xlsx',{compression:true})
 }
 function openCalendar(kind){const input=q(kind==='perf-from'?'#canonicalPerfFrom':kind==='perf-to'?'#canonicalPerfTo':kind==='response-from'?'#canonicalResponseFrom':'#canonicalResponseTo');if(!input)return;dateTarget={kind,input};const now=currentJalali(),raw=typeof en==='function'?en(input.value||''):String(input.value||''),m=raw.match(/\d+/g)?.map(Number),p=m?.length===3?{y:m[0],m:m[1],d:m[2]}:now;q('#calendarLabel').textContent=kind.includes('from')?'انتخاب تاریخ شروع':'انتخاب تاریخ پایان';q('#calYear').innerHTML=Array.from({length:16},(_,i)=>now.y-5+i).map(y=>`<option value="${y}">${digits(y)}</option>`).join('');q('#calMonth').innerHTML=['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'].map((n,i)=>`<option value="${i+1}">${n}</option>`).join('');q('#calYear').value=String(p.y);q('#calMonth').value=String(p.m);fillCalendarDays();q('#calDay').value=String(p.d);q('#calendarDialog').showModal()}
 function commitDate(clear=false){if(!dateTarget)return;const {kind,input}=dateTarget;input.value=clear?'':digits(`${q('#calYear').value}/${String(q('#calMonth').value).padStart(2,'0')}/${String(q('#calDay').value).padStart(2,'0')}`);dateTarget=null;q('#calendarDialog')?.close();if(kind.startsWith('perf'))void renderPerformance(false);else{window.bamcoSelection?.clear?.('#responseReportBody');renderResponseRows()}}
+window.addEventListener('bamco:report-feed-cleared',()=>{++renderEpoch.performanceReport;const view=q('#performanceReportView');if(view)view.innerHTML='';if(state.view==='performanceReport'&&window.BamcoSectionReports?.allowed?.('performanceReport'))void renderPerformance();});
 function patchTabs(){const tabs=window.bamcoTabs;if(!tabs?.render)return false;if(!rawTabRender)rawTabRender=tabs.render.bind(tabs);if(tabs.__canonicalReportsV6)return true;tabs.render=(id,...args)=>id==='performanceReport'?renderPerformance(false,true):id==='responseReport'?renderResponse(false):rawTabRender(id,...args);tabs.__canonicalReportsV6=true;return true}
 function refreshVisibleReport(detail={}){
  const domain=String(detail.domain||detail.table||'').toLowerCase();
  if(!state?.token||!['profiles','organization','tasks','workflow','notifications','access'].includes(domain))return;
  clearTimeout(domainRefreshTimer);
- // The main task state refresh is scheduled after the same event.  Render this
- // report afterwards so its counts always use the refreshed canonical task set.
+ // Coalesce report refreshes after the independent feed cache is invalidated.
+ // Personal task/workflow collections are never report inputs.
  domainRefreshTimer=setTimeout(()=>{
   if(state.view==='performanceReport')void renderPerformance(false);
   else if(state.view==='responseReport'&&['notifications','profiles','access'].includes(domain))void renderResponse(false);
@@ -125,7 +109,7 @@ function refreshVisibleReport(detail={}){
 }
 function bindReportControls(){
  document.addEventListener('click',e=>{
-  const refresh=e.target.closest?.('[data-canonical-refresh]');if(refresh){e.preventDefault();e.stopImmediatePropagation();refresh.dataset.canonicalRefresh==='performanceReport'?void renderPerformance(false):void renderResponse(false);return}
+  const refresh=e.target.closest?.('[data-canonical-refresh]');if(refresh){e.preventDefault();e.stopImmediatePropagation();refresh.dataset.canonicalRefresh==='performanceReport'?void renderPerformance(true):void renderResponse(false);return}
   const date=e.target.closest?.('[data-canonical-date]');if(date){e.preventDefault();e.stopImmediatePropagation();openCalendar(date.dataset.canonicalDate);return}
   if(dateTarget&&e.target.closest?.('#setDateBtn')){e.preventDefault();e.stopImmediatePropagation();commitDate(false);return}
   if(dateTarget&&e.target.closest?.('#clearDateBtn')){e.preventDefault();e.stopImmediatePropagation();commitDate(true);return}
@@ -133,12 +117,12 @@ function bindReportControls(){
   if(e.target.closest?.('#responseReportView [data-response-home]')){e.preventDefault();e.stopImmediatePropagation();window.bamcoShowHome?.();return}
   if(e.target.closest?.('#responseReportView [data-response-access]')){e.preventDefault();e.stopImmediatePropagation();window.bamcoAccessEditor?.open?.({featureKey:'responseReport',title:'مدیریت دسترسی گزارش پاسخ‌ها'});return}
   if(e.target.closest?.('#responseReportView [data-response-bulk-delete]')){e.preventDefault();e.stopImmediatePropagation();void deleteResponses();return}
-  const exp=e.target.closest?.('[data-canonical-export]');if(exp){e.preventDefault();e.stopImmediatePropagation();void exportReport(exp.dataset.canonicalExport);return}
+  const exp=e.target.closest?.('[data-canonical-export]');if(exp){e.preventDefault();e.stopImmediatePropagation();void exportReport(exp.dataset.canonicalExport).catch(error=>window.toast?.(error.message,true));return}
   const nav=e.target.closest?.('#nav [data-view="performanceReport"],#nav [data-view="responseReport"]');if(nav)setTimeout(()=>{if(state.view==='performanceReport')void renderPerformance(false,true);else if(state.view==='responseReport')void renderResponse(false)},0);
  },false);
  document.addEventListener('bamco-selection-change',e=>{if(e.target.closest?.('#responseReportView'))syncResponseDelete()});
 }
 function watchVisibility(){for(const [id,render] of [['performanceReport',renderPerformance],['responseReport',renderResponse]]){const view=q('#'+id+'View');if(!view)continue;let visible=!view.classList.contains('hidden');new MutationObserver(()=>{const nextVisible=!view.classList.contains('hidden'),opened=!visible&&nextVisible;visible=nextVisible;if(opened&&state.view===id)void (id==='performanceReport'?render(false,true):render(false))}).observe(view,{attributes:true,attributeFilter:['class']})}}
-function boot(){installCss();markReportOwners();patchTabs();bindReportControls();watchVisibility();document.addEventListener('bamco:domain-invalidated',event=>refreshVisibleReport(event.detail));document.addEventListener('bamco:profiles-updated',()=>refreshVisibleReport({domain:'profiles'}));document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshVisibleReport({domain:'profiles'})});window.addEventListener('focus',()=>refreshVisibleReport({domain:'profiles'}));const app=q('#appView');if(app)new MutationObserver(()=>{if(!app.classList.contains('hidden')){patchTabs();refreshVisibleReport({domain:'profiles'})}}).observe(app,{attributes:true,attributeFilter:['class']});window.bamcoLiveSync={refresh:()=>refreshVisibleReport({domain:'profiles'}),interval:null};window.bamcoCanonicalReports={renderPerformance,renderResponse,visibleResponse:responseVisible}}
+function boot(){installCss();markReportOwners();patchTabs();bindReportControls();watchVisibility();document.addEventListener('bamco:domain-invalidated',event=>refreshVisibleReport(event.detail));document.addEventListener('bamco:profiles-updated',()=>refreshVisibleReport({domain:'profiles'}));document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshVisibleReport({domain:'profiles'})});window.addEventListener('focus',()=>refreshVisibleReport({domain:'profiles'}));const app=q('#appView');if(app)new MutationObserver(()=>{if(!app.classList.contains('hidden')){patchTabs();refreshVisibleReport({domain:'profiles'})}}).observe(app,{attributes:true,attributeFilter:['class']});window.bamcoLiveSync={refresh:()=>refreshVisibleReport({domain:'profiles'}),interval:null};window.bamcoCanonicalReports={renderPerformance,renderResponse,exportPerformance:()=>exportReport('performance'),visibleResponse:responseVisible}}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();

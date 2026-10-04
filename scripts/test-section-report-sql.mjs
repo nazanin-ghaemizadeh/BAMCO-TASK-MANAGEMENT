@@ -1,0 +1,31 @@
+import {PGlite} from '@electric-sql/pglite';import fs from 'node:fs';import assert from 'node:assert/strict';
+const db=new PGlite();const a='00000000-0000-0000-0000-000000000001',b='00000000-0000-0000-0000-000000000002';
+const actor=async(id,features,role='authenticated')=>{await db.exec('reset role');await db.query("select set_config('test.uid',$1,false),set_config('test.features',$2,false)",[id,JSON.stringify(features)]);await db.exec('set role '+role)};
+const rpc=async(name)=>(await db.query('select public.'+name+'() as data')).rows[0].data;
+try{
+ await db.exec(`create schema private;create schema auth;create role authenticated;create role anon;
+ create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('test.uid',true),'')::uuid$$;
+ create table profiles(id uuid primary key,display_name text,full_name text,active boolean default true);
+ create table tasks(id bigint primary key,legacy_id bigint,title text,description text,owner_id uuid,created_by uuid,status text,priority text,start_date date,due_date date,done_date date,reminder_days int,archived boolean,former_owner_name text,created_at timestamptz,source text,manager_notes text);
+ create table change_requests(id bigint primary key,requested_by uuid,request_type text,proposed_data jsonb,final_data jsonb,created_at timestamptz,task_id bigint,applied_task_id bigint,manager_note text);
+ create table app_settings(key text,value jsonb);
+ create function private.feature_can_access_for(uuid,text,text) returns boolean language sql stable security definer set search_path='' as $$select exists(select 1 from public.profiles where id=$1 and active) and coalesce((current_setting('test.features',true)::jsonb->>$2)::boolean,false)$$;
+ alter table tasks enable row level security;create policy personal on tasks for select to authenticated using(owner_id=auth.uid());
+ alter table change_requests enable row level security;create policy workflow on change_requests for select to authenticated using(requested_by=auth.uid());
+ grant usage on schema public,private,auth to authenticated,anon;grant select on tasks,change_requests to authenticated;
+ `);
+ await db.query('insert into profiles(id,display_name) values($1,$2),($3,$4)',[a,'Synthetic reader',b,'Synthetic colleague']);
+ await db.query("insert into tasks(id,title,description,owner_id,created_by,status,priority,archived,created_at,source,manager_notes) values(1,'Own active','Own description',$1,$1,'doing','medium',false,'2026-10-01','web','Private manager note'),(2,'Foreign active','Report detail',$2,$2,'doing','medium',false,'2026-10-01','project','Private manager note'),(3,'Foreign archive','Archive description',$2,$2,'done','medium',true,'2026-10-01','web','Private manager note'),(4,'Imported',$2,$2,$2,'doing','medium',false,'2026-10-01','excel','Private manager note')",[a,b]);
+ await db.query("insert into change_requests values(1,$1,'create',$2,null,'2026-10-01',2,2,'Secret decision'),(2,$1,'create',$3,null,'2026-10-02',null,null,'Secret decision')",[b,JSON.stringify({owner_id:b,title:'Hidden proposed text'}),JSON.stringify({owner_id:a,title:'Hidden proposed text'})]);
+ const before=(await db.query('select * from pg_policies order by tablename')).rows;
+ await db.exec(fs.readFileSync(new URL('../supabase/schema-proposals/isolated-section-report-feeds.sql',import.meta.url),'utf8'));
+ assert.deepEqual((await db.query('select * from pg_policies order by tablename')).rows,before);
+ await actor(a,{taskTimeline:true});const timeline=await rpc('task_timeline_report_feed');assert.equal(timeline.tasks.length,3);assert(timeline.tasks.some(t=>t.id===2));assert(!timeline.tasks.some(t=>t.id===3));assert.equal(timeline.definition_events.length,0);assert(!JSON.stringify(timeline).includes('Private manager note'));assert(!JSON.stringify(timeline).includes('Secret decision'));await assert.rejects(rpc('performance_report_feed'));
+ assert.equal((await db.query('select * from tasks')).rows.length,1);assert.equal((await db.query('select * from change_requests')).rows.length,0);
+ await actor(a,{performanceReport:true});const perf=await rpc('performance_report_feed');assert.equal(perf.tasks.length,4);assert.equal(perf.definition_events.reduce((n,e)=>n+e.count,0),4,'one applied create deduplicated, imported excluded');assert(!JSON.stringify(perf).includes('Foreign active'));assert(!JSON.stringify(perf).includes('Hidden proposed'));assert(!JSON.stringify(perf).includes('Secret decision'));assert(!JSON.stringify(perf).includes('Private manager note'));await assert.rejects(rpc('task_timeline_report_feed'));
+ assert.equal((await db.query('select * from tasks')).rows.length,1);assert.equal((await db.query('select * from change_requests')).rows.length,0);
+ await actor(a,{});await assert.rejects(rpc('performance_report_feed'));
+ await db.exec('reset role');await db.query('update profiles set active=false where id=$1',[a]);await actor(a,{performanceReport:true});await assert.rejects(rpc('performance_report_feed'));
+ await actor('',{performanceReport:true},'anon');await assert.rejects(rpc('performance_report_feed'));
+ console.log('PASS isolated section report SQL: independent gates, foreign/all archive reporting, personal task/workflow policies unchanged, minimal payloads, definition dedup, revoked/inactive/anonymous denied');
+}finally{await db.close()}
