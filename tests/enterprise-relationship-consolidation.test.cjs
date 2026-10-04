@@ -14,7 +14,8 @@ test('navigation is governed by a feature catalog and one common access service'
   assert.match(catalog,/featureKey/,'every navigable route must carry a feature key');
   assert.match(catalog,/featureForRoute/,'routes must resolve their canonical feature');
   assert.match(navigation,/BamcoAccess/,'direct navigation must consult the access service');
-  assert.match(navigation,/\.can\([^)]*['"]view['"]/,'route guard must request view permission');
+  assert.match(navigation,/const action=route\?\.action\|\|'view'/,'ordinary routes default to view; management routes can require their existing action');
+  assert.match(navigation,/access\.can\(featureKey,action\)/,'direct navigation must request the canonical route action');
   assert.doesNotMatch(navigation,/\.manager-only/,'CSS classes are not an authorization check');
   assert.match(catalog,/if \('disabled' in node && !allowed\) node\.disabled = true/,'the shared access pass may disable a denied control but cannot re-enable a locally invalid one');
   assert.doesNotMatch(catalog,/node\.disabled = !allowed/,'local action prerequisites must survive a feature access refresh');

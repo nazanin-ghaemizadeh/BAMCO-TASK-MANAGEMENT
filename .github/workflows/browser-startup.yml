@@ -50,3 +50,36 @@ jobs:
           name: browser-startup-results
           path: test-results/browser/
           retention-days: 7
+
+  access-visibility:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        width: [1365, 390]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci && npm run build:assets && npm run check:assets
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install existing pinned browser test dependencies
+        run: |
+          python -m pip install playwright==1.57.0
+          python -m playwright install --with-deps chromium
+      - name: Verify every authorized tab on the isolated shipped UI
+        run: |
+          mkdir -p test-results/access-visibility
+          python tests/browser/check_access_visibility.py --width ${{ matrix.width }} --output test-results/access-visibility/result-${{ matrix.width }}.json
+      - name: Upload access visibility results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: access-visibility-${{ matrix.width }}
+          path: test-results/access-visibility/
+          retention-days: 7

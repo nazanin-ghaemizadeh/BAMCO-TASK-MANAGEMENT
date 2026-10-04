@@ -40,7 +40,7 @@ test('task filter dropdowns are populated before interaction and runtime tabs re
   // guard grants the route.  The former no-argument listener predates the
   // canonical access service and would let an unauthorised control invoke its
   // renderer before the denial handler ran.
-  assert.match(runtime,/addEventListener\('click',event=>\{if\(can\(id,'view'\)\)\{void render\(id\);return\}/);
+  assert.match(runtime,/addEventListener\('click',event=>\{if\(can\(id\)\)\{void render\(id\);return\}/);
   assert.doesNotMatch(runtime,/setTimeout\(\(\)=>render\(id\),0\)/);
   assert.match(sidebar,/if\(willOpen\)positionDropdown\(group\)/);
 });

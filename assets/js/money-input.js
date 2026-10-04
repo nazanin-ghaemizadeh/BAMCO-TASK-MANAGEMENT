@@ -69,11 +69,16 @@
     }
     return value;
   }
-  function format(value, { digits: digitSet } = {}) {
+  function format(value, { digits: digitSet, hideZeroFraction = false } = {}) {
     try {
       const item = parts(value);
-      const formatted = (item.negative ? '-' : '') + item.integer.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
-        + (item.fraction != null ? '.' + item.fraction : '');
+      // Compact readouts may omit an all-zero fraction without rounding any
+      // significant digits. Editable fields keep their original typing behavior.
+      const hideFraction = hideZeroFraction && /^0+$/.test(item.fraction);
+      const fraction = hideFraction ? null : item.fraction;
+      const integer = item.integer || (hideFraction ? '0' : '');
+      const formatted = (item.negative ? '-' : '') + integer.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+        + (fraction != null ? '.' + fraction : '');
       return digitSet === 'fa' ? formatted.replace(/\d/g, char => '۰۱۲۳۴۵۶۷۸۹'[char]) : formatted;
     } catch { return String(value ?? ''); }
   }

@@ -108,6 +108,22 @@ test('Persian digit display is opt-in and public formatting remains backward-com
   assert.equal(f.money.raw(f.input), exact);
 });
 
+test('compact amount formatting hides only all-zero fractions without changing exact values', t => {
+  const f = setup(); t.after(() => f.dom.window.close()); const m = f.money;
+  for (const [value, expected] of [
+    ['1234567.00', '1,234,567'], ['0.00', '0'], ['.00', '0'], ['-1234.00', '-1,234'],
+    ['9007199254740993.00', '9,007,199,254,740,993'], ['۱۲۳۴٫۰۰', '1,234'],
+    ['١٬٢٣٤٫٠٠', '1,234'], ['1234.50', '1,234.50'], ['1234.01', '1,234.01'],
+    ['9007199254740993.00100', '9,007,199,254,740,993.00100'],
+    ['1234.', '1,234.'], ['1.2.3', '1.2.3'], ['', '']
+  ]) assert.equal(m.format(value, { hideZeroFraction: true }), expected, value);
+  assert.equal(m.format('1234.00', { digits: 'fa', hideZeroFraction: true }), '۱,۲۳۴');
+  assert.equal(m.format('1234.50', { digits: 'fa', hideZeroFraction: true }), '۱,۲۳۴.۵۰');
+  assert.equal(m.format('1234.00'), '1,234.00', 'default formatting keeps the original scale');
+  f.set('1234.00'); assert.equal(f.input.value, '1,234.00'); assert.equal(m.raw(f.input), '1234.00');
+  assert.equal(m.add('1234.00', '0.01'), '1234.01');
+});
+
 test('Persian money typing and paste accept every digit set without losing decimal precision', t => {
   const f = setup('data-money-digits="fa" data-money-scale="2" data-money-integer-digits="16"'); t.after(() => f.dom.window.close());
   for (const text of ['1234567.05', '۱۲۳۴۵۶۷٫۰۵', '١٢٣٤٥٦٧٫٠٥']) {
