@@ -113,7 +113,10 @@ async def one_case(browser, base, width, height, out):
     try:
         await page.goto(base,wait_until='load')
         await login(page,'manager')
-        await page.wait_for_function("document.body.classList.contains('home-layout-ready')")
+        await page.wait_for_function("() => document.body.classList.contains('home-layout-ready')")
+        # Dismiss the fixture's one-time update notice before visual captures.
+        for notice in await page.locator('.bamco-toast-close').all():
+            if await notice.is_visible():await activate(notice)
         for mode in ['launcher','cards','custom','launcher','cards']:
             await page.evaluate('(mode)=>{bamcoShowHome();bamcoHomeLayout.set(mode)}',mode)
             if mode=='custom':
@@ -147,9 +150,9 @@ async def one_case(browser, base, width, height, out):
                 await activate(trigger);await activate(page.locator('.home-launcher-dialog [data-route="kanban"]'))
             else:
                 await activate(page.locator('#nav [data-view="kanban"]'))
-            await page.wait_for_function("Bamco.state.view==='kanban'&&!document.querySelector('#kanbanView').classList.contains('hidden')")
+            await page.wait_for_function("() => Bamco.state.view==='kanban'&&!document.querySelector('#kanbanView').classList.contains('hidden')")
             await activate(page.locator('#kanbanView .content-back:visible').first)
-            await page.wait_for_function("Bamco.state.view==='home'&&document.body.classList.contains('card-home-active')")
+            await page.wait_for_function("() => Bamco.state.view==='home'&&document.body.classList.contains('card-home-active')")
             await settle(page);verify_home(await page.evaluate(GEOMETRY),width,height)
         # Rotation changes the CSS viewport without reloading or losing mode.
         if width in [390,430]:
