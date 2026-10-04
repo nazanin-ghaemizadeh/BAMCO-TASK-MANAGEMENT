@@ -208,13 +208,14 @@ async def seed_foreign_invoice(page):
       store.fileBodies.set('invoices-private/' + ready.storage_path, new Blob([new Uint8Array(bytes)], { type: 'application/pdf' }));
     }""", list(PDF['buffer']))
 
-async def assert_foreign_mutation_controls_absent(page):
-    # A delete feature grant is deliberate: absence must still depend on the
-    # unchanged record relationship, not merely a missing delete permission.
+async def assert_foreign_mutation_controls_present(page):
+    # Identical action grants must expose identical controls on another creator's
+    # invoice. Their pending reservation stays private to that uploader.
     for selector in ('[data-invoice-action="payment"]', '[data-invoice-action="delete"]',
-                     '[data-invoice-payment-edit]', '[data-invoice-file-kind]',
-                     '[data-invoice-file-delete]', '[data-invoice-file-resume]'):
-        await expect(page.locator('#invoiceFeatureRoot ' + selector)).to_have_count(0)
+                     '[data-invoice-payment-edit="8201"]', '[data-invoice-file-kind="proforma"]',
+                     '[data-invoice-file-kind="receipt"]', '[data-invoice-file-delete="8301"]'):
+        await expect(page.locator('#invoiceFeatureRoot ' + selector)).to_be_enabled()
+    await expect(page.locator('#invoiceFeatureRoot [data-invoice-file-resume]')).to_have_count(0)
 
 async def check_foreign_invoice(page, width):
     assert await page.evaluate("__testApi.actor.role") == 'owner'
@@ -244,7 +245,7 @@ async def check_foreign_invoice(page, width):
     await expect(page.locator('.invoice-detail')).to_contain_text('foreign-ready.pdf')
     await expect(page.locator('.invoice-detail')).not_to_contain_text('foreign-pending-private.pdf')
     await expect(page.locator('[data-invoice-file-row="8302"]')).to_have_count(0)
-    await assert_foreign_mutation_controls_absent(page)
+    await assert_foreign_mutation_controls_present(page)
     await expect(page.locator('[data-invoice-action="edit"]')).to_be_enabled()
     download = page.locator('[data-invoice-file-download="8301"]')
     await expect(download).to_be_enabled()
@@ -257,7 +258,7 @@ async def check_foreign_invoice(page, width):
 
     await page.locator('[data-invoice-action="edit"]').click()
     form = page.locator('#invoiceForm')
-    await expect(form.locator('[name="proforma_file"]')).to_have_count(0)
+    await expect(form.locator('[name="proforma_file"]')).to_have_count(1)
     await form.locator('[name="title"]').fill('ویرایش سراسری صورتحساب')
     await page.evaluate("__featureFiles.pauseNext('save_invoice')")
     await form.locator('[type="submit"]').click()
@@ -271,7 +272,7 @@ async def check_foreign_invoice(page, width):
     await expect(page.locator('.invoice-detail')).to_contain_text('ویرایش سراسری صورتحساب')
     await expect(page.locator('[data-invoice-load-status]')).to_have_count(0)
     assert await page.evaluate("__featureFiles.invoices[0].title") == 'ویرایش سراسری صورتحساب'
-    await assert_foreign_mutation_controls_absent(page)
+    await assert_foreign_mutation_controls_present(page)
 
     # Hold a refresh, then enter an editor while the cached card is available.
     # The stale response must not replace a draft. Native Escape must re-read
@@ -298,7 +299,7 @@ async def check_foreign_invoice(page, width):
     await page.keyboard.press('Escape')
     await expect(page.locator('#invoiceDialog')).not_to_be_visible()
     await expect(page.locator('[data-invoice-load-status]')).to_have_count(0)
-    await assert_foreign_mutation_controls_absent(page)
+    await assert_foreign_mutation_controls_present(page)
     await snapshot(page, f'{width}-foreign-invoice-escape-recovery.png')
     assert await page.evaluate("__featureFiles.calls.filter(call => call.endpoint === 'save_invoice').length") == 1
     assert not await page.evaluate("__featureFiles.calls.some(call => ['save_invoice_payment', 'reserve_invoice_file', 'invoice-file-upload', 'finalize_invoice_file', 'delete_invoice_file'].includes(call.endpoint) || (call.endpoint === 'invoices' && call.method === 'DELETE'))")
@@ -308,6 +309,116 @@ async def check_foreign_invoice(page, width):
     assert await page.evaluate('__featureFiles.uploads.length') == 0
     assert await page.evaluate('__featureFiles.expiredGates') == []
     assert await page.evaluate('Object.values(__featureFiles.gates).every(gate => gate.released && gate.finished)')
+
+async def upload_invoice_file(page, kind, filename, payment_id=None):
+    selector = f'[data-invoice-file-kind="{kind}"]'
+    if payment_id is not None:
+        selector += f'[data-payment-id="{payment_id}"]'
+    await page.locator(selector).click()
+    await page.locator('#invoiceFileForm [name="file"]').set_input_files({**PDF, 'name': filename})
+    await page.locator('#invoiceFileForm [type="submit"]').click()
+    await expect(page.locator('#invoiceFileDialog')).not_to_be_visible()
+    await expect(page.locator('.invoice-detail')).to_contain_text(filename)
+    return await page.evaluate('name => __featureFiles.files.find(row => row.file_name === name).id', filename)
+
+async def download_invoice_file(page, file_id, filename):
+    async with page.expect_download() as downloaded:
+        await page.locator(f'[data-invoice-file-download="{file_id}"]').click()
+    file = await downloaded.value
+    assert file.suggested_filename == filename
+    assert Path(await file.path()).read_bytes() == PDF['buffer']
+
+async def remove_invoice_file(page, file_id):
+    await page.locator(f'[data-invoice-file-delete="{file_id}"]').click()
+    await expect(page.locator('#bamcoNoticeDialog')).to_be_visible()
+    await page.locator('[data-notice-ok]').click()
+    await expect(page.locator(f'[data-invoice-file-row="{file_id}"]')).to_have_count(0)
+
+async def check_foreign_operations(page, width):
+    # Continue the same foreign invoice after load/search/native Escape checks.
+    await page.locator('[data-invoice-payment-edit="8201"]').click()
+    form = page.locator('#invoicePaymentForm')
+    await form.locator('[name="amount"]').fill('20.00')
+    await form.locator('[name="notes"]').fill('ویرایش مرحله همکار دیگر')
+    await form.locator('[type="submit"]').click()
+    await expect(page.locator('#invoicePaymentDialog')).not_to_be_visible()
+    assert await page.evaluate("__featureFiles.payments.find(row => row.id === '8201').amount") == '20.00'
+    await page.locator('[data-invoice-action="payment"]').click()
+    await form.locator('[name="amount"]').fill('80.00')
+    await form.locator('[name="status"]').select_option('paid')
+    await form.locator('[name="receipt_file"]').set_input_files({**PDF, 'name': 'foreign-new-receipt.pdf'})
+    await form.locator('[type="submit"]').click()
+    await expect(page.locator('#invoicePaymentDialog')).not_to_be_visible()
+    await expect(page.locator('.payment-row')).to_have_count(2)
+    assert await page.evaluate("__featureFiles.payments.filter(row => row.invoice_id === '8101').map(row => row.percent_of_total)") == ['20.000', '80.000']
+    assert await page.evaluate("__featureFiles.invoices[0].created_by !== __testApi.actor.id && __featureFiles.invoices[0].follow_up_owner_id !== __testApi.actor.id")
+    receipt_id = await page.evaluate("__featureFiles.files.find(row => row.file_name === 'foreign-new-receipt.pdf').id")
+    original_receipt_id = await upload_invoice_file(page, 'receipt', 'foreign-original-stage-receipt.pdf', '8201')
+    proforma_id = await upload_invoice_file(page, 'proforma', 'foreign-new-proforma.pdf')
+    final_id = await upload_invoice_file(page, 'final', 'foreign-new-final.pdf')
+    for file_id, filename in [(proforma_id, 'foreign-new-proforma.pdf'), (receipt_id, 'foreign-new-receipt.pdf'), (original_receipt_id, 'foreign-original-stage-receipt.pdf'), (final_id, 'foreign-new-final.pdf')]:
+        await download_invoice_file(page, file_id, filename)
+    assert await page.evaluate("__featureFiles.files.filter(row => ['proforma','receipt','final'].includes(row.file_type) && row.uploaded_by === __testApi.actor.id).length") == 4
+    await snapshot(page, f'{width}-foreign-operation-parity.png')
+    # Removing someone else's ready file has the same confirmation/cancellation
+    # contract. A selected file never removes the invoice or payment itself.
+    await page.locator('[data-invoice-file-delete="8301"]').click()
+    await page.locator('[data-notice-cancel]').click()
+    await expect(page.locator('[data-invoice-file-row="8301"]')).to_be_visible()
+    await remove_invoice_file(page, '8301')
+    for file_id in (proforma_id, receipt_id, original_receipt_id, final_id):
+        await remove_invoice_file(page, file_id)
+    assert await page.evaluate('__featureFiles.payments.length') == 2
+    assert await page.evaluate("__featureFiles.payments.every(row => row.receipt_path == null)")
+    assert await page.evaluate("__featureFiles.files.map(row => row.id)") == ['8302']
+    # The hidden foreign pending reservation is never exposed as resumable.
+    await expect(page.locator('[data-invoice-file-resume]')).to_have_count(0)
+    await page.locator('[data-invoice-action="delete"]').click()
+    await page.locator('[data-notice-cancel]').click()
+    assert await page.evaluate('__featureFiles.invoices.length') == 1
+    await page.locator('[data-invoice-action="delete"]').click()
+    await page.locator('[data-notice-ok]').click()
+    await expect(page.locator('.invoice-list-card')).to_have_count(0)
+    assert await page.evaluate('[__featureFiles.invoices.length,__featureFiles.payments.length,__featureFiles.files.length]') == [0, 0, 0]
+    assert await page.evaluate('__featureFiles.expiredGates') == []
+
+async def prepare_view_only_foreign(page):
+    await seed_foreign_invoice(page)
+    await page.evaluate("""() => {
+      const store = __featureFiles;
+      Object.assign(__testApi.featureAccess.find(row => row.feature_key === 'invoices'),
+        { can_view: true, can_create: false, can_edit: false, can_delete: false });
+      store.payments[0].amount = '100.00'; store.payments[0].percent_of_total = '100.000';
+      const original = store.files[0];
+      const receipt = { ...original, id: '8303', file_type: 'receipt', payment_id: '8201',
+        file_name: 'foreign-active-receipt.pdf', storage_path: 'invoices/8101/foreign-active-receipt.pdf', client_request_id: 'foreign-active-receipt' };
+      store.files.push(receipt); store.payments[0].receipt_path = receipt.storage_path;
+      store.fileBodies.set('invoices-private/' + receipt.storage_path, store.fileBodies.get('invoices-private/' + original.storage_path));
+    }""")
+
+async def check_view_only_foreign(page, width):
+    await click_route(page, 'invoices'); await settled(page, 'invoices')
+    await expect(page.locator('[data-invoice-action="new"]')).to_have_count(0)
+    await page.locator('[data-invoice-select="8101"]').click()
+    for selector in ('[data-invoice-action="edit"]', '[data-invoice-action="delete"]', '[data-invoice-file-resume]'):
+        await expect(page.locator('#invoiceFeatureRoot ' + selector)).to_have_count(0)
+    for selector in ('[data-invoice-action="payment"]', '[data-invoice-payment-edit="8201"]',
+                     '[data-invoice-file-kind="receipt"]', '[data-invoice-file-delete="8303"]'):
+        await expect(page.locator('#invoiceFeatureRoot ' + selector)).to_be_disabled()
+    await expect(page.locator('#invoicePaymentAccessHint')).to_be_visible()
+    await expect(page.locator('[data-invoice-file-row="8302"]')).to_have_count(0)
+    await download_invoice_file(page, '8303', 'foreign-active-receipt.pdf')
+    # Ordinary view-scoped files intentionally remain usable without edit/delete.
+    for kind in ('proforma', 'final'):
+        file_id = await upload_invoice_file(page, kind, f'viewer-{kind}.pdf')
+        await download_invoice_file(page, file_id, f'viewer-{kind}.pdf')
+        await remove_invoice_file(page, file_id)
+    await remove_invoice_file(page, '8301')
+    assert await page.evaluate('__featureFiles.invoices.length') == 1
+    assert await page.evaluate('__featureFiles.payments.length') == 1
+    assert await page.evaluate("__featureFiles.payments[0].receipt_path") == 'invoices/8101/foreign-active-receipt.pdf'
+    assert not await page.evaluate("__featureFiles.calls.some(call => ['save_invoice','save_invoice_payment'].includes(call.endpoint) || (call.endpoint === 'invoices' && call.method === 'DELETE'))")
+    await snapshot(page, f'{width}-foreign-view-only-actions.png')
 
 async def check_phonebook(page, width):
     await click_route(page, 'phoneBook'); await settled(page, 'phoneBook')
@@ -331,7 +442,7 @@ async def main():
         async with async_playwright() as p:
             browser = await p.chromium.launch(executable_path=os.getenv('CHROMIUM_PATH') or shutil.which('chromium'), headless=True, args=['--no-sandbox'])
             for width in [1365,390]:
-                for role in ['manager', 'owner']:
+                for role in ['manager', 'owner', 'viewer']:
                     context = await browser.new_context(viewport={'width':width,'height':900 if width>700 else 844},is_mobile=width<700,service_workers='block')
                     blocked = []
                     async def isolated_route(route):
@@ -354,13 +465,17 @@ async def main():
                     try:
                         await page.goto(origin+'/',wait_until='load')
                         if role == 'owner': await seed_foreign_invoice(page)
-                        await login(page,role)
+                        if role == 'viewer': await prepare_view_only_foreign(page)
+                        await login(page, 'owner' if role == 'viewer' else role)
                         if role == 'manager':
                             await check_report(page,width)
                             await check_invoice(page,width)
                             await check_phonebook(page,width)
-                        else:
+                        elif role == 'owner':
                             await check_foreign_invoice(page,width)
+                            await check_foreign_operations(page,width)
+                        else:
+                            await check_view_only_foreign(page,width)
                         assert await page.evaluate('document.documentElement.scrollWidth<=innerWidth+2'), 'body overflow'
                         assert not errors,errors
                         results.append({'width':width,'role':role,'status':'passed','errors':errors,'blocked_external_requests':blocked})
@@ -375,5 +490,5 @@ async def main():
         server.shutdown()
     (OUT/'results.json').write_text(json.dumps(results,ensure_ascii=False,indent=2))
     print(json.dumps(results,ensure_ascii=False,indent=2))
-    assert len(results) == 4 and all(row['status']=='passed' for row in results)
+    assert len(results) == 6 and all(row['status']=='passed' for row in results)
 if __name__=='__main__': asyncio.run(main())

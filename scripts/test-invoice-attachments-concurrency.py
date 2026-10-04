@@ -644,6 +644,59 @@ class Harness:
             require(actual == ("200.00", "60.00", "30.000"), "Foreign total and owner payment did not serialize derived percentage")
             self.pass_test(label + ": both authorized edits commit with correct derived percentage")
 
+    def capability_parity_races(self):
+        # Run after the old section-only expectations, so the acceptance suite
+        # tests an actual upgrade rather than replacing its historical baseline.
+        self.observer.execute((ROOT / "supabase/schema-proposals/invoice-capability-parity.sql").read_text(), prepare=False)
+        self.observer.execute((ROOT / "supabase/schema-proposals/invoice-capability-parity.sql").read_text(), prepare=False)
+        for foreign_first in (True, False):
+            label = "cross-owner-paid-stages/" + ("foreign-first" if foreign_first else "owner-first")
+            invoice = self.save_invoice(self.actor, invoice_payload(label))
+            foreign = lambda connection: self.save_payment(connection, payment_payload(invoice["id"], 1, "80.00"))
+            owner = lambda connection: self.save_payment(connection, payment_payload(invoice["id"], 2, "30.00"))
+            if foreign_first:
+                self.race(label, foreign, owner, first_uid=OUTSIDER, rejection=(("P0001",), "مبلغ"))
+                expected = ("80.00", "80.000")
+            else:
+                self.race(label, owner, foreign, second_uid=OUTSIDER, rejection=(("P0001",), "مبلغ"))
+                expected = ("30.00", "30.000")
+            rows = self.observer.execute("select amount::text,percent_of_total::text from public.invoice_payments where invoice_id=%s", (invoice["id"],)).fetchall()
+            require(rows == [expected], "Cross-owner payment race allowed overpayment or stale derived percentage")
+            self.pass_test(label + ": identical capability, observed parent lock and atomic overpayment rejection")
+
+        for final_first in (True, False):
+            label = "foreign-final-versus-owner-payment/" + ("final-first" if final_first else "payment-first")
+            invoice, payment, _ = self.settled(label)
+            foreign = self.connect(uid=OUTSIDER)
+            final = self.reserve(foreign, invoice["id"], kind="final")
+            self.upload(foreign, final)
+            complete = lambda connection: self.finalize(connection, final)
+            reduce = lambda connection: self.save_payment(connection, payment_payload(invoice["id"], amount="90.00"), payment["id"])
+            if final_first:
+                self.race(label, complete, reduce, first_uid=OUTSIDER)
+                visible = self.file(final["id"])
+                require(visible["upload_state"] == "ready" and visible["final_is_current"] is False, "Committed foreign final must become stale after payment edit")
+            else:
+                self.race(label, reduce, complete, second_uid=OUTSIDER, rejection=(("22023",), "full settlement"))
+                state = self.observer.execute("select upload_state from public.invoice_files where id=%s", (final["id"],)).fetchone()[0]
+                require(state == "pending", "Rejected foreign finalization left a partial ready state")
+            foreign.close()
+            self.pass_test(label + ": cross-owner finalization keeps settlement serialization")
+
+        # Ready-file deletion remains view-scoped and does not require its
+        # uploader's identity; pending finalization remains uploader-specific.
+        invoice, _, _ = self.settled("foreign-view-delete-versus-finalize")
+        file = self.reserve(self.actor, invoice["id"])
+        self.upload(self.actor, file)
+        self.finalize(self.actor, file)
+        removed, retried = self.race("foreign-view-delete-versus-ready-retry",
+            lambda connection: self.delete_file(connection, file),
+            lambda connection: self.delete_file(connection, file),
+            first_uid=OUTSIDER, second_uid=ACTOR, view_first=True, view_second=True)
+        require(removed["deleted"] is True and retried["deleted"] is False, "Cross-owner delete/retry must converge without duplicates")
+        require(self.observer.execute("select count(*) from private.invoice_storage_cleanup where file_id=%s", (file["id"],)).fetchone()[0] == 1, "Cross-owner deletion duplicated cleanup identity")
+        self.pass_test("foreign view-scoped file deletion serializes with retry and preserves one cleanup tombstone")
+
     def run(self):
         self.setup()
         self.request_replays()
@@ -654,6 +707,7 @@ class Harness:
         self.attachment_delete_races()
         self.access_scope()
         self.section_edit_races()
+        self.capability_parity_races()
 
 
 def main():

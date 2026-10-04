@@ -28,7 +28,7 @@ import tomllib
 from urllib.error import HTTPError
 from urllib.parse import quote, unquote, urlsplit
 from urllib.request import HTTPRedirectHandler, ProxyHandler, Request, build_opener
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURES = ROOT / 'tests/storage'
@@ -175,7 +175,7 @@ def mark(name, **details):
     print('PASS ' + name, flush=True)
 
 
-def make_user(api, db, name, *, view_only=False):
+def make_user(api, db, name, *, view_only=False, grants=None):
     email = f'{name}-{uuid4().hex}@example.invalid'
     password = secrets.token_urlsafe(30)
     SECRET_VALUES.append(password)
@@ -186,7 +186,7 @@ def make_user(api, db, name, *, view_only=False):
     token = session['access_token']
     SECRET_VALUES.extend([token, session.get('refresh_token', '')])
     require(session['user']['id'] == uid, 'Auth returned a different fixture user')
-    permissions = {'view': True, 'create': not view_only, 'edit': not view_only, 'delete': not view_only}
+    permissions = grants if grants is not None else {'view': True, 'create': not view_only, 'edit': not view_only, 'delete': not view_only}
     db.execute('INSERT INTO public.profiles(id) VALUES(%s)', (uid,))
     db.execute('INSERT INTO private.fixture_actor_permissions(id,permissions) VALUES(%s,%s::jsonb)', (uid, json.dumps(permissions)))
     return uid, token
@@ -540,6 +540,205 @@ def section_visibility_cases(api, db):
     mark('feature revocation and restoration observed through the same real Auth JWT')
 
 
+def capability_parity_cases(api, db):
+    """Prove capability parity after the previously deployed section proposal.
+
+    Every user signs in through local Auth; all writes use their actual JWT.
+    Fixture SQL only supplies grants and inspects committed results. No hosted
+    endpoint, production identity or synthetic Storage metadata is involved.
+    """
+    db.execute((ROOT / 'supabase/schema-proposals/invoice-capability-parity.sql').read_text())
+    db.execute((ROOT / 'supabase/schema-proposals/invoice-capability-parity.sql').read_text())
+    db.execute("NOTIFY pgrst, 'reload schema'")
+    owner, owner_token = make_user(api, db, 'parity-owner')
+    editor, token = make_user(api, db, 'parity-editor', grants={'view': True, 'create': False, 'edit': True, 'delete': False})
+    viewer, view_token = make_user(api, db, 'parity-viewer', view_only=True)
+    deleter, delete_token = make_user(api, db, 'parity-deleter', grants={'view': True, 'create': False, 'edit': False, 'delete': True})
+    unchecked, unchecked_token = make_user(api, db, 'parity-unchecked', grants={'view': False, 'create': False, 'edit': True, 'delete': True})
+    invoice = new_invoice(api, owner_token, 'PARITY')
+    data = b'%PDF-1.7\n% Synthetic capability parity acceptance.\n%%EOF\n'
+    payload = {key: invoice.get(key) for key in ('invoice_number', 'title', 'account_party', 'company_name', 'currency', 'total_amount', 'due_date', 'description')}
+    invoice_request = {'p_request_id': str(uuid4()), 'p_invoice_id': invoice['id'], 'p_payload': {**payload, 'title': 'Foreign editor saved'}}
+    owner_payment_request = {'p_request_id': str(uuid4()), 'p_payment_id': None,
+        'p_payload': {'invoice_id': invoice['id'], 'sequence_no': 1, 'amount': '25.00', 'status': 'paid'}}
+    original = api.rpc('save_invoice_payment', owner_payment_request, owner_token)
+    require(original['payer_id'] == owner, 'Owner payment fixture has wrong payer')
+    edited = api.rpc('save_invoice', invoice_request, token)
+    require(edited['title'] == 'Foreign editor saved' and edited['created_by'] == owner, 'Foreign edit changed creator or missed row')
+    api.rpc('save_invoice', {**invoice_request, 'p_request_id': str(uuid4()), 'p_invoice_id': None}, token, deny=True)
+    api.rpc('save_invoice_payment', owner_payment_request, token, deny=True)
+    api.rpc('save_invoice', invoice_request, owner_token, deny=True)
+    payment_edit = {'p_request_id': str(uuid4()), 'p_payment_id': original['id'],
+        'p_payload': {**owner_payment_request['p_payload'], 'amount': '20.00', 'notes': 'Foreign stage edit'}}
+    changed = api.rpc('save_invoice_payment', payment_edit, token)
+    require(changed['amount'] == '20.00' and changed['percent_of_total'] == '20.000' and changed['payer_id'] == owner,
+            'Foreign stage edit changed payer or produced wrong amount/percentage')
+    add_request = {'p_request_id': str(uuid4()), 'p_payment_id': None,
+        'p_payload': {'invoice_id': invoice['id'], 'sequence_no': 2, 'amount': '80.00', 'status': 'paid'}}
+    added = api.rpc('save_invoice_payment', add_request, token)
+    require(added['payer_id'] == editor and added['percent_of_total'] == '80.000', 'Foreign stage registration has wrong actor/percentage')
+    require(api.rpc('save_invoice_payment', add_request, token)['id'] == added['id'], 'Stage save retry duplicated a payment')
+    mark('cross-owner invoice edit and payment registration/edit use real JWTs with actor-bound idempotency and payer integrity')
+
+    def no_rows(method, table, row_id, caller, body=None):
+        response = api.request(method, '/rest/v1/' + table + '?id=eq.' + row_id, token=caller, body=body,
+                               headers={'Prefer': 'return=representation'})
+        if 200 <= response[0] < 300:
+            require(api.decoded(response) == [], 'Forbidden REST mutation returned rows')
+        else:
+            api.denied(response, 'action-specific REST denial')
+
+    for caller in (view_token, delete_token, unchecked_token):
+        api.rpc('save_invoice', {**invoice_request, 'p_request_id': str(uuid4())}, caller, deny=True)
+        api.rpc('save_invoice_payment', {**payment_edit, 'p_request_id': str(uuid4())}, caller, deny=True)
+        api.rpc('save_invoice_payment', {**add_request, 'p_request_id': str(uuid4()),
+                'p_payload': {**add_request['p_payload'], 'sequence_no': 3, 'amount': '1.00', 'status': 'planned'}}, caller, deny=True)
+        no_rows('PATCH', 'invoice_payments', original['id'], caller, {'notes': 'Forbidden no-edit mutation'})
+    for caller in (token, view_token, unchecked_token):
+        no_rows('DELETE', 'invoices', invoice['id'], caller)
+    require(api.rpc('list_invoice_workspace', {}, unchecked_token) == {'invoices': [], 'payments': [], 'files': []},
+            'Unchecked section exposed its workspace')
+    require(db.execute('SELECT amount::text,payer_id,notes FROM public.invoice_payments WHERE id=%s', (original['id'],)).fetchone()
+            == ('20.00', UUID(owner), 'Foreign stage edit'), 'Rejected action modified the original payment')
+    api.rpc('save_invoice_payment', {**add_request, 'p_request_id': str(uuid4()),
+            'p_payload': {**add_request['p_payload'], 'sequence_no': 3, 'amount': '0.01'}}, token, deny=True)
+    api.rpc('save_invoice', {**invoice_request, 'p_request_id': str(uuid4()), 'p_payload': {**payload, 'total_amount': '99.99'}}, token, deny=True)
+    require(db.execute('SELECT total_amount::text FROM public.invoices WHERE id=%s', (invoice['id'],)).fetchone()[0] == '100.00', 'Overpayment rollback failed')
+    require(db.execute('SELECT count(*) FROM public.invoice_payments WHERE invoice_id=%s', (invoice['id'],)).fetchone()[0] == 2, 'Denied payment inserted a row')
+    mark('view/edit/delete/create grants stay distinct; unchecked access and overpayment fail without changing money')
+
+    ready_files = []
+    for kind, stage in [('proforma', None), ('receipt', original), ('final', None)]:
+        row, args = reserve(api, token, invoice, data, kind=kind, payment=stage)
+        require(row['uploaded_by'] == editor, 'Foreign invoice reservation lost uploader identity')
+        api.rpc('reserve_invoice_file', args, owner_token, deny=True)
+        api.rpc('get_invoice_file_upload', {'p_file_id': row['id']}, owner_token, deny=True)
+        api.rpc('finalize_invoice_file', {'p_file_id': row['id']}, owner_token, deny=True)
+        edge_upload(api, row, data, owner_token, deny=True)
+        hidden_delete = api.rpc('delete_invoice_file', {'p_file_id': row['id'], 'p_invoice_id': invoice['id'], 'p_payment_id': row['payment_id'],
+            'p_file_type': kind, 'p_file_request_id': row['client_request_id']}, owner_token)
+        require(hidden_delete['deleted'] is False, 'Another actor deleted a hidden pending reservation')
+        ready = edge_upload(api, row, data, token)
+        require(api.download(ready, token) == data and api.download(ready, owner_token) == data and api.download(ready, view_token) == data,
+                'Cross-owner download changed bytes')
+        api.download(ready, unchecked_token, deny=True)
+        api.download(ready, deny=True)
+        api.download(ready, public=True, deny=True)
+        api.upload(ready, data, token, upsert=True, deny=True)
+        require(finalize(api, token, ready)['id'] == row['id'], 'Authorized finalization replay changed identity')
+        ready_files.append(ready)
+    receipt = ready_files[1]
+    final = ready_files[2]
+    require(final['final_is_current'] is True, 'Fully settled cross-owner final is not current')
+    require(db.execute('SELECT receipt_path FROM public.invoice_payments WHERE id=%s', (original['id'],)).fetchone()[0] == receipt['storage_path'], 'Receipt linked to wrong stage')
+    api.denied(api.request('PATCH', '/rest/v1/invoice_payments?id=eq.' + original['id'], token=token,
+                           body={'receipt_path': 'forged/unconfirmed.pdf'}), 'unfinalized receipt spoof')
+    mark('cross-owner proforma, receipt and final upload/finalize/download return exact real bytes; foreign pending/request hijacks and raw upsert fail')
+
+    # View permission has historically allowed ordinary files, even without edit
+    # or delete grants. Preserve that behavior for another creator's invoice.
+    for kind in ('proforma', 'final'):
+        row, _ = reserve(api, view_token, invoice, data, kind=kind)
+        ready = edge_upload(api, row, data, view_token)
+        require(api.download(ready, token) == data, 'View-scoped upload lost bytes')
+        removed = api.rpc('delete_invoice_file', {'p_file_id': ready['id'], 'p_invoice_id': invoice['id'], 'p_payment_id': None,
+                          'p_file_type': kind, 'p_file_request_id': ready['client_request_id']}, token)
+        require(removed['deleted'] is True, 'Different uploader could not remove view-scoped ready file')
+        api.download(ready, token, deny=True)
+        require(object_row(db, ready) is not None, 'Metadata removal must defer byte purge to cleanup')
+    viewer_receipt, _ = reserve(api, view_token, invoice, data, kind='receipt', payment=added)
+    api.upload(viewer_receipt, data, api.service)
+    api.rpc('finalize_invoice_file', {'p_file_id': viewer_receipt['id']}, view_token, deny=True)
+    require(db.execute('SELECT upload_state FROM public.invoice_files WHERE id=%s', (viewer_receipt['id'],)).fetchone()[0] == 'pending', 'No-edit receipt finalization partially committed')
+    api.rpc('delete_invoice_file', {'p_file_id': receipt['id'], 'p_invoice_id': invoice['id'], 'p_payment_id': original['id'],
+            'p_file_type': 'receipt', 'p_file_request_id': receipt['client_request_id']}, view_token, deny=True)
+    api.rpc('reserve_invoice_file', reservation_args(invoice, data), unchecked_token, deny=True)
+    require(db.execute('SELECT receipt_path FROM public.invoice_payments WHERE id=%s', (original['id'],)).fetchone()[0] == receipt['storage_path'], 'Denied receipt deletion cleared active link')
+    mark('view-only cross-owner ordinary file operations remain allowed; active receipt finalization/removal still requires edit')
+
+    # A payment edit makes an already finalized invoice stale, without deleting
+    # its audit file. The gate must reject another final until re-settled.
+    lower = {**payment_edit, 'p_request_id': str(uuid4()), 'p_payload': {**payment_edit['p_payload'], 'amount': '19.00'}}
+    api.rpc('save_invoice_payment', lower, token)
+    workspace = api.rpc('list_invoice_workspace', {}, owner_token)
+    require(next(row for row in workspace['files'] if row['id'] == final['id'])['final_is_current'] is False, 'Financial edit left final current')
+    api.rpc('reserve_invoice_file', reservation_args(invoice, data, kind='final'), token, deny=True)
+    api.rpc('save_invoice_payment', {**payment_edit, 'p_request_id': str(uuid4())}, token)
+    # Also remove files originally uploaded by the invoice's creator while the
+    # caller is unrelated to both the invoice and file creator.
+    for kind, stage in [('proforma', None), ('receipt', original), ('final', None)]:
+        owned, _ = reserve(api, owner_token, invoice, data, kind=kind, payment=stage)
+        owned = edge_upload(api, owned, data, owner_token)
+        result = api.rpc('delete_invoice_file', {'p_file_id': owned['id'], 'p_invoice_id': invoice['id'], 'p_payment_id': owned['payment_id'],
+                        'p_file_type': kind, 'p_file_request_id': owned['client_request_id']}, token)
+        require(result['deleted'] is True, 'Foreign editor could not remove original-owner ' + kind)
+        api.download(owned, token, deny=True)
+        require(object_row(db, owned) is not None, 'Removal bypassed deferred physical cleanup')
+    require(db.execute('SELECT receipt_path FROM public.invoice_payments WHERE id=%s', (original['id'],)).fetchone()[0] == receipt['storage_path'],
+            'Removing latest receipt did not restore previous finalized receipt')
+    for row in ready_files:
+        # The original uploader is the foreign editor; an independent full-right
+        # owner removes every kind through the same identity-checked RPC.
+        removed = api.rpc('delete_invoice_file', {'p_file_id': row['id'], 'p_invoice_id': invoice['id'], 'p_payment_id': row['payment_id'],
+                          'p_file_type': row['file_type'], 'p_file_request_id': row['client_request_id']}, owner_token)
+        require(removed['deleted'] is True, 'Ready cross-uploader removal failed')
+        api.download(row, owner_token, deny=True)
+        require(object_row(db, row) is not None, 'File removal claimed premature physical cleanup')
+    require(db.execute('SELECT receipt_path,amount::text,payer_id FROM public.invoice_payments WHERE id=%s', (original['id'],)).fetchone()
+            == (None, '20.00', UUID(owner)), 'Receipt removal changed payment money/payer')
+    # Follow-up assignment is editable with the same action grant, while the
+    # creator and primary key remain immutable for everyone.
+    direct = api.ok(api.request('PATCH', '/rest/v1/invoices?id=eq.' + invoice['id'], token=token,
+                               body={'follow_up_owner_id': editor}, headers={'Prefer': 'return=representation'}), 'foreign follow-up assignment')
+    require(len(direct) == 1 and direct[0]['follow_up_owner_id'] == editor, 'Follow-up assignment still depends on original owner')
+    for caller in (token, owner_token):
+        api.denied(api.request('PATCH', '/rest/v1/invoices?id=eq.' + invoice['id'], token=caller, body={'created_by': viewer}), 'creator rewrite')
+    mark('stale final and receipt-link integrity survive cross-owner edits/removals; creator is immutable and follow-up is editable')
+
+    # Existing direct payment DELETE is view-scoped. It is intentionally not a
+    # new browser action; test the preserved server contract independently.
+    gone = api.ok(api.request('DELETE', '/rest/v1/invoice_payments?id=eq.' + added['id'], token=view_token,
+                             headers={'Prefer': 'return=representation'}), 'view-scoped payment delete')
+    require(len(gone) == 1, 'Existing payment-delete grant was silently narrowed')
+    # A separate delete-only actor must be able to remove this unrelated invoice.
+    gone = api.ok(api.request('DELETE', '/rest/v1/invoices?id=eq.' + invoice['id'], token=delete_token,
+                             headers={'Prefer': 'return=representation'}), 'cross-owner invoice delete')
+    require(len(gone) == 1 and str(gone[0]['id']) == invoice['id'], 'Delete grant still restricted by creator/follow-up')
+    require(db.execute('SELECT count(*) FROM public.invoice_payments WHERE invoice_id=%s', (invoice['id'],)).fetchone()[0] == 0, 'Invoice cascade left payments')
+    require(db.execute('SELECT count(*) FROM public.invoice_files WHERE invoice_id=%s', (invoice['id'],)).fetchone()[0] == 0, 'Invoice cascade left files')
+    mark('view-scoped direct payment deletion and delete-only cross-owner invoice cascade preserve established action grants')
+
+    # Last deliberately broad operation in this disposable database. PostgreSQL
+    # does not apply SELECT RLS to every no-WHERE, no-RETURNING write: the write
+    # policy itself must retain pending-uploader privacy.
+    broad_invoice = new_invoice(api, owner_token, 'PARITY-BROAD-RLS')
+    owner_ready, _ = reserve(api, owner_token, broad_invoice, data)
+    owner_ready = edge_upload(api, owner_ready, data, owner_token)
+    hidden, _ = reserve(api, owner_token, broad_invoice, data)
+    api.upload(hidden, data, api.service)
+    caller_pending, _ = reserve(api, token, broad_invoice, data)
+    hidden_before = db.execute("SELECT id FROM public.invoice_files WHERE upload_state='pending' AND uploaded_by<>%s ORDER BY id", (editor,)).fetchall()
+    require(hidden_before, 'Broad-mutation fixture needs foreign pending rows')
+    broad = api.request('DELETE', '/rest/v1/invoice_files', token=token, headers={'Prefer': 'return=minimal'})
+    api.ok(broad, 'no-filter no-returning ready file deletion')
+    require(db.execute('SELECT count(*) FROM public.invoice_files WHERE id IN(%s,%s)', (owner_ready['id'], caller_pending['id'])).fetchone()[0] == 0,
+            'No-filter DELETE failed to remove eligible ready/caller-pending rows')
+    hidden_after = db.execute("SELECT id FROM public.invoice_files WHERE upload_state='pending' AND uploaded_by<>%s ORDER BY id", (editor,)).fetchall()
+    require(hidden_after == hidden_before, 'No-filter DELETE bypassed foreign pending privacy')
+    # All this caller's eligible rows were removed; an unfiltered update must
+    # skip other uploaders' pending rows instead of reaching their row guards.
+    api.ok(api.request('PATCH', '/rest/v1/invoice_files', token=token, body={'upload_state': 'ready'},
+                       headers={'Prefer': 'return=minimal'}), 'no-filter hidden-pending update exclusion')
+    require(db.execute("SELECT id FROM public.invoice_files WHERE upload_state='pending' AND uploaded_by<>%s ORDER BY id", (editor,)).fetchall() == hidden_before,
+            'No-filter PATCH transitioned foreign pending files')
+    require(api.download(hidden, owner_token) == data, 'Broad mutation damaged real hidden pending bytes')
+    api.download(hidden, token, deny=True)
+    api.ok(api.request('DELETE', '/rest/v1/invoices?id=eq.' + broad_invoice['id'], token=delete_token), 'authorized parent cascade over hidden pending')
+    require(db.execute('SELECT count(*) FROM public.invoice_files WHERE invoice_id=%s', (broad_invoice['id'],)).fetchone()[0] == 0,
+            'Pending write privacy prevented authorized parent cascade')
+    mark('no-filter minimal DELETE/PATCH cannot bypass foreign pending privacy; eligible rows and authorized invoice cascade still work')
+
+
 def available_port():
     with socket.socket() as sock:
         sock.bind(('127.0.0.1', 0))
@@ -624,7 +823,7 @@ def main():
         RESULT['versions'] = {'cli': version, 'services': services, 'psycopg': psycopg.__version__}
         RESULT['source_sha256'] = {name: hashlib.sha256((ROOT / name).read_bytes()).hexdigest() for name in [
             'supabase/schema-proposals/invoice-attachments.sql', 'supabase/schema-proposals/invoice-attachment-delete.sql',
-            'supabase/schema-proposals/invoice-section-visibility.sql', 'supabase/migrations/20260924160000_invoice_payment_consistency.sql',
+            'supabase/schema-proposals/invoice-section-visibility.sql', 'supabase/schema-proposals/invoice-capability-parity.sql', 'supabase/migrations/20260924160000_invoice_payment_consistency.sql',
             'scripts/test-invoice-storage-api.py', 'assets/js/financial-obligations.js',
             'supabase/functions/invoice-file-cleanup/worker.mjs', 'tests/storage/fixture.sql']}
         db = psycopg.connect(**settings, autocommit=True)
@@ -664,6 +863,7 @@ def main():
         mark('real local invoice upload Edge is serving with handler-owned caller authentication')
         execute_cases(api, db)
         section_visibility_cases(api, db)
+        capability_parity_cases(api, db)
         RESULT['passed'] = True
     except BaseException as error:
         RESULT['error'] = redact(error)
