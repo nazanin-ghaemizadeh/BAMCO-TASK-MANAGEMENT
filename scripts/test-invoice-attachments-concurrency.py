@@ -314,10 +314,10 @@ class Harness:
             pending.done.wait(0.02)
         raise AssertionError(f"{label}: no observed lock wait on first backend within {LOCK_WAIT_SECONDS}s")
 
-    def race(self, label, first, second, *, rejection=None, view_first=False, view_second=False):
+    def race(self, label, first, second, *, rejection=None, view_first=False, view_second=False, first_uid=ACTOR, second_uid=ACTOR):
         view_only = {**PERMISSIONS, "edit": False}
-        one = self.connect(permissions=view_only if view_first else None)
-        two = self.connect(permissions=view_only if view_second else None)
+        one = self.connect(permissions=view_only if view_first else None, uid=first_uid)
+        two = self.connect(permissions=view_only if view_second else None, uid=second_uid)
         require(len({one.info.backend_pid, two.info.backend_pid, self.observer.info.backend_pid}) == 3, "race requires three independent PostgreSQL sessions")
         pending = ConcurrentCall(two, second)
         try:
@@ -608,6 +608,42 @@ class Harness:
         outsider.close()
         self.pass_test("view-only final files remain allowed; original payment edit requirement and outsider denial remain intact")
 
+    def section_edit_races(self):
+        # Earlier tests retain their original owner-scope expectations. Only now
+        # apply the local section proposal to this already isolated database.
+        self.observer.execute((ROOT / "supabase/schema-proposals/invoice-section-visibility.sql").read_text(), prepare=False)
+        for edit_first in (True, False):
+            label = "foreign-total-versus-owner-payment/" + ("edit-first" if edit_first else "payment-first")
+            invoice = self.save_invoice(self.actor, invoice_payload(label))
+            self.save_payment(self.actor, payment_payload(invoice["id"], 1, "40.00"))
+            lower = lambda connection: self.save_invoice(connection, invoice_payload(label, "70.00"), invoice["id"])
+            pay = lambda connection: self.save_payment(connection, payment_payload(invoice["id"], 2, "50.00"))
+            if edit_first:
+                self.race(label, lower, pay, first_uid=OUTSIDER, rejection=(("P0001",), "مبلغ"))
+                expected_total, expected_paid, expected_percent = "70.00", "40.00", ["57.143"]
+            else:
+                self.race(label, pay, lower, second_uid=OUTSIDER, rejection=(("P0001",), "کل"))
+                expected_total, expected_paid, expected_percent = "100.00", "90.00", ["40.000", "50.000"]
+            actual_total = self.observer.execute("select total_amount::text from public.invoices where id=%s", (invoice["id"],)).fetchone()[0]
+            actual_paid = self.observer.execute("select sum(amount)::text from public.invoice_payments where invoice_id=%s and status='paid'", (invoice["id"],)).fetchone()[0]
+            actual_percent = [row[0] for row in self.observer.execute("select percent_of_total::text from public.invoice_payments where invoice_id=%s order by sequence_no", (invoice["id"],)).fetchall()]
+            require((actual_total, actual_paid, actual_percent) == (expected_total, expected_paid, expected_percent), "Foreign total/payment race left stale percentages or overpayment")
+            self.pass_test(label + ": observed parent lock; losing overpayment mutation rolls back")
+
+        for edit_first in (True, False):
+            label = "foreign-percentage-versus-owner-payment/" + ("edit-first" if edit_first else "payment-first")
+            invoice = self.save_invoice(self.actor, invoice_payload(label))
+            payment = self.save_payment(self.actor, payment_payload(invoice["id"], 1, "40.00"))
+            increase = lambda connection: self.save_invoice(connection, invoice_payload(label, "200.00"), invoice["id"])
+            pay = lambda connection: self.save_payment(connection, payment_payload(invoice["id"], 1, "60.00"), payment["id"])
+            if edit_first:
+                self.race(label, increase, pay, first_uid=OUTSIDER)
+            else:
+                self.race(label, pay, increase, second_uid=OUTSIDER)
+            actual = self.observer.execute("select i.total_amount::text,p.amount::text,p.percent_of_total::text from public.invoices i join public.invoice_payments p on p.invoice_id=i.id where p.id=%s", (payment["id"],)).fetchone()
+            require(actual == ("200.00", "60.00", "30.000"), "Foreign total and owner payment did not serialize derived percentage")
+            self.pass_test(label + ": both authorized edits commit with correct derived percentage")
+
     def run(self):
         self.setup()
         self.request_replays()
@@ -617,6 +653,7 @@ class Harness:
         self.storage_and_cascade_races()
         self.attachment_delete_races()
         self.access_scope()
+        self.section_edit_races()
 
 
 def main():

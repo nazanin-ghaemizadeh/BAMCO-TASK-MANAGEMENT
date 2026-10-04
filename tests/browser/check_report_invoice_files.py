@@ -1,6 +1,7 @@
 """Feature acceptance in real Chromium with wholly isolated in-memory API data."""
 import asyncio, functools, http.server, json, os, shutil, threading, traceback
 from pathlib import Path
+from urllib.parse import urlsplit
 from playwright.async_api import async_playwright, expect
 from run_smoke import MOCK, MSG_MOCK, login, click_route, settled, home
 ROOT = Path(__file__).resolve().parents[2]
@@ -181,6 +182,133 @@ async def check_invoice(page, width):
     await snapshot(page, f'{width}-invoice-cards.png')
     await home(page)
 
+async def wait_for_gate(page, endpoint):
+    await page.wait_for_function("endpoint => window.__featureFiles.gates[endpoint]?.entered === true", arg=endpoint)
+
+async def seed_foreign_invoice(page):
+    # Only this new context gets synthetic grants. The shared smoke-test owner
+    # remains view-only, and the application's real feature resolver is used.
+    await page.evaluate("""bytes => {
+      const api = window.__testApi, store = window.__featureFiles, foreign = api.profiles[0].id;
+      const grant = api.featureAccess.find(row => row.feature_key === 'invoices');
+      Object.assign(grant, { can_view: true, can_edit: true, can_delete: true });
+      const created_at = new Date().toISOString();
+      store.invoices.push({ id: '8101', invoice_number: 'FOREIGN-01', title: 'صورتحساب همکار دیگر',
+        company_name: 'شرکت آزمایشی دیگر', account_party: 'شرکت آزمایشی دیگر', total_amount: '100.00',
+        currency: 'IRR', created_by: foreign, follow_up_owner_id: foreign, status: 'partially_paid',
+        description: 'توضیح ثبت‌شده', created_at, updated_at: created_at });
+      store.payments.push({ id: '8201', invoice_id: '8101', sequence_no: 1, amount: '25.00',
+        percent_of_total: '25.000', status: 'paid', created_by: foreign, created_at });
+      const ready = { id: '8301', invoice_id: '8101', payment_id: null, file_type: 'proforma',
+        bucket_id: 'invoices-private', file_name: 'foreign-ready.pdf', content_type: 'application/pdf',
+        size_bytes: String(bytes.length), sha256: 'a'.repeat(64), client_request_id: 'foreign-ready-request',
+        uploaded_by: foreign, upload_state: 'ready', storage_path: 'invoices/8101/foreign-ready.pdf', created_at };
+      store.files.push(ready, { ...ready, id: '8302', file_name: 'foreign-pending-private.pdf',
+        client_request_id: 'foreign-pending-request', upload_state: 'pending', storage_path: 'invoices/8101/foreign-pending.pdf' });
+      store.fileBodies.set('invoices-private/' + ready.storage_path, new Blob([new Uint8Array(bytes)], { type: 'application/pdf' }));
+    }""", list(PDF['buffer']))
+
+async def assert_foreign_mutation_controls_absent(page):
+    # A delete feature grant is deliberate: absence must still depend on the
+    # unchanged record relationship, not merely a missing delete permission.
+    for selector in ('[data-invoice-action="payment"]', '[data-invoice-action="delete"]',
+                     '[data-invoice-payment-edit]', '[data-invoice-file-kind]',
+                     '[data-invoice-file-delete]', '[data-invoice-file-resume]'):
+        await expect(page.locator('#invoiceFeatureRoot ' + selector)).to_have_count(0)
+
+async def check_foreign_invoice(page, width):
+    assert await page.evaluate("__testApi.actor.role") == 'owner'
+    assert await page.evaluate("() => { const row = __featureFiles.invoices[0]; return row.created_by !== __testApi.actor.id && row.follow_up_owner_id !== __testApi.actor.id; }")
+    await page.evaluate("__featureFiles.pauseNext('list_invoice_workspace')")
+    await click_route(page, 'invoices')
+    await wait_for_gate(page, 'list_invoice_workspace')
+    await expect(page.locator('[data-invoice-load-status]')).to_be_visible()
+    await page.locator('#invoiceSearch').fill('FOREIGN-01')
+    await expect(page.locator('#invoiceSearch')).to_have_value('FOREIGN-01')
+    await page.evaluate("__featureFiles.release('list_invoice_workspace')")
+    await settled(page, 'invoices')
+    await expect(page.locator('[data-invoice-select="8101"]')).to_be_visible()
+    await expect(page.locator('[data-invoice-load-status]')).to_have_count(0)
+    await expect(page.locator('#invoiceSearch')).to_have_value('FOREIGN-01')
+    # Search may change the projection, but must not retire the only pending load.
+    assert await page.evaluate("__featureFiles.calls.filter(call => call.endpoint === 'list_invoice_workspace').length") == 1
+    await page.locator('#invoiceSearch').fill('ناموجود')
+    await expect(page.locator('.invoice-list-card')).to_have_count(0)
+    await page.locator('#invoiceSearch').press('Escape')
+    await expect(page.locator('#invoiceSearch')).to_have_value('')
+    await expect(page.locator('[data-invoice-select="8101"]')).to_be_visible()
+    assert await page.evaluate("__featureFiles.workspaceResponses[0].files.map(row => row.id)") == ['8301']
+    assert await page.evaluate("__featureFiles.files.some(row => row.id === '8302')"), 'pending fixture must exist on the mock server'
+    await page.locator('[data-invoice-select="8101"]').click()
+    await expect(page.locator('.payment-row')).to_have_count(1)
+    await expect(page.locator('.invoice-detail')).to_contain_text('foreign-ready.pdf')
+    await expect(page.locator('.invoice-detail')).not_to_contain_text('foreign-pending-private.pdf')
+    await expect(page.locator('[data-invoice-file-row="8302"]')).to_have_count(0)
+    await assert_foreign_mutation_controls_absent(page)
+    await expect(page.locator('[data-invoice-action="edit"]')).to_be_enabled()
+    download = page.locator('[data-invoice-file-download="8301"]')
+    await expect(download).to_be_enabled()
+    async with page.expect_download() as downloaded:
+        await download.click()
+    file = await downloaded.value
+    assert file.suggested_filename == 'foreign-ready.pdf'
+    assert Path(await file.path()).read_bytes() == PDF['buffer']
+    await snapshot(page, f'{width}-foreign-invoice-detail.png')
+
+    await page.locator('[data-invoice-action="edit"]').click()
+    form = page.locator('#invoiceForm')
+    await expect(form.locator('[name="proforma_file"]')).to_have_count(0)
+    await form.locator('[name="title"]').fill('ویرایش سراسری صورتحساب')
+    await page.evaluate("__featureFiles.pauseNext('save_invoice')")
+    await form.locator('[type="submit"]').click()
+    await wait_for_gate(page, 'save_invoice')
+    # Exercise the browser's native dialog cancel event, not a synthetic one.
+    await page.keyboard.press('Escape')
+    await expect(page.locator('#invoiceDialog')).to_be_visible()
+    await expect(form.locator('[type="submit"]')).to_be_disabled()
+    await page.evaluate("__featureFiles.release('save_invoice')")
+    await expect(page.locator('#invoiceDialog')).not_to_be_visible()
+    await expect(page.locator('.invoice-detail')).to_contain_text('ویرایش سراسری صورتحساب')
+    await expect(page.locator('[data-invoice-load-status]')).to_have_count(0)
+    assert await page.evaluate("__featureFiles.invoices[0].title") == 'ویرایش سراسری صورتحساب'
+    await assert_foreign_mutation_controls_absent(page)
+
+    # Hold a refresh, then enter an editor while the cached card is available.
+    # The stale response must not replace a draft. Native Escape must re-read
+    # the current server value and leave the editor usable on the next open.
+    await page.locator('[data-invoice-action="back"]').click()
+    await page.evaluate("__featureFiles.pauseNext('list_invoice_workspace')")
+    await page.locator('[data-invoice-action="refresh"]').click()
+    await wait_for_gate(page, 'list_invoice_workspace')
+    await page.locator('[data-invoice-select="8101"]').click()
+    await page.locator('[data-invoice-action="edit"]').click()
+    await form.locator('[name="description"]').fill('پیش‌نویس ذخیره‌نشده')
+    response_count = await page.evaluate('__featureFiles.workspaceResponses.length')
+    await page.evaluate("__featureFiles.invoices[0].title = 'تازه پس از Escape'; __featureFiles.release('list_invoice_workspace')")
+    await page.wait_for_function('count => __featureFiles.workspaceResponses.length > count', arg=response_count)
+    await expect(page.locator('#invoiceDialog')).to_be_visible()
+    await expect(form.locator('[name="description"]')).to_have_value('پیش‌نویس ذخیره‌نشده')
+    await page.keyboard.press('Escape')
+    await expect(page.locator('#invoiceDialog')).not_to_be_visible()
+    await expect(page.locator('.invoice-detail')).to_contain_text('تازه پس از Escape')
+    await expect(page.locator('[data-invoice-load-status]')).to_have_count(0)
+    await page.locator('[data-invoice-action="edit"]').click()
+    await expect(form.locator('[name="title"]')).to_have_value('تازه پس از Escape')
+    await expect(form.locator('[name="description"]')).to_have_value('توضیح ثبت‌شده')
+    await page.keyboard.press('Escape')
+    await expect(page.locator('#invoiceDialog')).not_to_be_visible()
+    await expect(page.locator('[data-invoice-load-status]')).to_have_count(0)
+    await assert_foreign_mutation_controls_absent(page)
+    await snapshot(page, f'{width}-foreign-invoice-escape-recovery.png')
+    assert await page.evaluate("__featureFiles.calls.filter(call => call.endpoint === 'save_invoice').length") == 1
+    assert not await page.evaluate("__featureFiles.calls.some(call => ['save_invoice_payment', 'reserve_invoice_file', 'invoice-file-upload', 'finalize_invoice_file', 'delete_invoice_file'].includes(call.endpoint) || (call.endpoint === 'invoices' && call.method === 'DELETE'))")
+    assert await page.evaluate('__featureFiles.invoices.length') == 1
+    assert await page.evaluate('__featureFiles.payments.length') == 1
+    assert await page.evaluate('__featureFiles.files.length') == 2
+    assert await page.evaluate('__featureFiles.uploads.length') == 0
+    assert await page.evaluate('__featureFiles.expiredGates') == []
+    assert await page.evaluate('Object.values(__featureFiles.gates).every(gate => gate.released && gate.finished)')
+
 async def check_phonebook(page, width):
     await click_route(page, 'phoneBook'); await settled(page, 'phoneBook')
     await expect(page.locator('.phonebook-command')).to_be_visible()
@@ -197,33 +325,55 @@ async def main():
     OUT.mkdir(parents=True, exist_ok=True)
     server = http.server.ThreadingHTTPServer(('127.0.0.1',0), functools.partial(http.server.SimpleHTTPRequestHandler,directory=ROOT))
     threading.Thread(target=server.serve_forever,daemon=True).start()
+    origin = f'http://127.0.0.1:{server.server_port}'
     results = []
     try:
         async with async_playwright() as p:
             browser = await p.chromium.launch(executable_path=os.getenv('CHROMIUM_PATH') or shutil.which('chromium'), headless=True, args=['--no-sandbox'])
             for width in [1365,390]:
-                context = await browser.new_context(viewport={'width':width,'height':900 if width>700 else 844},is_mobile=width<700)
-                page = await context.new_page(); page.set_default_timeout(10000); errors=[]
-                page.on('pageerror',lambda error:errors.append(str(error)))
-                await page.add_init_script(MOCK+'\n'+MSG_MOCK+'\n'+FEATURE_MOCK)
-                try:
-                    await page.goto(f'http://127.0.0.1:{server.server_port}/',wait_until='load')
-                    await login(page,'manager')
-                    await check_report(page,width)
-                    await check_invoice(page,width)
-                    await check_phonebook(page,width)
-                    assert await page.evaluate('document.documentElement.scrollWidth<=innerWidth+2'), 'body overflow'
-                    assert not errors,errors
-                    results.append({'width':width,'status':'passed','errors':errors})
-                except Exception as error:
-                    await page.screenshot(path=str(OUT/f'{width}-failure.png'),full_page=True)
-                    diagnostic=await page.evaluate("() => ({years:window.__featureFiles?.years,reports:window.__featureFiles?.reports,invoices:window.__featureFiles?.invoices,payments:window.__featureFiles?.payments,forms:[...document.querySelectorAll('dialog[open] form')].map(f=>({id:f.getAttribute('id'),namedId:typeof f.id,valid:f.checkValidity(),error:f.querySelector('[data-report-error],[data-invoice-save-status]')?.textContent})),lastCalls:(window.__featureFiles?.calls||[]).slice(-12).map(c=>({endpoint:c.endpoint,method:c.method,body:c.body instanceof FormData?Object.fromEntries(c.body.entries()):c.body}))})")
-                    results.append({'width':width,'status':'failed','error':traceback.format_exc(),'errors':errors,'diagnostic':diagnostic})
-                await context.close()
+                for role in ['manager', 'owner']:
+                    context = await browser.new_context(viewport={'width':width,'height':900 if width>700 else 844},is_mobile=width<700,service_workers='block')
+                    blocked = []
+                    async def isolated_route(route):
+                        parsed = urlsplit(route.request.url)
+                        if f'{parsed.scheme}://{parsed.netloc}' == origin:
+                            await route.continue_()
+                        else:
+                            blocked.append(route.request.url)
+                            await route.abort('blockedbyclient')
+                    async def isolated_socket(socket):
+                        blocked.append(socket.url)
+                        await socket.close()
+                    # Fetch is fully mocked below; this guard also blocks image,
+                    # XHR, worker, redirect, and WebSocket network escapes.
+                    await context.route('**/*', isolated_route)
+                    await context.route_web_socket('**/*', isolated_socket)
+                    page = await context.new_page(); page.set_default_timeout(10000); errors=[]
+                    page.on('pageerror',lambda error:errors.append(str(error)))
+                    await page.add_init_script(MOCK+'\n'+MSG_MOCK+'\n'+FEATURE_MOCK)
+                    try:
+                        await page.goto(origin+'/',wait_until='load')
+                        if role == 'owner': await seed_foreign_invoice(page)
+                        await login(page,role)
+                        if role == 'manager':
+                            await check_report(page,width)
+                            await check_invoice(page,width)
+                            await check_phonebook(page,width)
+                        else:
+                            await check_foreign_invoice(page,width)
+                        assert await page.evaluate('document.documentElement.scrollWidth<=innerWidth+2'), 'body overflow'
+                        assert not errors,errors
+                        results.append({'width':width,'role':role,'status':'passed','errors':errors,'blocked_external_requests':blocked})
+                    except Exception:
+                        await page.screenshot(path=str(OUT/f'{width}-{role}-failure.png'),full_page=True)
+                        diagnostic=await page.evaluate("() => ({years:window.__featureFiles?.years,reports:window.__featureFiles?.reports,invoices:window.__featureFiles?.invoices,payments:window.__featureFiles?.payments,expiredGates:window.__featureFiles?.expiredGates,workspaceResponses:window.__featureFiles?.workspaceResponses,forms:[...document.querySelectorAll('dialog[open] form')].map(f=>({id:f.getAttribute('id'),namedId:typeof f.id,valid:f.checkValidity(),error:f.querySelector('[data-report-error],[data-invoice-save-status]')?.textContent})),lastCalls:(window.__featureFiles?.calls||[]).slice(-12).map(c=>({endpoint:c.endpoint,method:c.method,body:c.body instanceof FormData?Object.fromEntries(c.body.entries()):c.body}))})")
+                        results.append({'width':width,'role':role,'status':'failed','error':traceback.format_exc(),'errors':errors,'diagnostic':diagnostic,'blocked_external_requests':blocked})
+                    finally:
+                        await context.close()
             await browser.close()
     finally:
         server.shutdown()
     (OUT/'results.json').write_text(json.dumps(results,ensure_ascii=False,indent=2))
     print(json.dumps(results,ensure_ascii=False,indent=2))
-    assert all(row['status']=='passed' for row in results)
+    assert len(results) == 4 and all(row['status']=='passed' for row in results)
 if __name__=='__main__': asyncio.run(main())
