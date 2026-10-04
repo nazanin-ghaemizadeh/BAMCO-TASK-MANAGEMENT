@@ -708,9 +708,9 @@ def capability_parity_cases(api, db):
     require(db.execute('SELECT count(*) FROM public.invoice_files WHERE invoice_id=%s', (invoice['id'],)).fetchone()[0] == 0, 'Invoice cascade left files')
     mark('view-scoped direct payment deletion and delete-only cross-owner invoice cascade preserve established action grants')
 
-    # Last deliberately broad operation in this disposable database. PostgreSQL
-    # does not apply SELECT RLS to every no-WHERE, no-RETURNING write: the write
-    # policy itself must retain pending-uploader privacy.
+    # The local API enables safeupdate: unfiltered mutation must remain blocked.
+    # Direct PostgreSQL tests independently exercise no-WHERE/no-RETURNING RLS;
+    # this real API case respects safeupdate and uses explicit fixture IDs next.
     broad_invoice = new_invoice(api, owner_token, 'PARITY-BROAD-RLS')
     owner_ready, _ = reserve(api, owner_token, broad_invoice, data)
     owner_ready = edge_upload(api, owner_ready, data, owner_token)
@@ -719,24 +719,39 @@ def capability_parity_cases(api, db):
     caller_pending, _ = reserve(api, token, broad_invoice, data)
     hidden_before = db.execute("SELECT id FROM public.invoice_files WHERE upload_state='pending' AND uploaded_by<>%s ORDER BY id", (editor,)).fetchall()
     require(hidden_before, 'Broad-mutation fixture needs foreign pending rows')
-    broad = api.request('DELETE', '/rest/v1/invoice_files', token=token, headers={'Prefer': 'return=minimal'})
-    api.ok(broad, 'no-filter no-returning ready file deletion')
+    fixture_ids = [owner_ready['id'], caller_pending['id'], hidden['id']]
+    for method, body in [('DELETE', None), ('PATCH', {'upload_state': 'ready'})]:
+        blocked = api.request(method, '/rest/v1/invoice_files', token=token, body=body,
+                              headers={'Prefer': 'return=minimal'})
+        api.denied(blocked, 'safeupdate rejects unfiltered ' + method)
+        detail = api.decoded(blocked)
+        require(blocked[0] == 400 and isinstance(detail, dict) and detail.get('code') == '21000'
+                and 'requires a WHERE clause' in detail.get('message', ''),
+                'Unfiltered ' + method + ' did not fail at the expected safeupdate guard')
+        require(db.execute('SELECT count(*) FROM public.invoice_files WHERE id=ANY(%s::bigint[])', (fixture_ids,)).fetchone()[0] == 3,
+                'Blocked unfiltered mutation removed fixture rows')
+        require(db.execute("SELECT id FROM public.invoice_files WHERE upload_state='pending' AND uploaded_by<>%s ORDER BY id", (editor,)).fetchall() == hidden_before,
+                'Blocked unfiltered mutation changed foreign pending rows')
+    # Include the guessed hidden ID explicitly: RLS must remove only the ready
+    # and caller-owned pending fixtures, even with a minimal response.
+    selected = '/rest/v1/invoice_files?id=in.(' + ','.join(fixture_ids) + ')'
+    api.ok(api.request('DELETE', selected, token=token, headers={'Prefer': 'return=minimal'}),
+           'explicit fixture ready/caller-pending deletion')
     require(db.execute('SELECT count(*) FROM public.invoice_files WHERE id IN(%s,%s)', (owner_ready['id'], caller_pending['id'])).fetchone()[0] == 0,
-            'No-filter DELETE failed to remove eligible ready/caller-pending rows')
-    hidden_after = db.execute("SELECT id FROM public.invoice_files WHERE upload_state='pending' AND uploaded_by<>%s ORDER BY id", (editor,)).fetchall()
-    require(hidden_after == hidden_before, 'No-filter DELETE bypassed foreign pending privacy')
-    # All this caller's eligible rows were removed; an unfiltered update must
-    # skip other uploaders' pending rows instead of reaching their row guards.
-    api.ok(api.request('PATCH', '/rest/v1/invoice_files', token=token, body={'upload_state': 'ready'},
-                       headers={'Prefer': 'return=minimal'}), 'no-filter hidden-pending update exclusion')
+            'Filtered DELETE failed to remove eligible ready/caller-pending fixtures')
     require(db.execute("SELECT id FROM public.invoice_files WHERE upload_state='pending' AND uploaded_by<>%s ORDER BY id", (editor,)).fetchall() == hidden_before,
-            'No-filter PATCH transitioned foreign pending files')
+            'Filtered DELETE removed a foreign pending fixture')
+    api.ok(api.request('PATCH', '/rest/v1/invoice_files?id=eq.' + hidden['id'], token=token,
+                       body={'upload_state': 'ready'}, headers={'Prefer': 'return=minimal'}),
+           'explicit hidden-pending update exclusion')
+    require(db.execute("SELECT id FROM public.invoice_files WHERE upload_state='pending' AND uploaded_by<>%s ORDER BY id", (editor,)).fetchall() == hidden_before,
+            'Filtered PATCH transitioned foreign pending files')
     require(api.download(hidden, owner_token) == data, 'Broad mutation damaged real hidden pending bytes')
     api.download(hidden, token, deny=True)
     api.ok(api.request('DELETE', '/rest/v1/invoices?id=eq.' + broad_invoice['id'], token=delete_token), 'authorized parent cascade over hidden pending')
     require(db.execute('SELECT count(*) FROM public.invoice_files WHERE invoice_id=%s', (broad_invoice['id'],)).fetchone()[0] == 0,
             'Pending write privacy prevented authorized parent cascade')
-    mark('no-filter minimal DELETE/PATCH cannot bypass foreign pending privacy; eligible rows and authorized invoice cascade still work')
+    mark('safeupdate blocks unfiltered DELETE/PATCH; filtered file mutations preserve hidden pending privacy and authorized parent cascade')
 
 
 def available_port():

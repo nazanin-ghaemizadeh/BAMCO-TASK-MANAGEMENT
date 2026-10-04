@@ -258,7 +258,9 @@ async def check_foreign_invoice(page, width):
 
     await page.locator('[data-invoice-action="edit"]').click()
     form = page.locator('#invoiceForm')
-    await expect(form.locator('[name="proforma_file"]')).to_have_count(1)
+    # Initial proforma selection belongs to creation only. Existing invoices use
+    # the standalone upload journey exercised in check_foreign_operations.
+    await expect(form.locator('[name="proforma_file"]')).to_have_count(0)
     await form.locator('[name="title"]').fill('ویرایش سراسری صورتحساب')
     await page.evaluate("__featureFiles.pauseNext('save_invoice')")
     await form.locator('[type="submit"]').click()
