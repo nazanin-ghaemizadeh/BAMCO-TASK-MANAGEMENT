@@ -431,6 +431,115 @@ def execute_cases(api, db):
     mark('real cleanup worker removes bytes before ack and reconciles absent objects')
 
 
+def section_visibility_cases(api, db):
+    """Exercise new scope through real Auth/REST/Edge/Storage, on synthetic rows."""
+    owner, owner_token = make_user(api, db, 'section-owner')
+    editor, editor_token = make_user(api, db, 'section-editor')
+    viewer, viewer_token = make_user(api, db, 'section-viewer', view_only=True)
+    invoice = new_invoice(api, owner_token, 'SECTION')
+    payment = new_payment(api, owner_token, invoice)
+    data = b'%PDF-1.7\n% Synthetic section visibility acceptance.\n%%EOF\n'
+    ready, _ = reserve(api, owner_token, invoice, data)
+    ready = edge_upload(api, ready, data, owner_token)
+    pending, _ = reserve(api, owner_token, invoice, data)
+    # A real existing object makes pending denial meaningful (not merely 404).
+    api.upload(pending, data, api.service)
+    require(api.download(pending, owner_token) == data, 'Uploader must see its real pending bytes')
+    for caller in (editor_token, viewer_token):
+        previous = api.rpc('list_invoice_workspace', {}, caller)
+        require(not any(row['id'] == invoice['id'] for row in previous['invoices']), 'Baseline foreign invoice unexpectedly visible')
+        api.download(ready, caller, deny=True)
+    mark('section baseline reproduces foreign row and real byte denial')
+
+    db.execute((ROOT / 'supabase/schema-proposals/invoice-section-visibility.sql').read_text())
+    # No new public RPC is introduced; existing endpoints read current policies.
+    db.execute("NOTIFY pgrst, 'reload schema'")
+    for caller in (editor_token, viewer_token):
+        workspace = api.rpc('list_invoice_workspace', {}, caller)
+        for key, expected in [('invoices', invoice), ('payments', payment), ('files', ready)]:
+            require(any(row['id'] == expected['id'] for row in workspace[key]), 'Section workspace omitted authorized ' + key)
+        require(not any(row['id'] == pending['id'] for row in workspace['files']), 'Workspace exposed another uploader pending file')
+        for table, expected in [('invoices', invoice), ('invoice_payments', payment), ('invoice_files', ready)]:
+            rows = api.ok(api.request('GET', '/rest/v1/' + table + '?select=id&id=eq.' + expected['id'], token=caller), 'section table read')
+            require(len(rows) == 1 and str(rows[0]['id']) == expected['id'], 'Direct REST omitted authorized ' + table)
+        hidden = api.ok(api.request('GET', '/rest/v1/invoice_files?select=id&id=eq.' + pending['id'], token=caller), 'pending table read')
+        require(hidden == [], 'Direct REST exposed pending metadata')
+        require(api.download(ready, caller) == data, 'Foreign section download changed real bytes')
+        api.download(pending, caller, deny=True)
+    api.download(ready, deny=True)
+    api.download(ready, public=True, deny=True)
+    mark('foreign viewer/editor real JWT workspace/table reads and exact Storage bytes; pending/anonymous/public denial')
+
+    payload = {key: invoice.get(key) for key in ('invoice_number', 'title', 'account_party', 'company_name', 'currency', 'total_amount', 'due_date', 'description')}
+    payload.update(title='Synthetic section editor update', total_amount='200.00')
+    request = {'p_request_id': str(uuid4()), 'p_invoice_id': invoice['id'], 'p_payload': payload}
+    edited = api.rpc('save_invoice', request, editor_token)
+    require(edited['title'] == payload['title'] and edited['total_amount'] == '200.00', 'Foreign editor invoice RPC failed')
+    workspace = api.rpc('list_invoice_workspace', {}, viewer_token)
+    stage = next(row for row in workspace['payments'] if row['id'] == payment['id'])
+    require(stage['amount'] == '100.00' and stage['percent_of_total'] == '50.000', 'Foreign total edit left stale or changed payment finances')
+    require(stage['receipt_path'] == payment['receipt_path'] and stage['status'] == payment['status'], 'Foreign total edit changed payment authority fields')
+    direct = api.ok(api.request('PATCH', '/rest/v1/invoices?id=eq.' + invoice['id'], token=editor_token,
+                               body={'description': 'Synthetic direct section edit'}, headers={'Prefer': 'return=representation'}), 'foreign direct invoice edit')
+    require(len(direct) == 1 and direct[0]['description'] == 'Synthetic direct section edit', 'Direct invoice PATCH did not edit the selected row')
+    api.rpc('save_invoice', {**request, 'p_request_id': str(uuid4()), 'p_payload': {**payload, 'total_amount': '99.99'}}, editor_token, deny=True)
+    require(db.execute('SELECT total_amount::text FROM public.invoices WHERE id=%s', (invoice['id'],)).fetchone()[0] == '200.00', 'Denied lower total changed invoice')
+    api.rpc('save_invoice', {**request, 'p_request_id': str(uuid4())}, viewer_token, deny=True)
+    mark('foreign editor real RPC/PATCH and derived percentages; overpayment rollback and viewer edit denial')
+
+    def no_rows(method, table, row_id, caller, body=None):
+        response = api.request(method, '/rest/v1/' + table + '?id=eq.' + row_id, token=caller, body=body,
+                               headers={'Prefer': 'return=representation'})
+        # RLS commonly reports an empty 200 rather than a 4xx for UPDATE/DELETE.
+        if 200 <= response[0] < 300:
+            require(api.decoded(response) == [], 'Forbidden REST mutation returned rows')
+        else:
+            api.denied(response, 'foreign REST mutation')
+
+    for caller in (editor_token, viewer_token):
+        api.rpc('save_invoice_payment', {'p_request_id': str(uuid4()), 'p_payment_id': payment['id'],
+                                        'p_payload': {'invoice_id': invoice['id'], 'sequence_no': 1, 'amount': '90.00', 'status': 'paid'}}, caller, deny=True)
+        api.rpc('save_invoice_payment', {'p_request_id': str(uuid4()), 'p_payment_id': None,
+                                        'p_payload': {'invoice_id': invoice['id'], 'sequence_no': 2, 'amount': '1.00', 'status': 'planned'}}, caller, deny=True)
+        no_rows('PATCH', 'invoice_payments', payment['id'], caller, {'notes': 'Forbidden section edit'})
+        no_rows('DELETE', 'invoice_payments', payment['id'], caller)
+        no_rows('DELETE', 'invoices', invoice['id'], caller)
+        no_rows('PATCH', 'invoice_files', ready['id'], caller, {'upload_state': 'ready'})
+        no_rows('DELETE', 'invoice_files', ready['id'], caller)
+        api.rpc('reserve_invoice_file', reservation_args(invoice, data), caller, deny=True)
+        api.rpc('get_invoice_file_upload', {'p_file_id': ready['id']}, caller, deny=True)
+        api.rpc('finalize_invoice_file', {'p_file_id': pending['id']}, caller, deny=True)
+        api.rpc('delete_invoice_file', {'p_file_id': ready['id'], 'p_invoice_id': invoice['id'], 'p_payment_id': None,
+                                        'p_file_type': ready['file_type'], 'p_file_request_id': ready['client_request_id']}, caller, deny=True)
+        edge_upload(api, ready, data, caller, deny=True)
+        edge_upload(api, pending, data, caller, deny=True)
+        api.upload(ready, data, caller, upsert=True, deny=True)
+        removed = api.request('DELETE', '/storage/v1/object/' + BUCKET, token=caller, body={'prefixes': [ready['storage_path']]})
+        require(removed[0] in (200, 400, 401, 403), 'Unexpected foreign Storage delete response')
+        require(api.download(ready, owner_token) == data, 'Foreign caller deleted/changed real bytes')
+    for field in ('created_by', 'follow_up_owner_id'):
+        api.denied(api.request('PATCH', '/rest/v1/invoices?id=eq.' + invoice['id'], token=editor_token,
+                               body={field: editor}, headers={'Prefer': 'return=representation'}), 'foreign ownership takeover')
+    saved = db.execute('SELECT created_by,follow_up_owner_id,total_amount::text FROM public.invoices WHERE id=%s', (invoice['id'],)).fetchone()
+    require(str(saved[0]) == owner and str(saved[1]) == owner and saved[2] == '200.00', 'Denied mutation changed invoice identity/total')
+    saved_payment = db.execute('SELECT amount::text,status,notes FROM public.invoice_payments WHERE id=%s', (payment['id'],)).fetchone()
+    require(saved_payment == ('100.00', 'paid', None), 'Denied mutation changed or removed payment')
+    require(db.execute('SELECT count(*) FROM public.invoice_payments WHERE invoice_id=%s', (invoice['id'],)).fetchone()[0] == 1,
+            'Denied mutation inserted an extra payment')
+    require(db.execute('SELECT count(*) FROM public.invoice_files WHERE id IN(%s,%s)', (ready['id'], pending['id'])).fetchone()[0] == 2,
+            'Denied mutation changed or removed file rows')
+    mark('foreign payment/file/invoice deletion, upload, ownership takeover and actual byte mutation remain denied')
+
+    # Revoke the fixture feature grant after a successful real JWT request.
+    db.execute("UPDATE private.fixture_actor_permissions SET permissions=permissions||'{\"view\":false}'::jsonb WHERE id=%s", (editor,))
+    require(api.rpc('list_invoice_workspace', {}, editor_token) == {'invoices': [], 'payments': [], 'files': []}, 'Revoked JWT caller still reads workspace')
+    api.download(ready, editor_token, deny=True)
+    api.rpc('save_invoice', {**request, 'p_request_id': str(uuid4())}, editor_token, deny=True)
+    db.execute("UPDATE private.fixture_actor_permissions SET permissions=permissions||'{\"view\":true}'::jsonb WHERE id=%s", (editor,))
+    require(api.download(ready, editor_token) == data, 'Restored section permission did not restore real byte read')
+    mark('feature revocation and restoration observed through the same real Auth JWT')
+
+
 def available_port():
     with socket.socket() as sock:
         sock.bind(('127.0.0.1', 0))
@@ -514,7 +623,9 @@ def main():
         require(any(v['name'] == 'supabase/storage-api' and v['local'] == STORAGE_VERSION for v in services), 'Unexpected Storage API version')
         RESULT['versions'] = {'cli': version, 'services': services, 'psycopg': psycopg.__version__}
         RESULT['source_sha256'] = {name: hashlib.sha256((ROOT / name).read_bytes()).hexdigest() for name in [
-            'supabase/schema-proposals/invoice-attachments.sql', 'assets/js/financial-obligations.js',
+            'supabase/schema-proposals/invoice-attachments.sql', 'supabase/schema-proposals/invoice-attachment-delete.sql',
+            'supabase/schema-proposals/invoice-section-visibility.sql', 'supabase/migrations/20260924160000_invoice_payment_consistency.sql',
+            'scripts/test-invoice-storage-api.py', 'assets/js/financial-obligations.js',
             'supabase/functions/invoice-file-cleanup/worker.mjs', 'tests/storage/fixture.sql']}
         db = psycopg.connect(**settings, autocommit=True)
         require(db.execute('SHOW server_version_num').fetchone()[0].startswith('17'), 'Real PostgreSQL 17 is required')
@@ -522,7 +633,9 @@ def main():
                 'Refusing a populated or non-Supabase database')
         require(db.execute('SELECT (SELECT count(*) FROM auth.users)=0 AND (SELECT count(*) FROM storage.buckets)=0').fetchone()[0], 'Refusing nonempty Auth/Storage services')
         db.execute((FIXTURES / 'fixture.sql').read_text())
+        db.execute((ROOT / 'supabase/migrations/20260924160000_invoice_payment_consistency.sql').read_text())
         db.execute((ROOT / 'supabase/schema-proposals/invoice-attachments.sql').read_text())
+        db.execute((ROOT / 'supabase/schema-proposals/invoice-attachment-delete.sql').read_text())
         db.execute("NOTIFY pgrst, 'reload schema'")
         api = API(origin, status['ANON_KEY'], status['SERVICE_ROLE_KEY'])
         # Only schema-cache readiness is polled; no behavioral assertion is retried.
@@ -550,6 +663,7 @@ def main():
             time.sleep(0.5)
         mark('real local invoice upload Edge is serving with handler-owned caller authentication')
         execute_cases(api, db)
+        section_visibility_cases(api, db)
         RESULT['passed'] = True
     except BaseException as error:
         RESULT['error'] = redact(error)
