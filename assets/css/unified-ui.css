@@ -270,7 +270,7 @@ html body dialog:is(#taskDialog,#vehicleRecordDialog,.bamco-dialog).bamco-dialog
 html body dialog:is(#taskDialog,#vehicleRecordDialog,.bamco-dialog).bamco-dialog .modal-actions{display:flex!important;flex-wrap:wrap!important;justify-content:flex-start!important;gap:8px!important;border-top:1px solid #d5e0da!important;padding-top:14px!important;margin-top:16px!important}
 html body dialog:is(#taskDialog,#vehicleRecordDialog,.bamco-dialog).bamco-dialog :is(.primary,.ghost,.danger,.calendar-btn){min-height:36px!important;border-radius:7px!important;padding:5px 12px!important;font:16px/1.5 var(--fa-font)!important}
 html body dialog:is(#taskDialog,#vehicleRecordDialog,.bamco-dialog).bamco-dialog .calendar-btn{padding:0!important}
-html body dialog:is(#taskDialog,#vehicleRecordDialog,.bamco-dialog).bamco-dialog :is(button,input,select,textarea):focus-visible{outline:2px solid #327c5c!important;outline-offset:2px!important}
+html body dialog:is(#taskDialog,#vehicleRecordDialog,.bamco-dialog).bamco-dialog :is(button,input,select,textarea):focus-visible{outline:var(--bamco-dialog-focus-outline,2px solid #327c5c)!important;outline-offset:2px!important}
 @media(max-width:760px){
  html body #appView#appView :is(#kanbanView,#archiveView,.bamco-interior).bamco-interior .bamco-page-heading{min-height:52px!important;gap:10px!important;padding:8px!important}
  html body #appView#appView :is(#kanbanView,#archiveView,.bamco-interior).bamco-interior .bamco-page-heading h3{font-size:18px!important}

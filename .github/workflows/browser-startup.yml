@@ -107,10 +107,14 @@ jobs:
           python -m playwright install --with-deps ${{ matrix.browser }}
       - name: Verify mobile home bounds and repeated navigation
         run: python tests/browser/check_home_responsive.py --browser ${{ matrix.browser }}
+      - name: Verify rendered title centering and touch versus keyboard focus
+        run: python tests/browser/check_home_visual_states.py --browser ${{ matrix.browser }}
       - name: Upload responsive home screenshots and geometry
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: home-responsive-${{ matrix.browser }}
-          path: test-results/home-responsive/
+          path: |
+            test-results/home-responsive/
+            test-results/home-visual-states/
           retention-days: 7
