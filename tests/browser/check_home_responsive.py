@@ -27,6 +27,7 @@ GEOMETRY = r'''() => {
  return {mode,width:innerWidth,height:innerHeight,pageWidth:document.documentElement.scrollWidth,
   scrollY,nav:rect(nav),footer:rect(document.querySelector('#homeFixedFooter')),
   columns:getComputedStyle(nav).gridTemplateColumns.split(' ').length,
+  expectedOrder:mode==='custom'?bamcoHomeLayout.get().order:BamcoNavigationCatalog.groups.map(g=>g.key),
   groups:nodes.map(n=>({key:n.dataset.group,rect:rect(n),
    heading:rect(n.querySelector('.nav-group-toggle')),
    targets:[...n.querySelectorAll(mode==='cards'?'.nav-group-items>[data-view]':'.home-group-trigger')].filter(visible).map(b=>({key:b.dataset.view||n.dataset.group,rect:rect(b),text:b.textContent.trim(),scrollWidth:b.scrollWidth,clientWidth:b.clientWidth})),
@@ -47,10 +48,14 @@ def verify_home(d, width, height):
     assert d['width'] == width, ('unexpected layout viewport', d['width'], width)
     assert d['pageWidth'] <= width + 2, ('horizontal page overflow', d)
     assert len(d['groups']) == 12, ('missing groups', d)
+    ordered=sorted(d['groups'],key=lambda g:(round(g['rect']['y']),-round(g['rect']['x'])))
+    assert [g['key'] for g in ordered]==d['expectedOrder'], ('RTL/custom order changed',d)
     compact = width <= 1200 or height <= 680
-    assert d['columns'] == (1 if width <= 620 else 2 if width <= 900 else 3) if d['mode']=='cards' and compact else True
-    if d['mode'] != 'cards':
-        assert d['columns'] == (2 if width <= 620 else 3 if width <= 900 else 4) if compact else d['columns']==6
+    if compact:
+        expected = (1 if width <= 620 else 2 if width <= 900 else 3) if d['mode']=='cards' else (2 if width <= 620 else 3 if width <= 900 else 4)
+        assert d['columns'] == expected, ('unexpected column count', d)
+    else:
+        assert d['columns'] == 6, ('desktop columns changed', d)
     for index, group in enumerate(d['groups']):
         assert group['rect']['x'] >= -2 and group['rect']['right'] <= width + 2, ('group outside viewport', group)
         for target in group['targets']:
@@ -93,6 +98,9 @@ async def one_case(browser, base, width, height, out):
     context = await browser.new_context(viewport={'width':width,'height':height},
         is_mobile=width<=1200,has_touch=width<=1200,service_workers='block')
     page=await context.new_page();page.set_default_timeout(8000)
+    async def activate(locator):
+        if width<=1200:await locator.tap()
+        else:await locator.click()
     result={'width':width,'height':height,'layouts':[],'errors':[],'failures':[]}
     page.on('pageerror',lambda e:result['errors'].append(str(e)))
     async def offline(route):
@@ -108,29 +116,38 @@ async def one_case(browser, base, width, height, out):
         await page.wait_for_function("document.body.classList.contains('home-layout-ready')")
         for mode in ['launcher','cards','custom','launcher','cards']:
             await page.evaluate('(mode)=>{bamcoShowHome();bamcoHomeLayout.set(mode)}',mode)
+            if mode=='custom':
+                # Set a genuinely non-default persisted order using the existing settings handler.
+                await page.evaluate('''document.querySelector('#homeLayoutSettings [data-home-move="1"]').click()''')
             await settle(page)
             d=await page.evaluate(GEOMETRY);verify_home(d,width,height);result['layouts'].append(d)
             if mode in ['launcher','cards'] and sum(x['mode']==mode for x in result['layouts'])==1:
                 await page.screenshot(path=str(out/f'{width}x{height}-{mode}.png'),full_page=True)
+            # The final group must be reachable by normal page scrolling.
+            tail=page.locator('#nav .nav-group-items>[data-view]:visible').last if mode=='cards' else page.locator('#nav .home-group-trigger:visible').last
+            await tail.scroll_into_view_if_needed()
+            tail_box=await tail.bounding_box()
+            assert tail_box and tail_box['y']>=-1 and tail_box['y']+tail_box['height']<=height+1, ('last target clipped',tail_box)
             if mode!='cards':
                 # Real tap, repeated dismiss/reopen, every route label, and
                 # reaching the last item when landscape forces dialog scrolling.
                 trigger=page.locator('#nav [data-group="tasks"] .home-group-trigger')
                 for attempt in range(2):
-                    await trigger.click();await settle(page)
+                    await activate(trigger);await settle(page)
                     modal=await check_dialog(page)
                     assert modal['open'] and modal['top']>=-1 and modal['bottom']<=height+1,modal
                     assert modal['left']>=-1 and modal['right']<=width+1,modal
                     assert modal['close']['w']>=42 and modal['close']['h']>=42,modal
                     assert all(x['x']>=modal['left'] and x['right']<=modal['right']+1 and x['scroll']<=x['client']+2 for x in modal['shown']),modal
                     await page.locator('.home-launcher-route').last.scroll_into_view_if_needed()
-                    assert await page.locator('.home-launcher-close').is_visible()
-                    await page.locator('.home-launcher-close').click()
-                await trigger.click();await page.locator('.home-launcher-dialog [data-route="kanban"]').click()
+                    scrolled=await check_dialog(page)
+                    assert scrolled['close']['top']>=scrolled['top'] and scrolled['close']['bottom']<=scrolled['bottom'], ('close button scrolled away',scrolled)
+                    await activate(page.locator('.home-launcher-close'))
+                await activate(trigger);await activate(page.locator('.home-launcher-dialog [data-route="kanban"]'))
             else:
-                await page.locator('#nav [data-view="kanban"]').click()
+                await activate(page.locator('#nav [data-view="kanban"]'))
             await page.wait_for_function("Bamco.state.view==='kanban'&&!document.querySelector('#kanbanView').classList.contains('hidden')")
-            await page.locator('#kanbanView .content-back:visible').first.click()
+            await activate(page.locator('#kanbanView .content-back:visible').first)
             await page.wait_for_function("Bamco.state.view==='home'&&document.body.classList.contains('card-home-active')")
             await settle(page);verify_home(await page.evaluate(GEOMETRY),width,height)
         # Rotation changes the CSS viewport without reloading or losing mode.
@@ -139,6 +156,17 @@ async def one_case(browser, base, width, height, out):
             await settle(page);verify_home(await page.evaluate(GEOMETRY),height,width)
             await page.set_viewport_size({'width':width,'height':height})
             await settle(page);verify_home(await page.evaluate(GEOMETRY),width,height)
+        if width==390:
+            result['boundaries']=[]
+            for boundary_width,boundary_height in [(620,844),(621,844),(760,844),(761,844),(900,844),(901,844),(1365,680),(1365,681)]:
+                await page.set_viewport_size({'width':boundary_width,'height':boundary_height})
+                for boundary_mode in ['launcher','cards','custom']:
+                    await page.evaluate('(m)=>{bamcoShowHome();bamcoHomeLayout.set(m)}',boundary_mode)
+                    await settle(page)
+                    boundary=await page.evaluate(GEOMETRY)
+                    verify_home(boundary,boundary_width,boundary_height)
+                    result['boundaries'].append(boundary)
+            await page.set_viewport_size({'width':width,'height':height})
         assert not result['errors'],result['errors']
     except Exception as error:
         result['failures'].append(str(error))

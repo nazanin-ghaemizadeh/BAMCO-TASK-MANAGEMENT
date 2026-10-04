@@ -55,7 +55,7 @@ html body.card-navigation #appView .card-topbar button svg{width:20px!important;
 html body.card-home-active #appView.app .workspace,html body.card-home-active #appView.app:has(.sidebar.collapsed) .workspace{padding:12px!important}
 html body.card-navigation #appView #homeView #nav{grid-template-columns:minmax(0,1fr)!important;gap:12px!important}
 html body.card-navigation #appView #homeView[data-layout="launcher"] #nav,html body.card-navigation #appView #homeView[data-layout="custom"] #nav{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:12px 8px!important}
-html body.card-navigation #appView #homeView #nav .home-group-trigger{font-size:18px!important}
+html body.card-navigation #appView #homeView[data-layout="launcher"] #nav .home-group-trigger,html body.card-navigation #appView #homeView[data-layout="custom"] #nav .home-group-trigger{font-size:18px!important}
 html body.card-navigation #appView #homeView #nav>.nav-group.hidden{display:none!important}
 }
 /* The generic mobile dialog rule must not remove the launcher's padding.
