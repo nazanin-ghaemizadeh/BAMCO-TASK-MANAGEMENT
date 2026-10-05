@@ -200,11 +200,18 @@ function explicitFeatureAllowed(featureKey,action='view'){
 function canManageTaskByExistingPermission(task,action='edit'){
   const ordinaryAction=['archive','restore'].includes(action)?'edit':action;
   if(!task||!explicitFeatureAllowed('kanban',ordinaryAction))return false;
+  // The existing server path reserves ownerless rows for system managers.
+  // Organizational intake is handled by the separate scoped capability below.
+  if(!task.owner_id)return isManager();
   return hasApprovalBypass()||isStrictDescendant(taskSubjectId(task))||(isOrganizationManager()&&isOwnTask(task));
 }
 function canSuperviseKanbanTask(task){
-  return !!task&&!task.archived&&!!task.owner_id
-    &&window.BamcoAccess?.canSuperviseKanbanOwner?.(task.owner_id)===true;
+  if(!task||task.archived)return false;
+  const access=window.BamcoAccess;
+  if(task.owner_id)return access?.canSuperviseKanbanOwner?.(task.owner_id)===true;
+  return !task.owner_deleted_at&&!task.former_owner_name
+    &&window.bamcoOptions?.status(task)?.kind==='registered'
+    &&access?.canAccessKanbanIntake?.(task.created_by)===true;
 }
 function isSupervisionOnlyTask(task){return canSuperviseKanbanTask(task)&&!canManageTaskByExistingPermission(task)}
 function canDirectlyManageTask(task,action='edit'){
@@ -546,13 +553,13 @@ function canEditTaskDirectly(task=state.editing){
 function canChooseTaskOwner(task=state.editing){
   if(state.reviewEdit)return featureAllowed('approvals','edit');
   if(state.resubmitting||state.amendingRequest)return false;
-  return task?canManageTaskByExistingPermission(task,'edit'):canCreateDirectTask();
+  return task?(canManageTaskByExistingPermission(task,'edit')||(canSuperviseKanbanTask(task)&&window.BamcoAccess?.canAssignKanban?.()===true)):canCreateDirectTask();
 }
 function syncTaskDialogAuthority(task=state.editing){
   const directAuthority=canEditTaskDirectly(task);
   $('#taskDialogTitle').textContent=state.reviewEdit?'اصلاح درخواست مدیر':state.resubmitting?'اصلاح و ارسال مجدد':state.amendingRequest?'ویرایش درخواست':task?(directAuthority?'ویرایش وظیفه':'درخواست تغییر وظیفه'):(directAuthority?'افزودن وظیفه':'درخواست وظیفه جدید');
   $('#taskDialogHint').textContent=state.reviewEdit?'اصلاحات همراه با تأیید درخواست اعمال می‌شود.':state.resubmitting?'موارد خواسته‌شده را اصلاح و دوباره ارسال کنید.':state.amendingRequest?'ویرایش شما درخواست را دوباره در گردش تأیید قرار می‌دهد.':directAuthority?(isOrganizationManager()&&task&&isOwnTask(task)?'تغییر مستقیم برای وظیفهٔ خودِ مدیر و وظایف رده‌های پایین‌تر مجاز است.':'تغییر مستقیم فقط برای وظایفِ رده‌های پایین‌ترِ همین شاخه سازمانی مجاز است.'):'درخواست شما پس از تأیید بالادستِ مستقیم در ساختار سازمانی اعمال می‌شود.';
-  if(isSupervisionOnlyTask(task))$('#taskDialogHint').textContent='ویرایش محتوای وظیفهٔ زیرمجموعه مجاز است؛ متولی و وضعیت آرشیو تغییر نمی‌کند.';
+  if(isSupervisionOnlyTask(task))$('#taskDialogHint').textContent=window.BamcoAccess?.canAssignKanban?.()===true?'برای تخصیص، وضعیت را به «در حال انجام» یا «منتظر پاسخ» تغییر دهید و متولی را از افراد زیرمجموعه انتخاب کنید.':'ویرایش محتوای وظیفهٔ زیرمجموعه مجاز است؛ متولی و وضعیت آرشیو تغییر نمی‌کند.';
   $('#saveTaskBtn').textContent=state.reviewEdit?'ثبت اصلاحات و تأیید':state.resubmitting?'ارسال مجدد':state.amendingRequest?'ثبت و ارسال مجدد':directAuthority?(task?'ثبت تغییرات':'ثبت وظیفه'):'ارسال برای تأیید';
 }
 function fillOwners(selected,task=state.editing){
@@ -561,7 +568,8 @@ function fillOwners(selected,task=state.editing){
   if(selected&&!byId.has(String(selected))&&profileById(selected))byId.set(String(selected),profileById(selected));
   let source;
   if(state.reviewEdit)source=scopedTaskProfiles();
-  else if(canChoose)source=scopedTaskProfiles().filter(person=>canDirectlyCreateFor(person.id)||String(person.id)===String(selected));
+  else if(isSupervisionOnlyTask(task)&&window.BamcoAccess?.canAssignKanban?.()===true)source=profileList().filter(person=>person.active!==false&&window.BamcoAccess.canSuperviseKanbanOwner(person.id));
+  else if(canChoose)source=scopedTaskProfiles().filter(person=>canDirectlyCreateFor(person.id)||(canSuperviseKanbanTask(task)&&window.BamcoAccess?.canAssignKanban?.()===true&&window.BamcoAccess.canSuperviseKanbanOwner(person.id))||String(person.id)===String(selected));
   else source=[profileById(state.profile?.id)||state.profile].filter(Boolean);
   if(selected&&!source.some(person=>String(person.id)===String(selected))&&byId.has(String(selected)))source.push(byId.get(String(selected)));
   const unique=[...new Map(source.filter(Boolean).map(person=>[String(person.id),person])).values()];
@@ -574,7 +582,7 @@ function syncTaskState(){
   const supervisionOnly=isSupervisionOnlyTask(state.editing);
   for(const option of f.elements.status.options){
     const candidate=window.bamcoOptions.status(option.value);
-    option.disabled=supervisionOnly&&(candidate?.kind==='completed'||candidate?.owner_mode==='none');
+    option.disabled=supervisionOnly&&(candidate?.kind==='completed'||(candidate?.owner_mode==='none'&&(!window.BamcoAccess?.canAssignKanban?.()||!!state.editing?.owner_id)));
   }
   if(rule.owner_mode==='none')f.elements.owner_id.value='';else if(!canChoose&&!state.resubmitting&&!state.amendingRequest)f.elements.owner_id.value=isSupervisionOnlyTask(state.editing)?state.editing.owner_id:state.profile.id;
   f.elements.owner_id.disabled=rule.owner_mode==='none'||!canChoose||!!(state.editing?.archived&&state.editing?.owner_deleted_at);f.elements.owner_id.required=rule.owner_mode==='required';
@@ -637,11 +645,16 @@ $('#taskForm').addEventListener('submit',async e=>{
   data.reminder_days=Number(data.reminder_days||0);
   const currentTask=state.editing;
   const supervisionOnlyMutation=isSupervisionOnlyTask(currentTask);
+  const guardedKanbanMutation=canSuperviseKanbanTask(currentTask);
   const directMutation=state.reviewEdit?featureAllowed('approvals','edit'):(state.resubmitting||state.amendingRequest)?false:currentTask?canDirectlyManageTask(currentTask,'edit'):canDirectlyCreateFor(data.owner_id);
   if(!directMutation&&!state.reviewEdit&&!state.resubmitting&&!state.amendingRequest)data.owner_id=currentTask?.owner_id||state.profile.id;
   if(!data.owner_id)data.owner_id=null;
   if(state.editing?.archived&&state.editing?.owner_deleted_at)data.owner_id=state.editing.owner_id;
   try{window.bamcoOptions.normalizeTask(data,state.editing)}catch(error){toast(error.message,true);return}
+  if(supervisionOnlyMutation&&data.owner_id!==currentTask.owner_id){
+    if(window.BamcoAccess?.canAssignKanban?.()!==true||!window.BamcoAccess.canSuperviseKanbanOwner(data.owner_id)){toast('متولی جدید باید از افراد فعال زیرمجموعهٔ شما باشد.',true);return}
+  }
+  if(guardedKanbanMutation&&data.owner_id!==currentTask.owner_id&&currentTask.row_version==null){toast('برای تخصیص، صفحه را تازه‌سازی کنید.',true);return}
   const completing=window.bamcoOptions.completed(data);
   if(completing&&!state.editing?.archived&&f.elements.status.dataset.archiveConfirmed!=='1'){
     if(!await window.bamcoConfirm('از انتقال این وظیفه به آرشیو مطمئن هستید؟'))return;
@@ -670,8 +683,9 @@ $('#taskForm').addEventListener('submit',async e=>{
       if(completing){data.archived=true;data.archived_at=currentTask?.archived?(currentTask.archived_at??null):(data.archived_at||new Date().toISOString())}
       if(state.editing?._restoring){await update('tasks',`id=eq.${state.editing.id}`,{...data,archived:true,archived_at:state.editing.archived_at||new Date().toISOString()});await rpc('restore_tasks_to_kanban_and_resequence',{p_task_ids:[Number(state.editing.id)]})}
       else if(state.editing){
-        const saved=await update('tasks',`id=eq.${state.editing.id}`,data);
-        if(supervisionOnlyMutation&&(!Array.isArray(saved)||saved.length!==1))throw Error('وظیفه یا دسترسی شما تغییر کرده است؛ صفحه را تازه‌سازی کنید.');
+        const expectedVersion=guardedKanbanMutation&&currentTask.row_version!=null?`&row_version=eq.${encodeURIComponent(currentTask.row_version)}`:'';
+        const saved=await update('tasks',`id=eq.${state.editing.id}${expectedVersion}`,data);
+        if(guardedKanbanMutation&&(!Array.isArray(saved)||saved.length!==1))throw Error('وظیفه یا دسترسی شما تغییر کرده است؛ صفحه را تازه‌سازی کنید.');
       }
       else await insert('tasks',{...data,created_by:state.profile.id});
     }else{
