@@ -68,6 +68,8 @@ authority rather than consuming newly visible Kanban-only rows.
 
 This source is initially a proposal, not evidence of deployed SQL. Apply only
 after the bounded scope/security review and record the actual Supabase migration
-version. Deploy the snapshot/SQL before the compatible client bundle. Old clients
-ignore the additive capability; new clients safely ignore it when absent.
+version. Deploy and verify the compatible client bundle before activating the SQL, then
+refresh access. New clients safely treat a missing capability snapshot as false.
+Client-first avoids a transition in which old dashboard code counts newly
+readable Kanban rows before its new presentation filter is available.
 No production fake writes, deletion probes or user impersonation are needed.
