@@ -98,6 +98,9 @@ test('home styles have one owner, loaded last; phase modules load once',()=>{
  const home=read('assets/css/home-stable.css');assert.match(home,/grid-template-columns:repeat\(5,minmax\(0,1fr\)\)/);assert.match(home,/grid-template-rows:repeat\(2,minmax\(0,1fr\)\)/);assert.match(home,/grid-template-columns:minmax\(0,1fr\)!important;grid-template-rows:none/);assert.match(home,/grid-auto-rows:var\(--home-row-height/);
  assert.match(home,/card-navigation\.card-home-active #appView #homeView #nav \.nav-group-items>\[data-view\]\.hidden\{display:none!important\}/);
  assert.match(home,/nav \.nav-group-items>:is\(\[data-view\],\.home-card-route\)\{grid-column:auto!important;grid-row:auto!important\}/);
+ const compact=read('assets/css/home-phonebook-override.css');
+ assert.match(compact,/:is\(\[data-view\],\.home-card-route\)\{height:auto!important;min-height:44px!important/);
+ assert.match(compact,/:is\(\[data-view\],\.home-card-route\)>span\{white-space:normal!important;overflow:visible!important;overflow-wrap:anywhere!important/);
  assert.match(home,/card-home-active:not\(\.home-layout-ready\)[^\n]+#homeView #nav\{visibility:hidden!important\}/);
  assert.match(source,/prepareHomeLayout\(\)[\s\S]*document\.fonts\?\.ready[\s\S]*logo\?\.decode[\s\S]*home-layout-ready/);
  for(const module of ['phase1-workflow','phase2-message-engine'])assert.equal(bundle.split('source: assets/js/'+module+'.js').length-1,1);
