@@ -52,7 +52,10 @@ async def click_route(page,tab):
         else:
             await page.locator(f'.home-launcher-dialog [data-route="{tab}"]').click()
     else:
-        await page.locator('#nav [data-view="'+tab+'"]').click()
+        if tab=='phoneBook':
+            await page.locator('#nav .home-card-route[data-phonebook-section="office"]').click()
+        else:
+            await page.locator('#nav [data-view="'+tab+'"]').click()
 
 async def open_tab(page,tab):
     print('open',tab,flush=True)

@@ -119,8 +119,16 @@ async def one_case(browser, base, width, layout, role, scenario=None):
                     assert await proxy.is_visible(), f'{route} missing or CSS-hidden in launcher'
                     await proxy.click()
                 else:
-                    assert await source.is_visible(), f'{route} CSS-hidden in cards layout'
-                    await source.click()
+                    if route == 'phoneBook':
+                        proxies = page.locator('#nav .home-card-route[data-phonebook-section]')
+                        assert await proxies.count() == 3, 'phonebook card must expose all three categories'
+                        assert not await source.is_visible(), 'generic phonebook source must stay presentation-hidden'
+                        for proxy in await proxies.all():
+                            assert await proxy.is_visible(), 'phonebook category CSS-hidden in cards layout'
+                        await page.locator('#nav .home-card-route[data-phonebook-section="office"]').click()
+                    else:
+                        assert await source.is_visible(), f'{route} CSS-hidden in cards layout'
+                        await source.click()
                 await page.wait_for_function('(r)=>Bamco.state.view===r&&!document.getElementById(r+"View").classList.contains("hidden")', arg=route)
                 await page.wait_for_timeout(60)
                 diag = await page.evaluate(DIAG)
