@@ -65,6 +65,8 @@ async def case(browser,base,width,role,out):
   await page.locator('#taskDialog').wait_for(state='hidden')
   # Full browser reload reads the persisted mocked API, rather than reusing UI state.
   await page.reload(wait_until='load')
+  # Authentication is intentionally memory-only: re-enter through the real login UI.
+  await login(page,'owner')
   await page.wait_for_function("()=>Bamco.state.profile?.id===__testApi.profiles[1].id&&BamcoAccess.isReady()")
   await page.evaluate("async()=>{await bamcoOrganizationAccess.refresh();await refresh();await bamcoOptions.load(true);BamcoNavigation.navigate('kanban')}")
   await page.locator('#kanbanBody tr[data-task-id="101"]').click()
