@@ -126,6 +126,8 @@
   });
   const SAFE_WHEN_UNAVAILABLE = new Set(['settings']);
   let grants = new Map();
+  let kanbanSupervision = false;
+  let supervisedOwnerIds = new Set();
   let loaded = false;
   let loading = null;
   let unavailable = false;
@@ -186,7 +188,7 @@
     }
   }
   function actionField(action) { return ACTION_FIELD[String(action || 'view')] || ACTION_FIELD.view; }
-  function can(featureKey, action = 'view') {
+  function canExplicit(featureKey, action = 'view') {
     const feature = String(featureKey || '');
     if (!feature || !state().token || !actor() || state().profile?.active === false
       || (state().profile?.id && String(state().profile.id) !== String(actor()))) return false;
@@ -194,6 +196,16 @@
     if (!loaded || loadedIdentity !== identity()) return false;
     if (unavailable && SAFE_WHEN_UNAVAILABLE.has(feature) && action === 'view') return true;
     return grants.get(feature)?.[actionField(action)] === true;
+  }
+  function canSuperviseKanban() {
+    return loaded && loadedIdentity === identity() && !!identity()
+      && state().profile?.active !== false
+      && (!state().profile?.id || String(state().profile.id) === String(actor())) && kanbanSupervision === true;
+  }
+  function canSuperviseKanbanOwner(ownerId) { return canSuperviseKanban() && !!ownerId && supervisedOwnerIds.has(String(ownerId)); }
+  function can(featureKey, action = 'view') {
+    return canExplicit(featureKey, action)
+      || (featureKey === 'kanban' && ['view', 'edit'].includes(action) && canSuperviseKanban());
   }
   const LOCAL_MANAGE_CONTROL_SELECTOR = '.vehicle-access-button,[data-feature-access-control="local"],[data-access-control="local"]';
   const isLocalManageControl = node => {
@@ -268,6 +280,19 @@
         node.setAttribute('aria-hidden', allowed ? 'false' : 'true');
       }
     });
+    // Supervision adds only view/content-edit. Do not present unrelated
+    // buttons as available merely because the Kanban route is now visible.
+    const supervisedControls = {addTaskBtn:'create',importBtn:'create',kanbanDeleteBtn:'delete',kanbanExportBtn:'export',kanbanArchiveBtn:'edit'};
+    for (const [id, action] of Object.entries(supervisedControls)) {
+      const node = document.getElementById(id); if (!node) continue;
+      if (canSuperviseKanban() && !canExplicit('kanban', action)) {
+        node.dataset.bamcoSupervisionDenied = 'true';
+        node.setAttribute('data-bamco-access-denied', 'true');
+      } else if (node.dataset.bamcoSupervisionDenied === 'true') {
+        delete node.dataset.bamcoSupervisionDenied;
+        node.removeAttribute('data-bamco-access-denied');
+      }
+    }
     const current = state().view;
     const route = catalog.routeFor(current), feature = route?.featureKey;
     if (feature && !can(feature, route.action)) {
@@ -317,13 +342,13 @@
         if (!result.structured) throw new Error('پاسخ سرویس دسترسی معتبر نیست.');
         rows = result.rows;
         if (!current()) return superseded();
-        storeRows(rows); unavailable = false; lastError = null; loaded = true; loadedIdentity = currentIdentity;
+        storeRows(rows); kanbanSupervision = payload.kanban_supervision === true; supervisedOwnerIds = new Set(Array.isArray(payload.kanban_supervised_owner_ids)?payload.kanban_supervised_owner_ids.map(String):[]); unavailable = false; lastError = null; loaded = true; loadedIdentity = currentIdentity;
       } catch (error) {
         if (!current()) return superseded();
         // There is no legacy per-feature fallback: a failed or malformed
         // canonical response is fail-closed. Settings remains available so a
         // signed-in user can recover their session or contact an administrator.
-        storeRows([]); unavailable = true; lastError = error; loaded = true; loadedIdentity = currentIdentity; source = 'unavailable';
+        storeRows([]); kanbanSupervision = false; supervisedOwnerIds = new Set(); unavailable = true; lastError = error; loaded = true; loadedIdentity = currentIdentity; source = 'unavailable';
       }
       applyNavigation();
       const detail = { ...snapshot(), source };
@@ -340,18 +365,18 @@
   }
   function clear() {
     refreshGeneration++;
-    grants = new Map(); loaded = false; unavailable = false; lastError = null; loading = null; loadingIdentity = null; loadedIdentity = null;
+    grants = new Map(); kanbanSupervision = false; supervisedOwnerIds = new Set(); loaded = false; unavailable = false; lastError = null; loading = null; loadingIdentity = null; loadedIdentity = null;
   }
   function invalidate() { return refresh({ force: true }); }
   function snapshot() {
     return Object.freeze({
-      loaded, unavailable, error: lastError?.message || null,
+      loaded, unavailable, error: lastError?.message || null, kanban_supervision: canSuperviseKanban(),
       grants: Object.freeze([...grants.values()].map(grant => Object.freeze({ ...grant })))
     });
   }
 
   window.BamcoAccess = Object.freeze({
-    refresh, invalidate, clear, snapshot, can, denied, applyNavigation,
+    refresh, invalidate, clear, snapshot, can, canExplicit, canSuperviseKanban, canSuperviseKanbanOwner, denied, applyNavigation,
     isReady: () => loaded && loadedIdentity === identity(),
     isSystemManager: systemManager,
     featureTitle: catalog.featureTitle,

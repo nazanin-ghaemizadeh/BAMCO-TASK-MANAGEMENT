@@ -76,6 +76,8 @@ jobs:
         run: |
           mkdir -p test-results/access-visibility
           python tests/browser/check_access_visibility.py --width ${{ matrix.width }} --output test-results/access-visibility/result-${{ matrix.width }}.json
+      - name: Verify bounded Kanban supervisor editing
+        run: python tests/browser/check_kanban_supervision.py --width ${{ matrix.width }} --output test-results/access-visibility/kanban-supervision-${{ matrix.width }}
       - name: Upload access visibility results
         if: always()
         uses: actions/upload-artifact@v4
