@@ -62,6 +62,14 @@
       definition_events: feature === 'performanceReport' ? [{ actorId: reportOwner, ownerId: reportOwner, createdAt: today, count: 2 }] : [], monitoring_started_at: '2026-01-01T00:00:00Z' };
   }
   function handle(endpoint, method, body, url) {
+    if (['organization_scope_directory_with_avatars', 'organization_scope_directory'].includes(endpoint) && legacy()) {
+      // The positive legacy scenario includes an authorized organization scope.
+      // Seed it through the real directory endpoint, never the profile cache.
+      return { data: [
+        { position_id: 8101, parent_position_id: null, is_current_position: true, role_key: 'manager', occupant_id: actor, occupant_display_name: 'Legacy scope manager', occupant_active: true },
+        { position_id: 8102, parent_position_id: 8101, is_current_position: false, role_key: 'member', occupant_id: foreign, occupant_display_name: 'Legacy scoped owner', occupant_active: true }
+      ] };
+    }
     if (endpoint === 'list_project_workspace') return allowed('projects') ? { data: workspace() } : denied();
     if (['task_timeline_report_feed', 'performance_report_feed'].includes(endpoint)) {
       const feature = endpoint === 'task_timeline_report_feed' ? 'taskTimeline' : 'performanceReport';

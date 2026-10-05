@@ -39,6 +39,14 @@
   else if(endpoint==='owner_workspace_preview')data={person:{id:body.p_user_id,name:'متولی آزمایشی'},tasks:api.tasks.filter(t=>t.owner_id===body.p_user_id),letters:false,vehicles:[]};
   else if(endpoint==='profiles')data=filter(api.profiles);
   else if(endpoint==='task_status_view')data=api.actor.role==='manager'?api.tasks:api.tasks.filter(t=>t.owner_id===api.actor.id);
+  else if(endpoint==='task_timeline_report_feed'||endpoint==='performance_report_feed'){
+   const feature=endpoint==='task_timeline_report_feed'?'taskTimeline':'performanceReport';
+   const grants=api.featureAccess.filter(row=>row.feature_key===feature);
+   const allowed=api.actor.active!==false&&(api.actor.role==='manager'||!grants.some(row=>row.effect==='deny')&&grants.some(row=>row.can_view===true));
+   if(!allowed)return new Response(JSON.stringify({message:'Synthetic report access denied'}),{status:403});
+   const fields=feature==='taskTimeline'?['id','legacy_id','title','description','owner_id','created_by','status','priority','start_date','due_date','done_date','created_at','archived']:['id','owner_id','created_by','status','priority','start_date','due_date','done_date','created_at','archived','reminder_days'];
+   data={schema:'bamco.section-report.v1',feature,tasks:api.tasks.filter(task=>feature==='performanceReport'||!task.archived).map(task=>Object.fromEntries(fields.filter(key=>key in task).map(key=>[key,task[key]]))),profiles:api.profiles.map(profile=>({id:profile.id,display_name:profile.display_name||profile.full_name})),definition_events:[],monitoring_started_at:'2026-01-01T00:00:00Z'};
+  }
   else if(endpoint==='task_dataset_version')data=api.taskDatasetVersion||'fixture-v1';
   else if(endpoint==='sent_message_dataset_version')data=api.sentMessageDatasetVersion||'sent-fixture-v1';
   else if(endpoint==='change_requests')data=api.requests;

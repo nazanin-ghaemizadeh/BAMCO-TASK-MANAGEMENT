@@ -41,6 +41,51 @@ test('browser fixture legacy controls return approval requests without direct ta
   assert.equal(JSON.stringify(f.store.items), before);
   assert.equal(f.store.requests.length, 1);
 });
+test('positive legacy owner choices are backed by the synthetic organization directory', async () => {
+  const f = fixture('legacy'), ws = (await f.call('list_project_workspace')).data;
+  for (const endpoint of ['organization_scope_directory_with_avatars', 'organization_scope_directory']) {
+    const directory = (await f.call(endpoint)).data;
+    const own = directory.find(row => row.is_current_position);
+    assert.equal(own.occupant_id, f.api.actor.id);
+    const child = directory.find(row => row.parent_position_id === own.position_id);
+    assert.equal(child.occupant_id, f.api.profiles[0].id);
+    assert(ws.projects[1].protected.owner_choice_ids.every(id => directory.some(row => row.occupant_id === id)));
+  }
+  for (const scenario of ['ordinary', 'timeline-only', 'performance-only']) {
+    const other = fixture(scenario);
+    assert.equal((await other.call('organization_scope_directory_with_avatars')).data.length, 0);
+  }
+});
+test('shared browser fixture serves read-only report contracts for table and navigation audits', async () => {
+  const w = { Response, URL, setTimeout, clearTimeout, setInterval() {}, atob };
+  w.window = w;
+  vm.runInNewContext(base, w);
+  const call = async endpoint => {
+    const result = await w.fetch('https://bamco.test/rest/v1/rpc/' + endpoint, { method: 'POST', body: '{}' });
+    return { status: result.status, data: await result.json() };
+  };
+  const before = JSON.stringify(w.__testApi.tasks);
+  for (const [endpoint, feature, count] of [['task_timeline_report_feed', 'taskTimeline', 1], ['performance_report_feed', 'performanceReport', 2]]) {
+    const result = await call(endpoint);
+    assert.equal(result.status, 200);
+    assert.equal(result.data.schema, 'bamco.section-report.v1');
+    assert.equal(result.data.feature, feature);
+    assert.equal(result.data.tasks.length, count);
+    assert(Array.isArray(result.data.definition_events));
+    assert(result.data.profiles.every(row => Object.keys(row).sort().join(',') === 'display_name,id'));
+    assert(!/request_id|routing|password|email|approval_status/.test(JSON.stringify(result.data)));
+  }
+  assert.equal(JSON.stringify(w.__testApi.tasks), before);
+  w.__testApi.actor = w.__testApi.profiles[1];
+  w.__testApi.featureAccess = [{ feature_key: 'performanceReport', can_view: true }];
+  assert.equal((await call('performance_report_feed')).status, 200);
+  assert.equal((await call('task_timeline_report_feed')).status, 403);
+  w.__testApi.featureAccess.push({ feature_key: 'performanceReport', effect: 'deny' });
+  assert.equal((await call('performance_report_feed')).status, 403);
+  w.__testApi.actor = w.__testApi.profiles[0];
+  w.__testApi.actor.active = false;
+  assert.equal((await call('performance_report_feed')).status, 403);
+});
 test('browser fixture report-only accounts cannot reach the other report and never carry approval payloads', async () => {
   for (const [scenario, endpoint, other] of [
     ['timeline-only', 'task_timeline_report_feed', 'performance_report_feed'],

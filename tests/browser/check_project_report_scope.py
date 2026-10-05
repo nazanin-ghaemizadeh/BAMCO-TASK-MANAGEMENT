@@ -124,9 +124,11 @@ async def project_ordinary(page, width, checks):
 
     await page.locator('[data-project-action="item"]').click()
     item = page.locator('#projectItemForm')
-    await expect(item.locator('option[value="activity"]')).to_be_disabled()
+    # Inspect the option itself: the enabled-control matcher can retarget its
+    # parent select, which remains enabled for the ordinary phase/milestone choices.
+    await expect(item.locator('option[value="activity"]')).to_have_js_property('disabled', True)
     for kind in ['phase', 'milestone']:
-        await expect(item.locator(f'option[value="{kind}"]')).to_be_enabled()
+        await expect(item.locator(f'option[value="{kind}"]')).to_have_js_property('disabled', False)
     await item.locator('[name="item_type"]').select_option('phase')
     await item.locator('[name="title"]').fill('Browser-created phase')
     await item.locator('[type="submit"]').click()
@@ -155,7 +157,8 @@ async def project_ordinary(page, width, checks):
     await expect(page.locator('.gantt-pro-scroll')).to_be_visible()
     await capture(page, f'{width}-ordinary-gantt')
     await open_item(page, 7202)
-    await expect(item.locator('fieldset')).to_be_disabled()
+    await expect(item.locator('fieldset')).to_have_js_property('disabled', True)
+    await expect(item.locator('[name="title"]')).to_be_disabled()
     await expect(item.locator('[type="submit"]')).to_be_disabled()
     await expect(item.locator('[data-project-item-delete]')).to_be_disabled()
     await expect(item).to_contain_text('فقط قابل مشاهده')
@@ -217,7 +220,7 @@ async def project_legacy(page, width, checks):
     await expect(page.locator('[data-project-action="delete"]')).to_be_enabled()
     await page.locator('[data-project-action="item"]').click()
     form = page.locator('#projectItemForm')
-    await expect(form.locator('option[value="activity"]')).to_be_enabled()
+    await expect(form.locator('option[value="activity"]')).to_have_js_property('disabled', False)
     await form.locator('[name="item_type"]').select_option('activity')
     await form.locator('[name="title"]').fill('Legacy activity approval request')
     await form.locator('[type="submit"]').click()
@@ -257,12 +260,15 @@ async def project_legacy(page, width, checks):
     checks.append('positive legacy capability hints: activity create/edit/delete and project deletion stay on approval RPCs; authorized owner transfer uses existing raw path')
 
 
-async def report_refresh(page, feature):
+async def report_refresh(page, feature, retry=False):
     if feature == 'taskTimeline':
         # Timeline has no visible refresh control; invoke its real lifecycle callback.
         await page.evaluate('bamcoTimelineRefresh()')
     else:
-        await page.locator('[data-canonical-refresh="performanceReport"]').click()
+        # A failure retains the toolbar and adds a separate inline retry button.
+        # Exercise the actual retry control without an ambiguous global locator.
+        scope = '.workspace-error' if retry else '.performance-command-row'
+        await page.locator('#performanceReportView ' + scope + ' [data-canonical-refresh="performanceReport"]').click()
 
 
 async def report_marker(page, feature, marker):
@@ -339,12 +345,12 @@ async def report_case(page, width, scenario, checks):
     await report_refresh(page, feature)
     await page.wait_for_function('feature=>BamcoSectionReports.peek(feature)===null', arg=feature)
     await expect(page.locator('#' + feature + 'View')).to_contain_text('معتبر نیست')
-    await report_refresh(page, feature)
+    await report_refresh(page, feature, retry=True)
     await report_marker(page, feature, 'Fresh')
     await page.evaluate('endpoint=>__projectReportFixture.failNext=endpoint', endpoint)
     await report_refresh(page, feature)
     await expect(page.locator('#' + feature + 'View')).to_contain_text('Synthetic retryable failure')
-    await report_refresh(page, feature)
+    await report_refresh(page, feature, retry=True)
     await report_marker(page, feature, 'Fresh')
     checks.append('malformed and failed responses clear report cache; retry recovers')
 
