@@ -83,6 +83,21 @@ async function fixture(options={}){
     tables.approval_chains.push({id,name:body.p_name,is_default:body.p_is_default,active:true,superseded_by:null});body.p_member_ids.forEach(user_id=>tables.approval_chain_members.push({chain_id:id,user_id}));
     body.p_stages.forEach((s,i)=>{const sid=1000+tables.approval_chain_stages.length;tables.approval_chain_stages.push({id:sid,chain_id:id,stage_no:i+1,title:s.title,approval_rule:s.rule});s.approvers.forEach(approver_id=>tables.approval_stage_approvers.push({stage_id:sid,approver_id}))});data=id;
    }
+   if(endpoint==='save_project_metadata'){
+    const rows=tables.projects||=([]);let row=rows.find(p=>Number(p.id)===Number(body.p_project_id));
+    if(body.p_project_id==null){row={id:1000+rows.length,project_code:'PRJ-SYN-'+rows.length,owner_id:actor.id,manager_id:actor.id,created_by:actor.id};rows.push(row)}
+    if(row){Object.assign(row,body.p_payload);data={id:row.id}}else{status=404;data={message:'Synthetic project missing'}}
+   }
+   if(endpoint==='mutate_project_node'||endpoint==='mutate_project_dependency'){
+    const node=endpoint==='mutate_project_node',rows=node?(tables.project_items||=[]):(tables.project_dependencies||=[]),id=node?body.p_item_id:body.p_dependency_id;
+    let row=rows.find(p=>Number(p.id)===Number(id));
+    if(body.p_action==='create'){row={id:1000+rows.length,...(node?{project_id:body.p_project_id,owner_id:(tables.projects||[]).find(p=>Number(p.id)===Number(body.p_project_id))?.owner_id}:{}),created_by:actor.id};rows.push(row)}
+    if(row){if(body.p_action==='delete')rows.splice(rows.indexOf(row),1);else Object.assign(row,body.p_payload);data={id:row.id}}else{status=404;data={message:'Synthetic project row missing'}}
+   }
+   if(endpoint==='list_project_workspace'){
+    const raw=(feature,action)=>w.BamcoAccess?.can?.(feature,action)===true,scope=p=>actor.role==='manager'||p?.owner_id===actor.id||p?.created_by===actor.id||(tables.project_members||[]).some(m=>m.project_id===p.id&&m.user_id===actor.id),direct=id=>actor.role==='manager',own=id=>id===actor.id;
+    data={create_owner_ids:[actor.id,...(raw('projects','create')?(w.Bamco?.state?.organizationScope?.descendantUserIds||[]):[])],projects:(tables.projects||[]).map(p=>({...p,protected:{can_delete:scope(p)&&raw('projects','delete'),can_create_activity:scope(p)&&raw('projects','create')&&raw('kanban','create')&&(own(p.owner_id)||direct(p.owner_id)),can_change_owner:scope(p)&&raw('projects','edit')&&direct(p.owner_id)&&!(tables.project_items||[]).some(i=>i.project_id===p.id),owner_lock_reason:(tables.project_items||[]).some(i=>i.project_id===p.id)?'items':'authority',owner_choice_ids:profiles.filter(x=>x.active!==false&&direct(x.id)).map(x=>x.id)}})),items:(tables.project_items||[]).map(i=>({...i,protected:{can_edit:scope((tables.projects||[]).find(p=>p.id===i.project_id))&&raw('projects','edit')&&raw('kanban','edit')&&(direct(i.owner_id)||own(i.owner_id)&&i.task_id!=null),can_delete:scope((tables.projects||[]).find(p=>p.id===i.project_id))&&raw('projects','delete')&&raw('kanban','delete')&&(direct(i.owner_id)||own(i.owner_id)&&i.task_id!=null)}})),dependencies:tables.project_dependencies||[]};
+   }
    if(endpoint==='list_invoice_workspace')data={invoices:(tables.invoices||[]).map(exactFinancialRow),payments:(tables.invoice_payments||[]).map(exactFinancialRow),files:(tables.invoice_files||[]).map(exactFinancialRow)};
    if(endpoint==='save_invoice'){
     let row=invoiceRequests.get(body.p_request_id);
@@ -116,6 +131,10 @@ async function fixture(options={}){
     }
     const assignment=tables.organization_position_assignments.find(row=>String(row.position_id)===String(position.id)&&row.is_primary&&!row.valid_to);
     data={position_id:position.id,assignment_id:assignment?.id||null,title:position.title};
+   }
+   if(endpoint==='task_timeline_report_feed'||endpoint==='performance_report_feed'){
+    const feature=endpoint==='task_timeline_report_feed'?'taskTimeline':'performanceReport',all=tables.tasks||[],events=require('../../assets/js/dashboard-metrics.js').definitionEvents({tasks:all,requests:tables.change_requests||[],baseline:'1900-01-01',taskSources:['web','project']});
+    data={schema:'bamco.section-report.v1',feature,tasks:feature==='taskTimeline'?all.filter(t=>!t.archived).map(t=>({...t,owner_name:profiles.find(p=>p.id===t.owner_id)?.full_name||'—'})):all,profiles,definition_events:feature==='performanceReport'?events.map(e=>({actorId:e.actorId,ownerId:e.ownerId,createdAt:e.createdAt,count:1})):[],monitoring_started_at:(tables.app_settings||[]).find(x=>x.key==='performance_monitoring_started_at')?.value?.value||'2026-09-05T20:30:00Z'};
    }
    if(endpoint==='task_status_view')data=actor.role==='manager'?(tables.tasks||[]):(tables.tasks||[]).filter(t=>t.owner_id===actor.id);
    if(endpoint==='request_workflow_snapshot')data=workflowSnapshot();

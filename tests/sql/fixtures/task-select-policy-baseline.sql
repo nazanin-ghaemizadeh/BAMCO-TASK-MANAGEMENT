@@ -1,0 +1,3 @@
+-- Schema-only exact task SELECT policy observed read-only during preparation.
+create policy tasks_scope_read on public.tasks for select to authenticated using (((((NOT archived) AND (( SELECT can_access_feature('kanban'::text, 'view'::text) AS can_access_feature) OR ( SELECT can_access_feature('taskTimeline'::text, 'view'::text) AS can_access_feature))) OR (archived AND ( SELECT can_access_feature('archive'::text, 'view'::text) AS can_access_feature))) AND (((owner_id IS NULL) AND ( SELECT bamco_is_system_manager() AS bamco_is_system_manager)) OR ((owner_id IS NOT NULL) AND ( SELECT bamco_is_system_manager() AS bamco_is_system_manager)) OR (owner_id IN ( SELECT scoped.user_id
+   FROM organization_scope_user_ids(( SELECT auth.uid() AS uid)) scoped(user_id))))));

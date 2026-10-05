@@ -7,13 +7,14 @@
   const faNum=n=>typeof fa==='function'?fa(n):String(n??'').replace(/\d/g,d=>'۰۱۲۳۴۵۶۷۸۹'[d]);
   const monthNames=['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
   const weekNames=['شنبه','یکشنبه','دوشنبه','سه‌شنبه','چهارشنبه','پنجشنبه','جمعه'];
-  let colorMode='priority';
+  let colorMode='priority',renderEpoch=0;
   let mode='calendar',month=null,filters={owner:'',status:'',priority:'',search:''};
 
   function appState(){try{return typeof state!=='undefined'?state:null}catch{return null}}
   function currentMonth(){const p=typeof currentJalali==='function'?currentJalali():null;return p||{y:1405,m:6,d:1}}
-  function activeTasks(){const s=appState();return (s?.tasks||[]).filter(t=>!t.archived)}
-  function ownerNameLocal(t){try{return typeof ownerName==='function'?ownerName(t):window.BamcoProfiles?.label?.(t?.owner_id)||(appState()?.profiles||[]).find(p=>p.id===t.owner_id)?.display_name||(appState()?.profiles||[]).find(p=>p.id===t.owner_id)?.full_name||'—'}catch{return'—'}}
+  function reportData(){return window.BamcoSectionReports?.peek?.('taskTimeline')}
+  function activeTasks(){return (reportData()?.tasks||[]).filter(t=>!t.archived)}
+  function ownerNameLocal(t){try{return t.owner_name||window.BamcoProfiles?.label?.(t?.owner_id)||(appState()?.profiles||[]).find(p=>p.id===t.owner_id)?.display_name||(appState()?.profiles||[]).find(p=>p.id===t.owner_id)?.full_name||'—'}catch{return'—'}}
   function taskId(t){try{return typeof displayId==='function'?displayId(t):(t.legacy_id||t.id)}catch{return t.legacy_id||t.id}}
   function isWaiting(t){return window.bamcoOptions.kind(t)==='waiting'}
   function temporalState(t){if(window.bamcoTaskPresentation)return window.bamcoTaskPresentation(t).temporal;if(isWaiting(t)||!t.due_date||t.status==='انجام شده')return 'فاقد شرایط دیرکرد';const now=new Date().toISOString().slice(0,10);if(t.due_date<now)return 'دیرکرد';const limit=new Date();limit.setDate(limit.getDate()+Math.max(0,Number(t.reminder_days)||0));return t.due_date<=limit.toISOString().slice(0,10)?'هشدار':'عادی'}
@@ -28,9 +29,12 @@
     const term=filters.search.trim().toLowerCase();
     return activeTasks().filter(t=>(!filters.owner||t.owner_id===filters.owner)&&(!filters.status||String(t.status)===filters.status)&&(!filters.priority||String(t.priority)===filters.priority)&&(!term||[taskId(t),t.title,t.description,ownerNameLocal(t),t.status,t.priority].some(v=>String(v??'').toLowerCase().includes(term))));
   }
-  function openKanban(t){
-    if(window.bamcoOpenTaskInKanban?.(t.id))return;
-    q('#nav button[data-view="kanban"]')?.click();window.bamcoFocusMessageTask?.(t.id);
+  function openReadonlyDetail(t){
+    if(!window.BamcoSectionReports?.allowed?.('taskTimeline')||!activeTasks().some(row=>String(row.id)===String(t.id)))return;
+    let dialog=q('#timelineReadonlyDetail');if(!dialog){dialog=document.createElement('dialog');dialog.id='timelineReadonlyDetail';dialog.className='modal';document.body.append(dialog)}
+    const labelDate=value=>value&&(typeof jalaliText==='function'?jalaliText(value):value)||'—';
+    dialog.innerHTML=`<div class="modal-head"><h3>جزئیات وظیفه</h3><button type="button" aria-label="بستن">×</button></div><div class="workspace-detail"><h4>${esc(t.title)}</h4><p>${esc(t.description||'')}</p><p>متولی: ${esc(ownerNameLocal(t))}</p><p>وضعیت: ${esc(t.status)} · اولویت: ${esc(t.priority)}</p><p>شروع: ${esc(labelDate(t.start_date))} · پایان: ${esc(labelDate(t.due_date))}</p><small>نمایش فقط‌خواندنی گزارش</small></div>`;
+    q('button',dialog).onclick=()=>dialog.close();if(!dialog.open)dialog.showModal();
   }
 
   function ensure(){
@@ -52,16 +56,19 @@
   function fillFilters(){
     for(const type of ['status','priority'])if(filters[type])filters[type]=window.bamcoOptions.label(type,filters[type]);
     const s=appState(),tasks=activeTasks();
-    const owners=(s?.profiles||[]).filter(p=>tasks.some(t=>t.owner_id===p.id));
+    const owners=(reportData()?.profiles||[]).filter(p=>tasks.some(t=>t.owner_id===p.id));
     const owner=q('#ttOwner'),status=q('#ttStatus'),priority=q('#ttPriority');
-    owner.innerHTML='<option value="">همه متولیان</option>'+owners.map(p=>`<option value="${esc(p.id)}">${esc(window.BamcoProfiles?.label?.(p.id)||p.display_name||p.full_name||p.email)}</option>`).join('');owner.value=filters.owner;owner.classList.toggle('hidden',owners.length<2);
+    owner.innerHTML='<option value="">همه متولیان</option>'+owners.map(p=>`<option value="${esc(p.id)}">${esc(p.display_name||p.full_name||'—')}</option>`).join('');owner.value=filters.owner;owner.classList.toggle('hidden',owners.length<2);
     const statuses=window.bamcoOptions.ordered('status',tasks.map(t=>t.status));status.innerHTML='<option value="">همه وضعیت‌ها</option>'+statuses.map(v=>`<option>${esc(v)}</option>`).join('');status.value=filters.status;
     const priorities=window.bamcoOptions.ordered('priority',tasks.map(t=>t.priority));priority.innerHTML='<option value="">همه اولویت‌ها</option>'+priorities.map(v=>`<option>${esc(v)}</option>`).join('');priority.value=filters.priority;
   }
-  function activateView(){
+  async function activateView(options={}){
+    const epoch=++renderEpoch;
     ensure();const view=q('#taskTimelineView');if(!view)return;
     const title=q('#viewTitle'),sub=q('#viewSubtitle'),add=q('#addTaskBtn');if(title)title.textContent='تقویم و گانت';if(sub)sub.textContent='نمای زمان‌بندی وظایف جاری';if(add)add.classList.add('hidden');
-    if(!month)month=currentMonth();fillFilters();render();
+    if(!month)month=currentMonth();
+    const identity=window.BamcoSectionReports?.identity?.();
+    try{await window.BamcoSectionReports.load('taskTimeline',{force:options.force===true});if(epoch!==renderEpoch||identity!==window.BamcoSectionReports.identity()||!window.BamcoSectionReports.allowed('taskTimeline'))return;fillFilters();render()}catch(error){if(epoch===renderEpoch&&identity===window.BamcoSectionReports?.identity?.()){q('#ttBody').textContent=error.message;q('#ttUnscheduledList').innerHTML='';q('#ttUnscheduled b').textContent='۰'}}
   }
   function openView(){
     ensure();
@@ -71,7 +78,7 @@
     const s=appState();if(s)s.view='taskTimeline';activateView();
   }
   function render(){const legend=q('.tt-legend');if(legend){const type=colorMode==='status'?'status':'priority',options=window.bamcoOptions.rows(type).filter(x=>x.active||activeTasks().some(t=>t[type]===x.label));legend.innerHTML=options.map(x=>`<span><i style="--c:${x.color}"></i>${esc(x.label)}</span>`).join('');if(type==='priority'&&activeTasks().some(isWaiting)){const waiting=window.bamcoOptions.rows('status').filter(x=>x.kind==='waiting');legend.innerHTML+=waiting.map(x=>`<span><i style="--c:${x.color}"></i>${esc(x.label)}</span>`).join('')}}if(!month)month=currentMonth();q('#ttMonthLabel').textContent=`${monthNames[month.m-1]} ${faNum(month.y)}`;renderUnscheduled();renderBody()}
-  function renderUnscheduled(){const rows=filtered().filter(t=>!t.start_date||(!t.due_date&&!isWaiting(t))),button=q('#ttUnscheduled b'),list=q('#ttUnscheduledList');if(button)button.textContent=faNum(rows.length);if(list)list.innerHTML=rows.map(t=>`<button type="button" data-task="${t.id}"><b>${faNum(taskId(t))}</b><span>${esc(t.title)}</span><small>${isWaiting(t)?'منتظر پاسخ بدون تاریخ شروع':window.bamcoOptions.kind(t)==='registered'?'ثبت‌شده':'بدون تاریخ شروع یا پایان'}</small></button>`).join('')||'<div class="tt-empty">وظیفه بدون زمان‌بندی وجود ندارد.</div>';qa('[data-task]',list||document).forEach(b=>b.onclick=()=>{const t=activeTasks().find(x=>String(x.id)===b.dataset.task);if(t)openKanban(t)})}
+  function renderUnscheduled(){const rows=filtered().filter(t=>!t.start_date||(!t.due_date&&!isWaiting(t))),button=q('#ttUnscheduled b'),list=q('#ttUnscheduledList');if(button)button.textContent=faNum(rows.length);if(list)list.innerHTML=rows.map(t=>`<button type="button" data-task="${t.id}"><b>${faNum(taskId(t))}</b><span>${esc(t.title)}</span><small>${isWaiting(t)?'منتظر پاسخ بدون تاریخ شروع':window.bamcoOptions.kind(t)==='registered'?'ثبت‌شده':'بدون تاریخ شروع یا پایان'}</small></button>`).join('')||'<div class="tt-empty">وظیفه بدون زمان‌بندی وجود ندارد.</div>';qa('[data-task]',list||document).forEach(b=>b.onclick=()=>{const t=activeTasks().find(x=>String(x.id)===b.dataset.task);if(t)openReadonlyDetail(t)})}
   function renderBody(){mode==='gantt'?renderGantt():renderCalendar()}
   function renderCalendar(){
     const body=q('#ttBody'),tasks=filtered(),days=daysInMonth(month.y,month.m),firstIso=isoFor(month.y,month.m,1),firstDay=firstIso?new Date(firstIso+'T12:00:00').getDay():6,offset=(firstDay+1)%7,today=currentMonth();
@@ -83,7 +90,7 @@
       html+=`<div class="tt-day${todayClass}"><div class="tt-day-num">${faNum(d)}</div><div class="tt-dots">${arr.map(t=>`<button class="tt-dot" style="--c:${colorFor(t)}" data-task="${t.id}" title="#${esc(taskId(t))} — ${esc(t.title)}\nمتولی: ${esc(ownerNameLocal(t))}\nاولویت: ${esc(t.priority)}">${faNum(taskId(t))}</button>`).join('')}</div></div>`;
     }
     let total=offset+days;while(total%7!==0){html+='<div class="tt-day other"></div>';total++}
-    html+='</div>';body.innerHTML=html;qa('.tt-dot',body).forEach(b=>b.onclick=()=>{const t=activeTasks().find(x=>String(x.id)===b.dataset.task);if(t)openKanban(t)});
+    html+='</div>';body.innerHTML=html;qa('.tt-dot',body).forEach(b=>b.onclick=()=>{const t=activeTasks().find(x=>String(x.id)===b.dataset.task);if(t)openReadonlyDetail(t)});
   }
   function renderGantt(){
     const body=q('#ttBody'),tasks=filtered(),range=monthIsoRange(),max=range.max,startMs=range.start?new Date(range.start+'T12:00:00').getTime():0,endMs=range.end?new Date(range.end+'T12:00:00').getTime():0;
@@ -95,9 +102,10 @@
       const a=t.start_date||t.due_date,b=t.due_date||t.start_date,as=Math.max(startMs,new Date(a+'T12:00:00').getTime()),bs=Math.min(endMs,new Date(b+'T12:00:00').getTime()),start=Math.max(0,Math.round((as-startMs)/86400000)),span=Math.max(1,Math.round((bs-as)/86400000)+1);
       const wait=isWaiting(t),late=temporalState(t)==='دیرکرد';html+=`<div class="tt-gantt-row"><div>${faNum(taskId(t))}</div><div title="${esc(t.title)}">${esc(t.title)}</div><div class="tt-track" >${todayIndex!==null?`<i class="tt-today-line" style="right:${(todayIndex+0.5)/max*100}%"></i>`:''}<button class="tt-bar ${wait?'waiting-open':''} ${late?'overdue':''}" data-task="${t.id}" style="--c:${colorFor(t)};right:calc(${start/max*100}% + 2px);width:calc(${span/max*100}% - 4px)" title="#${esc(taskId(t))} — ${esc(t.title)}\nمتولی: ${esc(ownerNameLocal(t))}\n${esc(t.priority)}">${faNum(taskId(t))}${wait?' …':''}${late?' !':''}</button></div></div>`;
     }
-    html+='</div></div>';body.innerHTML=html;qa('.tt-bar',body).forEach(b=>b.onclick=()=>{const t=activeTasks().find(x=>String(x.id)===b.dataset.task);if(t)openKanban(t)});
+    html+='</div></div>';body.innerHTML=html;qa('.tt-bar',body).forEach(b=>b.onclick=()=>{const t=activeTasks().find(x=>String(x.id)===b.dataset.task);if(t)openReadonlyDetail(t)});
   }
-  window.bamcoTimelineRefresh=()=>{if(q('#taskTimelineView')&&!q('#taskTimelineView').classList.contains('hidden')){fillFilters();render()}};
+  window.bamcoTimelineRefresh=()=>{if(q('#taskTimelineView')&&!q('#taskTimelineView').classList.contains('hidden'))void activateView({force:true})};
+  window.addEventListener('bamco:report-feed-cleared',()=>{++renderEpoch;q('#timelineReadonlyDetail')?.close();if(q('#timelineReadonlyDetail'))q('#timelineReadonlyDetail').innerHTML='';if(q('#ttBody'))q('#ttBody').innerHTML='';if(q('#ttUnscheduledList'))q('#ttUnscheduledList').innerHTML='';if(q('#ttUnscheduled b'))q('#ttUnscheduled b').textContent='۰';window.bamcoTimelineRefresh()});
   function boot(){ensure();month=currentMonth();window.BamcoNavigation?.registerView?.('taskTimeline',{activate:activateView});document.addEventListener('bamco:profiles-updated',()=>window.bamcoTimelineRefresh())}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
