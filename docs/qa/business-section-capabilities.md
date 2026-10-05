@@ -1,6 +1,9 @@
 # Checked business-section capabilities: Stage 1
 
-Status: local proposal and synthetic tests only. No deployed migration version is claimed.
+Status: applied and read-only verified on 2026-10-05 as database migration
+`20261005074946_business_section_capabilities.sql`. This canonical migration
+contains the exact reviewed proposal bytes. Its historical proposal comments
+are retained for provenance; the deployment record here supersedes them.
 
 ## Bounded scope
 
@@ -121,3 +124,15 @@ Only this proposal, its test runner/helper/wrapper and this QA note belong to th
 slice. Do not copy the inherited empty invoice migration placeholder. Create the
 eventual migration via the official CLI and reconcile its version with the
 actual deployment history. Never present a local placeholder as deployed SQL.
+
+
+## Deployment verification: 2026-10-05
+
+- Applied the reviewed Stage 1 SQL after verifying the invoice parity prerequisite
+- Server-reported migration version: `20261005074946`
+- Read-only verification confirms all seven allowlisted keys, excluded project/document/private/personal keys, checked edit and unchecked denial
+- Existing function ACLs remain unchanged; the new pure helper is private
+- Re-ran the canonical synthetic SQL/client suite successfully before application
+- No real-user impersonation, grant mutation, business-row test write or production deletion was used
+- Existing security-advisor notices concern unchanged message views, intentionally protected private tables, existing RPCs, an extension and Auth configuration; this slice did not change those objects
+- Open clients still use their existing permission refresh lifecycle as described above
