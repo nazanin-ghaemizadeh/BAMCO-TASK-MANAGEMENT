@@ -128,6 +128,8 @@
   let grants = new Map();
   let kanbanSupervision = false;
   let supervisedOwnerIds = new Set();
+  let kanbanAssignment = false;
+  let intakeCreatorIds = new Set();
   let loaded = false;
   let loading = null;
   let unavailable = false;
@@ -203,6 +205,8 @@
       && (!state().profile?.id || String(state().profile.id) === String(actor())) && kanbanSupervision === true;
   }
   function canSuperviseKanbanOwner(ownerId) { return canSuperviseKanban() && !!ownerId && supervisedOwnerIds.has(String(ownerId)); }
+  function canAssignKanban() { return canSuperviseKanban() && kanbanAssignment === true; }
+  function canAccessKanbanIntake(creatorId) { return canAssignKanban() && !!creatorId && intakeCreatorIds.has(String(creatorId)); }
   function can(featureKey, action = 'view') {
     return canExplicit(featureKey, action)
       || (featureKey === 'kanban' && ['view', 'edit'].includes(action) && canSuperviseKanban());
@@ -342,13 +346,14 @@
         if (!result.structured) throw new Error('پاسخ سرویس دسترسی معتبر نیست.');
         rows = result.rows;
         if (!current()) return superseded();
+        kanbanAssignment = payload.kanban_assignment === true; intakeCreatorIds = new Set(Array.isArray(payload.kanban_intake_creator_ids)?payload.kanban_intake_creator_ids.map(String):[]);
         storeRows(rows); kanbanSupervision = payload.kanban_supervision === true; supervisedOwnerIds = new Set(Array.isArray(payload.kanban_supervised_owner_ids)?payload.kanban_supervised_owner_ids.map(String):[]); unavailable = false; lastError = null; loaded = true; loadedIdentity = currentIdentity;
       } catch (error) {
         if (!current()) return superseded();
         // There is no legacy per-feature fallback: a failed or malformed
         // canonical response is fail-closed. Settings remains available so a
         // signed-in user can recover their session or contact an administrator.
-        storeRows([]); kanbanSupervision = false; supervisedOwnerIds = new Set(); unavailable = true; lastError = error; loaded = true; loadedIdentity = currentIdentity; source = 'unavailable';
+        storeRows([]); kanbanSupervision = false; supervisedOwnerIds = new Set(); kanbanAssignment = false; intakeCreatorIds = new Set(); unavailable = true; lastError = error; loaded = true; loadedIdentity = currentIdentity; source = 'unavailable';
       }
       applyNavigation();
       const detail = { ...snapshot(), source };
@@ -365,18 +370,18 @@
   }
   function clear() {
     refreshGeneration++;
-    grants = new Map(); kanbanSupervision = false; supervisedOwnerIds = new Set(); loaded = false; unavailable = false; lastError = null; loading = null; loadingIdentity = null; loadedIdentity = null;
+    grants = new Map(); kanbanSupervision = false; supervisedOwnerIds = new Set(); kanbanAssignment = false; intakeCreatorIds = new Set(); loaded = false; unavailable = false; lastError = null; loading = null; loadingIdentity = null; loadedIdentity = null;
   }
   function invalidate() { return refresh({ force: true }); }
   function snapshot() {
     return Object.freeze({
-      loaded, unavailable, error: lastError?.message || null, kanban_supervision: canSuperviseKanban(),
+      loaded, unavailable, error: lastError?.message || null, kanban_supervision: canSuperviseKanban(), kanban_assignment: canAssignKanban(),
       grants: Object.freeze([...grants.values()].map(grant => Object.freeze({ ...grant })))
     });
   }
 
   window.BamcoAccess = Object.freeze({
-    refresh, invalidate, clear, snapshot, can, canExplicit, canSuperviseKanban, canSuperviseKanbanOwner, denied, applyNavigation,
+    refresh, invalidate, clear, snapshot, can, canExplicit, canSuperviseKanban, canSuperviseKanbanOwner, canAssignKanban, canAccessKanbanIntake, denied, applyNavigation,
     isReady: () => loaded && loadedIdentity === identity(),
     isSystemManager: systemManager,
     featureTitle: catalog.featureTitle,

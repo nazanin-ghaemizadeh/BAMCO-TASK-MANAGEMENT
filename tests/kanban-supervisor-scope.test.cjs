@@ -10,12 +10,14 @@ const directory=[
  {position_id:4,parent_position_id:1,role_key:'expert',occupant_id:'test-inactive',occupant_full_name:'Synthetic inactive',occupant_active:false,is_current_position:false}
 ];
 const grant=(feature_key,bits={})=>({feature_key,can_view:false,can_create:false,can_edit:false,can_delete:false,can_export:false,can_manage_access:false,can_bypass_approval:false,...bits});
-async function setup(t,role='head'){
+async function setup(t,role='head',assignment=false){
  let allowed=true,emptyWrite=false;
- const tasks=[task(101,'test-child'),task(102,'test-grandchild')];
- const f=await fixture({role:'owner',tables:{tasks},fetchResult:({endpoint})=>{
+ const tasks=[task(101,'test-child',{row_version:1}),task(102,'test-grandchild',{row_version:1})];
+ if(assignment)tasks.push(task(108,null,{created_by:'test-owner',status:'ثبت شده',row_version:1,start_date:null,due_date:null}),task(109,null,{created_by:'test-child',status:'ثبت شده',row_version:1,start_date:null,due_date:null}));
+ const f=await fixture({role:'owner',tables:{tasks},fetchResult:({endpoint,method,data})=>{
   if(endpoint==='tasks'&&emptyWrite)return[];
-  if(endpoint==='effective_feature_access')return{schema:'bamco.feature-access.v1',kanban_supervision:allowed,kanban_supervised_owner_ids:allowed?['test-child','test-grandchild']:[],grants:[grant('kanban'),grant('dashboard',{can_view:true})]};
+  if(endpoint==='tasks'&&method==='PATCH'){for(const row of data)row.row_version=Number(row.row_version)+1;return data;}
+  if(endpoint==='effective_feature_access')return{schema:'bamco.feature-access.v1',kanban_supervision:allowed,kanban_assignment:allowed&&assignment,kanban_intake_creator_ids:allowed&&assignment?['test-owner','test-child','test-grandchild',...(role==='head'?['test-parent-manager']:[])]:[],kanban_supervised_owner_ids:allowed?['test-child','test-grandchild']:[],grants:[grant('kanban'),grant('dashboard',{can_view:true})]};
   if(endpoint==='organization_scope_directory_with_avatars'||endpoint==='organization_scope_directory')return directory.map(row=>row.is_current_position?{...row,role_key:role}:row);
   if(endpoint==='task_status_view')return allowed?tasks:[];
  }});
@@ -62,6 +64,42 @@ for(const role of ['head','manager'])test(role+' gains bounded Kanban editing wi
  assert.equal(w.BamcoAccess.canSuperviseKanban(),false);assert.equal(w.BamcoAccess.can('kanban','view'),false);
  assert.equal(access.canDirectlyManageTask(task(102,'test-grandchild')),false,'stale organizational scope cannot restore revoked capability');
 });
+
+for(const role of ['head','manager'])test(role+' sees registered intake, assigns active subordinate and reloads persisted owner without admin grant',async t=>{
+ const f=await setup(t,role,true),{w,d}=f;
+ const access=w.bamcoOrganizationAccess;
+ assert.equal(access.canDirectlyManageTask(task(110,null,{created_by:'test-parent-manager',status:'ثبت شده'})),role==='head','only authoritative shared-manager creator is admitted');
+ assert.equal(w.BamcoAccess.isSystemManager(),false);
+ assert.equal(w.BamcoAccess.canExplicit('kanban','edit'),false);
+ assert.equal(w.BamcoAccess.canAssignKanban(),true);
+ for(const creator of ['test-owner','test-child','test-grandchild'])assert.equal(access.canDirectlyManageTask(task(108,null,{created_by:creator,status:'ثبت شده'})),true);
+ for(const extra of [{created_by:'test-peer'},{created_by:null},{created_by:'test-inactive'},{owner_deleted_at:'2026-01-01'},{former_owner_name:'Historic'},{archived:true},{status:'منتظر پاسخ'}])assert.equal(access.canDirectlyManageTask(task(108,null,{created_by:'test-child',status:'ثبت شده',...extra})),false);
+ await f.open('kanban');assert(d.querySelector('[data-task-id="108"]'));
+ w.openEdit(108);const form=d.querySelector('#taskForm');
+ assert.equal(form.elements.status.value,'ثبت شده');
+ assert.equal([...form.elements.status.options].find(o=>o.value==='ثبت شده').disabled,false);
+ form.elements.status.value='منتظر پاسخ';form.elements.status.dispatchEvent(new w.Event('change',{bubbles:true}));
+ assert.equal(form.elements.owner_id.disabled,false);
+ assert.deepEqual([...form.elements.owner_id.options].map(o=>o.value).sort(),['','test-child','test-grandchild']);
+ form.elements.owner_id.value='test-grandchild';form.elements.start_date.value='2026-10-05';form.requestSubmit();
+ await until(()=>f.calls.some(c=>c.endpoint==='tasks'&&c.method==='PATCH'));
+ const patch=f.calls.find(c=>c.endpoint==='tasks'&&c.method==='PATCH');
+ assert.equal(patch.body.owner_id,'test-grandchild');assert.equal(patch.body.status,'منتظر پاسخ');
+ assert.equal(new URL(patch.url).searchParams.get('row_version'),'eq.1','claim uses optimistic row version');
+ await until(()=>!d.querySelector('#taskDialog').open);await w.eval('refresh()');w.openEdit(108);
+ assert.equal(form.elements.owner_id.value,'test-grandchild','fresh fetch retains assignment');
+ assert.equal(w.Bamco.state.editing.row_version,2);
+ assert.equal([...form.elements.status.options].find(o=>o.value==='ثبت شده').disabled,true,'cannot clear assigned task back to intake');
+ // Editing stays bounded after assignment and an injected out-of-scope owner fails before PATCH.
+ const writes=f.calls.filter(c=>c.endpoint==='tasks'&&c.method==='PATCH').length;
+ form.elements.owner_id.add(new w.Option('Outside','test-peer'));form.elements.owner_id.value='test-peer';form.requestSubmit();
+ await until(()=>f.calls.some(c=>c.endpoint==='ui-notice'&&String(c.body).includes('متولی جدید')));
+ assert.equal(f.calls.filter(c=>c.endpoint==='tasks'&&c.method==='PATCH').length,writes);
+ d.querySelector('#taskDialog').close();
+ await f.revoke();assert.equal(w.BamcoAccess.canAssignKanban(),false);
+ assert.equal(access.canDirectlyManageTask(task(109,null,{created_by:'test-child',status:'ثبت شده'})),false);
+});
+
 test('supervision snapshot fails closed for mismatched profile, inactive account, logout and RPC failure',async t=>{
  const f=await setup(t),{w}=f,s=w.Bamco.state;
  s.profile={...s.profile,id:'different-user'};assert.equal(w.BamcoAccess.canSuperviseKanban(),false);assert.equal(w.BamcoAccess.can('kanban','view'),false);

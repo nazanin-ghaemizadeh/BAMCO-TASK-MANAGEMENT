@@ -1,75 +1,76 @@
-# Bounded Kanban supervision
+# Scoped Kanban intake and assignment
 
-## Requested outcome and scope
+## Outcome
 
-Active primary organizational `head` and `manager` positions can view and edit
-existing, nonarchived Kanban tasks owned by active strict descendants of their
-own qualifying position tree. This uses the canonical tree and role keys; it is
-not a name-specific exception or the profile-level system-manager role.
+Active primary organizational `head` and `manager` positions can see and assign
+registered, unassigned Kanban tasks in their organizational scope. This is not
+limited to tasks that already have an owner and does not require the profile-level
+system-administrator role or an ordinary Kanban create/edit grant.
 
-The added capability is separate from ordinary feature grants. Effective access
-snapshots carry `kanban_supervision` and the exact `kanban_supervised_owner_ids`.
-The original grant resolver and grants are untouched. A current direct Kanban
-deny wins (including legacy untyped grants with a nonnull resource ID).
-Revoking an ordinary allow does not cancel the independent organizational
-entitlement; remove the active qualifying assignment or apply an explicit deny.
-Inactive actor/feature/position/role, expired or non-primary assignments and
-inactive descendants are excluded. Dated overlapping assignments cannot borrow
-supervisory power for a non-head/non-manager second root.
+The active position tree is the authority. Existing nonarchived descendant-owned
+tasks remain editable. Ownerless intake must have catalog kind `registered`, a
+real in-scope creator, and no deleted-owner/historical repair markers. The safe
+creator set is the actor plus active strict descendants of qualifying roots.
+For a chief, it also includes the active primary occupant of their immediate
+active manager parent position. This shares that manager’s registered intake
+with both sibling chiefs, without exposing one sibling’s own intake to the other.
+After assignment, the other chief loses the shared-intake path and cannot claim
+or reassign the row outside their own branch. There is no whole-company intake feed. Out-of-branch creators and rows without a
+safe organizational anchor remain outside this additional entitlement.
 
-## Mutation boundaries
+The exact actor-scoped snapshot carries `kanban_supervision`,
+`kanban_supervised_owner_ids`, `kanban_assignment`, and
+`kanban_intake_creator_ids`. Client assignment is disabled until the server
+explicitly advertises the new capability. Old deployed snapshots remain
+compatible and do not unlock ownership changes prematurely.
 
-The new UPDATE path permits title, description, status changes that retain the
-owner and nonarchived state, priority, start/due/done dates, reminder days,
-manager notes, last-update note and change reason, subject to existing validation. Owner, creator, source, archive fields,
-identifiers and other system fields stay unchanged. Existing task lifecycle
-triggers still run; RLS WITH CHECK rejects any resulting owner clearing or
-completion/archive transition. The UI locks ownership and disallows those
-status transitions for supervision-only editors.
+## Assignment flow and safety
 
-No new create, delete, export, reassignment, restore or approval bypass is
-introduced. Existing explicit authority, including an organizational manager's
-own-task path and previously allowed archive operations, remains unchanged.
-Ownerless intake and historic/orphan tasks retain the existing access model.
-The original project-binding guard still rejects pending activities and requires
-separate project edit/access authority. The ordinary project authority is not
-rewritten by this patch.
+Open a registered row, change its status to an active or waiting status, and select
+an active subordinate. The shared status catalog determines required dates. The
+registered status itself intentionally has no owner; the ordinary lifecycle
+validation still applies.
 
-Two additive task policies use an authenticated, current-actor wrapper with no
-caller-supplied actor argument. Private helpers have EXECUTE revoked from public,
-anon and authenticated. Snapshot and scoped directory helpers retain the existing
-SECURITY DEFINER/empty-search-path convention and expose only the current actor's
-scope. No business rows, grant rows, user profiles or approval records change.
+First assignment and reassignment can target only active strict descendants of the
+actor's qualifying head/manager roots. An assignment uses the task's current
+`row_version` in its PATCH filter. A stale form or competing claim cannot overwrite
+a newer task version; zero affected rows remain an error and keep the form open.
+After assignment, visibility and editability follow the new owner's branch.
 
-## Client and compatibility
-
-The capability refreshes through the existing authoritative access snapshot,
-realtime invalidation and focus recovery. Failed responses, mismatched profile
-identity, inactive accounts and logout fail closed. Stale directory data cannot
-restore a revoked supervision capability. Ordinary permission checks remain
-available as `canExplicit`; orphan transfer and ownership/archive actions use
-the original permission path. Dashboard calculations retain the prior task-feed
-authority rather than consuming newly visible Kanban-only rows.
+The added path preserves creator, source, identifiers and system fields. It does
+not grant create, delete, export, archive, restore or approval bypass. Completion
+cannot implicitly archive a supervision-only row. Deleted-owner repair remains
+under its prior authority. Existing explicit permissions and project activity
+approval/access guards are preserved. An explicit user Kanban deny wins.
+Inactive actors, feature, roles, positions, dated/expired/nonprimary assignments,
+inactive descendants, and unqualified secondary roots do not gain authority.
 
 ## Verification
 
-- `node scripts/test-kanban-supervisor-scope-sql.mjs`: isolated PostgreSQL tests
-  with canonical permission functions, SELECT/UPDATE RLS, hierarchy, lifecycle
-  and project-binding triggers. Only out-of-scope approval/application hooks are
-  stubbed fail-closed. No production data or identities are used
-- `node --test --test-force-exit tests/kanban-supervisor-scope.test.cjs`: shipped
-  bundle tests for head/manager editing, owner lock, restricted statuses,
-  dashboard calculation isolation, revocation and session failure behavior
-- `python tests/browser/check_kanban_supervision.py`: desktop/mobile Chromium,
-  real edit controls, save payload and revocation, all non-loopback traffic blocked
-- Full aggregate regression remains the normal release gate
+- `node scripts/test-kanban-supervisor-scope-sql.mjs` exercises real isolated
+  PostgreSQL RLS and canonical lifecycle/project/hierarchy triggers with synthetic
+  identities. It covers intake visibility, assignment, reload/persistence,
+  reassignment, both sibling-chief claim directions, parent assignment invalidation,
+  stale-claim rejection and out-of-scope/protected-field denial.
+- `node --test --test-force-exit tests/kanban-supervisor-scope.test.cjs` covers both
+  organizational roles without ordinary admin/edit grants, destination controls,
+  save/reload, owner/status guards, revoked/mismatched/failed snapshots, and prior
+  snapshot compatibility. Dashboard data retains its prior authority.
+- `python tests/browser/check_kanban_supervision.py` covers real desktop/mobile
+  Chromium controls, registered-to-assigned flow, full page reload, stale saves,
+  out-of-scope visibility, and revocation. All non-loopback traffic is blocked.
+- Full regression, bundle reproducibility and exact-head CI remain release gates.
 
-## Publication order
+The local managed runtime blocks Chromium Unix sockets, including under reviewed
+escalation; browser acceptance is performed in the existing isolated GitHub CI.
+This is never a production-user impersonation or fake production-data test.
 
-This source is initially a proposal, not evidence of deployed SQL. Apply only
-after the bounded scope/security review and record the actual Supabase migration
-version. Deploy and verify the compatible client bundle before activating the SQL, then
-refresh access. New clients safely treat a missing capability snapshot as false.
-Client-first avoids a transition in which old dashboard code counts newly
-readable Kanban rows before its new presentation filter is available.
-No production fake writes, deletion probes or user impersonation are needed.
+## Database publication
+
+The SQL file remains a proposal until the reviewed access change is explicitly
+activated. The old owned-row-only proposal is superseded, not an alternate
+migration to apply. No business task rows or feature grant rows are modified by
+this proposal. Deploy and verify the compatible client first, then activate the
+reviewed SQL and refresh access. Record the actual migration version and read-only
+live verification when applied; source publication alone is not user-visible
+functional completion.
