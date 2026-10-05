@@ -14,7 +14,9 @@ api.tasks=[{id:101,legacy_id:101,title:'وظیفه زیرمجموعه آزمای
 api.featureAccess=[{feature_key:'kanban',can_view:false,can_edit:false},{feature_key:'dashboard',can_view:true}];
 window.fetch=async(input,init={})=>{
  const url=new URL(typeof input==='string'?input:input.url,'https://bamco.test'),endpoint=url.pathname.split('/').pop(),method=init.method||'GET';let value;
- if(endpoint==='effective_feature_access')value={schema:'bamco.feature-access.v1',grants:api.featureAccess,kanban_supervision:api.supervision,kanban_supervised_owner_ids:api.supervision?[child]:[]};
+ if(endpoint==='task_statuses')value=[['registered','ثبت شده','registered','none','none','none',false],['doing','در حال انجام','active','required','required','required',true],['waiting','منتظر پاسخ','waiting','required','optional','none',false],['done','انجام شده','completed','required','optional','optional',false]].map(([key,label,kind,owner_mode,start_mode,due_mode,tracks_deadline],i)=>({key,label,kind,owner_mode,start_mode,due_mode,tracks_deadline,active:true,sort_order:i+1,color:'#8b949e'}));
+ else if(endpoint==='priorities')value=[{key:'medium',label:'متوسط',active:true,sort_order:1,color:'#f2a93b'}];
+ else if(endpoint==='effective_feature_access')value={schema:'bamco.feature-access.v1',grants:api.featureAccess,kanban_supervision:api.supervision,kanban_supervised_owner_ids:api.supervision?[child]:[]};
  else if(['organization_scope_directory_with_avatars','organization_scope_directory'].includes(endpoint))value=[{position_id:1,parent_position_id:null,role_key:api.supervisorRole,occupant_id:api.profiles[1].id,occupant_full_name:'رئیس آزمایشی',occupant_active:true,is_current_position:true},{position_id:2,parent_position_id:1,role_key:'expert',occupant_id:child,occupant_full_name:'زیرمجموعه آزمایشی',occupant_active:true,is_current_position:false}];
  else if(endpoint==='task_status_view')value=api.supervision?api.tasks:[];
  else if(endpoint==='tasks'&&method==='PATCH'){
@@ -35,14 +37,14 @@ async def case(browser,base,width,role,out):
  await page.add_init_script(FIXTURE+'\n'+SCRIPT+'\n__testApi.supervisorRole='+json.dumps(role)+';')
  try:
   await page.goto(base,wait_until='load');await login(page,'owner')
-  await page.evaluate("async()=>{await bamcoOrganizationAccess.refresh();await refresh();BamcoNavigation.navigate('kanban')}")
+  await page.evaluate("async()=>{await bamcoOrganizationAccess.refresh();await refresh();await bamcoOptions.load(true);BamcoNavigation.navigate('kanban')}")
   await page.locator('#kanbanBody tr[data-task-id="101"]').click()
   await page.locator('#kanbanEditBtn').click()
   await page.locator('#taskDialog').wait_for(state='visible')
   assert await page.locator('#taskDialogTitle').inner_text()=='ویرایش وظیفه'
   assert await page.locator('#taskForm [name=owner_id]').is_disabled()
   assert await page.locator('#taskForm [name=owner_id]').input_value()=='00000000-0000-4000-8000-000000000101'
-  assert await page.evaluate("()=>[...document.querySelector('#taskForm [name=status]').options].filter(o=>['ثبت شده','انجام شده'].includes(o.value)).every(o=>o.disabled)")
+  assert await page.evaluate("()=>{const options=[...document.querySelector('#taskForm [name=status]').options].filter(o=>['ثبت شده','انجام شده'].includes(o.value));return options.length===2&&options.every(o=>o.disabled)}")
   await page.locator('#taskForm [name=description]').fill('Edited in isolated browser')
   await page.locator('#saveTaskBtn').click()
   await page.wait_for_function("()=>__testApi.calls.some(c=>c.endpoint==='tasks'&&c.method==='PATCH')")
@@ -56,6 +58,10 @@ async def case(browser,base,width,role,out):
   assert not await page.evaluate("()=>bamcoOrganizationAccess.canDirectlyManageTask(__testApi.tasks[0])")
   assert not errors,errors
   return {'width':width,'role':role,'passed':True,'external_requests':'blocked'}
+ except Exception:
+  await page.screenshot(path=str(out/f'failed-{role}-{width}.png'),full_page=True)
+  print('KANBAN_FAILURE_DIAGNOSTICS='+json.dumps(await page.evaluate("()=>({invalid:[...document.querySelector('#taskForm').elements].filter(e=>e.willValidate&&!e.validity.valid).map(e=>({name:e.name,message:e.validationMessage})),notices:document.querySelector('.notice-dialog')?.textContent||'',calls:__testApi.calls.slice(-12),errors:[]})"),ensure_ascii=False),flush=True)
+  raise
  finally:await context.close()
 async def main():
  parser=argparse.ArgumentParser();parser.add_argument('--chromium');parser.add_argument('--width',type=int,choices=[1365,390]);parser.add_argument('--output',default='test-results/kanban-supervision');args=parser.parse_args()

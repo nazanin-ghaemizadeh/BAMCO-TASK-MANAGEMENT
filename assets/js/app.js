@@ -636,6 +636,7 @@ $('#taskForm').addEventListener('submit',async e=>{
   for(const k of ['start_date','done_date','due_date'])if(!data[k])data[k]=null;
   data.reminder_days=Number(data.reminder_days||0);
   const currentTask=state.editing;
+  const supervisionOnlyMutation=isSupervisionOnlyTask(currentTask);
   const directMutation=state.reviewEdit?featureAllowed('approvals','edit'):(state.resubmitting||state.amendingRequest)?false:currentTask?canDirectlyManageTask(currentTask,'edit'):canDirectlyCreateFor(data.owner_id);
   if(!directMutation&&!state.reviewEdit&&!state.resubmitting&&!state.amendingRequest)data.owner_id=currentTask?.owner_id||state.profile.id;
   if(!data.owner_id)data.owner_id=null;
@@ -668,7 +669,10 @@ $('#taskForm').addEventListener('submit',async e=>{
     }else if(directMutation){
       if(completing){data.archived=true;data.archived_at=currentTask?.archived?(currentTask.archived_at??null):(data.archived_at||new Date().toISOString())}
       if(state.editing?._restoring){await update('tasks',`id=eq.${state.editing.id}`,{...data,archived:true,archived_at:state.editing.archived_at||new Date().toISOString()});await rpc('restore_tasks_to_kanban_and_resequence',{p_task_ids:[Number(state.editing.id)]})}
-      else if(state.editing)await update('tasks',`id=eq.${state.editing.id}`,data);
+      else if(state.editing){
+        const saved=await update('tasks',`id=eq.${state.editing.id}`,data);
+        if(supervisionOnlyMutation&&(!Array.isArray(saved)||saved.length!==1))throw Error('وظیفه یا دسترسی شما تغییر کرده است؛ صفحه را تازه‌سازی کنید.');
+      }
       else await insert('tasks',{...data,created_by:state.profile.id});
     }else{
       if(completing&&state.editing){

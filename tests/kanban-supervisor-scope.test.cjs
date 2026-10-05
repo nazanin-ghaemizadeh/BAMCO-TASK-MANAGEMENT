@@ -11,14 +11,16 @@ const directory=[
 ];
 const grant=(feature_key,bits={})=>({feature_key,can_view:false,can_create:false,can_edit:false,can_delete:false,can_export:false,can_manage_access:false,can_bypass_approval:false,...bits});
 async function setup(t,role='head'){
- let allowed=true;
+ let allowed=true,emptyWrite=false;
  const tasks=[task(101,'test-child'),task(102,'test-grandchild')];
  const f=await fixture({role:'owner',tables:{tasks},fetchResult:({endpoint})=>{
+  if(endpoint==='tasks'&&emptyWrite)return[];
   if(endpoint==='effective_feature_access')return{schema:'bamco.feature-access.v1',kanban_supervision:allowed,kanban_supervised_owner_ids:allowed?['test-child','test-grandchild']:[],grants:[grant('kanban'),grant('dashboard',{can_view:true})]};
   if(endpoint==='organization_scope_directory_with_avatars'||endpoint==='organization_scope_directory')return directory.map(row=>row.is_current_position?{...row,role_key:role}:row);
   if(endpoint==='task_status_view')return allowed?tasks:[];
  }});
  t.after(()=>f.dispose());
+ f.failEmptyWrite=()=>{emptyWrite=true;};
  f.revoke=async()=>{allowed=false;await f.w.BamcoAccess.invalidate();};
  await f.w.bamcoOrganizationAccess.refresh();await f.w.eval('refresh()');
  return f;
@@ -44,6 +46,11 @@ for(const role of ['head','manager'])test(role+' gains bounded Kanban editing wi
  const patch=f.calls.find(call=>call.endpoint==='tasks'&&call.method==='PATCH');
  assert.equal(patch.body.owner_id,'test-grandchild');assert.equal(patch.body.description,'Edited subordinate content');
  assert.equal(patch.body.archived,undefined);assert.equal(f.calls.some(call=>call.endpoint==='submit_change_request'),false);
+ // An access/ownership change between snapshot and save must not report success.
+ await until(()=>!d.querySelector('#taskDialog').open);
+ f.failEmptyWrite();w.openEdit(102);form.elements.description.value='Rejected stale edit';form.requestSubmit();
+ await until(()=>f.calls.some(call=>call.endpoint==='ui-notice'&&String(call.body).includes('وظیفه یا دسترسی')));
+ assert.equal(d.querySelector('#taskDialog').open,true);d.querySelector('#taskDialog').close();
  // A direct archive action is also blocked if invoked outside the UI.
  const writes=f.calls.filter(call=>call.method!=='GET'&&call.endpoint==='tasks').length;
  await w.archiveTask(101);assert.equal(f.calls.filter(call=>call.method!=='GET'&&call.endpoint==='tasks').length,writes);
