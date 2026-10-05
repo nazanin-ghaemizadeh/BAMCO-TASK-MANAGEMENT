@@ -84,7 +84,9 @@ async def open_item(page, item_id):
 async def choose_today(page, name):
     await page.locator(f'#projectItemForm [data-project-date="{name}"]').click()
     await expect(page.locator('#calendarDialog')).to_be_visible()
-    await page.locator('#setDateBtn').click()
+    # The production day grid hides the legacy submit button and commits on
+    # a visible day click. Use the selected day (today for an empty field).
+    await page.locator('#calendarDialog .day-picker-grid [data-day].selected').click()
     await expect(page.locator('#calendarDialog')).not_to_be_visible()
     assert await page.locator(f'#projectItemForm [name="{name}"]').input_value()
 
