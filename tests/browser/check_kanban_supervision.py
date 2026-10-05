@@ -38,6 +38,8 @@ async def case(browser,base,width,role,out):
  try:
   await page.goto(base,wait_until='load');await login(page,'owner')
   await page.evaluate("async()=>{await bamcoOrganizationAccess.refresh();await refresh();await bamcoOptions.load(true);BamcoNavigation.navigate('kanban')}")
+  for control in ['addTaskBtn','importBtn','kanbanDeleteBtn','kanbanExportBtn','kanbanArchiveBtn']:
+   assert not await page.locator('#'+control).is_visible(),control+' exposed by view/edit-only supervision'
   await page.locator('#kanbanBody tr[data-task-id="101"]').click()
   await page.locator('#kanbanEditBtn').click()
   await page.locator('#taskDialog').wait_for(state='visible')

@@ -36,7 +36,9 @@ for(const role of ['head','manager'])test(role+' gains bounded Kanban editing wi
  for(const row of [task(103,'test-peer'),task(104,'test-owner'),task(105,'test-inactive'),task(106,null),task(107,'test-child',{archived:true})])assert.equal(access.canDirectlyManageTask(row),false);
  for(const action of ['delete','archive','restore'])assert.equal(access.canDirectlyManageTask(task(101,'test-child'),action),false);
  assert(!Array.from(access.descendantUserIds()).includes('test-inactive'));
- await f.open('kanban');w.openEdit(102);
+ await f.open('kanban');
+ for(const id of ['addTaskBtn','importBtn','kanbanDeleteBtn','kanbanExportBtn','kanbanArchiveBtn'])assert.equal(d.getElementById(id).dataset.bamcoSupervisionDenied,'true',id+' remains unavailable without ordinary permission');
+ w.openEdit(102);
  const form=d.querySelector('#taskForm');
  assert.equal(d.querySelector('#taskDialogTitle').textContent,'ویرایش وظیفه');
  assert.equal(form.elements.owner_id.value,'test-grandchild');assert.equal(form.elements.owner_id.disabled,true);

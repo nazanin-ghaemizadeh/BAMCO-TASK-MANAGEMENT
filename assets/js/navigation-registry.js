@@ -280,6 +280,19 @@
         node.setAttribute('aria-hidden', allowed ? 'false' : 'true');
       }
     });
+    // Supervision adds only view/content-edit. Do not present unrelated
+    // buttons as available merely because the Kanban route is now visible.
+    const supervisedControls = {addTaskBtn:'create',importBtn:'create',kanbanDeleteBtn:'delete',kanbanExportBtn:'export',kanbanArchiveBtn:'edit'};
+    for (const [id, action] of Object.entries(supervisedControls)) {
+      const node = document.getElementById(id); if (!node) continue;
+      if (canSuperviseKanban() && !canExplicit('kanban', action)) {
+        node.dataset.bamcoSupervisionDenied = 'true';
+        node.setAttribute('data-bamco-access-denied', 'true');
+      } else if (node.dataset.bamcoSupervisionDenied === 'true') {
+        delete node.dataset.bamcoSupervisionDenied;
+        node.removeAttribute('data-bamco-access-denied');
+      }
+    }
     const current = state().view;
     const route = catalog.routeFor(current), feature = route?.featureKey;
     if (feature && !can(feature, route.action)) {
