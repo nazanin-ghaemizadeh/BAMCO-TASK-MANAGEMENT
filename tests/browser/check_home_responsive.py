@@ -30,7 +30,7 @@ GEOMETRY = r'''() => {
   expectedOrder:mode==='custom'?bamcoHomeLayout.get().order:BamcoNavigationCatalog.groups.map(g=>g.key),
   groups:nodes.map(n=>({key:n.dataset.group,rect:rect(n),
    heading:rect(n.querySelector('.nav-group-toggle')),
-   targets:[...n.querySelectorAll(mode==='cards'?'.nav-group-items>[data-view]':'.home-group-trigger')].filter(visible).map(b=>({key:b.dataset.view||n.dataset.group,rect:rect(b),text:b.textContent.trim(),scrollWidth:b.scrollWidth,clientWidth:b.clientWidth})),
+   targets:[...n.querySelectorAll(mode==='cards'?'.nav-group-items>[data-view],.nav-group-items>.home-card-route':'.home-group-trigger')].filter(visible).map(b=>({key:b.dataset.phonebookSection||b.dataset.view||n.dataset.group,rect:rect(b),text:b.textContent.trim(),scrollWidth:b.scrollWidth,clientWidth:b.clientWidth})),
    circle:mode==='cards'?null:rect(n.querySelector('.home-group-symbol')),
    label:mode==='cards'?null:rect(n.querySelector('.home-group-label'))})),
   header:[...document.querySelectorAll('.card-topbar>img,.card-topbar>strong,.card-topbar .header-tools')].map(rect),
@@ -94,6 +94,32 @@ async def check_dialog(page):
       return {open:d.open,top:box.top,bottom:box.bottom,left:box.left,right:box.right,close:{w:c.width,h:c.height,top:c.top,bottom:c.bottom},height:innerHeight,width:innerWidth,shown,scrollHeight:routes.scrollHeight,clientHeight:routes.clientHeight};
     }''')
 
+async def check_phonebook_options(page, activate, mode):
+    """Exercise category keys through real pointer/touch actions in every mode."""
+    sections=[('office','اداری'),('factory','کارخانه'),('external','خارج از سازمان')]
+    trigger=page.locator('#nav [data-group="phonebook"] .home-group-trigger')
+    if mode!='cards':
+        await activate(trigger)
+    selector='#nav .home-card-route[data-phonebook-section]' if mode=='cards' else '.home-launcher-dialog [data-phonebook-section]'
+    choices=page.locator(selector)
+    inventory=await choices.evaluate_all("nodes=>nodes.map(node=>[node.dataset.phonebookSection,node.querySelector('span:last-child').textContent.trim()])")
+    assert inventory==[list(item) for item in sections], ('phonebook option parity',mode,inventory)
+    assert not await page.locator('#nav button[data-view="phoneBook"]').is_visible(), 'generic phonebook source must not appear alongside the three choices'
+    if mode!='cards':
+        await activate(page.locator('.home-launcher-close'))
+    # Start with factory, so a missing key cannot pass using the office default.
+    for category,title in [sections[1],sections[2],sections[0]]:
+        if mode!='cards':
+            await activate(trigger)
+        await activate(page.locator(selector+f'[data-phonebook-section="{category}"]'))
+        await page.wait_for_function("category=>Bamco.state.view==='phoneBook'&&bamcoPhonebook.active()===category&&!document.querySelector('#phoneBookView').classList.contains('hidden')",arg=category)
+        heading=page.locator('#phoneBookView .phonebook-section-heading h2')
+        assert (await heading.inner_text()).strip()==title, (mode,category,await heading.inner_text())
+        assert not await page.locator('.home-launcher-dialog').evaluate('dialog=>dialog.open'), 'phonebook choice must close the launcher'
+        await activate(page.locator('#phoneBookView [data-phonebook-home]'))
+        await page.wait_for_function("mode=>Bamco.state.view==='home'&&document.querySelector('#homeView').dataset.layout===mode",arg=mode)
+        await settle(page)
+
 async def one_case(browser, base, width, height, out):
     context = await browser.new_context(viewport={'width':width,'height':height},
         is_mobile=width<=1200,has_touch=width<=1200,service_workers='block')
@@ -126,8 +152,9 @@ async def one_case(browser, base, width, height, out):
             d=await page.evaluate(GEOMETRY);verify_home(d,width,height);result['layouts'].append(d)
             if mode in ['launcher','cards'] and sum(x['mode']==mode for x in result['layouts'])==1:
                 await page.screenshot(path=str(out/f'{width}x{height}-{mode}.png'),full_page=True)
+            await check_phonebook_options(page,activate,mode)
             # The final group must be reachable by normal page scrolling.
-            tail=page.locator('#nav .nav-group-items>[data-view]:visible').last if mode=='cards' else page.locator('#nav .home-group-trigger:visible').last
+            tail=page.locator('#nav .nav-group-items>[data-view]:visible,#nav .nav-group-items>.home-card-route:visible').last if mode=='cards' else page.locator('#nav .home-group-trigger:visible').last
             await tail.scroll_into_view_if_needed()
             tail_box=await tail.bounding_box()
             assert tail_box and tail_box['y']>=-1 and tail_box['y']+tail_box['height']<=height+1, ('last target clipped',tail_box)
@@ -186,14 +213,18 @@ async def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--browser',choices=['chromium','webkit'],default='chromium')
     parser.add_argument('--output',default='test-results/home-responsive')
+    parser.add_argument('--executable-path',help='Optional installed browser executable (for example /usr/bin/chromium)')
+    parser.add_argument('--sizes',nargs='+',help='Optional viewport subset, for example 390x844 1365x900; the default checks the full matrix')
     args=parser.parse_args();out=ROOT/args.output/args.browser;out.mkdir(parents=True,exist_ok=True)
+    sizes=[tuple(map(int,value.lower().split('x'))) for value in args.sizes] if args.sizes else SIZES
+    assert all(len(size)==2 and min(size)>0 for size in sizes), 'sizes must be positive WIDTHxHEIGHT pairs'
     server=http.server.ThreadingHTTPServer(('127.0.0.1',0),functools.partial(QuietHandler,directory=ROOT))
     threading.Thread(target=server.serve_forever,daemon=True).start()
     results=[]
     try:
         async with async_playwright() as p:
-            browser=await getattr(p,args.browser).launch(headless=True)
-            for width,height in SIZES:
+            browser=await getattr(p,args.browser).launch(headless=True,**({'executable_path':args.executable_path} if args.executable_path else {}))
+            for width,height in sizes:
                 results.append(await one_case(browser,f'http://127.0.0.1:{server.server_port}/',width,height,out))
             await browser.close()
     finally:server.shutdown()
