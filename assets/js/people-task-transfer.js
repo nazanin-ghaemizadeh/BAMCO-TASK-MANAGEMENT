@@ -3,7 +3,7 @@
  const q=s=>document.querySelector(s);
  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  let pending=[];
- const canTransfer=()=>window.BamcoAccess?.can?.('kanban','edit')===true;
+ const canTransfer=()=>(window.BamcoAccess?.canExplicit||window.BamcoAccess?.can)?.('kanban','edit')===true;
  const active=t=>!t.archived&&!['انجام شده','متوقف'].includes(norm(t.status));
  function open(people,activeTasks,retained){
   const former=new Map(people.map(p=>[String(p.id),p]));
