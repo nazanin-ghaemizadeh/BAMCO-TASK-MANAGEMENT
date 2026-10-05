@@ -1,7 +1,10 @@
 -- Scoped Kanban supervision only; no ordinary feature grants are changed.
--- Active primary organizational heads/managers gain view/edit of existing
--- nonarchived tasks owned by strict descendants in their active position tree.
--- Explicit user deny wins. No create/delete/export/approval/reassignment grant.
+-- Active primary organizational heads/managers gain view/edit/assignment of
+-- existing nonarchived tasks owned by strict descendants, plus registered
+-- ownerless intake created by themselves, active strict descendants, or the
+-- active manager occupying a head position's immediate parent position.
+-- Explicit user deny wins. No create/delete/export/approval/bypass grant.
+-- PROPOSAL ONLY: this file has not been applied to production.
 create or replace function private.kanban_supervision_enabled(p_actor uuid)
 returns boolean language sql stable security definer set search_path='' as $$
   select coalesce(
@@ -60,6 +63,63 @@ returns boolean language sql stable security definer set search_path='' as $$
 $$;
 revoke all on function private.kanban_supervisor_can_access_owner(uuid,uuid) from public,anon,authenticated;
 
+-- The intake creator set is authoritative and intentionally narrower than a
+-- company-wide inbox. A head also receives registered intake from their
+-- immediate parent manager, shared with sibling heads until first assignment.
+-- This does not add the manager or sibling branches to assignable owners.
+-- Ownerless/deleted-owner repairs are not intake.
+create or replace function private.kanban_intake_creator_ids(p_actor uuid)
+returns table(user_id uuid) language sql stable security definer set search_path='' as $$
+  select p_actor where private.kanban_supervision_enabled(p_actor)
+  union
+  select d.user_id from private.kanban_supervised_owner_ids(p_actor) d
+  union
+  select manager_assignment.user_id
+  from public.organization_position_assignments head_assignment
+  join public.organization_positions head_position
+    on head_position.id=head_assignment.position_id and head_position.active
+  join public.organization_roles head_role
+    on head_role.id=head_position.role_id and head_role.active
+      and head_role.role_key='head'
+  join public.organization_positions manager_position
+    on manager_position.id=head_position.parent_position_id and manager_position.active
+  join public.organization_roles manager_role
+    on manager_role.id=manager_position.role_id and manager_role.active
+      and manager_role.role_key='manager'
+  join public.organization_position_assignments manager_assignment
+    on manager_assignment.position_id=manager_position.id
+      and manager_assignment.is_primary
+      and manager_assignment.valid_from<=current_date
+      and (manager_assignment.valid_to is null or manager_assignment.valid_to>current_date)
+  join public.profiles manager_profile
+    on manager_profile.id=manager_assignment.user_id and manager_profile.active
+  where private.kanban_supervision_enabled(p_actor)
+    and head_assignment.user_id=p_actor and head_assignment.is_primary
+    and head_assignment.valid_from<=current_date
+    and (head_assignment.valid_to is null or head_assignment.valid_to>current_date);
+$$;
+revoke all on function private.kanban_intake_creator_ids(uuid) from public,anon,authenticated;
+
+create or replace function private.kanban_supervisor_can_access_task(p_actor uuid,p_task public.tasks)
+returns boolean language sql stable security definer set search_path='' as $$
+  select coalesce(
+    private.kanban_supervision_enabled(p_actor)
+    and not p_task.archived
+    and (
+      private.kanban_supervisor_can_access_owner(p_actor,p_task.owner_id)
+      or (
+        p_task.owner_id is null
+        and p_task.owner_deleted_at is null
+        and p_task.former_owner_name is null
+        and (private.task_status_option(p_task.status)).kind='registered'
+        and p_task.created_by in (
+          select creator.user_id from private.kanban_intake_creator_ids(p_actor) creator
+        )
+      )
+    ),false);
+$$;
+revoke all on function private.kanban_supervisor_can_access_task(uuid,public.tasks) from public,anon,authenticated;
+
 -- A browser cannot choose or impersonate the actor.
 create or replace function public.kanban_supervisor_can_access_owner(p_owner uuid)
 returns boolean language sql stable security definer set search_path='' as $$
@@ -68,11 +128,21 @@ $$;
 revoke all on function public.kanban_supervisor_can_access_owner(uuid) from public,anon;
 grant execute on function public.kanban_supervisor_can_access_owner(uuid) to authenticated;
 
+-- All public helpers bind the actor to the current session; callers cannot
+-- supply an actor UUID. The composite row is used directly by RLS, including
+-- WITH CHECK after lifecycle triggers have normalized the destination row.
+create or replace function public.kanban_supervisor_can_access_task(p_task public.tasks)
+returns boolean language sql stable security definer set search_path='' as $$
+  select private.kanban_supervisor_can_access_task(auth.uid(),p_task);
+$$;
+revoke all on function public.kanban_supervisor_can_access_task(public.tasks) from public,anon;
+grant execute on function public.kanban_supervisor_can_access_task(public.tasks) to authenticated;
+
 create policy tasks_supervisor_kanban_read on public.tasks for select to authenticated
-using (not archived and public.kanban_supervisor_can_access_owner(owner_id));
+using (public.kanban_supervisor_can_access_task(tasks));
 create policy tasks_supervisor_kanban_edit on public.tasks for update to authenticated
-using (not archived and public.kanban_supervisor_can_access_owner(owner_id))
-with check (not archived and public.kanban_supervisor_can_access_owner(owner_id));
+using (public.kanban_supervisor_can_access_task(tasks))
+with check (public.kanban_supervisor_can_access_task(tasks));
 
 create or replace function public.effective_feature_access()
 returns jsonb
@@ -84,6 +154,8 @@ as $$
   select jsonb_build_object(
     'schema','bamco.feature-access.v1',
     'kanban_supervision',private.kanban_supervision_enabled(auth.uid()),
+    'kanban_assignment',private.kanban_supervision_enabled(auth.uid()),
+    'kanban_intake_creator_ids',coalesce((select jsonb_agg(creator.user_id order by creator.user_id) from private.kanban_intake_creator_ids(auth.uid()) creator),'[]'::jsonb),
     'kanban_supervised_owner_ids',coalesce((select jsonb_agg(d.user_id) from private.kanban_supervised_owner_ids(auth.uid()) d),'[]'::jsonb),
     'grants',coalesce(jsonb_agg(
       jsonb_build_object(
@@ -313,6 +385,20 @@ begin
           is not distinct from
           (to_jsonb(old)-array['owner_id','created_by']);
   end if;
+  -- A supervision-only writer has no task-resequencing capability. Do not
+  -- let the inherited maintenance GUC skip its column/lifecycle checks or
+  -- suppress row_version increments. Existing verified approval, revision,
+  -- deletion and ordinary task-management paths remain unchanged.
+  if tg_op='UPDATE'
+     and v_actor is not null and auth.role()<>'service_role'
+     and not v_verified_approval and not v_revision_note
+     and not v_verified_person_delete
+     and not public.organization_can_manage_task(old.id)
+     and private.kanban_supervisor_can_access_task(v_actor,old)
+     and coalesce(current_setting('bamco.resequencing',true),'')='1' then
+    raise exception 'دسترسی نظارتی کانبان مجوز عبور از کنترل محتوا و چرخهٔ وظیفه را ندارد.'
+      using errcode='42501';
+  end if;
   if v_verified_approval or v_revision_note
      or v_verified_resequence or v_verified_person_delete
      or auth.role()='service_role'
@@ -332,19 +418,33 @@ begin
       raise exception 'ثبت‌کنندهٔ وظیفه قابل تغییر نیست.' using errcode='42501';
     end if;
     if not public.organization_can_manage_task(old.id)
-       and not old.archived
-       and private.kanban_supervisor_can_access_owner(v_actor,old.owner_id) then
-      -- This additive path edits ordinary content only. The existing project
-      -- guard still runs, and the lifecycle trigger and RLS WITH CHECK prevent
-      -- implicit owner clearing or completion/archive from escaping this scope.
+       and private.kanban_supervisor_can_access_task(v_actor,old) then
+      -- Allow content and bounded ownership changes, never creator/source or
+      -- system fields. The unchanged project guard independently validates
+      -- pending approvals, project permission, source and owner binding.
       if (to_jsonb(new)-array[
-          'title','description','status','priority','start_date','due_date',
-          'done_date','reminder_days','manager_notes','last_update_note','change_reason'
+          'title','description','owner_id','status','priority','start_date','due_date',
+          'reminder_days','manager_notes','last_update_note','change_reason'
         ]) is distinct from (to_jsonb(old)-array[
-          'title','description','status','priority','start_date','due_date',
-          'done_date','reminder_days','manager_notes','last_update_note','change_reason'
+          'title','description','owner_id','status','priority','start_date','due_date',
+          'reminder_days','manager_notes','last_update_note','change_reason'
         ]) then
-        raise exception 'دسترسی نظارتی کانبان فقط برای ویرایش محتوای وظیفه است؛ تغییر متولی، آرشیو یا اطلاعات سیستمی مجاز نیست.'
+        raise exception 'دسترسی نظارتی کانبان فقط برای ویرایش محتوا و تخصیص در محدودهٔ مجاز است؛ آرشیو یا اطلاعات سیستمی قابل تغییر نیست.'
+          using errcode='42501';
+      end if;
+      if new.owner_id is null then
+        -- Existing intake may remain unassigned while its content is edited.
+        -- An owned task cannot be released back to intake by this capability.
+        if old.owner_id is not null
+           or (private.task_status_option(new.status)).kind is distinct from 'registered' then
+          raise exception 'دسترسی نظارتی فقط برای وظیفهٔ ثبت‌شدهٔ بدون متولی یا متولی فعال در محدودهٔ مجاز است.'
+            using errcode='42501';
+        end if;
+      elsif not private.kanban_supervisor_can_access_owner(v_actor,new.owner_id)
+         or coalesce((private.task_status_option(new.status)).kind not in ('active','waiting'),true) then
+        -- Registered status clears owner in the lifecycle trigger. Requiring
+        -- active/waiting here prevents reporting a successful lost assignment.
+        raise exception 'تخصیص نظارتی به زیردست فعال و وضعیت در حال انجام یا منتظر پاسخ نیاز دارد.'
           using errcode='42501';
       end if;
       return new;
