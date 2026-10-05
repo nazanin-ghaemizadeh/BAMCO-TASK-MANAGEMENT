@@ -19,9 +19,9 @@ supervisory power for a non-head/non-manager second root.
 
 ## Mutation boundaries
 
-The new UPDATE path permits title, description, nonterminal status, priority,
-start/due/done dates, reminder days, manager notes, last-update note and change
-reason, subject to existing validation. Owner, creator, source, archive fields,
+The new UPDATE path permits title, description, status changes that retain the
+owner and nonarchived state, priority, start/due/done dates, reminder days,
+manager notes, last-update note and change reason, subject to existing validation. Owner, creator, source, archive fields,
 identifiers and other system fields stay unchanged. Existing task lifecycle
 triggers still run; RLS WITH CHECK rejects any resulting owner clearing or
 completion/archive transition. The UI locks ownership and disallows those
