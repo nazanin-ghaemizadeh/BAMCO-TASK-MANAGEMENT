@@ -228,3 +228,6 @@ html body.card-navigation #appView #homeView[data-layout="custom"] #nav .home-gr
 
 /* Expanded home options retain their original access/route source in the DOM. */
 html body.card-navigation #appView #homeView #nav .nav-group-items>button[data-home-route-source]{display:none!important}
+/* Custom hover/pressed styling and circular keyboard rings already identify
+   home controls; suppress the browser's rectangular touch overlay only here. */
+html body.card-navigation #appView #homeView #nav button,.home-launcher-dialog button{-webkit-tap-highlight-color:transparent}

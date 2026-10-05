@@ -74,6 +74,7 @@ HOME_TEXT = r'''() => {
    return {key:g.dataset.group,text:label.textContent.trim(),group:rect(g),
     circle:rect(g.querySelector('.home-group-symbol')),label:rect(label),
     textAlign:style.textAlign,textAlignLast:style.textAlignLast,
+    tapHighlight:getComputedStyle(g.querySelector('.home-group-trigger')).webkitTapHighlightColor,
     font:style.font,lines:glyphLines(label)};
   });
  const shown=new Set(groups.map(g=>g.key));
@@ -100,7 +101,7 @@ DIALOG_FOCUS = r'''() => {
   activeIndex:routes.indexOf(document.activeElement),
   routes:routes.map(n=>({text:n.textContent.trim(),section:n.dataset.phonebookSection,
    focused:n===document.activeElement,focusVisible:n.matches(':focus-visible'),
-   rect:rect(n),outline:outline(n),
+   rect:rect(n),outline:outline(n),tapHighlight:getComputedStyle(n).webkitTapHighlightColor,
    icon:rect(n.querySelector('.home-launcher-route-icon')),
    iconOutline:outline(n.querySelector('.home-launcher-route-icon'))}))};
 }'''
@@ -117,6 +118,7 @@ def verify_text(data):
     ordered = sorted(data['groups'], key=lambda g: (round(g['group']['y']), -round(g['group']['x'])))
     assert [g['key'] for g in ordered] == data['expectedOrder'], ('RTL order changed', data)
     for group in data['groups']:
+        assert group['tapHighlight'] in ['transparent', 'rgba(0, 0, 0, 0)'], ('native rectangular tap overlay', group)
         assert group['lines'], ('no rendered text lines', group)
         for line in group['lines']:
             assert abs(line['center'] - group['circle']['center']) <= 2, (
@@ -131,6 +133,7 @@ def verify_focus(data, origin, index=0):
     assert all(route['section'] for route in data['routes']), ('wrong launcher opened', data)
     assert data['activeIndex'] == index, ('focus moved to the wrong option', data)
     for i, route in enumerate(data['routes']):
+        assert route['tapHighlight'] in ['transparent', 'rgba(0, 0, 0, 0)'], ('native rectangular tap overlay', route)
         assert not visible_outline(route['outline']), ('rectangular route outline', route, data)
         ring = route['iconOutline']
         if origin == 'keyboard' and i == index:
