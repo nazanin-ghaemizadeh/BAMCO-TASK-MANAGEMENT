@@ -193,6 +193,7 @@ function taskSubjectId(task){return task?.owner_id||task?.created_by||null}
 function isOwnTask(task){return !!task&&String(taskSubjectId(task))===String(state.user?.id)}
 function isStrictDescendant(userId){return !!userId&&(state.organizationScope?.descendantUserIds||[]).some(id=>String(id)===String(userId))}
 function isOrganizationManager(){return (state.organizationScope?.ownRoleKeys||[]).includes('manager')}
+function canCreateRegisteredTask(){return featureAllowed('kanban','create')&&(isManager()||(state.organizationScope?.ownRoleKeys||[]).some(role=>['manager','head','deputy'].includes(role)))}
 function explicitFeatureAllowed(featureKey,action='view'){
   const access=window.BamcoAccess;
   return typeof access?.canExplicit==='function'?access.canExplicit(featureKey,action):featureAllowed(featureKey,action);
@@ -222,7 +223,7 @@ function canDirectlyCreateFor(userId){
   // A system-level, explicit bypass can create an unassigned registered task.
   // Ordinary organizational authority always needs a real, strict-descendant
   // target; a missing owner must not turn into a supervisory bypass.
-  return hasApprovalBypass()||!!userId&&(isStrictDescendant(userId)||(isOrganizationManager()&&String(userId)===String(state.user?.id)));
+  return (!userId&&canCreateRegisteredTask())||hasApprovalBypass()||!!userId&&(isStrictDescendant(userId)||(isOrganizationManager()&&String(userId)===String(state.user?.id)));
 }
 function canManageOrganizationTasks(){return hasApprovalBypass()||isOrganizationManager()||(state.organizationScope?.descendantUserIds||[]).length>0}
 async function refreshOrganizationScope({silent=false}={}){
@@ -302,6 +303,7 @@ window.bamcoOrganizationAccess=Object.freeze({
   positionIds:()=>state.organizationScope?.positionIds||[],
   ownPositionIds:()=>state.organizationScope?.ownPositionIds||[],
   isOrganizationManager,
+  canCreateRegisteredTask,
   directReportUserIds:()=>state.organizationScope?.directReportUserIds||[],
   descendantUserIds:()=>state.organizationScope?.descendantUserIds||[],
   isOwnTask,
@@ -540,7 +542,7 @@ $('#nav').addEventListener('click',e=>{if(window.matchMedia('(max-width:760px)')
 document.addEventListener('pointerdown',e=>{if(!window.matchMedia('(max-width:760px)').matches)return;const sidebar=$('#sidebar');if(!sidebar.classList.contains('collapsed')&&!sidebar.contains(e.target))sidebar.classList.add('collapsed')});
 $('#logoutBtn').addEventListener('click',async()=>{await window.bamcoAuth.signOut();$('#loginForm').reset();$('#email').focus()});$$('[data-close]').forEach(b=>b.addEventListener('click',()=>document.getElementById(b.dataset.close).close()));
 
-function canCreateDirectTask(){return featureAllowed('kanban','create')&&(hasApprovalBypass()||(state.organizationScope?.descendantUserIds||[]).length>0)}
+function canCreateDirectTask(){return featureAllowed('kanban','create')&&(canCreateRegisteredTask()||hasApprovalBypass()||(state.organizationScope?.descendantUserIds||[]).length>0)}
 function formOwnerId(){return $('#taskForm [name=owner_id]')?.value||state.profile?.id||null}
 function canEditTaskDirectly(task=state.editing){
   if(state.reviewEdit)return featureAllowed('approvals','edit');
