@@ -302,3 +302,11 @@ html body #appView#appView #projectsView:not(.hidden){height:calc(100dvh - var(-
 .invoice-balances-totals>div{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
 .invoice-company-balances-dialog .modal-actions{margin-top:18px}
 @media(max-width:600px){.invoice-company-balances-dialog{padding:14px}.invoice-balances-table th,.invoice-balances-table td{padding:9px;font-size:14px}}
+
+/* Invoice payment colors follow actual paid amounts. */
+#invoiceFeatureRoot .invoice-list-card.invoice-payment-paid{--invoice-card-bg:#eaf7ef;--invoice-card-border:#71b88b;--invoice-card-ink:#166534}
+#invoiceFeatureRoot .invoice-list-card.invoice-payment-unpaid{--invoice-card-bg:#fff0f0;--invoice-card-border:#e9a0a0;--invoice-card-ink:#a52626}
+#invoiceFeatureRoot .invoice-list-card.invoice-payment-partial{--invoice-card-bg:#fff4e6;--invoice-card-border:#e7ad65;--invoice-card-ink:#92400e}
+#invoiceFeatureRoot .invoice-list-card:is(.invoice-payment-paid,.invoice-payment-unpaid,.invoice-payment-partial){background:var(--invoice-card-bg);border-color:var(--invoice-card-border);border-inline-start-width:4px}
+#invoiceFeatureRoot .invoice-list-card:is(.invoice-payment-paid,.invoice-payment-unpaid,.invoice-payment-partial):is(:hover,.active,:focus-visible){border-color:var(--invoice-card-ink);box-shadow:0 5px 16px #173a2920}
+#invoiceFeatureRoot .invoice-list-card:is(.invoice-payment-paid,.invoice-payment-unpaid,.invoice-payment-partial) :is(strong,small,b){color:var(--invoice-card-ink)}
