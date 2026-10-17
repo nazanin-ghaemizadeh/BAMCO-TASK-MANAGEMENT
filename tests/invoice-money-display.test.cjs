@@ -98,3 +98,35 @@ test('fractional invoice display, editor typing and save payloads retain every c
   assert.equal(f.rows.payments[0].amount, '1234.00');
   assert.equal(f.d.querySelector('.payment-stage-value b').textContent, '۱,۲۳۴ دلار آمریکا');
 });
+
+
+test('company balance dialog aggregates all positive balances exactly, separates currencies and closes', async t => {
+  const f = await fixture(t, '9007199254740993.50', ['0.01']);
+  f.rows.invoices[0].company_name = 'AQS';
+  const add = (id, company, total, currency = 'IRR') => f.rows.invoices.push({ ...f.rows.invoices[0], id, company_name: company, total_amount: total, currency });
+  add('18', ' aqs ', '0.52');
+  add('19', 'AQS', '20.15', 'USD');
+  add('20', 'Settled', '10');
+  add('21', 'Overpaid', '10');
+  add('22', '<img src=x onerror=alert(1)>', '5');
+  f.rows.payments.push({ id: '40', invoice_id: '20', amount: '10', status: 'paid' }, { id: '41', invoice_id: '21', amount: '12', status: 'paid' }, { id: '42', invoice_id: '18', amount: '0.50', status: 'planned' });
+  await f.w.bamcoInvoices.load();
+  f.w.bamcoInvoices.model.search = 'nothing-matches';
+  await f.w.bamcoInvoices.load();
+  assert.equal(f.d.querySelectorAll('.invoice-list-card').length, 0);
+  f.click('[data-invoice-action="company-balances"]');
+  const dialog = f.d.querySelector('#invoiceCompanyBalancesDialog');
+  assert.equal(dialog.open, true);
+  const rows = [...dialog.querySelectorAll('tbody tr')].map(row => [...row.children].map(cell => cell.textContent));
+  assert.ok(rows.some(row => row[0] === 'AQS' && row[1] === '۲' && row[2] === '۹,۰۰۷,۱۹۹,۲۵۴,۷۴۰,۹۹۴.۰۱ ریال'));
+  assert.ok(rows.some(row => row[0] === 'AQS' && row[2] === '۲۰.۱۵ دلار آمریکا'));
+  assert.equal(rows.length, 3);
+  assert.equal(dialog.querySelector('img'), null, 'company names are escaped');
+  assert.equal(dialog.querySelectorAll('.invoice-balances-totals>div').length, 2);
+  f.click('[data-invoice-balances-close]');
+  assert.equal(dialog.open, false);
+  f.rows.invoices = []; f.rows.payments = [];
+  await f.w.bamcoInvoices.load();
+  f.click('[data-invoice-action="company-balances"]');
+  assert.match(f.d.querySelector('#invoiceCompanyBalancesDialog').textContent, /هیچ صورتحسابی/);
+});

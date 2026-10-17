@@ -285,3 +285,20 @@ html body #appView#appView #projectsView:not(.hidden){height:calc(100dvh - var(-
 #invoiceFeatureRoot .invoice-save-status{padding:10px 12px;line-height:1.9;background:#eaf5ee;color:#225b43;border-radius:8px;font-size:12px}
 #invoiceFeatureRoot .invoice-save-status.error{background:#fff4e6;color:#88501c}
 @media(max-width:600px){#invoiceFeatureRoot .invoice-attachments{padding:10px}#invoiceFeatureRoot .invoice-attachments>.panel-head,#invoiceFeatureRoot .payment-stage-receipts>.panel-head{flex-wrap:wrap;gap:8px}#invoiceFeatureRoot .invoice-file-list li{align-items:flex-start}#invoiceFeatureRoot .invoice-file-list li>span:first-child{flex-basis:100%}}
+
+/* Company debt summary: native centered modal, with independent table scrolling. */
+.invoice-company-balances-dialog{width:min(760px,calc(100vw - 24px));max-height:calc(100dvh - 32px);margin:auto;padding:22px;box-sizing:border-box;border:1px solid #c8ddd1;border-radius:16px;background:#fff;color:var(--ink);overflow:auto;box-shadow:0 22px 65px #092b2038}
+.invoice-company-balances-dialog::backdrop{background:#0b2f2375;backdrop-filter:blur(3px)}
+.invoice-company-balances-dialog .modal-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.invoice-company-balances-dialog h3{margin:0;color:var(--green-900)}
+.invoice-balances-note{color:var(--muted);margin:12px 0 18px}
+.invoice-balances-table-wrap{overflow:auto;max-height:52dvh;border:1px solid var(--line);border-radius:10px}
+.invoice-balances-table{width:100%;min-width:0;border-collapse:collapse;text-align:right}
+.invoice-balances-table th,.invoice-balances-table td{padding:12px;border-bottom:1px solid var(--line)}
+.invoice-balances-table thead th{background:#edf6f0;position:sticky;top:0;z-index:1}
+.invoice-balances-table tbody th{position:static;white-space:normal;font-weight:500;overflow-wrap:anywhere}
+.invoice-balances-table td:last-child{white-space:nowrap;font-weight:700;color:var(--green-900)}
+.invoice-balances-totals{display:grid;gap:10px;margin-top:16px;padding:14px;background:#edf6f0;border-radius:10px}
+.invoice-balances-totals>div{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.invoice-company-balances-dialog .modal-actions{margin-top:18px}
+@media(max-width:600px){.invoice-company-balances-dialog{padding:14px}.invoice-balances-table th,.invoice-balances-table td{padding:9px;font-size:14px}}
