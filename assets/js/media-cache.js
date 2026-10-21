@@ -6,7 +6,7 @@ const imageCacheName='bamco-auth-images-v2';
 const imageBuckets=new Set(['avatars','stickers','group-avatars']);
 const validPath=path=>path&&!String(path).split('/').includes('..');
 const personById=id=>window.BamcoProfiles?.get?.(id)||(state.profiles||[]).find(p=>String(p?.id)===String(id))||(String(state.profile?.id)===String(id)?state.profile:null);
-const cacheKey=(user,bucket,path)=>new URL('media-cache/'+encodeURIComponent(user)+'/'+encodeURIComponent(bucket)+'/'+encodeURIComponent(path),location.href).href;
+const cacheKey=(user,bucket,path)=>new URL('media-cache/'+(window.BamcoWorkspace?.key?.()||'product')+'/'+encodeURIComponent(user)+'/'+encodeURIComponent(bucket)+'/'+encodeURIComponent(path),location.href).href;
 async function diskCache(){if(!window.caches)return null;try{return await caches.open(imageCacheName)}catch{return null}}
 function avatarRevision(path,revision){
  if(revision!=null)return String(revision);

@@ -1,0 +1,21 @@
+import assert from 'node:assert/strict';
+const calls=[];let handler;
+globalThis.Deno={env:{get:name=>({SUPABASE_URL:'https://workspace.example',SUPABASE_SERVICE_ROLE_KEY:'service-secret',SUPABASE_ANON_KEY:'anon'})[name]},serve:fn=>{handler=fn;return {}}};
+globalThis.fetch=async(input,init)=>{
+ const req=new Request(input,init);calls.push(req);
+ if(req.url.includes('/auth/v1/user'))return Response.json({id:'member'});
+ if(req.url.includes('/rest/v1/profiles'))return Response.json(req.headers.get('Accept-Profile')==='bamco_process'?[{id:'member'}]:[]);
+ return Response.json({ok:true});
+};
+const {installWorkspaceRuntime}=await import('../supabase/functions/_shared/workspace-runtime.ts');
+installWorkspaceRuntime('process');
+await fetch('https://workspace.example/rest/v1/tasks',{headers:{'Accept-Profile':'public'}});
+assert.equal(calls.at(-1).headers.get('Accept-Profile'),'bamco_process');
+await fetch('https://workspace.example/auth/v1/admin/users',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_metadata:{bamco_department:'quality'}})});
+assert.equal((await calls.at(-1).clone().json()).app_metadata.bamco_department,'process');
+await fetch('https://workspace.example/storage/v1/object/documents-private/file.pdf');
+assert.ok(calls.at(-1).url.includes('/process-documents-private/'));
+await fetch('https://outside.example/rest/v1/tasks');assert.equal(calls.at(-1).headers.has('Accept-Profile'),false);
+Deno.serve(()=>Response.json({success:true}));
+assert.equal((await handler(new Request('https://workspace.example/functions/v1/process-admin-users',{headers:{Authorization:'Bearer user-token'}}))).status,200);
+console.log('PASS fixed-schema routing, trusted account metadata, storage namespace and handler membership');

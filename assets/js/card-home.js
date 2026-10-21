@@ -61,7 +61,7 @@ function install(){
  const layoutModes=new Set(['launcher','cards','custom']);
  const defaultOrder=groups.map(([key])=>key);
  let loadedFor='',layout={mode:'launcher',order:[...defaultOrder]},draggedKey='';
- const layoutKey=user=>`bamco.home.layout.v1.${user}`;
+ const layoutKey=user=>`bamco.home.layout.v1.${user}${window.BamcoWorkspace?.key?.()&&window.BamcoWorkspace.key()!=='product'?'.'+window.BamcoWorkspace.key():''}`;
  const currentUser=()=>typeof state!=='undefined'?String(state.user?.id||''):'';
  function normalizeLayout(value){
   const mode=layoutModes.has(value?.mode)?value.mode:'launcher';

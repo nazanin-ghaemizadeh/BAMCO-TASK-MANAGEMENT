@@ -186,7 +186,7 @@
   if(!wsBase)return false;
   try{socket=new root.WebSocket(`${wsBase}/realtime/v1/websocket?apikey=${encodeURIComponent(SB_KEY)}&vsn=1.0.0`)}catch{scheduleReconnect();return false}
   socket.onopen=()=>{
-   const changes=domainTables.map(table=>({event:'*',schema:'public',table}));
+   const changes=domainTables.map(table=>({event:'*',schema:root.BamcoWorkspace?.schema?.()||'public',table}));
    send('phx_join',{config:{broadcast:{ack:false,self:false},presence:{key:''},postgres_changes:changes},access_token:state.token});
    heartbeat=setInterval(()=>send('heartbeat',{}),25000);
   };

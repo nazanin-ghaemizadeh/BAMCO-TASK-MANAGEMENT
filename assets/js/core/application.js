@@ -37,7 +37,8 @@
     else queueMicrotask(run);
   }
 
-  const nativeFetch=typeof root.fetch==='function'?root.fetch.bind(root):null;
+  const platformFetch=typeof root.fetch==='function'?root.fetch.bind(root):null;
+  const nativeFetch=platformFetch?((input,init)=>root.BamcoWorkspace?.transport?root.BamcoWorkspace.transport(input,init,platformFetch):platformFetch(input,init)):null;
   const middleware=[];
   function use(name,handler){
     if(!name||typeof handler!=='function')throw new TypeError('A named network middleware is required.');

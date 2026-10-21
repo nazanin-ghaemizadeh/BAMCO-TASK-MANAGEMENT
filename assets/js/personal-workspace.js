@@ -60,7 +60,7 @@ function installNavigation(){
  window.BamcoNavigation?.registerView?.('voiceAssistant',{activate:assistant.activate,dispose:assistant.dispose});
 }
 
-function noteStorageKey(){return`bamco.personal-notes.${state.user?.id||'anonymous'}`}
+function noteStorageKey(){return`bamco.personal-notes.${state.user?.id||'anonymous'}${window.BamcoWorkspace?.key?.()&&window.BamcoWorkspace.key()!=='product'?'.'+window.BamcoWorkspace.key():''}`}
 function readCachedNotes(){try{const data=JSON.parse(localStorage.getItem(noteStorageKey())||'[]');return Array.isArray(data)?data:[]}catch{return[]}}
 function cacheNotes(){try{localStorage.setItem(noteStorageKey(),JSON.stringify(notes))}catch{}renderNotes()}
 function fromRow(row){return{id:row.id,title:row.title,body:row.body,color:row.color,inactive:row.inactive,createdAt:row.created_at,updatedAt:row.updated_at}}

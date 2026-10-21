@@ -1,3 +1,30 @@
+/* Workspace identity is fixed until a full page reload clears every module/cache. */
+(()=>{'use strict';
+ const catalog=Object.freeze({product:{title:'مهندسی توسعه و تکوین محصول',schema:'public'},process:{title:'مدیریت فرآیند',schema:'bamco_process'},quality:{title:'کنترل کیفیت',schema:'bamco_quality'}});
+ let key='product';try{const stored=sessionStorage.getItem('bamco.department.selected');if(catalog[stored])key=stored}catch{}
+ const selected=()=>catalog[key];
+ const choose=value=>{if(!catalog[value])throw Error('مدیریت معتبر نیست.');if(window.Bamco?.state?.token)throw Error('برای تغییر مدیریت ابتدا خارج شوید.');key=value;try{sessionStorage.setItem('bamco.department.selected',key)}catch{}document.documentElement.dataset.department=key;document.dispatchEvent(new CustomEvent('bamco:department-selected',{detail:{key,...selected()}}));};
+ window.BamcoWorkspace=Object.freeze({key:()=>key,schema:()=>selected().schema,title:()=>selected().title,bucket:name=>key==='product'?name:key+'-'+name,transport,catalog,select:choose});
+ const buckets=new Set(['stickers','vehicle-forms','avatars','group-avatars','letters-private','chat-attachments','documents-private','petty-cash-private','test-reports-private','invoices-private']);
+ function transport(input,init,next){
+  if(key==='product')return next(input,init);
+  const request=new Request(input,init),url=new URL(request.url);
+  if(!['zhhongjhhbvpmoquvkhl.supabase.co','lsfqjjynrajthxnhmjyj.supabase.co'].includes(url.hostname))return next(request);
+  if(url.pathname.startsWith('/rest/v1/')){const headers=new Headers(request.headers);headers.set('Accept-Profile',selected().schema);headers.set('Content-Profile',selected().schema);return next(new Request(url,new Request(request,{headers})))}
+  if(url.pathname.startsWith('/functions/v1/'))url.pathname=url.pathname.replace('/functions/v1/',`/functions/v1/${key}-`);
+  if(url.pathname.startsWith('/storage/v1/'))url.pathname=url.pathname.split('/').map(part=>buckets.has(part)?`${key}-${part}`:part).join('/');
+  return next(new Request(url,request));
+ };
+ const sync=()=>{
+  const login=document.querySelector('#loginView .brand-lockup>div');
+  if(login){let label=login.querySelector('[data-workspace-label]');if(!label){label=document.createElement('p');label.dataset.workspaceLabel='';login.append(label)}label.textContent=selected().title;}
+  const side=document.querySelector('.sidebar .side-brand');
+  if(side){let switcher=document.querySelector('#workspaceSwitch');if(!switcher){switcher=document.createElement('button');switcher.id='workspaceSwitch';switcher.className='ghost workspace-switch';switcher.type='button';switcher.addEventListener('click',async()=>{switcher.disabled=true;try{await window.bamcoAuth?.signOut?.()}finally{location.reload()}});side.after(switcher)}switcher.textContent=selected().title+' · تغییر مدیریت';}
+ };
+ document.addEventListener('bamco:department-selected',sync);
+ document.addEventListener('DOMContentLoaded',sync,{once:true});
+})();
+
 /* Department entry: one stable startup owner, no repeated layout repair loop. */
 (()=>{'use strict';
 const wait=(promise,ms)=>new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(new Error('timeout')),ms);Promise.resolve(promise).then(resolve,reject).finally(()=>clearTimeout(timer))});
@@ -35,8 +62,7 @@ function boot(){
   if(selected){if(!view.hidden)view.hidden=true;document.body.classList.remove('department-pending');login.classList.remove('hidden');lastSignedIn=false;return}
   if(view.hidden)view.hidden=false;document.body.classList.add('department-pending');lastSignedIn=false;
  };
- const product=view.querySelector('[data-department="product"]');
- if(product&&!product.dataset.entryBound){product.dataset.entryBound='1';product.addEventListener('click',showLogin)}
+ view.querySelectorAll('[data-department]').forEach(button=>{if(button.dataset.entryBound)return;button.dataset.entryBound='1';button.addEventListener('click',()=>{window.BamcoWorkspace.select(button.dataset.department);showLogin()})});
  const bindBack=()=>{
   let back=login.querySelector('.department-back');
   if(!back){back=document.createElement('button');back.type='button';back.className='department-back';back.textContent='بازگشت به انتخاب مدیریت';login.querySelector('#loginForm')?.append(back)}

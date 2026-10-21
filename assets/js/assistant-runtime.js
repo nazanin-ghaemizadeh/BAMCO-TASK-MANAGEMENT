@@ -51,7 +51,7 @@ function create(view,{session,loadSticker}){
   }
  };
  const normalized=value=>String(value||'').replace(/[\u064B-\u065F\u200C\s.,،؟!]/g,'').replace(/ي/g,'ی').replace(/ك/g,'ک').toLowerCase();
- const savedHistoryKey=()=>`bamco.assistant.conversations.v1.${session().userId||'anonymous'}`;
+ const savedHistoryKey=()=>`bamco.assistant.conversations.v1.${session().userId||'anonymous'}${window.BamcoWorkspace?.key?.()&&window.BamcoWorkspace.key()!=='product'?'.'+window.BamcoWorkspace.key():''}`;
  const readSavedConversations=()=>{try{const rows=JSON.parse(localStorage.getItem(savedHistoryKey())||'[]');return Array.isArray(rows)?rows.filter(row=>row&&typeof row.id==='string'&&Array.isArray(row.messages)):[]}catch{return[]}};
  const writeSavedConversations=rows=>{try{localStorage.setItem(savedHistoryKey(),JSON.stringify(rows.slice(0,20)))}catch{}};
  const saveConversation=()=>{

@@ -74,7 +74,7 @@
   const currencyText = item => ({ IRR: 'ریال', IRT: 'تومان', USD: 'دلار آمریکا', EUR: 'یورو' })[item.currency] || item.currency;
   const moneyInput = (name, value, minimum) => `<input name="${name}" type="text" inputmode="decimal" data-money-input data-money-digits="fa" data-money-scale="2" data-money-integer-digits="16" data-money-min="${minimum}" value="${formValue(compactAmount(value))}" required>`;
   const filePicker = (name, label, required = false) => `<div class="span-2 invoice-file-picker">${window.BamcoFilePicker.render({ name, label, accept: '.pdf,.png,.jpg,.jpeg,.webp', maxSizeText: 'PDF یا تصویر · حداکثر ۶ مگابایت', required, wrapperAttribute: 'data-invoice-file-picker' })}</div>`;
-  const managedFile = file => file?.bucket_id === BUCKET && !!file.client_request_id;
+  const managedFile = file => file?.bucket_id === (window.BamcoWorkspace?.bucket?.(BUCKET)||BUCKET) && !!file.client_request_id;
   const fileIcon = kind => `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${kind === 'download' ? '<path d="M12 3v12m-5-5 5 5 5-5M4 16v4h16v-4"/>' : '<path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7"/>'}</svg>`;
   const fileAction = (file, action, disabled = false) => {
     const restriction = disabled && action === 'delete' ? '؛ حذف رسید فعال به مجوز ویرایش صورتحساب نیاز دارد' : disabled && file.upload_state === 'pending' ? '؛ بارگذاری هنوز کامل نشده است' : '';
