@@ -22,6 +22,8 @@
     { key: 'resources', title: 'اسناد و سامانه‌ها', icon: '▧', routes: ['documents', 'testReports', 'sitesAccess', 'userGuide'] },
     { key: 'correspondence', title: 'مکاتبات', icon: '✉', routes: ['lettersIncoming', 'lettersOutgoing'] },
     { key: 'phonebook', title: 'دفتر تلفن', icon: '☎', routes: ['phoneBook'] },
+    { key: 'paintThermal', title: 'پایش حرارتی سالن رنگ', icon: '♨', routes: ['ovenAnalysis'] },
+    { key: 'statisticalQuality', title: 'کنترل آماری کیفیت', icon: '▥', routes: ['statisticalProcessControl'] },
     { key: 'personal', title: 'میز شخصی', icon: '✦', routes: ['notes', 'voiceAssistant'] }
   ]);
 
@@ -39,6 +41,7 @@
     'vehiclePermanent', 'vehicleTemporary', 'parts', 'tools',
     'groupChat', 'directMessages', 'taskChats',
     'documents', 'testReports', 'sitesAccess', 'lettersIncoming', 'lettersOutgoing', 'userGuide', 'phoneBook',
+    'ovenAnalysis', 'statisticalProcessControl',
     'notes', 'voiceAssistant'
   ]);
 
@@ -84,6 +87,8 @@
     ['lettersOutgoing', 'letters', 'نامه‌های خروجی'],
     ['userGuide', 'userGuide', 'راهنمای استفاده سامانه'],
     ['phoneBook', 'phonebook', 'دفتر تلفن'],
+    ['ovenAnalysis', 'ovenAnalysis', 'تحلیل دمای کوره'],
+    ['statisticalProcessControl', 'statisticalProcessControl', 'کنترل آماری فرایند (SPC)'],
     ['notes', 'notes', 'یادداشت‌ها'],
     ['voiceAssistant', 'voiceAssistant', 'دستیار هوشمند']
   ].map(([route, featureKey, title, action = 'view']) => Object.freeze({ route, featureKey, title, action, groupKey: null })));
@@ -96,10 +101,10 @@
     (map[featureKey] || (map[featureKey] = [])).push(route);
     return map;
   }, {}));
-  const standaloneLayoutRoutes = Object.freeze(new Set(['projects', 'parts', 'invoices', 'organization', 'tools', 'accessMatrix', 'vehiclePermanent', 'vehicleTemporary', 'testReports']));
+  const standaloneLayoutRoutes = Object.freeze(new Set(['projects', 'parts', 'invoices', 'organization', 'tools', 'accessMatrix', 'vehiclePermanent', 'vehicleTemporary', 'testReports', 'ovenAnalysis', 'statisticalProcessControl']));
   // These routes render their own table, toolbar and loading states. Shared
   // presentation engines must not rewrite their DOM while they are active.
-  const featureOwnedRoutes = Object.freeze(new Set(['vehiclePermanent', 'vehicleTemporary', 'lettersIncoming', 'lettersOutgoing', 'pettyCash', 'invoices', 'testReports']));
+  const featureOwnedRoutes = Object.freeze(new Set(['vehiclePermanent', 'vehicleTemporary', 'lettersIncoming', 'lettersOutgoing', 'pettyCash', 'invoices', 'testReports', 'ovenAnalysis', 'statisticalProcessControl']));
   // Standalone layouts own their toolbar. The interior reconciler still
   // guarantees a native return control inside those toolbars.
   const noHomeReturnRoutes = new Set(['projects', 'invoices']);
