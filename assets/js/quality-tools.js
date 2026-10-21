@@ -1,4 +1,4 @@
-/* Local Paint Shop workspace, authorized by the canonical access service. */
+/* Shared live Paint Shop workspace, authorized by the canonical access service. */
 (()=>{'use strict';
  const nav=document.querySelector('#nav'),workspace=document.querySelector('.workspace');if(!nav||!workspace)return;
  const routes=[['ovenAnalysis','♨','تحلیل دمای کوره'],['statisticalProcessControl','▥','کنترل آماری فرایند (SPC)']];
@@ -21,7 +21,8 @@
   // No account token or portal storage is exposed to the analysis document.
   iframe.setAttribute('sandbox','allow-scripts allow-forms allow-downloads allow-modals');
   iframe.setAttribute('allow','fullscreen');iframe.referrerPolicy='no-referrer';
-  iframe.src='tools/paint-shop/index.html?v='+encodeURIComponent(document.querySelector('meta[name="bamco-app-version"]')?.content||'1');host.append(iframe);
+  // A single live source serves both the standalone site and this portal.
+  iframe.src='https://nazanin-ghaemizadeh.github.io/BAMCO-PAINT-SHOP/';host.append(iframe);
  }
  window.Bamco?.lifecycle?.on?.('navigation-after',sync);
  window.addEventListener('bamco:feature-access-changed',sync);

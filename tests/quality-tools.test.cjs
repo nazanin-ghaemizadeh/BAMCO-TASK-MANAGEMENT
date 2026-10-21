@@ -1,17 +1,21 @@
-const test=require('node:test');const assert=require('node:assert/strict');const fs=require('node:fs');const path=require('node:path');const crypto=require('node:crypto');const {fixture,until}=require('./helpers/app-fixture.cjs');
+const test=require('node:test');const assert=require('node:assert/strict');const fs=require('node:fs');const path=require('node:path');const {fixture,until}=require('./helpers/app-fixture.cjs');
 const root=path.join(__dirname,'..');
-test('embedded Paint Shop preserves every canonical source file including exports and baking windows',()=>{
- const dir=path.join(root,'tools/paint-shop'),source=JSON.parse(fs.readFileSync(path.join(dir,'source.json')));
- for(const [file,hash] of Object.entries(source.files))assert.equal(crypto.createHash('sha256').update(fs.readFileSync(path.join(dir,file))).digest('hex'),hash,file);
- for(const file of ['app.js','comparison.js','daily-report.js','summary-pdf.js','baking-windows.js','assets/ed-baking-window-original.avif','assets/gamma-baking-window.png'])assert.ok(source.files[file],file);
+test('Paint Shop uses a single live source and the old local entry redirects there',()=>{
+ const source='https://nazanin-ghaemizadeh.github.io/BAMCO-PAINT-SHOP/';
+ const dir=path.join(root,'tools/paint-shop');assert.deepEqual(fs.readdirSync(dir),['index.html']);
+ assert.ok(fs.readFileSync(path.join(dir,'index.html'),'utf8').includes('0;url='+source));
+ assert.equal(fs.existsSync(path.join(root,'scripts/sync-paint-shop.mjs')),false);
+ const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
+ const frames=html.match(/frame-src ([^;]+);/)[1];assert.ok(frames.split(' ').includes(source));
+ assert.match(html,/script-src 'self';/);
 });
-test('quality categories remain independent and analysis is loaded locally only after authorized navigation',async t=>{
+test('quality categories remain independent and live analysis is loaded only after authorized navigation',async t=>{
  const f=await fixture();t.after(()=>f.dispose());const {w,d}=f;
  assert.equal(w.BamcoNavigationCatalog.routeFor('ovenAnalysis').groupKey,'paintThermal');
  assert.equal(w.BamcoNavigationCatalog.routeFor('statisticalProcessControl').groupKey,'statisticalQuality');
  assert.equal(d.querySelector('#paintToolHost iframe'),null);
  await f.open('ovenAnalysis');await until(()=>d.querySelector('#paintToolHost iframe'));
- const frame=d.querySelector('#paintToolHost iframe');assert.match(frame.getAttribute('src'),/^tools\/paint-shop\/index\.html\?v=/);assert.equal(frame.getAttribute('sandbox'),'allow-scripts allow-forms allow-downloads allow-modals');
+ const frame=d.querySelector('#paintToolHost iframe');assert.equal(frame.getAttribute('src'),'https://nazanin-ghaemizadeh.github.io/BAMCO-PAINT-SHOP/');assert.equal(frame.getAttribute('sandbox'),'allow-scripts allow-forms allow-downloads allow-modals');
  await f.open('statisticalProcessControl');assert.match(d.querySelector('#statisticalProcessControlView').textContent,/هنوز تعریف نشده/);
  assert.equal(d.querySelector('#paintToolHost iframe'),frame,'switching routes retains the analysis session');
  d.querySelector('#appView').classList.add('hidden');await until(()=>!d.querySelector('#paintToolHost iframe'));
