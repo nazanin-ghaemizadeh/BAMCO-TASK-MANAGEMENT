@@ -15,13 +15,22 @@
    const label=group.querySelector('.home-group-label,.home-group-title,.nav-group-title');if(label)label.style.setProperty('color',accent,'important');
    const symbol=group.querySelector('.home-group-symbol');if(symbol){const n=name(group);const key=/پایش حرارتی|سالن رنگ|thermal|paint shop/i.test(n)?'heat':/کنترل.*کیفیت|quality control/i.test(n)?'quality':null;if(key&&symbol.dataset.bamcoIcon!==key){symbol.innerHTML=icons[key];symbol.dataset.bamcoIcon=key;}}
   });
-  document.querySelectorAll('.home-launcher-routes').forEach(routes=>{
+  // Every submenu is assigned its own accent, not the parent's color.
+  const submenus=[...document.querySelectorAll('.home-launcher-routes')];
+  submenus.forEach((routes,groupIndex)=>{
    [...routes.querySelectorAll('.home-launcher-route')].forEach((route,i)=>{
-    const accent=palette[i%palette.length];route.style.setProperty('--tile-accent',accent);
+    const hue=(groupIndex*137+i*47+16)%360;
+    const accent='hsl('+hue+' 64% 39%)';
+    route.style.setProperty('--tile-accent',accent,'important');
+    route.style.setProperty('color',accent,'important');
     const label=route.querySelector('span:last-child');if(label)label.style.setProperty('color',accent,'important');
     const symbol=route.querySelector('.home-launcher-route-icon');if(!symbol)return;
+    symbol.style.setProperty('color',accent,'important');
+    symbol.style.setProperty('border-color','hsl('+hue+' 54% 80%)','important');
+    symbol.style.setProperty('background','hsl('+hue+' 75% 95%)','important');
     const n=name(route);const key=/پایش حرارتی|سالن رنگ|thermal|paint shop/i.test(n)?'heat':/کنترل.*کیفیت|quality control/i.test(n)?'quality':null;
     if(key&&symbol.dataset.bamcoIcon!==key){symbol.innerHTML=icons[key];symbol.dataset.bamcoIcon=key;}
+    symbol.querySelectorAll('svg').forEach(svg=>{svg.style.setProperty('stroke',accent,'important');svg.style.setProperty('width','54%','important');svg.style.setProperty('height','54%','important');});
    });
   });
  };
