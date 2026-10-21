@@ -2,7 +2,7 @@
 (()=>{'use strict';
 const cache=new Map(),urls=new Set(),bindings=new WeakMap();
 let generation=0;
-const imageCacheName='bamco-auth-images-v2';
+const imageCacheName='bamco-auth-images-v3';
 const imageBuckets=new Set(['avatars','stickers','group-avatars']);
 const validPath=path=>path&&!String(path).split('/').includes('..');
 const personById=id=>window.BamcoProfiles?.get?.(id)||(state.profiles||[]).find(p=>String(p?.id)===String(id))||(String(state.profile?.id)===String(id)?state.profile:null);
@@ -29,9 +29,11 @@ async function get(bucket,path,revision){
    if(!current())throw Error('نشست دریافت تصویر پایان یافته است.');
    if(!blob){
     const encoded=String(path).split('/').map(encodeURIComponent).join('/'),controller=new AbortController(),timer=setTimeout(()=>controller.abort(),15000);
-    const suffix=bucket==='avatars'?'?cacheNonce='+encodeURIComponent(version==='legacy-session'?String(epoch)+'-'+Date.now():version):'';
+    const suffix=bucket==='avatars'?'?cacheNonce='+encodeURIComponent(version==='legacy-session'?String(epoch)+'-'+Date.now():version):'?cacheNonce='+encodeURIComponent(imageCacheName);
+    // Never reuse HTTP-cached authorization failures after access is restored.
+    // Successful sticker bytes still use the scoped application cache above.
     try{
-     const res=await fetch(`${SB_URL}/storage/v1/object/authenticated/${bucket}/${encoded}${suffix}`,{headers:{apikey:SB_KEY,Authorization:`Bearer ${state.token}`},cache:bucket==='avatars'?'no-store':'force-cache',signal:controller.signal});
+     const res=await fetch(`${SB_URL}/storage/v1/object/authenticated/${bucket}/${encoded}${suffix}`,{headers:{apikey:SB_KEY,Authorization:`Bearer ${state.token}`},cache:'no-store',signal:controller.signal});
      if(!res.ok)throw Error('دریافت تصویر انجام نشد');blob=await res.blob();
     }finally{clearTimeout(timer)}
     if(!current())throw Error('نشست دریافت تصویر پایان یافته است.');
