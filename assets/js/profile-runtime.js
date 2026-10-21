@@ -135,10 +135,10 @@
   if(headerFrame)return;headerFrame=requestAnimationFrame(()=>{headerFrame=0;if(!q('#appView')?.classList.contains('hidden')){ensureHeaderAccount();void refreshHeaderAvatar()}});
  }
 
- const domainTables=['profiles','organization_positions','organization_position_assignments','feature_access_grants','tasks','change_requests','change_request_events','organization_workflows','organization_workflow_steps','notifications','chat_threads','chat_members','chat_messages'];
+ const domainTables=['profiles','organization_positions','organization_position_assignments','feature_access_grants','app_features','tasks','change_requests','change_request_events','organization_workflows','organization_workflow_steps','notifications','chat_threads','chat_members','chat_messages'];
  const tableDomain={
   profiles:'profiles',organization_positions:'organization',organization_position_assignments:'organization',
-  feature_access_grants:'access',tasks:'tasks',change_requests:'workflow',organization_workflows:'workflow',
+  feature_access_grants:'access',app_features:'access',tasks:'tasks',change_requests:'workflow',organization_workflows:'workflow',
   organization_workflow_steps:'workflow',notifications:'notifications',
   chat_threads:'chat',chat_members:'chat',chat_messages:'chat'
  };

@@ -42,6 +42,7 @@ const javascript = [
   'assets/js/personal-workspace.js',
   'assets/js/phonebook-directory-v2.js',
   'assets/js/quality-tools.js',
+  'assets/js/organization-admin.js',
   'assets/js/sidebar.js',
   'assets/js/phase2-message-engine.js',
   'assets/js/task-ui.js',
@@ -88,6 +89,7 @@ const stylesheets = [
   'assets/css/quality-tools.css',
   'assets/css/department-entry.css',
   'assets/css/access-editor.css',
+  'assets/css/organization-admin.css',
   'assets/css/letters-push.css',
   'assets/css/petty-cash.css',
   'assets/css/enterprise-features.css',
@@ -103,7 +105,8 @@ const stylesheets = [
   'assets/css/home-stable.css',
   'assets/css/home-welcome.css',
   'assets/css/home-phonebook-override.css',
-  'assets/css/reference-tables.css'
+  'assets/css/reference-tables.css',
+  'assets/css/launcher-icon-polish.css'
 ];
 
 const digest = value => createHash('sha256').update(value).digest('hex').slice(0, 16);
