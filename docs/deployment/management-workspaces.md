@@ -38,3 +38,11 @@ FKs, membership, trusted account provisioning and access management. Runtime tes
 cover fixed routing, file buckets, external-host preservation and membership.
 Both production environments passed rolled-back administrator task creation and
 permission checks. Existing data and requests remained unchanged by those probes.
+
+Storage guard correction: `workspace_storage_guard_scope` scopes copied
+RESTRICTIVE policies with `bucket_id not like '<workspace>-%' OR <guard>`.
+Permissive grants retain `bucket_id like '<workspace>-%' AND <grant>`.
+Restrictive policies combine with AND globally on `storage.objects`; a positive
+namespace condition would otherwise block images in every other workspace.
+`tests/storage/workspace-guards.sql` verifies existing avatar/sticker visibility,
+unrelated bucket access, protected write denial, and nonmember isolation.
