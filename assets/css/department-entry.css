@@ -1,51 +1,8 @@
-@import url('./responsive.css');
-/* Management selector: authoritative, first-paint-stable layout. */
-@font-face{font-family:BamcoEntry;src:url('../fonts/BNazanin.woff2') format('woff2');font-style:normal;font-weight:400;font-display:block}
-@font-face{font-family:BamcoEntry;src:url('../fonts/BNaznnBd.woff2') format('woff2');font-style:normal;font-weight:700;font-display:block}
-html body.department-pending #departmentEntry :is(header,h1,p,strong,span,button){font-family:inherit!important}
-body.department-pending #loginView,body.department-pending #appView{display:none!important}
-/* Keep the selector laid out but invisible until its exact font/logo are decoded. Revealing visibility never changes geometry. */
-html body.department-pending #departmentEntry{visibility:hidden!important;opacity:0!important}
-html body.department-pending.department-entry-ready #departmentEntry{visibility:visible!important;opacity:1!important}
-html body.department-pending.department-entry-font-fallback #departmentEntry{font-family:Tahoma,Arial,sans-serif!important}
-html body.department-pending #departmentEntry{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;width:100%!important;min-height:100svh!important;height:100svh!important;box-sizing:border-box!important;overflow:auto!important;overflow-anchor:none!important;scrollbar-gutter:stable!important;padding:32px 5vw!important;background:radial-gradient(ellipse at top,#deeee6,transparent 65%),#f4f8f5!important;direction:rtl!important;color:#164d3b!important;font-family:BamcoEntry,'B Nazanin',Tahoma,serif!important;text-align:center!important;text-align-last:center!important;font-synthesis:weight!important}
-html body.department-pending #departmentEntry[hidden]{display:none!important}
-html body.department-pending #departmentEntry>header{display:flex!important;flex-direction:column!important;align-items:center!important;width:100%!important;max-width:1000px!important;margin:0 auto 30px!important;text-align:center!important}
-html body.department-pending #departmentEntry>header>img{display:block!important;width:244px!important;height:152px!important;flex:0 0 152px!important;object-fit:contain!important;background:#0c5842!important;border-radius:16px!important;padding:24px 30px!important;box-sizing:border-box!important}
-html body.department-pending #departmentEntry h1{min-height:58px!important;display:flex!important;align-items:center!important;justify-content:center!important;font-size:clamp(24px,2.2vw,34px)!important;line-height:1.7!important;margin:12px 0 2px!important;text-align:center!important;text-align-last:center!important}
-html body.department-pending #departmentEntry header p{min-height:32px!important;font-size:20px!important;line-height:1.6!important;color:#658575!important;margin:0!important;text-align:center!important;text-align-last:center!important}
-html body.department-pending #departmentEntry .department-grid{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:22px!important;width:min(1020px,100%)!important;max-width:1020px!important;margin:0 auto!important;align-items:stretch!important}
-html body.department-pending #departmentEntry .department-grid button{display:flex!important;aspect-ratio:1!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:18px!important;width:100%!important;border:1px solid #caddcf!important;border-radius:22px!important;background:#fff!important;font:inherit!important;color:#18543e!important;padding:22px!important;box-shadow:0 8px 25px #174c3410!important;cursor:pointer!important;text-align:center!important;text-align-last:center!important;transform:none!important;transition:border-color .15s ease,box-shadow .15s ease!important}
-html body.department-pending #departmentEntry .department-grid button:not(:disabled):hover{border-color:#298564!important;box-shadow:0 12px 30px #174c3424!important;transform:none!important}
-html body.department-pending #departmentEntry .department-grid button:focus-visible{outline:3px solid #279868!important;outline-offset:4px!important}
-html body.department-pending #departmentEntry .department-grid button:disabled{background:#edf3ef!important;color:#6d8778!important;cursor:default!important}
-html body.department-pending #departmentEntry .department-icon{display:grid!important;place-items:center!important;width:86px!important;height:86px!important;flex:0 0 86px!important;background:#e5f2e9!important;border-radius:19px!important}
-html body.department-pending #departmentEntry .department-icon svg{width:48px!important;height:48px!important;fill:none!important;stroke:currentColor!important;stroke-width:1.5!important;stroke-linecap:round!important;stroke-linejoin:round!important}
-html body.department-pending #departmentEntry .department-grid strong{font-size:22px!important;line-height:1.6!important;text-align:center!important;text-align-last:center!important}
-html body.department-pending #departmentEntry .department-state{font-size:16px!important;line-height:1.5!important;background:#edf5ef!important;padding:5px 18px!important;border-radius:20px!important;text-align:center!important;text-align-last:center!important;white-space:nowrap!important}
-.login-secondary-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;overflow:visible;border:0;background:transparent;margin:0!important}
-/* The two alternate-login actions are peers: same dimensions, palette and Persian font. */
-html body #loginView #loginForm .login-secondary-actions button{min-width:0!important;height:48px!important;min-height:48px!important;margin:0!important;padding:8px 10px!important;border:1px solid #126c4e!important;border-radius:10px!important;background:#126c4e!important;color:#fff!important;font:700 17px/1.45 BamcoPersian,"B Nazanin",Tahoma,sans-serif!important;cursor:pointer;text-align:center!important;text-align-last:center!important;box-shadow:0 5px 12px #0a51301a!important;transition:background .15s,border-color .15s,transform .15s}
-html body #loginView #loginForm .login-secondary-actions button:hover{border-color:#0d5b42!important;background:#0d5b42!important;transform:translateY(-1px)}
-.login-secondary-actions button:focus-visible{outline:2px solid #2a8b67;outline-offset:2px}
-.department-back{display:block;margin:0!important}
-
-@media(max-width:700px){
- html body.department-pending #departmentEntry{min-height:100svh!important;height:100svh!important;justify-content:flex-start!important;padding:18px 12px 24px!important;overflow-y:auto!important}
- html body.department-pending #departmentEntry>header{max-width:430px!important;margin:0 auto 16px!important}
- html body.department-pending #departmentEntry>header>img{width:166px!important;height:104px!important;flex-basis:104px!important;padding:15px 20px!important;border-radius:14px!important}
- html body.department-pending #departmentEntry h1{min-height:36px!important;font-size:21px!important;line-height:1.7!important;margin:12px 0 2px!important}
- html body.department-pending #departmentEntry header p{min-height:26px!important;font-size:16px!important;line-height:1.6!important}
- html body.department-pending #departmentEntry .department-grid{grid-template-columns:1fr!important;gap:10px!important;width:100%!important;max-width:430px!important}
- html body.department-pending #departmentEntry .department-grid button{height:96px!important;min-height:96px!important;aspect-ratio:auto!important;display:grid!important;grid-template-columns:58px minmax(0,1fr) auto!important;align-items:center!important;justify-content:stretch!important;gap:12px!important;padding:12px 14px!important;border-radius:14px!important;text-align:right!important;text-align-last:right!important}
- html body.department-pending #departmentEntry .department-icon{width:54px!important;height:54px!important;flex-basis:54px!important;border-radius:13px!important}
- html body.department-pending #departmentEntry .department-icon svg{width:32px!important;height:32px!important}
- html body.department-pending #departmentEntry .department-grid strong{font-size:17px!important;line-height:1.7!important;text-align:right!important;text-align-last:right!important}
- html body.department-pending #departmentEntry .department-state{font-size:13px!important;padding:4px 8px!important;text-align:center!important;text-align-last:center!important}
-}
-
-/* Other small forms that share this stylesheet. */
-.option-create{padding:16px;border:1px dashed #9fbfae;background:#f2f8f4;border-radius:12px;margin:10px 0 20px}.option-create summary{cursor:pointer;font-weight:bold;color:#176349}.option-create form{display:grid;grid-template-columns:1fr 75px 70px;gap:12px;margin-top:16px}.option-create label{display:flex;flex-direction:column;gap:5px}.option-create input{min-width:0;width:100%;box-sizing:border-box;padding:8px;border:1px solid #cbded2;border-radius:8px;font:inherit}.option-create [role=status]{grid-column:1/-1}
-body #calendarDialog{width:min(292px,92vw)!important;padding:12px!important}body #calendarDialog .day-picker{padding:5px}.day-picker-grid{gap:3px!important}.day-picker-nav{gap:7px!important;margin-bottom:7px!important}.day-picker-nav button{width:32px!important;height:32px!important;min-height:32px!important}.day-picker-grid button{font-size:14px!important;border-radius:7px!important;min-height:30px!important;padding:2px!important}
-
-.workspace-switch{display:block;max-width:100%;margin:8px 12px;font:inherit;font-size:14px;white-space:normal;color:inherit}#loginView .brand-lockup [data-workspace-label]{display:block;width:100%;font-size:18px;color:#fff!important;text-align:center!important;text-align-last:center!important;margin:4px 0 0}
+@font-face{font-family:BamcoEntry;src:url('../fonts/b-nazanin.woff2') format('woff2');font-display:swap;font-weight:400 700}
+html,body{margin:0;min-height:100%;background:#f4f8f5}
+html body #loginView{display:flex;min-height:100svh;align-items:center;justify-content:center;padding:24px;background:radial-gradient(ellipse at top,#deeee6,transparent 65%),#f4f8f5;direction:rtl}
+html body #loginView.hidden,html body #appView.hidden{display:none!important}
+html body #loginView .login-card{width:min(460px,100%);margin:auto}
+html body #loginView [data-workspace-label]{margin:4px 0 0;color:#dcebe4;text-align:center;font-size:16px}
+html body .workspace-identity{display:block;margin:0 14px 10px;padding:7px 10px;border-radius:9px;background:#eaf5ef;color:#155b43;text-align:center;font-weight:700}
+@media(max-width:620px){html body #loginView{padding:14px}html body #loginView .login-card{width:100%}}

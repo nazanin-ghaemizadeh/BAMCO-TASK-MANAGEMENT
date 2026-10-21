@@ -16,6 +16,7 @@ const paths={
  sitesAccess:'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18M3 12h18M12 3c-5 5-5 13 0 18M12 3c5 5 5 13 0 18',
  tasks:'M8 5H5v16h14V5h-3M9 3h6v4H9zM8 12l2 2 4-4M8 18h8',
  people:'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8M17 4a4 4 0 0 1 0 8M22 21v-2a4 4 0 0 0-3-4',
+ organizationAdmin:'M4 4h16v16H4zM8 8h8M8 12h3M8 16h3M16 13v6M13 16h6',
  peopleDirectory:'M4 4h16v16H4zM9 11a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM5.5 17c.2-2.5 1.5-4 3.5-4s3.3 1.5 3.5 4M15 8h3M15 12h3M15 16h3',
  accessMatrix:'M4 4h16v16H4zM4 10h16M10 4v16M13 7l1.5 1.5L18 5M13 14l1.5 1.5L18 12',
  messages:'M3 5h18v14H3zM3 6l9 7 9-7',
@@ -29,6 +30,10 @@ const paths={
  organization:'M12 3v4M5 11V7h14v4M12 7v4M5 11a2 2 0 1 0 0 4 2 2 0 0 0 0-4ZM12 11a2 2 0 1 0 0 4 2 2 0 0 0 0-4ZM19 11a2 2 0 1 0 0 4 2 2 0 0 0 0-4ZM2 20c0-2 1-3 3-3s3 1 3 3M9 20c0-2 1-3 3-3s3 1 3 3M16 20c0-2 1-3 3-3s3 1 3 3',
  reports:'M4 3v18h17M8 17v-5M13 17V7M18 17v-9',
  performance:'M4 18a8 8 0 1 1 16 0M12 14l4-5M8 18h8',
+ paintThermal:'M5 20h14M7 17c0-2 2-3 2-5s-2-3-2-5M12 17c0-2 2-3 2-5s-2-3-2-5M17 17c0-2 2-3 2-5s-2-3-2-5',
+ ovenAnalysis:'M3 18h18M5 15h14V7H5zM8 11c1-1 1-3 0-4M12 11c1-1 1-3 0-4M16 11c1-1 1-3 0-4',
+ statisticalQuality:'M4 20V4M4 20h16M7 16l3-5 3 3 4-7 3 4',
+ statisticalProcessControl:'M4 19h16M6 16V9M10 16V5M14 16v-4M18 16V7M5 4h14',
  configuration:'M4 7h6M14 7h6M4 17h10M18 17h2M10 4v6M14 14v6',
  options:'M4 5h16M4 12h16M4 19h16M8 3v4M16 10v4M10 17v4',
  kanban:'M3 4h18v16H3zM9 4v16M15 4v16M5 8h2M11 8h2M17 8h2M5 12h2M11 12h2',
@@ -61,7 +66,7 @@ const paths={
  notes:'M4 3h16v18H4zM8 8h8M8 12h8M8 16h5M16 3v5h4',
  voiceAssistant:'M12 3a4 4 0 0 0-4 4v3a4 4 0 0 0 8 0V7a4 4 0 0 0-4-4ZM5 10a7 7 0 0 0 14 0M12 17v4M8 21h8'
 };
-const views={userGuide:'guide',documents:'documents',testReports:'testReports',letters:'letters',lettersIncoming:'letterIncoming',lettersOutgoing:'letterOutgoing',sitesAccess:'sitesAccess',projects:'projects',parts:'parts',invoices:'invoices',pettyCash:'cash',organization:'organization',tools:'tools',kanban:'kanban',archive:'archive',taskTimeline:'calendar',approvals:'check',requestHistory:'history',people:'peopleDirectory',accessMatrix:'accessMatrix',loginActivity:'login',activeSessions:'screen',messages:'inbox',messageCenter:'send',sentMessages:'sentLog',templates:'text',stickers:'sticker',vehiclePermanent:'vehiclePermanent',vehicleTemporary:'temporary',dashboard:'dashboard',performanceReport:'performance',messageReport:'messages',requestReport:'tasks',loginReport:'login',systemOptions:'options',alertSettings:'bell',emailSettings:'mailSettings',settings:'user',groupChat:'groupChat',directMessages:'directMessages',taskChats:'taskChats',notes:'notes',voiceAssistant:'voiceAssistant',phoneBook:'phoneDirectory'};
+const views={userGuide:'guide',documents:'documents',testReports:'testReports',letters:'letters',lettersIncoming:'letterIncoming',lettersOutgoing:'letterOutgoing',sitesAccess:'sitesAccess',projects:'projects',parts:'parts',invoices:'invoices',pettyCash:'cash',organization:'organization',organizationAdmin:'organizationAdmin',tools:'tools',kanban:'kanban',archive:'archive',taskTimeline:'calendar',approvals:'check',requestHistory:'history',people:'peopleDirectory',accessMatrix:'accessMatrix',loginActivity:'login',activeSessions:'screen',messages:'inbox',messageCenter:'send',sentMessages:'sentLog',templates:'text',stickers:'sticker',vehiclePermanent:'vehiclePermanent',vehicleTemporary:'temporary',dashboard:'dashboard',performanceReport:'performance',messageReport:'messages',requestReport:'tasks',loginReport:'login',systemOptions:'options',alertSettings:'bell',emailSettings:'mailSettings',settings:'user',groupChat:'groupChat',directMessages:'directMessages',taskChats:'taskChats',notes:'notes',voiceAssistant:'voiceAssistant',phoneBook:'phoneDirectory',ovenAnalysis:'ovenAnalysis',statisticalProcessControl:'statisticalProcessControl'};
 const svg=key=>paths[key]?`<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="${paths[key]}"/></svg>`:'';
 window.BamcoIcons=Object.freeze({forGroup:key=>svg(key),forRoute:route=>svg(views[route]),keyForRoute:route=>views[route]||null});
 function install(){

@@ -11,12 +11,8 @@ function fixture(){
   const {window}=dom,{document}=window;
   window.fetch=()=>{throw Error('auth-ui must not make a direct authentication request')};
   window.eval(source);
-  if(!document.querySelector('#loginVerification'))document.dispatchEvent(new window.Event('DOMContentLoaded'));
+  if(!document.querySelector('#loginForm [type="submit"]'))document.dispatchEvent(new window.Event('DOMContentLoaded'));
   return{dom,window,document};
-}
-
-function enterCaptcha(document){
-  document.querySelector('#loginVerifyCode').value=document.querySelector('#loginVerification').dataset.code;
 }
 
 test('login visual preflight waits for the canonical app runtime and delegates one valid submit',t=>{
@@ -27,7 +23,6 @@ test('login visual preflight waits for the canonical app runtime and delegates o
 
   assert.equal(button.disabled,true);
   assert.match(error.textContent,/در حال آماده‌سازی سامانه/);
-  enterCaptcha(document);
   const beforeReady=new window.Event('submit',{bubbles:true,cancelable:true});
   assert.equal(form.dispatchEvent(beforeReady),false);
   assert.equal(beforeReady.defaultPrevented,true);
@@ -43,7 +38,6 @@ test('login visual preflight waits for the canonical app runtime and delegates o
   assert.equal(button.disabled,false);
   assert.equal(error.textContent,'');
 
-  enterCaptcha(document);
   const ready=new window.Event('submit',{bubbles:true,cancelable:true});
   assert.equal(form.dispatchEvent(ready),false);
   assert.equal(appSubmits,1);

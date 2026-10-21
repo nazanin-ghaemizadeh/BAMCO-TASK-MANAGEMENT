@@ -24,7 +24,7 @@ permissions:
 
 jobs:
   isolated-browser:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
@@ -52,7 +52,7 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
   concurrent-database:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     services:
       postgres:
@@ -86,7 +86,7 @@ jobs:
           BAMCO_TEST_POSTGRES_DISPOSABLE: '1'
         run: python scripts/test-invoice-attachments-concurrency.py
   real-storage-api:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
       CI: 'true'

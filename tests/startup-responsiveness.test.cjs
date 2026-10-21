@@ -42,6 +42,7 @@ test('startup reaches an idle browser turn without a self-triggering DOM observe
   assert(animationFrames<500,`animation frames: ${animationFrames}`);
   assert(Math.max(0,...observerStats.map(stat=>stat.callbacks))<50,JSON.stringify(observerStats,null,2));
   assert.equal(errors.length,0,errors.join('\n'));
-  assert.equal(w.document.querySelector('#departmentEntry')?.hidden,false);
+  assert.equal(w.document.querySelector('#departmentEntry'),null);
+  assert.equal(w.document.querySelector('#loginView')?.classList.contains('hidden'),false);
  }finally{for(const id of intervals)nativeClearInterval(id);for(const id of timeouts)nativeClearTimeout(id);for(const id of frames)w.cancelAnimationFrame(id)}
 });

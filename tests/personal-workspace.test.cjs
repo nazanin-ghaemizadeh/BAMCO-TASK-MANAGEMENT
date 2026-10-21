@@ -7,16 +7,15 @@ const {fixture,until}=require('./helpers/app-fixture.cjs');
 
 const read=path=>fs.readFileSync(path,'utf8');
 
-test('login offers two separate normal-looking secondary buttons and an inert one-time password',()=>{
+test('login contains only the organization username and password fields',()=>{
  const source=read('assets/js/auth-ui.js');
- assert.match(source,/class="login-secondary-actions"/);
- assert.match(source,/class="department-back"[^>]*>بازگشت به انتخاب مدیریت/);
- assert.match(source,/class="login-otp"[^>]*aria-disabled="true"[^>]*>ورود با رمز یکبارمصرف/);
-  assert.doesNotMatch(source,/class="login-otp"[^>]*\sdisabled(?:\s|>)/);
- assert.match(source,/login-otp[^\n]+preventDefault\(\)/);
+ assert.match(source,/for="email"/);assert.match(source,/autocomplete="username"/);
+ assert.match(source,/for="password"/);assert.match(source,/autocomplete="current-password"/);
+ assert.match(source,/ورود به سامانه/);
+ assert.doesNotMatch(source,/login-secondary-actions|department-back|login-otp|loginVerification|captcha/i);
  const css=read('assets/css/department-entry.css');
- assert.match(css,/\.login-secondary-actions\{display:grid;grid-template-columns:1fr 1fr;gap:10px/);
- assert.match(css,/login-secondary-actions button\{min-width:0!important;height:48px!important/);
+ assert.match(css,/#loginView\{display:flex;min-height:100svh/);
+ assert.doesNotMatch(css,/department-grid|login-secondary-actions|loginVerification/);
 });
 
 test('personal tabs are grantable only through the administrator access matrix',()=>{

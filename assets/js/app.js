@@ -380,7 +380,7 @@ $('#setDateBtn').addEventListener('click',()=>{const iso=jalaliToISO($('#calYear
 $('#clearDateBtn').addEventListener('click',()=>{setJalaliField(state.dateInput,'');$('#calendarDialog').close()});
 
 function showLogin(){
-  window.bamcoAuth?.clear();window.bamcoSession?.clear();window.bamcoInvoices?.clear?.();
+  window.bamcoAuth?.clear();window.BamcoWorkspace?.reset?.();window.bamcoSession?.clear();window.bamcoInvoices?.clear?.();
   window.BamcoProfiles?.clear?.();
   window.BamcoAccess?.clear?.();
   window.bamcoConversations?.close();window.bamcoChat?.close();
@@ -391,7 +391,7 @@ function showLogin(){
 }
 
 $('#loginForm').addEventListener('submit',async e=>{e.preventDefault();$('#loginError').textContent='';const submit=e.currentTarget.querySelector('button[type="submit"]');submit.disabled=true;
-  try{const data=await signInWithLogin($('#email').value,$('#password').value);window.bamcoAuth.accept(data);await enterApp()}
+  try{const data=await signInWithLogin($('#email').value,$('#password').value);window.bamcoAuth.accept(data);await window.BamcoWorkspace.identify();await enterApp()}
   catch(err){showLogin();$('#loginError').textContent=err.message}
   finally{submit.disabled=false}
 });

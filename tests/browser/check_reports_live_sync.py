@@ -10,12 +10,8 @@ FIXTURE=(HERE/'mock-api.js').read_text()+'\n'+(HERE/'mock-messaging-api.js').rea
 async def login(page):
     await page.add_init_script(FIXTURE)
     await page.goto(page.base_url, wait_until='load', timeout=15000)
-    await page.locator('[data-department="product"]').click()
     await page.locator('#email').fill('manager@example.test')
     await page.locator('#password').fill('Synthetic-test-password-729!')
-    code=await page.locator('#loginVerification').get_attribute('data-code')
-    for i,digit in enumerate(code):
-        await page.locator('.verification-digit').nth(i).fill(digit)
     await page.locator('#loginForm button[type="submit"]').click()
     await page.locator('.welcome-dismiss').click()
     await expect(page.locator('#homeView')).to_be_visible()

@@ -21,8 +21,8 @@ test('changing sticker versions uses prefetched metadata and does not queue all 
  const stickers=sets.flatMap(set=>['state1','state2','state3','state4','state5'].flatMap(state_key=>['female','male'].map(gender=>({set_id:set.id,state_key,gender,storage_path:`${set.id}/${state_key}-${gender}.png`}))));
  const f=await fixture({tables:{sticker_sets:sets,stickers}}),{w,d}=f;t.after(()=>f.dispose());await f.open('stickers');await until(()=>d.querySelectorAll('#stickerPair img').length===2);
  const metadataCalls=()=>f.calls.filter(c=>c.endpoint==='stickers'&&c.method==='GET').length;
- const metadataBefore=metadataCalls(),before=f.calls.filter(c=>c.url.includes('/authenticated/stickers/')).length;
+ const metadataBefore=metadataCalls(),before=f.calls.filter(c=>c.url?.includes('/authenticated/stickers/')).length;
  d.querySelector('#stickerSet').value='2';d.querySelector('#stickerSet').dispatchEvent(new w.Event('change',{bubbles:true}));
  await until(()=>d.querySelectorAll('#stickerPair img').length===2);assert.equal(metadataCalls(),metadataBefore);
- const immediate=f.calls.filter(c=>c.url.includes('/authenticated/stickers/')).length-before;assert(immediate<=2,`expected only selected pair, got ${immediate}`);await pause(20);assert.deepEqual(f.errors,[]);
+ const immediate=f.calls.filter(c=>c.url?.includes('/authenticated/stickers/')).length-before;assert(immediate<=2,`expected only selected pair, got ${immediate}`);await pause(20);assert.deepEqual(f.errors,[]);
 });

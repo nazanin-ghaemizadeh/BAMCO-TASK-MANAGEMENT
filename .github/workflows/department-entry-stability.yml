@@ -1,4 +1,4 @@
-name: Department entry stability
+name: Unified login stability
 
 on:
   push:
@@ -14,7 +14,7 @@ on:
 
 jobs:
   chromium:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -25,5 +25,5 @@ jobs:
         run: |
           python -m pip install playwright==1.57.0
           python -m playwright install --with-deps chromium
-      - name: Assert stable management selector
+      - name: Assert stable unified login
         run: python tests/browser/check_department_entry_stability.py

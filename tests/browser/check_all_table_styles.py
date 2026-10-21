@@ -135,7 +135,7 @@ async def main():
             page=await browser.new_page(viewport={'width':1920,'height':868})
             await page.add_init_script(MOCK+'\n'+MSG_MOCK+'\n'+CONTACTS)
             await page.goto(f'http://127.0.0.1:{server.server_port}/',wait_until='commit')
-            await page.wait_for_function("() => window.bamcoSelection && window.bamcoDocumentsSites && document.querySelector('#departmentEntry')")
+            await page.wait_for_function("() => window.bamcoSelection && window.bamcoDocumentsSites && document.querySelector('#loginView') && !document.querySelector('#departmentEntry')")
             await login(page,'manager')
             for route in ROUTES:
                 try:

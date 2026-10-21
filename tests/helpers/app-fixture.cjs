@@ -56,7 +56,7 @@ async function fixture(options={}){
  const bundle=fs.readFileSync(path.join(root,'assets/js/bamco.bundle.js'),'utf8');
  const sourceTags=[...bundle.matchAll(/\/\* source: (assets\/js\/[^ ]+) \*\//g)].map(([,src])=>`<script defer src="${src}"></script>`).join('\n');
  const html=fs.readFileSync(path.join(root,'index.html'),'utf8')
-  .replace(/<script\b[^>]*src="assets\/js\/(?:auth-ui|department-entry)\.js[^>]*><\/script>/g,tag=>options.authUi&&tag.includes('/auth-ui.')?tag:'')
+  .replace(/<script\b[^>]*src="assets\/js\/(?:auth-ui|department-entry)\.js[^>]*><\/script>/g,tag=>tag.includes('/department-entry.')||options.authUi?tag:'')
   .replace(/<script\b[^>]*src="assets\/js\/bamco\.bundle\.js[^>]*><\/script>/,sourceTags);
  const dom=new JSDOM(html,{url:'https://bamco.test/',runScripts:'dangerously',resources:{interceptors:[local]},pretendToBeVisual:true,virtualConsole:vc,beforeParse(w){
   w.Response=Response;w.Request=Request;w.Headers=Headers;w.AbortController=AbortController;w.Blob=Blob;w.TextEncoder=TextEncoder;w.CSS={escape:s=>String(s)};w.print=()=>{};w.scrollTo=()=>{};w.HTMLElement.prototype.scrollTo=function(){};w.HTMLElement.prototype.scrollIntoView=function(){};for(const [key,value] of Object.entries(options.storage||{}))w.localStorage.setItem(key,value);
@@ -135,6 +135,7 @@ async function fixture(options={}){
    // Mirror the canonical migration baseline rather than treating the new
    // authorization RPC as an empty endpoint.  Individual tests can still
    // override this through fetchResult to exercise grant/revoke states.
+   if(endpoint==='resolve_my_workspace')data={key:'product',schema_name:'public',title:'مهندسی توسعه و تکوین محصول',is_system_manager:actor.role==='manager'};
    if(endpoint==='effective_feature_access')data={schema:'bamco.feature-access.v1',grants:baselineFeatureAccess};
    if(endpoint==='sent_message_dataset_version')data='sent-fixture-v1';
    if(endpoint==='dismiss_my_inbox'){

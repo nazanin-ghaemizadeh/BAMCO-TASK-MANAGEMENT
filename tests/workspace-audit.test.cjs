@@ -11,7 +11,8 @@ test('every navigation destination has one consistent toolbar return and release
  const f=await fixture({styles:true,tables:{tasks:[task]}}),{w,d}=f;t.after(()=>f.dispose());
  const routes=[...new Set([...d.querySelectorAll('#nav [data-view]')].map(b=>b.dataset.view))];assert(routes.length>=20);
  assert(!routes.includes('emailSettings'));assert(!routes.includes('alertSettings'));
- for(const route of routes.filter(route=>!['projects','parts','invoices','organization','tools','testReports'].includes(route))){
+ const ownReturn=['projects','parts','invoices','organization','tools','testReports','organizationAdmin','ovenAnalysis','statisticalProcessControl'];
+ for(const route of routes.filter(route=>!ownReturn.includes(route))){
   await t.test(route,async()=>{
    await f.open(route);await pause(100);const view=d.querySelector('#'+route+'View');
    const backs=view.querySelectorAll('.content-back,[data-empty-home]');assert.equal(backs.length,1,route+' duplicate return');const back=backs[0];
@@ -23,7 +24,7 @@ test('every navigation destination has one consistent toolbar return and release
    back.click();await pause(20);assert.equal(w.getComputedStyle(view).display,'none');assert(!d.querySelector('#homeView').classList.contains('hidden'));assert.equal(d.querySelector('#nav button.active'),null);
   });
  }
- for(const route of ['projects','parts','invoices','organization','tools','testReports']){await f.open(route);const view=d.querySelector('#'+route+'View');assert(view);assert.equal(view.querySelectorAll('[data-home-action]').length,1,route+' has one explicit return control');}
+ for(const route of ownReturn){await f.open(route);const view=d.querySelector('#'+route+'View');assert(view);assert.equal(view.querySelectorAll('[data-home-action]').length,1,route+' has one explicit return control');}
  assert.deepEqual(f.errors,[]);
 });
 
@@ -59,6 +60,6 @@ test('a new release clears app data caches and preserves sticker/sign-in state',
  const f=await fixture({storage:{'bamco.chat.cache':'old chat','bamco.requests':'old requests','bamco.sent-email':'old email','bamco.sticker.cache':'keep','bamco.auth.preference':'keep'}});t.after(()=>f.dispose());
  for(const key of ['bamco.chat.cache','bamco.requests','bamco.sent-email'])assert.equal(f.w.localStorage.getItem(key),null);
  assert.equal(f.w.localStorage.getItem('bamco.sticker.cache'),'keep');assert.equal(f.w.localStorage.getItem('bamco.auth.preference'),'keep');
- assert(f.calls.filter(c=>c.url.includes('/rest/v1/')&&!c.url.includes('sticker')).every(c=>c.cache==='no-store'));
+ assert(f.calls.filter(c=>c.url?.includes('/rest/v1/')&&!c.url.includes('sticker')).every(c=>c.cache==='no-store'));
  const html=fs.readFileSync(path.join(root,'index.html'),'utf8'),bundle=fs.readFileSync(path.join(root,'assets/js/bamco.bundle.js'),'utf8');assert.equal((bundle.match(/source: assets\/js\/conversations.js/g)||[]).length,1);assert(!html.includes('completion-ui.js'));assert(!fs.readFileSync(path.join(root,'assets/js/production-runtime.js'),'utf8').includes('function renderTasksChat'));
 });

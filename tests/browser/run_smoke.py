@@ -25,14 +25,10 @@ async def settled(page,tab,timeout=7500):
 async def login(page,role):
     if role=='owner':
         await page.evaluate('__testApi.actor=__testApi.profiles[1]')
-    await expect(page.locator('#departmentEntry header img')).to_have_count(1)
-    await page.locator('[data-department="product"]').click()
+    await expect(page.locator('#departmentEntry')).to_have_count(0)
     await expect(page.locator('#email')).to_be_visible()
     await page.locator('#email').fill(role+'@example.test')
     await page.locator('#password').fill('test')
-    code=await page.locator('#loginVerification').get_attribute('data-code')
-    for i,digit in enumerate(code):
-        await page.locator('.verification-digit').nth(i).fill(digit)
     await page.locator('#loginForm button[type="submit"]').click()
     await page.locator('.welcome-dismiss').click()
     await expect(page.locator('#homeView')).to_be_visible()

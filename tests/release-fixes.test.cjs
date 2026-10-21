@@ -5,10 +5,11 @@ const path=require('node:path');
 const root=path.resolve(__dirname,'..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 
-test('entry is lightweight and management gate precedes login',()=>{
+test('entry is one lightweight organization login without a management selector',()=>{
   const stagedEntry=path.resolve(root,'../review-next/index.html');
   const html=fs.readFileSync(fs.existsSync(stagedEntry)?stagedEntry:path.join(root,'index.html'),'utf8');
-  assert.ok(html.indexOf('id="departmentEntry"')<html.indexOf('id="loginView"'));
+  assert.match(html,/id="loginView"/);
+  assert.doesNotMatch(html,/id="departmentEntry"|data-department=/);
   assert.doesNotMatch(html,/data:image\//);
   assert.match(html,/bamco\.bundle\.css/);
   assert.match(read('assets/css/bamco.bundle.css'),/source: assets\/css\/stability\.css/);

@@ -87,12 +87,13 @@ test('legacy email identity is also retried when Auth returns only its translate
  assert.deepEqual(calls,['ghaemizadeh@bamco.ir','ghaemizadeh@no-email.invalid']);
 });
 
-test('product engineering entry opens the sign-in form in one click',async t=>{
- const dom=new JSDOM('<body class="department-pending"><section id="departmentEntry"><header></header><button data-department="product">مهندسی محصول</button></section><section id="loginView" class="hidden"><form id="loginForm"><input id="email"></form></section><section id="appView" class="hidden"></section></body>',{runScripts:'outside-only',pretendToBeVisual:true});
+test('organization entry opens one sign-in form without a department choice',async t=>{
+ const dom=new JSDOM('<body><section id="loginView"><article class="login-card"><div class="brand-lockup"><div></div></div><form id="loginForm"><input id="email"></form></article></section><section id="appView" class="hidden"></section></body>',{runScripts:'outside-only',pretendToBeVisual:true});
  t.after(()=>dom.window.close());dom.window.eval(fs.readFileSync('assets/js/department-entry.js','utf8'));
  dom.window.document.dispatchEvent(new dom.window.Event('DOMContentLoaded'));
- const d=dom.window.document;d.querySelector('[data-department="product"]').click();
- assert.equal(d.querySelector('#departmentEntry').hidden,true);
+ const d=dom.window.document;
+ assert.equal(d.querySelector('#departmentEntry'),null);
  assert.equal(d.querySelector('#loginView').classList.contains('hidden'),false);
+ assert.equal(d.activeElement,d.querySelector('#email'));
  assert.equal(d.querySelector('#departmentChoiceDialog'),null);
 });

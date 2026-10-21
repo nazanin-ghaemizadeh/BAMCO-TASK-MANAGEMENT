@@ -16,12 +16,14 @@
  window.__testTicks=0;setInterval(()=>window.__testTicks++,50);
  window.fetch=async(input,init={})=>{
   const url=new URL(typeof input==='string'?input:input.url,'https://bamco.test/'),endpoint=url.pathname.split('/').pop(),method=init.method||'GET',body=typeof init.body==='string'?JSON.parse(init.body):null;
-  api.calls.push({endpoint,method,body});
+  const headers=new Headers(init.headers||(typeof input==='object'?input.headers:undefined));
+  api.calls.push({endpoint,method,body,acceptProfile:headers.get('Accept-Profile')});
   if(api.delay[endpoint])await new Promise(resolve=>setTimeout(resolve,api.delay[endpoint]));
   if(api.fail.includes(endpoint))return new Response(JSON.stringify({message:'خطای آزمایشی '+endpoint}),{status:500});
   const filter=rows=>rows.filter(row=>[...url.searchParams].every(([k,v])=>!v.startsWith('eq.')||String(row[k])===v.slice(3)));
   let data=[];
-  if(endpoint==='token')data={access_token:'browser-fixture-token',refresh_token:'browser-fixture-refresh',expires_in:3600,user:{id:api.actor.id}};
+  if(endpoint==='resolve_my_workspace')data=api.actor.workspace||{key:'product',schema_name:'public',title:api.actor.role==='manager'?'مدیریت جامع سازمان':'مهندسی توسعه و تکوین محصول',is_system_manager:api.actor.role==='manager'};
+  else if(endpoint==='token')data={access_token:'browser-fixture-token',refresh_token:'browser-fixture-refresh',expires_in:3600,user:{id:api.actor.id}};
   else if(endpoint==='list_invoice_workspace')data={invoices:[],payments:[],files:[]};
   else if(endpoint==='document_categories')data=[{id:10,title:'راهنمای استفاده سامانه'}];
   else if(endpoint==='documents')data=[{id:20,category_id:10,title:'راهنمای استفاده سامانه',version:api.guideVersion||1,updated_at:iso,original_file_name:'BAMCO-User-Guide.pdf',file_size:3355443,storage_path:'guide.pdf',mime_type:'application/pdf'}];

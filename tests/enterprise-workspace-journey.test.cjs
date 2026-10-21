@@ -235,7 +235,7 @@ test('enterprise pages keep a stable shared shell and persist the project, part 
 
   await f.open('invoices');
   assert.equal(d.querySelector('#invoiceFeatureRoot [data-invoice-action="access"]'),null);
-  assert.deepEqual([...d.querySelectorAll('#invoiceFeatureRoot .invoice-top-command-row > button')].filter(button => !button.classList.contains('hidden')).map(button => button.textContent.trim()), ['بازگشت به خانه', 'صورتحساب جدید', 'تازه‌سازی']);
+  assert.deepEqual([...d.querySelectorAll('#invoiceFeatureRoot .invoice-top-command-row > button')].filter(button => !button.classList.contains('hidden')).map(button => button.textContent.trim()), ['بازگشت به خانه', 'صورتحساب جدید', 'تازه‌سازی', 'مانده بدهی به تفکیک شرکت']);
   assert.equal(d.querySelector('#invoiceSearch').type, 'search', 'جست‌وجو در نمای کارت‌ها مستقیم در دسترس است');
   d.querySelector('[data-invoice-action="new"]').click();
   const invoiceForm = d.querySelector('#invoiceForm');
