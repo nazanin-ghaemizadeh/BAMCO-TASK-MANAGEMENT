@@ -3,7 +3,7 @@
   const URL='https://nazanin-ghaemizadeh.github.io/BAMCO-PAINT-SHOP/';
   const matches=(node)=>{
     const label=[node.textContent,node.getAttribute('aria-label'),node.getAttribute('title'),node.getAttribute('href'),node.getAttribute('data-url')].filter(Boolean).join(' ');
-    return /پینت[\\s\\u200c-]*شاپ|paint[\\s_-]*shop|BAMCO-PAINT-SHOP/i.test(label);
+    return /پینت[\s\u200c-]*شاپ|paint[\s_-]*shop|BAMCO-PAINT-SHOP/i.test(label);
   };
   document.addEventListener('click',(event)=>{
     const target=event.target instanceof Element?event.target.closest('a,button,[role="button"],[data-view]'):null;
