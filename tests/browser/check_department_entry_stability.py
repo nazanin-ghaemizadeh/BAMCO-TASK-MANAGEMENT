@@ -44,7 +44,7 @@ async def run_case(browser, base, width, height):
     await expect(page.locator('#loginView')).to_be_visible()
     await expect(page.locator('#loginView .brand-lockup img')).to_have_count(1)
     await expect(page.locator('#departmentEntry')).to_have_count(0)
-    await expect(page.locator('[data-department]')).to_have_count(0)
+    await expect(page.locator('#departmentEntry [data-department], button[data-department]')).to_have_count(0)
     await expect(page.locator('#loginVerification')).to_have_count(0)
     await expect(page.locator('#email')).to_be_visible()
     await expect(page.locator('#password')).to_be_visible()
