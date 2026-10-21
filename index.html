@@ -74,7 +74,11 @@ html body #loginView #loginForm .login-secondary-actions button:hover{border-col
  html body.department-pending #departmentEntry .department-grid strong{font-size:17px!important;line-height:1.7!important;text-align:right!important;text-align-last:right!important}
  html body.department-pending #departmentEntry .department-state{font-size:13px!important;padding:4px 8px!important;text-align:center!important;text-align-last:center!important}
 }</style>
-</head>
+<style id="bamcoNavIconUnification">
+/* Unified colorful navigation icon system */
+#nav button{--nav-accent:#167cbb}#nav button:nth-child(9n+1){--nav-accent:#0c8f75}#nav button:nth-child(9n+2){--nav-accent:#8659ce}#nav button:nth-child(9n+3){--nav-accent:#d27b22}#nav button:nth-child(9n+4){--nav-accent:#d34d79}#nav button:nth-child(9n+5){--nav-accent:#178fa3}#nav button:nth-child(9n+6){--nav-accent:#a05cbe}#nav button:nth-child(9n+7){--nav-accent:#b46b37}#nav button:nth-child(9n+8){--nav-accent:#4779cf}#nav button:nth-child(9n){--nav-accent:#c14c56}
+#nav button>b{display:inline-grid!important;place-items:center!important;flex:0 0 34px!important;width:34px!important;height:34px!important;line-height:1!important;font-family:Arial,sans-serif!important;font-size:20px!important;font-weight:700!important;color:var(--nav-accent)!important;background:color-mix(in srgb,var(--nav-accent) 13%,white)!important;border-radius:50%!important;text-align:center!important;vertical-align:middle!important}#nav button>span{color:var(--nav-accent)!important;font-weight:700!important}
+</style></head>
 <body class="department-pending">
   <main id="departmentEntry" aria-labelledby="departmentTitle">
     <header><img src="assets/images/bamco-white-cropped.png" alt="شرکت خودروسازان بم" width="244" height="152"><h1 id="departmentTitle">سامانه مدیریت، پایش و پیگیری امور</h1><p>معاونت فنی و مهندسی و کیفیت</p></header>
@@ -116,19 +120,19 @@ html body #loginView #loginForm .login-secondary-actions button:hover{border-col
         <button data-view="approvals" id="approvalsNav" class="hidden"><b>✓</b><span>تأیید درخواست‌ها</span><i id="approvalBadge"></i></button>
         <button data-view="requestHistory" id="requestHistoryNav"><b>◷</b><span>سوابق درخواست‌ها</span></button>
         <button data-view="documents" id="documentsNav"><b>▧</b><span>فرم‌ها و مستندات</span></button>
-        <button data-view="testReports" id="testReportsNav"><b>▧</b><span>گزارش آزمون</span></button>
+        <button data-view="testReports" id="testReportsNav"><b>▥</b><span>گزارش آزمون</span></button>
         <button data-view="sitesAccess" id="sitesAccessNav"><b>⌁</b><span>سایت‌ها و دسترسی‌ها</span></button>
         <button data-view="lettersIncoming" id="lettersIncomingNav" class="hidden"><b>↘</b><span>نامه‌های ورودی</span></button>
         <button data-view="lettersOutgoing" id="lettersOutgoingNav" class="hidden"><b>↗</b><span>نامه‌های خروجی</span></button>
-        <button data-view="userGuide" id="userGuideNav"><b>▤</b><span>راهنمای استفاده سامانه</span></button>
-        <button data-view="pettyCash" id="pettyCashNav" class="hidden"><b>▥</b><span>گزارش تنخواه</span></button>
+        <button data-view="userGuide" id="userGuideNav"><b>♧</b><span>راهنمای استفاده سامانه</span></button>
+        <button data-view="pettyCash" id="pettyCashNav" class="hidden"><b>◫</b><span>گزارش تنخواه</span></button>
         <button data-view="projects"><b>▰</b><span>پروژه‌ها</span></button>
         <button data-view="parts"><b>◈</b><span>مدیریت قطعات</span></button>
-        <button data-view="invoices"><b>▤</b><span>صورتحساب‌ها و تعهدات مالی</span></button>
+        <button data-view="invoices"><b>◇</b><span>صورتحساب‌ها و تعهدات مالی</span></button>
         <button data-view="organization"><b>⌘</b><span>ساختار سازمانی</span></button>
-        <button data-view="vehiclePermanent" class="manager-only vehicle-access-nav"><b>▣</b><span>تحویل دائم خودرو</span></button>
-        <button data-view="vehicleTemporary" class="manager-only vehicle-access-nav"><b>▤</b><span>تحویل موقت خودرو</span></button>
-        <button data-view="tools" class="manager-only"><b>⌁</b><span>مدیریت ابزار</span></button>
+        <button data-view="vehiclePermanent" class="manager-only vehicle-access-nav"><b>♙</b><span>تحویل دائم خودرو</span></button>
+        <button data-view="vehicleTemporary" class="manager-only vehicle-access-nav"><b>◉</b><span>تحویل موقت خودرو</span></button>
+        <button data-view="tools" class="manager-only"><b>⚒</b><span>مدیریت ابزار</span></button>
       </nav>
       <div class="account">
         <div class="avatar" id="avatar">ب</div>
@@ -255,5 +259,5 @@ html body .chat-bubble.bamco-system-message .system-message-open-cta{grid-area:c
 @media(max-width:600px){html body .chat-bubble.bamco-system-message .system-message-open{grid-template-areas:"title title" "sender sender" "date date" "chips chips" "cta cta"!important}.system-message-open-date{white-space:normal!important}}
 </style>
 <script defer src="assets/js/bamco.bundle.js?v=2026.10.21.9"></script>
-</body>
+<script id="paintShopNewTab">document.addEventListener('click',function(e){const el=e.target.closest('a,button,[role="button"]');if(!el)return;const label=(el.textContent||'').trim();if(/پینت\s*شاپ|paint\s*shop/i.test(label)){e.preventDefault();e.stopImmediatePropagation();window.open('https://nazanin-ghaemizadeh.github.io/BAMCO-PAINT-SHOP/','_blank','noopener,noreferrer');}},true);</script></body>
 </html>
