@@ -2591,3 +2591,10 @@ html body.card-navigation #appView #homeView #nav .home-group-symbol,html body #
 html body.card-navigation #appView #homeView #nav .home-group-symbol svg,html body #appView .home-launcher-route-icon svg{position:static!important;inset:auto!important;transform:none!important;margin:auto!important;display:block!important;width:58%!important;height:58%!important;stroke-width:2.2!important;stroke:currentColor!important}
 html body #appView .home-launcher-route-icon b{font-size:clamp(28px,3vw,42px)!important;font-weight:800!important;line-height:1!important}
 html body #appView .home-launcher-route>span:last-child,html body.card-navigation #appView #homeView #nav .home-group-trigger{color:var(--tile-accent)!important;font-weight:800!important}
+
+/* Uniform category and subcategory icon dimensions, and matching label accents */
+html body.card-navigation #appView #homeView #nav .home-group-symbol{display:grid!important;place-items:center!important;overflow:visible!important}
+html body.card-navigation #appView #homeView #nav .home-group-symbol svg{display:block!important;width:54%!important;height:54%!important;min-width:0!important;min-height:0!important;max-width:54%!important;max-height:54%!important;flex:none!important;stroke-width:2.2!important}
+html body #appView .home-launcher-route-icon{display:grid!important;place-items:center!important;overflow:visible!important}
+html body #appView .home-launcher-route-icon svg{width:54%!important;height:54%!important;max-width:54%!important;max-height:54%!important;flex:none!important;stroke-width:2.2!important}
+html body.card-navigation #appView #homeView #nav .home-group-trigger :is(.home-group-label,.home-group-title,.nav-group-title),html body #appView .home-launcher-route>span:last-child{color:var(--tile-accent)!important}
