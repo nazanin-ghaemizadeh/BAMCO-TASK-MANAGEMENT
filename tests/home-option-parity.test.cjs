@@ -54,7 +54,7 @@ test('every home group has the same ordered options and labels in cards, circles
   w.bamcoHomeLayout.refresh();w.bamcoHomeLayout.refresh();
   assert.equal(d.querySelectorAll('#nav button[data-view="phoneBook"]').length,1,'one canonical phonebook authorization source');
   assert.equal(d.querySelectorAll('#nav .home-card-route[data-phonebook-section]').length,3,'rerenders do not accumulate phonebook proxies');
-  assert.equal(d.querySelectorAll('#nav .home-group-trigger').length,12,'rerenders do not duplicate category triggers');
+  assert.equal(d.querySelectorAll('#nav .home-group-trigger').length,14,'rerenders do not duplicate category triggers');
  }
  assert(source(d,'phoneBook').hasAttribute('data-home-route-source'),'generic source is marked for presentation-only hiding');
  assert.deepEqual(f.errors,[]);

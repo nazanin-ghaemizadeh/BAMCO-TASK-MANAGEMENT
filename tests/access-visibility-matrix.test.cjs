@@ -9,16 +9,16 @@ const {fixture,until,pause}=require('./helpers/app-fixture.cjs');
 // This inventory is deliberately independent of the runtime catalog. A new
 // route must be consciously included here rather than silently escaping QA.
 const ROUTES={
- people:'people',accessMatrix:'settings',organization:'organization',activeSessions:'activeSessions',loginActivity:'loginActivity',
+ organizationAdmin:'organizationAdmin',people:'people',accessMatrix:'settings',organization:'organization',activeSessions:'activeSessions',loginActivity:'loginActivity',
  messages:'messages',messageCenter:'messageCenter',sentMessages:'sentMessages',templates:'templates',stickers:'stickers',
  dashboard:'dashboard',performanceReport:'performanceReport',pettyCash:'pettyCash',invoices:'invoices',systemOptions:'systemOptions',
  settings:'settings',alertSettings:'settings',emailSettings:'settings',kanban:'kanban',archive:'archive',taskTimeline:'taskTimeline',
  approvals:'approvals',requestHistory:'requestHistory',projects:'projects',vehiclePermanent:'vehiclePermanent',vehicleTemporary:'vehicleTemporary',
  parts:'parts',tools:'tools',groupChat:'groupChat',directMessages:'directMessages',taskChats:'taskChats',documents:'documents',testReports:'documents',
- sitesAccess:'sitesAccess',lettersIncoming:'letters',lettersOutgoing:'letters',userGuide:'userGuide',phoneBook:'phonebook',notes:'notes',voiceAssistant:'voiceAssistant'
+ ovenAnalysis:'ovenAnalysis',statisticalProcessControl:'statisticalProcessControl',sitesAccess:'sitesAccess',lettersIncoming:'letters',lettersOutgoing:'letters',userGuide:'userGuide',phoneBook:'phonebook',notes:'notes',voiceAssistant:'voiceAssistant'
 };
 const INTERNAL=new Set(['templates','alertSettings','emailSettings']);
-const GRANTABLE=Object.keys(ROUTES).filter(route=>!INTERNAL.has(route)&&route!=='accessMatrix');
+const GRANTABLE=Object.keys(ROUTES).filter(route=>!INTERNAL.has(route)&&!['accessMatrix','organizationAdmin'].includes(route));
 const FEATURES=[...new Set(Object.values(ROUTES))];
 const grant=(feature_key,can_view=true)=>({feature_key,can_view,can_create:false,can_edit:false,can_delete:false,can_export:false,can_manage_access:false,can_bypass_approval:false});
 const payload=grants=>({schema:'bamco.feature-access.v1',grants});
@@ -38,11 +38,11 @@ async function owner(t,initial=FEATURES.map(key=>grant(key))){
 
 // CSS/layout is asserted separately in browser/check_access_visibility.py,
 // which runs real Chromium with the shipped HTML, styles and JS bundle.
-test('visibility inventory covers all 40 routes, 36 grantable cards, 37 nav entries and 12 parent groups',async t=>{
+test('visibility inventory covers all 43 routes, 38 grantable cards, 40 nav entries and 14 parent groups',async t=>{
  const f=await owner(t),catalog=f.w.BamcoNavigationCatalog;
  assert.deepEqual(Object.fromEntries(Object.entries(catalog.byRoute).map(([key,r])=>[key,r.featureKey])),ROUTES);
  assert.deepEqual([...catalog.accessMatrixRoutes].sort(),[...GRANTABLE].sort());
- assert.equal(catalog.groups.length,12);
+ assert.equal(catalog.groups.length,14);
  assert.deepEqual([...f.d.querySelectorAll('#nav button[data-view]')].map(node=>node.dataset.view).sort(),Object.keys(ROUTES).filter(key=>!INTERNAL.has(key)).sort());
  for(const route of Object.keys(ROUTES))assert.equal(!!f.d.getElementById(route+'View'),!INTERNAL.has(route),`${route}: actual view or intentionally absent legacy route`);
  for(const route of GRANTABLE){assert(available(button(f,route)),`${route}: granted nav entry is available`);assert(!button(f,route).closest('.nav-group').classList.contains('hidden'),`${route}: parent is available`);}
@@ -68,12 +68,12 @@ test('each view-only grant independently reveals every matching route and its pa
  for(const key of FEATURES){
   await f.setGrants([grant(key)]);
   for(const [route,feature] of Object.entries(ROUTES)){
-   assert.equal(f.w.BamcoAccess.can(feature,'view'),feature===key,`${key}: ${route} feature check`);
+   assert.equal(f.w.BamcoAccess.can(feature,'view'),feature===key&&feature!=='organizationAdmin',`${key}: ${route} feature check`);
    for(const action of ['create','edit','delete','export','manage_access','bypass_approval'])assert.equal(f.w.BamcoAccess.can(feature,action),false,`${key}: no implicit ${action}`);
-   if(!INTERNAL.has(route))assert.equal(available(button(f,route)),feature===key&&route!=='accessMatrix',`${key}: ${route} source navigation`);
+   if(!INTERNAL.has(route))assert.equal(available(button(f,route)),feature===key&&!['accessMatrix','organizationAdmin'].includes(route),`${key}: ${route} source navigation`);
   }
   for(const group of catalog.groups){
-   const expected=group.routes.some(route=>!INTERNAL.has(route)&&route!=='accessMatrix'&&ROUTES[route]===key);
+   const expected=group.routes.some(route=>!INTERNAL.has(route)&&!['accessMatrix','organizationAdmin'].includes(route)&&ROUTES[route]===key);
    assert.equal(!f.d.querySelector(`#nav .nav-group[data-group="${group.key}"]`).classList.contains('hidden'),expected,`${key}: ${group.key} parent visibility`);
   }
  }
@@ -93,7 +93,7 @@ test('all granted routes open through source navigation and direct navigation wi
  for(const route of INTERNAL){await home(f);assert.equal(f.w.BamcoNavigation.navigate(route),false,`${route}: catalog-only legacy route has no rendered page`);assert.deepEqual(visibleViews(f),['homeView']);}
 });
 
-test('missing and explicitly denied grants hide all cards and reject all 40 direct routes',async t=>{
+test('missing and explicitly denied grants hide all cards and reject all 43 direct routes',async t=>{
  const f=await owner(t,[]);
  for(const rows of [[],FEATURES.map(key=>({...grant(key,false),effect:'deny'}))]){
   await f.setGrants(rows);

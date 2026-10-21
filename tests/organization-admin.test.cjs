@@ -33,6 +33,7 @@ test('central admin manages all scopes, bulk packages, features and effective pe
 test('ordinary user cannot load central snapshot, even with a forged admin feature grant',async t=>{
  const f=await fixture({role:'owner',fetchResult:({endpoint})=>endpoint==='effective_feature_access'?{schema:'bamco.feature-access.v1',grants:[{feature_key:'organizationAdmin',can_view:true,can_manage_access:true}]}:undefined});t.after(()=>f.dispose());
  f.d.querySelector('#nav [data-view=organizationAdmin]').click();await pause(80);
+ assert.equal(f.w.BamcoAccess.can('organizationAdmin','manage_access'),false);
  assert.equal(f.calls.some(c=>c.endpoint==='admin_org_snapshot'),false);
  assert.equal(f.d.querySelector('#organizationAdminView').textContent,'');
 });

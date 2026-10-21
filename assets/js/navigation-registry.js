@@ -201,6 +201,7 @@
     if (!feature || !state().token || !actor() || state().profile?.active === false
       || (state().profile?.id && String(state().profile.id) !== String(actor()))) return false;
     if (systemManager()) return true;
+    if (feature === 'organizationAdmin') return false;
     if (!loaded || loadedIdentity !== identity()) return false;
     if (unavailable && SAFE_WHEN_UNAVAILABLE.has(feature) && action === 'view') return true;
     return grants.get(feature)?.[actionField(action)] === true;
