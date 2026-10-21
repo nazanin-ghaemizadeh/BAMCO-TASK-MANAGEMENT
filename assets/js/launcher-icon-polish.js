@@ -6,7 +6,7 @@
   heat:svg('<rect x="4" y="15" width="16" height="5" rx="1.5"/><path d="M7 12c-2-2 2-3 0-6M12 12c-2-2 2-4 0-8M17 12c-2-2 2-3 0-6"/>'),
   quality:svg('<path d="m12 2 8 4v6c0 5-3.4 8.4-8 10-4.6-1.6-8-5-8-10V6z"/><path d="m8 12 2.6 2.6L16 9"/>')
  };
- const name=(el)=>[el.textContent,el.getAttribute('aria-label'),el.getAttribute('title')].filter(Boolean).join(' ').replace(/\\s+/g,' ');
+ const name=(el)=>[el.textContent,el.getAttribute('aria-label'),el.getAttribute('title')].filter(Boolean).join(' ').replace(/\s+/g,' ');
  const apply=()=>{
   const groups=[...document.querySelectorAll('#homeView #nav > .nav-group')];
   groups.forEach((group,i)=>{
