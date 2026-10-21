@@ -31,6 +31,8 @@ test('all management cards select an isolated API/storage namespace and label th
   assert.ok(calls.at(-1).url.includes('/'+(key==='product'?'':key+'-')+'documents-private/'));
   await w.fetch('https://zhhongjhhbvpmoquvkhl.supabase.co/functions/v1/admin-users',{method:'POST',body:'{}'});
   assert.ok(calls.at(-1).url.endsWith('/'+(key==='product'?'':key+'-')+'admin-users'));
+  await w.fetch('https://zhhongjhhbvpmoquvkhl.supabase.co/functions/v1/session-audit',{method:'POST',keepalive:true,body:'{\"action\":\"end\"}'});
+  assert.equal(calls.at(-1).keepalive,true);assert.equal(await calls.at(-1).text(),'{\"action\":\"end\"}');
  }
  w.Bamco={state:{token:'signed-in'}};assert.throws(()=>w.BamcoWorkspace.select('process'),/خارج شوید/);
 });

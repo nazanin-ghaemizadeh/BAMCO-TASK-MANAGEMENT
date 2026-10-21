@@ -8,13 +8,20 @@
  const buckets=new Set(['stickers','vehicle-forms','avatars','group-avatars','letters-private','chat-attachments','documents-private','petty-cash-private','test-reports-private','invoices-private']);
  function transport(input,init,next){
   if(key==='product')return next(input,init);
-  const request=new Request(input,init),url=new URL(request.url);
-  if(!['zhhongjhhbvpmoquvkhl.supabase.co','lsfqjjynrajthxnhmjyj.supabase.co'].includes(url.hostname))return next(request);
-  if(url.pathname.startsWith('/rest/v1/')){const headers=new Headers(request.headers);headers.set('Accept-Profile',selected().schema);headers.set('Content-Profile',selected().schema);return next(new Request(url,new Request(request,{headers})))}
+  const asRequest=typeof input==='object'&&input!==null&&'url' in input;
+  const url=new URL(asRequest?input.url:String(input),document.baseURI);
+  if(!['zhhongjhhbvpmoquvkhl.supabase.co','lsfqjjynrajthxnhmjyj.supabase.co'].includes(url.hostname))return next(input,init);
+  const headers=new Headers(init?.headers||(asRequest?input.headers:undefined));
+  if(url.pathname.startsWith('/rest/v1/')){headers.set('Accept-Profile',selected().schema);headers.set('Content-Profile',selected().schema)}
   if(url.pathname.startsWith('/functions/v1/'))url.pathname=url.pathname.replace('/functions/v1/',`/functions/v1/${key}-`);
   if(url.pathname.startsWith('/storage/v1/'))url.pathname=url.pathname.split('/').map(part=>buckets.has(part)?`${key}-${part}`:part).join('/');
+  // Preserve multipart bodies and keepalive strings without rewrapping a stream.
+  if(!asRequest)return next(url.href,{...init,headers});
+  const request=new Request(input,{...init,headers});
+  if(request.keepalive&&request.body)return request.arrayBuffer().then(body=>next(url.href,{method:request.method,headers,body,keepalive:true,signal:request.signal,credentials:request.credentials}));
   return next(new Request(url,request));
  };
+
  const sync=()=>{
   const login=document.querySelector('#loginView .brand-lockup>div');
   if(login){let label=login.querySelector('[data-workspace-label]');if(!label){label=document.createElement('p');label.dataset.workspaceLabel='';login.append(label)}label.textContent=selected().title;}
