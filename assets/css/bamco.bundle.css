@@ -2574,3 +2574,20 @@ html body #appView#appView#appView#appView#appView .view:has(table) :is(.bamco-c
 @media(max-width:700px){
  html body #appView#appView#appView#appView#appView .view:has(table) :is(.bamco-command-bar,.workspace-report-tools,.vehicle-toolbar,.letter-toolbar,.cash-toolbar,.feature-toolbar-actions){flex-wrap:wrap!important;overflow:visible!important}
 }
+
+
+/* 2026-10-21: consistent colorful centered launcher and sub-navigation icons */
+#appView #homeView #nav>.nav-group,#appView .home-launcher-route{--tile-accent:#167cbb}
+#appView #homeView #nav>.nav-group:nth-child(9n+1),#appView .home-launcher-route:nth-child(9n+1){--tile-accent:#087f77}
+#appView #homeView #nav>.nav-group:nth-child(9n+2),#appView .home-launcher-route:nth-child(9n+2){--tile-accent:#8356c8}
+#appView #homeView #nav>.nav-group:nth-child(9n+3),#appView .home-launcher-route:nth-child(9n+3){--tile-accent:#c17a20}
+#appView #homeView #nav>.nav-group:nth-child(9n+4),#appView .home-launcher-route:nth-child(9n+4){--tile-accent:#c84e78}
+#appView #homeView #nav>.nav-group:nth-child(9n+5),#appView .home-launcher-route:nth-child(9n+5){--tile-accent:#148da0}
+#appView #homeView #nav>.nav-group:nth-child(9n+6),#appView .home-launcher-route:nth-child(9n+6){--tile-accent:#9d55b7}
+#appView #homeView #nav>.nav-group:nth-child(9n+7),#appView .home-launcher-route:nth-child(9n+7){--tile-accent:#a66331}
+#appView #homeView #nav>.nav-group:nth-child(9n+8),#appView .home-launcher-route:nth-child(9n+8){--tile-accent:#4477ca}
+#appView #homeView #nav>.nav-group:nth-child(9n),#appView .home-launcher-route:nth-child(9n){--tile-accent:#bd5057}
+html body.card-navigation #appView #homeView #nav .home-group-symbol,html body #appView .home-launcher-route-icon{display:grid!important;place-items:center!important;color:var(--tile-accent)!important;border-color:color-mix(in srgb,var(--tile-accent) 30%,white)!important;background:color-mix(in srgb,var(--tile-accent) 10%,white)!important}
+html body.card-navigation #appView #homeView #nav .home-group-symbol svg,html body #appView .home-launcher-route-icon svg{position:static!important;inset:auto!important;transform:none!important;margin:auto!important;display:block!important;width:58%!important;height:58%!important;stroke-width:2.2!important;stroke:currentColor!important}
+html body #appView .home-launcher-route-icon b{font-size:clamp(28px,3vw,42px)!important;font-weight:800!important;line-height:1!important}
+html body #appView .home-launcher-route>span:last-child,html body.card-navigation #appView #homeView #nav .home-group-trigger{color:var(--tile-accent)!important;font-weight:800!important}
