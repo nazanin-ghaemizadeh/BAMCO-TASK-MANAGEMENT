@@ -12,6 +12,7 @@ async def login(page):
     await page.goto(page.base_url, wait_until='load', timeout=15000)
     await page.locator('#email').fill('manager@example.test')
     await page.locator('#password').fill('Synthetic-test-password-729!')
+    await page.locator('#loginVerifyCode').fill(await page.locator('#loginVerifyDisplay').inner_text())
     await page.locator('#loginForm button[type="submit"]').click()
     await page.locator('.welcome-dismiss').click()
     await expect(page.locator('#homeView')).to_be_visible()

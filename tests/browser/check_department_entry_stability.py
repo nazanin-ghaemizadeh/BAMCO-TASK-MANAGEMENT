@@ -13,6 +13,7 @@ MOCK = (Path(__file__).parent / 'mock-api.js').read_text(encoding='utf-8')
 MSG_MOCK = (Path(__file__).parent / 'mock-messaging-api.js').read_text(encoding='utf-8')
 SELECTORS = ['#loginView', '#loginView .login-card', '#loginView .brand-lockup',
              '#loginView .brand-lockup img', '#loginForm', '#email', '#password',
+             '#loginVerification', '#loginVerifyDisplay', '#loginVerifyCode',
              '#loginForm button[type="submit"]']
 
 
@@ -45,7 +46,8 @@ async def run_case(browser, base, width, height):
     await expect(page.locator('#loginView .brand-lockup img')).to_have_count(1)
     await expect(page.locator('#departmentEntry')).to_have_count(0)
     await expect(page.locator('#departmentEntry [data-department], button[data-department]')).to_have_count(0)
-    await expect(page.locator('#loginVerification')).to_have_count(0)
+    await expect(page.locator('#loginVerification')).to_be_visible()
+    await expect(page.locator('#loginVerifyDisplay')).to_have_text(r'\d{4}')
     await expect(page.locator('#email')).to_be_visible()
     await expect(page.locator('#password')).to_be_visible()
 
@@ -83,6 +85,7 @@ async def run_case(browser, base, width, height):
     }""")
     await page.locator('#email').fill('quality-user')
     await page.locator('#password').fill('test-password')
+    await page.locator('#loginVerifyCode').fill(await page.locator('#loginVerifyDisplay').inner_text())
     await page.locator('#loginForm button[type="submit"]').click()
     await expect(page.locator('#homeView')).to_be_visible(timeout=15000)
     assert await page.evaluate("window.BamcoWorkspace.key()==='quality'")

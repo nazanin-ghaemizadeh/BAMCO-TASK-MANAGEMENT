@@ -29,7 +29,7 @@ test('every navigation destination has one consistent toolbar return and release
 });
 
 test('dashboard date controls, templates, sticker picker, chain form and Gantt actions',async t=>{
- const f=await fixture({tables:{tasks:[task],email_templates:[{id:1,template_key:'state1',body_html:'متن قبلی'}],app_settings:[],approval_chains:[],approval_chain_members:[],approval_chain_stages:[],approval_stage_approvers:[]}}),{w,d}=f;t.after(()=>f.dispose());
+ const f=await fixture({tables:{tasks:[task],email_templates:[{id:1,template_key:'state1',subject_template:'گزارش [تاریخ گزارش]',body_html:'شما [تعداد هشدار] کار هشداری دارید.'}],app_settings:[],approval_chains:[],approval_chain_members:[],approval_chain_stages:[],approval_stage_approvers:[]}}),{w,d}=f;t.after(()=>f.dispose());
  await t.test('dashboard calendar applies dates and clears the final-chart range',async()=>{
   await f.open('dashboard');assert.equal(d.querySelector('#workspaceActionCenter'),null);
   for(const target of ['perfFrom','perfTo']){
@@ -38,8 +38,8 @@ test('dashboard date controls, templates, sticker picker, chain form and Gantt a
   d.querySelector('#clearPerf').click();assert.equal(d.querySelector('#perfFrom').value,'');assert.equal(d.querySelector('#perfTo').value,'');
   assert.equal(d.querySelectorAll('.dashboard-date-field').length,2);assert(d.querySelector('#clearPerf').closest('.performance-range-actions'));
  });
- await t.test('message text editor stays removed from the canonical send workflow',async()=>{
-  await f.open('messageCenter');assert.equal(d.querySelector('#nav [data-view="templates"]'),null);assert.equal(d.querySelector('#templatesView'),null);assert.equal(d.querySelector('#desktopTemplateEditor'),null);
+ await t.test('admin message templates expose variables and preview beside the canonical send workflow',async()=>{
+  await f.open('templates');await until(()=>d.querySelector('#templateBody').value.includes('[تعداد هشدار]'));assert(d.querySelector('#nav [data-view="templates"]'));assert(d.querySelector('#templatesView'));assert.equal(d.querySelector('#templateSubject').value,'گزارش [تاریخ گزارش]');assert(d.querySelectorAll('[data-template-variable]').length>=10);assert.match(d.querySelector('#templatePreview').textContent,/۳ کار هشداری/);d.querySelector('#templateBody').value='متن تازه: [تعداد هشدار]';d.querySelector('#saveTemplateBtn').click();await until(()=>f.tables.email_templates[0].body_html==='متن تازه: [تعداد هشدار]');assert.match(d.querySelector('#templateSaveState').textContent,/از ارسال بعدی/);assert.equal(d.querySelector('#desktopTemplateEditor'),null);
  });
  await t.test('sticker controls open the upload form and preserve each selectable image slot',async()=>{
   await f.open('stickers');d.querySelector('#stickerNew').click();await until(()=>d.querySelector('#stickerPackDialog').open);assert.equal(d.querySelectorAll('.sticker-pick').length,10);

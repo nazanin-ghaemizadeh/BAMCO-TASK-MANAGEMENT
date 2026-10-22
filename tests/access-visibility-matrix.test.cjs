@@ -17,8 +17,9 @@ const ROUTES={
  parts:'parts',tools:'tools',groupChat:'groupChat',directMessages:'directMessages',taskChats:'taskChats',documents:'documents',testReports:'documents',
  ovenAnalysis:'ovenAnalysis',statisticalProcessControl:'statisticalProcessControl',sitesAccess:'sitesAccess',lettersIncoming:'letters',lettersOutgoing:'letters',userGuide:'userGuide',phoneBook:'phonebook',notes:'notes',voiceAssistant:'voiceAssistant'
 };
-const INTERNAL=new Set(['templates','alertSettings','emailSettings']);
-const GRANTABLE=Object.keys(ROUTES).filter(route=>!INTERNAL.has(route)&&!['accessMatrix','organizationAdmin'].includes(route));
+const INTERNAL=new Set(['alertSettings','emailSettings']);
+const ADMIN_ONLY=new Set(['templates','accessMatrix','organizationAdmin']);
+const GRANTABLE=Object.keys(ROUTES).filter(route=>!INTERNAL.has(route)&&!ADMIN_ONLY.has(route));
 const FEATURES=[...new Set(Object.values(ROUTES))];
 const grant=(feature_key,can_view=true)=>({feature_key,can_view,can_create:false,can_edit:false,can_delete:false,can_export:false,can_manage_access:false,can_bypass_approval:false});
 const payload=grants=>({schema:'bamco.feature-access.v1',grants});
@@ -38,7 +39,7 @@ async function owner(t,initial=FEATURES.map(key=>grant(key))){
 
 // CSS/layout is asserted separately in browser/check_access_visibility.py,
 // which runs real Chromium with the shipped HTML, styles and JS bundle.
-test('visibility inventory covers all 43 routes, 38 grantable cards, 40 nav entries and 14 parent groups',async t=>{
+test('visibility inventory covers all 43 routes, 38 grantable cards, 41 nav entries and 14 parent groups',async t=>{
  const f=await owner(t),catalog=f.w.BamcoNavigationCatalog;
  assert.deepEqual(Object.fromEntries(Object.entries(catalog.byRoute).map(([key,r])=>[key,r.featureKey])),ROUTES);
  assert.deepEqual([...catalog.accessMatrixRoutes].sort(),[...GRANTABLE].sort());
@@ -68,12 +69,12 @@ test('each view-only grant independently reveals every matching route and its pa
  for(const key of FEATURES){
   await f.setGrants([grant(key)]);
   for(const [route,feature] of Object.entries(ROUTES)){
-   assert.equal(f.w.BamcoAccess.can(feature,'view'),feature===key&&feature!=='organizationAdmin',`${key}: ${route} feature check`);
+   assert.equal(f.w.BamcoAccess.can(feature,'view'),feature===key&&!['organizationAdmin','templates'].includes(feature),`${key}: ${route} feature check`);
    for(const action of ['create','edit','delete','export','manage_access','bypass_approval'])assert.equal(f.w.BamcoAccess.can(feature,action),false,`${key}: no implicit ${action}`);
-   if(!INTERNAL.has(route))assert.equal(available(button(f,route)),feature===key&&!['accessMatrix','organizationAdmin'].includes(route),`${key}: ${route} source navigation`);
+   if(!INTERNAL.has(route))assert.equal(available(button(f,route)),feature===key&&!ADMIN_ONLY.has(route),`${key}: ${route} source navigation`);
   }
   for(const group of catalog.groups){
-   const expected=group.routes.some(route=>!INTERNAL.has(route)&&!['accessMatrix','organizationAdmin'].includes(route)&&ROUTES[route]===key);
+   const expected=group.routes.some(route=>!INTERNAL.has(route)&&!ADMIN_ONLY.has(route)&&ROUTES[route]===key);
    assert.equal(!f.d.querySelector(`#nav .nav-group[data-group="${group.key}"]`).classList.contains('hidden'),expected,`${key}: ${group.key} parent visibility`);
   }
  }
@@ -91,6 +92,7 @@ test('all granted routes open through source navigation and direct navigation wi
   assert.equal(state(f).view,route);assert.deepEqual(visibleViews(f),[route+'View']);
  }
  for(const route of INTERNAL){await home(f);assert.equal(f.w.BamcoNavigation.navigate(route),false,`${route}: catalog-only legacy route has no rendered page`);assert.deepEqual(visibleViews(f),['homeView']);}
+ await home(f);assert.equal(f.w.BamcoNavigation.navigate('templates'),false,'non-admin cannot open the admin-only template editor');assert.deepEqual(visibleViews(f),['homeView']);
 });
 
 test('missing and explicitly denied grants hide all cards and reject all 43 direct routes',async t=>{

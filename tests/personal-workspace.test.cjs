@@ -7,15 +7,16 @@ const {fixture,until}=require('./helpers/app-fixture.cjs');
 
 const read=path=>fs.readFileSync(path,'utf8');
 
-test('login contains only the organization username and password fields',()=>{
+test('login contains organization credentials and the four-digit verification field',()=>{
  const source=read('assets/js/auth-ui.js');
  assert.match(source,/for="email"/);assert.match(source,/autocomplete="username"/);
  assert.match(source,/for="password"/);assert.match(source,/autocomplete="current-password"/);
  assert.match(source,/ورود به سامانه/);
- assert.doesNotMatch(source,/login-secondary-actions|department-back|login-otp|loginVerification|captcha/i);
+ assert.match(source,/loginVerification/);assert.match(source,/loginVerifyCode/);assert.match(source,/makeCode/);
+ assert.doesNotMatch(source,/login-secondary-actions|department-back|login-otp/i);
  const css=read('assets/css/department-entry.css');
  assert.match(css,/#loginView\{display:flex;min-height:100svh/);
- assert.doesNotMatch(css,/department-grid|login-secondary-actions|loginVerification/);
+ assert.doesNotMatch(css,/department-grid|login-secondary-actions/);
 });
 
 test('personal tabs are grantable only through the administrator access matrix',()=>{

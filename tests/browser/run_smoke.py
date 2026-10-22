@@ -31,6 +31,7 @@ async def login(page,role):
     await expect(page.locator('#email')).to_be_visible()
     await page.locator('#email').fill(role+'@example.test')
     await page.locator('#password').fill('test')
+    await page.locator('#loginVerifyCode').fill(await page.locator('#loginVerifyDisplay').inner_text())
     await page.locator('#loginForm button[type="submit"]').click()
     await page.locator('.welcome-dismiss').click()
     await expect(page.locator('#homeView')).to_be_visible()

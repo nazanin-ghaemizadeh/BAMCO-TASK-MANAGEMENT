@@ -131,6 +131,7 @@
     bypass_approval: 'can_bypass_approval'
   });
   const SAFE_WHEN_UNAVAILABLE = new Set(['settings']);
+  const ADMIN_ONLY_FEATURES = new Set(['organizationAdmin', 'templates']);
   let grants = new Map();
   let kanbanSupervision = false;
   let supervisedOwnerIds = new Set();
@@ -201,7 +202,7 @@
     if (!feature || !state().token || !actor() || state().profile?.active === false
       || (state().profile?.id && String(state().profile.id) !== String(actor()))) return false;
     if (systemManager()) return true;
-    if (feature === 'organizationAdmin') return false;
+    if (ADMIN_ONLY_FEATURES.has(feature)) return false;
     if (!loaded || loadedIdentity !== identity()) return false;
     if (unavailable && SAFE_WHEN_UNAVAILABLE.has(feature) && action === 'view') return true;
     return grants.get(feature)?.[actionField(action)] === true;

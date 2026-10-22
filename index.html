@@ -35,10 +35,22 @@ html body #loginView{display:flex;min-height:100svh;align-items:center;justify-c
 html body #loginView,html body #loginView *{font-family:Tahoma,Arial,sans-serif!important}
 html body #loginView.hidden,html body #appView.hidden{display:none!important}
 html body #loginView .login-card{width:min(460px,100%);margin:auto}
-html body #loginView [data-workspace-label]{margin:4px 0 0;color:#dcebe4;text-align:center;font-size:16px}
 html body #loginView #loginForm #loginError{display:block!important;min-height:28px!important;margin:2px 0 0!important;line-height:24px!important}
 html body .workspace-identity{display:block;margin:0 14px 10px;padding:7px 10px;border-radius:9px;background:#eaf5ef;color:#155b43;text-align:center;font-weight:700}
-@media(max-width:620px){html body #loginView{padding:14px}html body #loginView .login-card{width:100%}}</style>
+@media(max-width:620px){html body #loginView{padding:14px}html body #loginView .login-card{width:100%}}
+
+/* Admin message-template editor */
+#templatesView .message-template-panel{max-width:1050px;margin-inline:auto}
+#templatesView .template-subject-field,#templatesView .template-body-field{display:grid;gap:6px;margin:12px 0;font-weight:700}
+#templatesView #templateSubject{width:100%;border:1px solid #bdcdc6;border-radius:9px;padding:9px 11px;background:#fff}
+#templatesView .template-variable-chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}
+#templatesView .template-variable-chip{border:1px solid #9fc5b4;border-radius:999px;padding:5px 10px;background:#fff;color:#176b4d;cursor:pointer}
+#templatesView .template-variable-chip:hover{background:#e7f4ee}
+#templatesView .template-preview-wrap{margin-top:14px;border:1px solid #cddbd5;border-radius:12px;overflow:hidden;background:#fff}
+#templatesView .template-preview-head{display:flex;justify-content:space-between;gap:10px;padding:9px 12px;background:#edf5f1;border-bottom:1px solid #d5e2dc}
+#templatesView #templateSaveState{color:#477065}#templatesView #templateSaveState.error{color:#b42318}
+#templatesView .template-preview{padding:14px 16px;line-height:2;white-space:normal}
+#templatesView .template-preview h4{margin:0 0 10px;color:#18513f}.message-template-panel .manager-note p{margin:2px 0 0}</style>
 <style id="bamcoNavIconUnification">
 /* Unified colorful navigation icon system */
 #nav button{--nav-accent:#167cbb}#nav button:nth-child(9n+1){--nav-accent:#0c8f75}#nav button:nth-child(9n+2){--nav-accent:#8659ce}#nav button:nth-child(9n+3){--nav-accent:#d27b22}#nav button:nth-child(9n+4){--nav-accent:#d34d79}#nav button:nth-child(9n+5){--nav-accent:#178fa3}#nav button:nth-child(9n+6){--nav-accent:#a05cbe}#nav button:nth-child(9n+7){--nav-accent:#b46b37}#nav button:nth-child(9n+8){--nav-accent:#4779cf}#nav button:nth-child(9n){--nav-accent:#c14c56}
@@ -51,12 +63,13 @@ html body .workspace-identity{display:block;margin:0 14px 10px;padding:7px 10px;
     <section class="login-card">
       <div class="brand-lockup">
         <img src="assets/images/bamco-white-cropped.png" alt="خودروسازان بم" width="220" height="122" />
-        <div><h1>سامانه مدیریت، پایش و پیگیری امور</h1><p data-workspace-label>ورود یکپارچه سازمانی</p></div>
+        <div><h1>سامانه مدیریت، پایش و پیگیری امور</h1></div>
       </div>
       <form id="loginForm">
         <div class="login-fields">
           <label class="login-field" for="email"><span class="login-field-title bamco-fa">نام کاربری</span><span class="login-input-shell"><input id="email" class="english" type="text" autocomplete="username" required placeholder="نام کاربری" dir="ltr"><span class="login-leading-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm0 2c-4.42 0-8 2.24-8 5v1h16v-1c0-2.76-3.58-5.58-8-5.58Z"/></svg></span></span></label>
           <label class="login-field" for="password"><span class="login-field-title bamco-fa">رمز عبور</span><span class="login-input-shell"><input id="password" class="english" type="password" autocomplete="current-password" required placeholder="••••••" dir="ltr"><span class="login-leading-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 8h-1V6a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2Zm-7-2a2 2 0 1 1 4 0v2h-4V6Zm3 9.73V18h-2v-2.27a2 2 0 1 1 2 0Z"/></svg></span><button type="button" class="login-password-toggle" aria-label="نمایش رمز عبور" title="نمایش رمز عبور"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5c5.2 0 9.3 4.6 10.5 6.1a1.4 1.4 0 0 1 0 1.8C21.3 14.4 17.2 19 12 19S2.7 14.4 1.5 12.9a1.4 1.4 0 0 1 0-1.8C2.7 9.6 6.8 5 12 5Zm0 2C8 7 4.6 10.4 3.5 12c1.1 1.6 4.5 5 8.5 5s7.4-3.4 8.5-5C19.4 10.4 16 7 12 7Zm0 2.2a2.8 2.8 0 1 1 0 5.6 2.8 2.8 0 0 1 0-5.6Z"/></svg></button></span></label>
+          <div class="login-field login-verification-field"><span class="login-field-title bamco-fa">تأیید عددی</span><div id="loginVerification" class="login-verification-box"><div id="loginVerifyDisplay" class="login-code-display" aria-label="کد تأیید"></div><div class="login-code-input-shell"><input id="loginVerifyCode" type="text" inputmode="numeric" autocomplete="off" maxlength="4" pattern="[0-9۰-۹٠-٩]{4}" aria-label="کد را وارد نمایید"><div class="login-code-slots" aria-hidden="true"><span></span><span></span><span></span><span></span></div></div><button type="button" id="refreshLoginVerify" class="login-refresh-code" title="ساخت کد جدید" aria-label="ساخت کد جدید"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 8a7 7 0 1 0 1 4h-2a5 5 0 1 1-1.45-3.54L14 11h7V4l-2 2v2Z" fill="currentColor"/></svg></button></div><div id="loginVerifyError" class="login-code-error bamco-fa" aria-live="polite"></div></div>
         </div>
         <button class="primary wide login-submit" type="submit">ورود به سامانه</button>
         <p id="loginError" class="form-error" aria-live="polite"></p>

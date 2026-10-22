@@ -34,8 +34,7 @@
  }
  window.BamcoWorkspace=Object.freeze({key:()=>key,schema:()=>selected().schema,title:()=>selected().title,bucket:name=>key==='product'?name:key+'-'+name,transport,catalog,identify,reset,select:value=>activate(value,false)});
  const sync=()=>{
-  const login=document.querySelector('#loginView .brand-lockup>div');
-  if(login){let label=login.querySelector('[data-workspace-label]');if(!label){label=document.createElement('p');label.dataset.workspaceLabel='';login.append(label)}label.textContent=resolved?selected().title:'ورود یکپارچه سازمانی';}
+  document.querySelector('#loginView [data-workspace-label]')?.remove();
   document.querySelector('#workspaceIdentity')?.remove();
   const side=document.querySelector('.sidebar .side-brand');
   if(side&&resolved){const label=document.createElement('span');label.id='workspaceIdentity';label.className='workspace-identity';label.textContent=selected().title;side.after(label)}

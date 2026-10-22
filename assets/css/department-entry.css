@@ -4,7 +4,19 @@ html body #loginView{display:flex;min-height:100svh;align-items:center;justify-c
 html body #loginView,html body #loginView *{font-family:Tahoma,Arial,sans-serif!important}
 html body #loginView.hidden,html body #appView.hidden{display:none!important}
 html body #loginView .login-card{width:min(460px,100%);margin:auto}
-html body #loginView [data-workspace-label]{margin:4px 0 0;color:#dcebe4;text-align:center;font-size:16px}
 html body #loginView #loginForm #loginError{display:block!important;min-height:28px!important;margin:2px 0 0!important;line-height:24px!important}
 html body .workspace-identity{display:block;margin:0 14px 10px;padding:7px 10px;border-radius:9px;background:#eaf5ef;color:#155b43;text-align:center;font-weight:700}
 @media(max-width:620px){html body #loginView{padding:14px}html body #loginView .login-card{width:100%}}
+
+/* Admin message-template editor */
+#templatesView .message-template-panel{max-width:1050px;margin-inline:auto}
+#templatesView .template-subject-field,#templatesView .template-body-field{display:grid;gap:6px;margin:12px 0;font-weight:700}
+#templatesView #templateSubject{width:100%;border:1px solid #bdcdc6;border-radius:9px;padding:9px 11px;background:#fff}
+#templatesView .template-variable-chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}
+#templatesView .template-variable-chip{border:1px solid #9fc5b4;border-radius:999px;padding:5px 10px;background:#fff;color:#176b4d;cursor:pointer}
+#templatesView .template-variable-chip:hover{background:#e7f4ee}
+#templatesView .template-preview-wrap{margin-top:14px;border:1px solid #cddbd5;border-radius:12px;overflow:hidden;background:#fff}
+#templatesView .template-preview-head{display:flex;justify-content:space-between;gap:10px;padding:9px 12px;background:#edf5f1;border-bottom:1px solid #d5e2dc}
+#templatesView #templateSaveState{color:#477065}#templatesView #templateSaveState.error{color:#b42318}
+#templatesView .template-preview{padding:14px 16px;line-height:2;white-space:normal}
+#templatesView .template-preview h4{margin:0 0 10px;color:#18513f}.message-template-panel .manager-note p{margin:2px 0 0}

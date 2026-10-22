@@ -28,7 +28,8 @@ test('authenticated accounts resolve their workspace automatically and cannot sw
   resolved={key,schema_name:schema,title,is_system_manager:key==='product'};
   const identity=await w.BamcoWorkspace.identify();
   assert.equal(identity.key,key);assert.equal(w.BamcoWorkspace.key(),key);
-  assert.equal(w.document.querySelector('[data-workspace-label]').textContent,w.BamcoWorkspace.title());
+  assert.equal(w.document.querySelector('[data-workspace-label]'),null);
+  assert.equal(w.document.querySelector('#workspaceIdentity').textContent,w.BamcoWorkspace.title());
   await w.fetch('https://zhhongjhhbvpmoquvkhl.supabase.co/rest/v1/tasks');
   assert.equal(calls.at(-1).headers.get('Accept-Profile'),key==='product'?null:'bamco_'+key);
   if(key!=='product')assert.equal(calls.at(-1).headers.get('Content-Profile'),'bamco_'+key);

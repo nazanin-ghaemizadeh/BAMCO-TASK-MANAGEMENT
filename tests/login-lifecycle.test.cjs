@@ -4,6 +4,7 @@ const {fixture,until,pause}=require('./helpers/app-fixture.cjs');
 
 async function submitLogin(d,{email='manager@example.test',password='Synthetic-test-password'}={}){
  d.querySelector('#email').value=email;d.querySelector('#password').value=password;
+ d.querySelector('#loginVerifyCode').value=d.querySelector('#loginVerification').dataset.code;
  d.querySelector('#loginForm').requestSubmit();
 }
 
@@ -11,6 +12,7 @@ test('actual login module records one session, gates first entry, changes passwo
  const f=await fixture({authUi:true,fetchResult:({endpoint})=>endpoint==='token'?{access_token:'signed-in',refresh_token:'refresh-fixture',expires_in:3600,user:{id:'test-manager'}}:undefined}),{w,d}=f;t.after(()=>f.dispose());
  f.profiles[0].must_change_password=true;w.eval('showLogin()');const start=f.calls.length;
  d.querySelector('#email').value='manager@example.test';d.querySelector('#password').value='Synthetic-test-password';
+ d.querySelector('#loginVerifyCode').value=d.querySelector('#loginVerification').dataset.code;
  d.querySelector('#loginForm').requestSubmit();await until(()=>d.querySelector('#passwordDialog').open);
  assert.equal(f.calls.slice(start).filter(c=>c.endpoint==='token').length,1);assert.equal(f.calls.slice(start).filter(c=>c.endpoint==='session-audit'&&c.body.action==='start').length,1);
  assert(!f.calls.slice(start).some(c=>c.endpoint==='tasks'||c.endpoint==='task_status_view'));

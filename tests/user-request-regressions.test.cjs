@@ -94,10 +94,11 @@ test('task history is Persian and resolves owner names',()=>{
   assert.match(history,/انجام‌دهنده:/);
 });
 
-test('removed message-text editor cannot be reintroduced beside the canonical send flow',()=>{
+test('admin message templates edit the canonical delivery templates with declared variables',()=>{
   const rootFix=read('assets/js/messages-admin.js');
-  assert.match(rootFix,/deadSelector=.*#templatesView/);
-  assert.match(rootFix,/purgeMessageTextUi/);
-  assert.match(rootFix,/state\.view==='templates'/);
+  assert.match(rootFix,/TEMPLATE_VARIABLES/);
+  assert.match(rootFix,/update\('email_templates'/);
+  assert.match(rootFix,/\[تعداد هشدار\]/);
+  assert.match(rootFix,/templateAdmin/);
   assert.equal(fs.existsSync(path.join(root,'assets/js/templates.js')),false);
 });

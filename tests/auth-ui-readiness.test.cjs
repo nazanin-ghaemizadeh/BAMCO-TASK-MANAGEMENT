@@ -20,6 +20,7 @@ test('login visual preflight waits for the canonical app runtime and delegates o
   const form=document.querySelector('#loginForm'),button=form.querySelector('[type="submit"]'),error=document.querySelector('#loginError');
   let appSubmits=0;
   form.addEventListener('submit',event=>{appSubmits++;event.preventDefault()});
+  document.querySelector('#loginVerifyCode').value=document.querySelector('#loginVerification').dataset.code;
 
   assert.equal(button.disabled,true);
   assert.match(error.textContent,/در حال آماده‌سازی سامانه/);
@@ -37,6 +38,7 @@ test('login visual preflight waits for the canonical app runtime and delegates o
   window.dispatchEvent(new window.Event('load'));
   assert.equal(button.disabled,false);
   assert.equal(error.textContent,'');
+  document.querySelector('#loginVerifyCode').value=document.querySelector('#loginVerification').dataset.code;
 
   const ready=new window.Event('submit',{bubbles:true,cancelable:true});
   assert.equal(form.dispatchEvent(ready),false);
