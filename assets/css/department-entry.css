@@ -5,5 +5,6 @@ html body #loginView,html body #loginView *{font-family:Tahoma,Arial,sans-serif!
 html body #loginView.hidden,html body #appView.hidden{display:none!important}
 html body #loginView .login-card{width:min(460px,100%);margin:auto}
 html body #loginView [data-workspace-label]{margin:4px 0 0;color:#dcebe4;text-align:center;font-size:16px}
+html body #loginView #loginForm #loginError{display:block!important;min-height:28px!important;margin:2px 0 0!important;line-height:24px!important}
 html body .workspace-identity{display:block;margin:0 14px 10px;padding:7px 10px;border-radius:9px;background:#eaf5ef;color:#155b43;text-align:center;font-weight:700}
 @media(max-width:620px){html body #loginView{padding:14px}html body #loginView .login-card{width:100%}}
