@@ -6,7 +6,7 @@ function install(){
  if(!app||!workspace||!nav||q('#homeView'))return;
  document.body.classList.add('card-navigation');
  const top=document.createElement('header');top.className='card-topbar';
- top.innerHTML='<img src="assets/images/bamco-white-cropped.png" width="180" height="86" alt="خودروسازان بم"><strong>سامانه مدیریت، پایش و پیگیری امور</strong><button type="button" class="home-return">⌂ خانه</button>';
+ top.innerHTML='<img src="assets/images/bamco-white-cropped.png" width="180" height="86" alt="خودروسازان بم"><strong>سامانه یکپارچه مدیریت عملیات</strong><button type="button" class="home-return">⌂ خانه</button>';
  app.prepend(top);const tools=q('.header-tools');if(tools)top.append(tools);
  const home=document.createElement('section');home.id='homeView';home.className='view hidden card-home';home.tabIndex=-1;home.setAttribute('aria-label','میز کار');
  workspace.append(home);home.append(nav);
@@ -295,7 +295,7 @@ function install(){
  window.bamcoHomeLayout=Object.freeze({get:()=>({...readLayout(),order:[...layout.order]}),set:mode=>{if(layoutModes.has(mode))saveLayout({...readLayout(),mode})},refresh:renderLayout});
  renderLayout();
  window.addEventListener('bamco:feature-access-changed',()=>{syncGroups();window.BamcoAccess?.applyNavigation?.()});
- const dialog=document.createElement('dialog');dialog.className='home-welcome-dialog';dialog.setAttribute('aria-labelledby','homeWelcomeTitle');dialog.innerHTML='<button class="welcome-dismiss" type="button" aria-label="بستن خوشامدگویی" autofocus><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button><div class="home-welcome-copy"><p class="welcome-person"></p><h2 id="homeWelcomeTitle">به سامانه مدیریت، پایش و پیگیری امور خوش آمدید</h2></div><img class="home-sticker female" alt="استیکر زن در وضعیت مطلوب"><img class="home-sticker male" alt="استیکر مرد در وضعیت مطلوب">';document.body.append(dialog);
+ const dialog=document.createElement('dialog');dialog.className='home-welcome-dialog';dialog.setAttribute('aria-labelledby','homeWelcomeTitle');dialog.innerHTML='<button class="welcome-dismiss" type="button" aria-label="بستن خوشامدگویی" autofocus><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button><div class="home-welcome-copy"><p class="welcome-person"></p><h2 id="homeWelcomeTitle">به سامانه یکپارچه مدیریت عملیات خوش آمدید</h2></div><img class="home-sticker female" alt="استیکر زن در وضعیت مطلوب"><img class="home-sticker male" alt="استیکر مرد در وضعیت مطلوب">';document.body.append(dialog);
  let welcomeStickerPromise=null,welcomeStickerGeneration=0,welcomeStickerReadyUser=null;
  async function loadWelcomeStickers(generation,force){
   const user=typeof state!=='undefined'?state.user?.id:null;if(!user||!state.token)return;

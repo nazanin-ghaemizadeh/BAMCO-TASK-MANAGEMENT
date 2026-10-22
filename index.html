@@ -11,7 +11,7 @@
   <meta name="theme-color" content="#000000" />
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.supabase.co https://cdn.jsdelivr.net/gh/jdecked/twemoji@v17.0.3/assets/svg/; font-src 'self' data:; connect-src 'self' https://zhhongjhhbvpmoquvkhl.supabase.co https://lsfqjjynrajthxnhmjyj.supabase.co wss://zhhongjhhbvpmoquvkhl.supabase.co wss://lsfqjjynrajthxnhmjyj.supabase.co https://api.openai.com; media-src 'self' blob: mediastream:; frame-src 'self' blob: https://*.supabase.co https://nazanin-ghaemizadeh.github.io/BAMCO-PAINT-SHOP/; object-src 'none'; base-uri 'self'; form-action 'self'">
-  <title>BAMCO Task Management</title>
+  <title>سامانه یکپارچه مدیریت عملیات</title>
   <meta name="description" content="سامانه آنلاین مدیریت، پایش و پیگیری امور خودروسازان بم" />
   <link rel="manifest" href="manifest.webmanifest?v=2026.10.22.2" />
   <link rel="icon" type="image/png" sizes="192x192" href="assets/images/bamco-icon-192.png" />
@@ -33,6 +33,7 @@ html,body{margin:0;min-height:100%;background:#f4f8f5}
 html body:not(.unified-login-ready) #loginView{visibility:hidden}
 html body #loginView{display:flex;min-height:100svh;align-items:center;justify-content:center;padding:24px;background:radial-gradient(ellipse at top,#deeee6,transparent 65%),#f4f8f5;direction:rtl;font-family:Tahoma,Arial,sans-serif}
 html body #loginView,html body #loginView *{font-family:Tahoma,Arial,sans-serif!important}
+html body #loginView #loginVerifyDisplay,html body #loginView #loginVerifyCode,html body #loginView .login-code-slots span{font-family:'Times New Roman',Times,serif!important}
 html body #loginView.hidden,html body #appView.hidden{display:none!important}
 html body #loginView .login-card{width:min(460px,100%);margin:auto}
 html body #loginView #loginForm #loginError{display:block!important;min-height:28px!important;margin:2px 0 0!important;line-height:24px!important}
@@ -63,7 +64,7 @@ html body .workspace-identity{display:block;margin:0 14px 10px;padding:7px 10px;
     <section class="login-card">
       <div class="brand-lockup">
         <img src="assets/images/bamco-white-cropped.png" alt="خودروسازان بم" width="220" height="122" />
-        <div><h1>سامانه مدیریت، پایش و پیگیری امور</h1></div>
+        <div><h1>سامانه یکپارچه مدیریت عملیات</h1></div>
       </div>
       <form id="loginForm">
         <div class="login-fields">
@@ -81,7 +82,7 @@ html body .workspace-identity{display:block;margin:0 14px 10px;padding:7px 10px;
 
   <div id="appView" class="app hidden">
     <aside id="sidebar" class="sidebar">
-      <div class="side-brand"><img src="assets/images/bamco-white.png" alt="BAMCO"/><strong>سامانه مدیریت، پایش و پیگیری امور</strong></div>
+      <div class="side-brand"><img src="assets/images/bamco-white.png" alt="BAMCO"/><strong>سامانه یکپارچه مدیریت عملیات</strong></div>
       <button id="collapseBtn" class="collapse" aria-label="جمع کردن منو">‹</button>
       <nav id="nav">
         <button data-view="kanban" class="active"><b>▤</b><span>کانبان</span></button>

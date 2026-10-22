@@ -203,7 +203,7 @@
       <img id="welcomeHappyFemale" class="bamco-welcome-sticker bamco-welcome-sticker-left" alt="استیکر وضعیت مطلوب خانم">
       <div class="bamco-welcome-card"><div class="bamco-welcome-copy">
         <div class="bamco-welcome-name">${escapeHtml(currentUserName())} عزیز</div>
-        <div class="bamco-welcome-system">به سامانه مدیریت، پایش و پیگیری امور</div>
+        <div class="bamco-welcome-system">به سامانه یکپارچه مدیریت عملیات</div>
         <div class="bamco-welcome-greeting">خوش آمدید</div>
       </div></div>
       <img id="welcomeHappyMale" class="bamco-welcome-sticker bamco-welcome-sticker-right" alt="استیکر وضعیت مطلوب آقا">

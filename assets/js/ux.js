@@ -223,7 +223,7 @@
       <div class="welcome-content">
         <img id="welcomeFemaleSticker" class="welcome-sticker is-missing" alt="استیکر وضعیت مطلوب خانم">
         <div class="welcome-copy">
-          <h2>به سامانه مدیریت، پایش و پیگیری امور خوش آمدید</h2>
+          <h2>به سامانه یکپارچه مدیریت عملیات خوش آمدید</h2>
           <p>لطفاً از منوی سمت راست، بخش موردنظر خود را انتخاب کنید.</p>
         </div>
         <img id="welcomeMaleSticker" class="welcome-sticker is-missing" alt="استیکر وضعیت مطلوب آقا">
