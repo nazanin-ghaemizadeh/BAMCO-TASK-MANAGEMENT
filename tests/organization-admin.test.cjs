@@ -16,10 +16,12 @@ test('central admin manages all scopes, bulk packages, features and effective pe
   if(endpoint==='admin_org_effective')return [{feature_key:'pettyCash',title:'تنخواه',permissions:{view:true},unit_enabled:true,direct_grants:[]}];
  }});t.after(()=>f.dispose());
  await f.open('organizationAdmin');await until(()=>f.d.querySelector('#orgAdminUnit'));
- assert(f.d.querySelector('#organizationAdminView').classList.contains('bamco-interior'));
- assert.equal(f.d.querySelectorAll('#organizationAdminView > .bamco-page-heading').length,1);
- assert.equal(f.d.querySelectorAll('#organizationAdminView > .bamco-command-bar').length,1);
- assert(f.d.querySelector('#organizationAdminView > .bamco-page-body #orgAdminUnit'));
+ assert(f.d.querySelector('#organizationAdminView .enterprise-feature-root'));
+ assert.equal(f.d.querySelectorAll('#organizationAdminView .enterprise-toolbar').length,1);
+ assert.equal(f.d.querySelectorAll('#organizationAdminView .feature-toolbar-actions').length,1);
+ assert(f.d.querySelector('#organizationAdminView .org-admin-workspace #orgAdminUnit'));
+ assert.equal(f.d.querySelector('[data-org-tab="structure"]').textContent,'محدوده‌ها');
+ assert.equal(f.d.querySelector('[data-org-tab="people"]').textContent,'تخصیص دسترسی');
  assert.equal(f.d.querySelectorAll('#orgAdminUnit option').length,3);
  assert.equal(f.d.querySelectorAll('[data-edit-unit]').length,3);
  f.d.querySelector('[data-new-department]').click();let dialog=f.d.querySelector('#orgAdminDialog');dialog.querySelector('[name=title]').value='معاونت جدید';dialog.querySelector('form').dispatchEvent(new f.w.Event('submit',{bubbles:true,cancelable:true}));await until(()=>writes.some(x=>x.p_action==='department'));await until(()=>!dialog.open);

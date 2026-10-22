@@ -49,7 +49,7 @@
   // application view still has an explicit record, so direct navigation cannot
   // bypass the access service by using an alias.
   const routeDefinitions = Object.freeze([
-    ['people', 'people', 'افراد واحد جاری'],
+    ['people', 'people', 'افراد'],
     ['organizationAdmin', 'organizationAdmin', 'مدیریت جامع سازمان', 'manage_access'],
     ['accessMatrix', 'settings', 'دسترسی‌ها', 'manage_access'],
     ['organization', 'organization', 'ساختار سازمانی'],

@@ -5,13 +5,16 @@
   const E = window.bamcoEnterprise;
   if (!E) return;
   const { q, esc, fetchRows, rpc, removeRows, setBusy, notify } = E;
-  const model = { roles: [], positions: [], assignments: [], loaded: false, scoped: false };
+  const model = { roles: [], positions: [], assignments: [], people: [], units: [], versions: [], departmentId: '', unitId: '', loaded: false, scoped: false, global: false };
   let loading = null;
   const root = () => q('#organizationFeatureRoot');
   // Editing the tree is a feature action, not a role-name shortcut.  The
   // server-side save RPC makes the same decision before it mutates a position.
   const canManageStructure = () => window.BamcoAccess?.can?.('organization', 'edit') === true
     || window.BamcoAccess?.can?.('organization', 'manage_access') === true;
+  const isSystemManager = () => window.BamcoAccess?.isSystemManager?.() === true;
+  const directory = () => window.BamcoOrganizationDirectory;
+  const selectedUnit = () => directory()?.unit?.(model.unitId) || null;
   const role = id => model.roles.find(item => String(item.id) === String(id));
   const position = id => model.positions.find(item => String(item.id) === String(id));
   const activeAssignment = positionId => {
@@ -26,7 +29,7 @@
       ? (window.BamcoProfiles?.list?.() || state.profiles || [])
       : (window.bamcoOrganizationAccess?.people?.() || []);
     const byId = new Map();
-    for (const person of [state.profile, ...people].filter(Boolean)) {
+    for (const person of [state.profile, ...people, ...(model.people || [])].filter(Boolean)) {
       if (person.id) byId.set(String(person.id), person);
     }
     return byId;
@@ -160,15 +163,19 @@
 
   function positionDialog() {
     if (!canManageStructure()) return '';
-    return `<dialog id="organizationPositionDialog" class="modal enterprise-modal"><form id="organizationPositionForm"><div class="modal-head"><h3 id="organizationPositionDialogTitle">جایگاه سازمانی جدید</h3><button type="button" data-org-close>×</button></div><input type="hidden" name="id"><div class="form-grid"><label class="span-2">عنوان سمت<input name="title" required placeholder="مثلاً رئیس برنامه‌ریزی"></label><label>نقش سازمانی<select name="role_id" required></select></label><label>بالادست سازمانی<select name="parent_position_id"><option value="">بدون بالادست</option></select></label><label class="span-2">فرد شاغل در این جایگاه<select name="user_id"><option value="">بدون فرد شاغل</option></select></label></div><div class="modal-actions organization-position-actions"><button type="button" class="danger hidden" data-org-delete>حذف جایگاه</button><button type="button" class="ghost" data-org-close>انصراف</button><button type="submit" class="primary">ذخیره جایگاه</button></div></form></dialog>`;
+    return `<dialog id="organizationPositionDialog" class="modal enterprise-modal"><form id="organizationPositionForm"><div class="modal-head"><h3 id="organizationPositionDialogTitle">جایگاه سازمانی جدید</h3><button type="button" data-org-close>×</button></div><input type="hidden" name="id"><div class="form-grid"><label class="span-2">عنوان سمت<input name="title" required placeholder="مثلاً رئیس برنامه‌ریزی"></label><label>نقش سازمانی<select name="role_id" required></select></label><label>بالادست سازمانی<select name="parent_position_id"><option value="">بدون بالادست</option></select></label><label class="span-2">فرد شاغل در این جایگاه<select name="user_id"><option value="">بدون فرد شاغل</option></select></label></div><div class="modal-actions organization-position-actions">${model.global?'':'<button type="button" class="danger hidden" data-org-delete>حذف جایگاه</button>'}<button type="button" class="ghost" data-org-close>انصراف</button><button type="submit" class="primary">ذخیره جایگاه</button></div></form></dialog>`;
   }
+
+  function scopeControls(){if(!model.global)return'';const departments=directory()?.departments?.()||[],units=directory()?.units?.(model.departmentId)||[];return `<label class="organization-scope-field">معاونت<select data-org-department><option value="">همه معاونت‌ها</option>${departments.map(item=>`<option value="${item.id}" ${String(item.id)===String(model.departmentId)?'selected':''}>${esc(item.title)}</option>`).join('')}</select></label><label class="organization-scope-field">واحد<select data-org-unit><option value="">انتخاب واحد</option>${units.map(item=>`<option value="${item.id}" ${String(item.id)===String(model.unitId)?'selected':''}>${esc(item.title)}</option>`).join('')}</select></label>`}
+  function versionLabel(){if(!model.global)return'';const version=model.versions[0];return version?`<span class="organization-version">نسخه ساختار: ${E.fa(version.structure_version)}</span>`:''}
+  function unitChooser(){const units=directory()?.units?.(model.departmentId)||[];return `<section class="panel organization-unit-picker"><div class="panel-head"><h3>انتخاب واحد برای مشاهده چارت</h3></div><div class="organization-unit-list">${units.map(item=>`<button type="button" class="organization-unit-card" data-org-pick-unit="${item.id}"><b>${esc(item.title)}</b><small>${esc(directory()?.department?.(item.department_id)?.title||'—')}</small></button>`).join('')||'<div class="empty">واحد فعالی در این محدوده ثبت نشده است.</div>'}</div></section>`}
 
   function render() {
     const host = root();
     if (!host) return;
     const editor = canManageStructure();
-    host.innerHTML = `<div class="feature-toolbar enterprise-toolbar"><div><h3>ساختار سازمانی</h3></div><div class="feature-toolbar-actions"><button type="button" class="ghost" data-org-home data-home-action>بازگشت به خانه</button>${editor ? '<button type="button" class="primary" data-org-action="position">＋ جایگاه جدید</button>' : ''}</div></div>
-      <div class="enterprise-grid organization-grid"><section class="panel organization-chart-panel"><div class="panel-head"><h3>نمودار سازمانی</h3></div><div class="organization-chart" aria-label="نمودار سازمانی">${model.positions.length ? chart() : `<div class="empty">${editor ? 'برای شروع، «جایگاه جدید» را بزنید.' : 'در حال حاضر جایگاهی در محدودهٔ نظارت شما ثبت نشده است.'}</div>`}</div></section></div>${positionDialog()}`;
+    const exactScope=!model.global||!!model.unitId;
+    host.innerHTML = `<div class="feature-toolbar enterprise-toolbar"><div><h3>ساختار سازمانی</h3></div><div class="feature-toolbar-actions"><button type="button" class="ghost" data-org-home data-home-action>بازگشت به خانه</button>${scopeControls()}<button type="button" class="ghost" data-org-refresh>تازه‌سازی</button>${versionLabel()}${editor&&exactScope?'<button type="button" class="primary" data-org-action="position">＋ جایگاه جدید</button>':''}</div></div>${exactScope?`<div class="enterprise-grid organization-grid"><section class="panel organization-chart-panel"><div class="panel-head"><h3>${esc(selectedUnit()?.title||'نمودار سازمانی')}</h3></div><div class="organization-chart" aria-label="نمودار سازمانی">${model.positions.length?chart():`<div class="empty">${editor?'برای شروع، «جایگاه جدید» را بزنید.':'در حال حاضر جایگاهی ثبت نشده است.'}</div>`}</div></section></div>${positionDialog()}`:unitChooser()}`;
     if (editor) bindPositionForm();
     void window.bamcoMedia?.avatars?.(host.querySelector('.organization-chart'), [...organizationProfiles().values()]);
     bind();
@@ -183,7 +190,7 @@
       .filter(item => item.active && String(item.id) !== String(current?.id) && !isDescendant(item.id, current?.id))
       .sort(sortPositions)
       .map(item => `<option value="${item.id}">${esc(positionLabel(item))}</option>`).join('');
-    form.elements.user_id.innerHTML = '<option value="">بدون فرد شاغل</option>' + (state.profiles || [])
+    form.elements.user_id.innerHTML = '<option value="">بدون فرد شاغل</option>' + (model.global ? model.people : (state.profiles || []))
       .filter(item => item.active !== false)
       .map(item => `<option value="${item.id}">${esc(item.display_name || item.full_name || item.email)}</option>`).join('');
     form.elements.id.value = current?.id || '';
@@ -193,8 +200,7 @@
     form.elements.user_id.value = current ? (activeAssignment(current.id)?.user_id || '') : '';
     q('#organizationPositionDialogTitle').textContent = current ? 'ویرایش جایگاه سازمانی' : 'جایگاه سازمانی جدید';
     const remove = q('[data-org-delete]', form);
-    remove.dataset.orgDelete = current?.id || '';
-    remove.classList.toggle('hidden', !current);
+    if(remove){remove.dataset.orgDelete = current?.id || '';remove.classList.toggle('hidden', !current)}
   }
 
   function openPosition(id = null) {
@@ -240,12 +246,12 @@
     if (!payload.p_title || !payload.p_role_id) return notify('عنوان سمت و نقش سازمانی الزامی است.', true);
     setBusy(button, true);
     try {
-      const saved = await rpc('save_organization_position', payload);
+      const saved = model.global ? await rpc('admin_org_save',{p_action:'position',p_payload:{unit_id:selectedUnit()?.id,title:payload.p_title,role_id:payload.p_role_id,parent_position_id:payload.p_parent_position_id,user_id:payload.p_user_id,id:payload.p_position_id}}) : await rpc('save_organization_position', payload);
       if (!currentSession(actorId, snapshot)) return;
-      if (!saved?.position_id) throw new Error('ذخیره جایگاه تأیید نشد.');
+      if (!(model.global?saved?.ok:saved?.position_id)) throw new Error('ذخیره جایگاه تأیید نشد.');
       q('#organizationPositionDialog')?.close();
       await load({ ensureProfiles: false, force: true });
-      await window.bamcoOrganizationAccess?.refresh?.({ silent: true });
+      if(!model.global)await window.bamcoOrganizationAccess?.refresh?.({ silent: true });
       if (!currentSession(actorId, snapshot)) return;
       notify('جایگاه سازمانی ذخیره شد.');
     } catch (error) {
@@ -294,6 +300,8 @@
         openPosition();
         return;
       }
+      const pick=event.target.closest('[data-org-pick-unit]');if(pick){model.unitId=pick.dataset.orgPickUnit;void load({ensureProfiles:false,force:true});return}
+      if(event.target.closest('[data-org-refresh]')){void load({ensureProfiles:false,force:true});return}
       const edit = event.target.closest('[data-org-edit]');
       if (edit) {
         event.preventDefault();
@@ -308,6 +316,7 @@
       }
       if (event.target.closest('[data-org-close]')) event.target.closest('dialog')?.close();
     });
+    host.addEventListener('change',event=>{if(event.target.matches('[data-org-department]')){model.departmentId=event.target.value;model.unitId='';void load({ensureProfiles:false,force:true})}if(event.target.matches('[data-org-unit]')){model.unitId=event.target.value;void load({ensureProfiles:false,force:true})}});
   }
 
   function hydrateScopedDirectory(rows) {
@@ -355,17 +364,30 @@
     }
     const job = (async () => {
       try {
-        if (canManageStructure()) {
+        if(isSystemManager()&&directory()){
+          try{
+            await directory().load({force});
+            if(!model.departmentId&&!model.unitId){const defaults=directory().defaults();model.departmentId=defaults.departmentId;model.unitId=defaults.unitId}
+            if(model.unitId){const selected=directory().unit(model.unitId);if(selected)model.departmentId=String(selected.department_id);const data=directory().structure({departmentId:model.departmentId,unitId:model.unitId});Object.assign(model,{roles:data.roles,positions:data.positions,assignments:data.assignments,people:directory().directory({departmentId:model.departmentId,unitId:model.unitId}),units:data.units,versions:data.versions,loaded:true,scoped:false,global:true})}
+            else Object.assign(model,{roles:[],positions:[],assignments:[],people:[],units:directory().units(model.departmentId),versions:[],loaded:true,scoped:false,global:true});
+          }catch(globalError){
+            if(!canManageStructure())throw globalError;
+            if(ensureProfiles)await window.bamcoPeople?.refresh?.({refreshOrganization:false,localOnly:true});
+            const [roles,positions,assignments]=await Promise.all([fetchRows('organization_roles','select=*&active=eq.true&order=level_no.asc'),fetchRows('organization_positions','select=*&active=eq.true&order=title.asc'),fetchRows('organization_position_assignments','select=*&order=id.desc')]);
+            Object.assign(model,{roles,positions,assignments,people:state.profiles||[],units:[],versions:[],loaded:true,scoped:false,global:false});
+          }
+        } else if (canManageStructure()) {
           if (ensureProfiles) await window.bamcoPeople?.refresh?.({ refreshOrganization: false });
           const [roles, positions, assignments] = await Promise.all([
             fetchRows('organization_roles', 'select=*&active=eq.true&order=level_no.asc'),
             fetchRows('organization_positions', 'select=*&active=eq.true&order=title.asc'),
             fetchRows('organization_position_assignments', 'select=*&order=id.desc')
           ]);
-          Object.assign(model, { roles, positions, assignments, loaded: true, scoped: false });
+          Object.assign(model, { roles, positions, assignments, people: state.profiles || [], units: [], versions: [], loaded: true, scoped: false, global: false });
         } else {
           await window.bamcoOrganizationAccess?.refresh?.({ silent: true });
           hydrateScopedDirectory(window.bamcoOrganizationAccess?.directory?.() || []);
+          model.people=window.bamcoOrganizationAccess?.people?.()||[];model.global=false;
         }
         render();
         document.dispatchEvent(new CustomEvent('bamco:organization-updated', { detail: model }));

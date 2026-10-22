@@ -10,6 +10,7 @@ const javascript = [
   'assets/js/message-renderer.js',
   'assets/js/media-cache.js',
   'assets/js/notices.js',
+  'assets/js/organization-directory.js',
   'assets/js/table-selection.js',
   'assets/js/shell.js',
   'assets/js/stickers.js',

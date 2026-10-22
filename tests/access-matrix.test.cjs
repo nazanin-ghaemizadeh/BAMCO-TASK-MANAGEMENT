@@ -27,7 +27,7 @@ test('people access matrix mirrors aliases and saves through the canonical acces
     await f.open('accessMatrix');
     await until(() => f.d.querySelector('.access-matrix-table'));
     const expectedTabs = [
-      'افراد واحد جاری', 'ساختار سازمانی', 'نشست‌های فعال', 'ورود و خروج',
+      'افراد', 'ساختار سازمانی', 'نشست‌های فعال', 'ورود و خروج',
       'پیام‌ها', 'ارسال پیام', 'پیام‌های ارسال‌شده', 'مدیریت استیکرها',
       'داشبورد', 'گزارش عملکرد',
       'وضعیت‌ها و اولویت‌ها', 'تنظیمات کاربری',

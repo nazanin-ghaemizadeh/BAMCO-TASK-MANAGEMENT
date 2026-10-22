@@ -14,7 +14,7 @@ test('verification digits override the login Tahoma rule with Times New Roman',(
 });
 test('local people directory explains its scope without changing global authorization',()=>{
  const shell=read('assets/js/shell.js');
- assert(shell.includes('افراد واحد جاری'));
+ assert(shell.includes('<span>افراد</span>'));
  assert(shell.includes('محدوده نمایش: '));
  assert(shell.includes('window.BamcoWorkspace?.title?.()'));
 });
