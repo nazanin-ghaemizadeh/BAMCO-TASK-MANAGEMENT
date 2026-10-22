@@ -40,5 +40,5 @@
   const side=document.querySelector('.sidebar .side-brand');
   if(side&&resolved){const label=document.createElement('span');label.id='workspaceIdentity';label.className='workspace-identity';label.textContent=selected().title;side.after(label)}
  };
- document.addEventListener('bamco:department-selected',sync);document.addEventListener('DOMContentLoaded',()=>{reset();sync();document.body.classList.add('unified-login-ready');document.querySelector('#email')?.focus()},{once:true});
+ document.addEventListener('bamco:department-selected',sync);document.addEventListener('DOMContentLoaded',()=>{reset();sync();document.querySelector('#email')?.focus()},{once:true});
 })();

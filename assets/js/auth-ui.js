@@ -16,7 +16,7 @@ function install(){injectCss();const form=buildLogin();if(!form)return;const pas
  new MutationObserver(()=>{if(!btn.disabled)delegatedBusy=false}).observe(btn,{attributes:true,attributeFilter:['disabled']});document.addEventListener('bamco:auth-core-ready',()=>syncCoreReadiness(),{once:true});syncCoreReadiness();corePoll=setInterval(()=>syncCoreReadiness(),50);window.addEventListener('load',()=>syncCoreReadiness(),{once:true});coreTimer=setTimeout(()=>{if(!syncCoreReadiness(true)&&corePoll){clearInterval(corePoll);corePoll=null}},15000);
  toggle.addEventListener('click',()=>{const showing=password.type==='text';password.type=showing?'password':'text';toggle.innerHTML=showing?EYE_ICON:EYE_OFF_ICON;toggle.title=showing?'نمایش رمز عبور':'مخفی کردن رمز عبور';toggle.setAttribute('aria-label',toggle.title);password.focus()});
  form.addEventListener('submit',event=>{if(delegatedBusy||!syncCoreReadiness(true)){event.preventDefault();event.stopImmediatePropagation();return}delegatedBusy=true;error.textContent=''},true);
- document.dispatchEvent(new CustomEvent('bamco:login-ui-ready'));
+ document.body.classList.add('unified-login-ready');document.dispatchEvent(new CustomEvent('bamco:login-ui-ready'));
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
 })();
