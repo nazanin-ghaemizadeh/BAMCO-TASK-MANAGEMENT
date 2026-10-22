@@ -3,6 +3,7 @@ import asyncio
 import functools
 import http.server
 import json
+import re
 import threading
 from pathlib import Path
 
@@ -47,7 +48,7 @@ async def run_case(browser, base, width, height):
     await expect(page.locator('#departmentEntry')).to_have_count(0)
     await expect(page.locator('#departmentEntry [data-department], button[data-department]')).to_have_count(0)
     await expect(page.locator('#loginVerification')).to_be_visible()
-    await expect(page.locator('#loginVerifyDisplay')).to_have_text(r'\d{4}')
+    await expect(page.locator('#loginVerifyDisplay')).to_have_text(re.compile(r'^\d{4}$'))
     await expect(page.locator('#email')).to_be_visible()
     await expect(page.locator('#password')).to_be_visible()
 
