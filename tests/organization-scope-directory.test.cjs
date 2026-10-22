@@ -5,12 +5,12 @@ const path=require('node:path');
 const {fixture,until}=require('./helpers/app-fixture.cjs');
 const read=name=>fs.readFileSync(path.join(__dirname,'..',name),'utf8');
 
-test('people is an independent scoped directory with department and unit selectors',()=>{
+test('people is a centrally linked scoped directory with department and unit selectors',()=>{
  const shell=read('assets/js/shell.js'),directory=read('assets/js/organization-directory.js');
  assert.match(shell,/id="peopleDepartment"/);
  assert.match(shell,/id="peopleUnit"/);
  assert.match(shell,/<th>معاونت<\/th><th>واحد<\/th>/);
- assert.match(shell,/این صفحه مستقل از مدیریت جامع سازمان است/);
+ assert.match(shell,/اطلاعات از مدیریت جامع سازمان به‌روز می‌شود/);
  assert.match(directory,/admin_org_snapshot/);
  assert.match(directory,/organization_role/);
  assert.match(directory,/organization_position/);
@@ -28,11 +28,12 @@ test('organization is independently scoped and displays the real structure versi
  assert.match(migration,/revoke all on function public\.admin_org_snapshot\(\) from public,anon/);
 });
 
-test('central administration keeps configuration and access, not duplicate people or chart editors',()=>{
+test('central administration is the shared source for people, roles, positions and access',()=>{
  const admin=read('assets/js/organization-admin.js');
- assert.match(admin,/این بخش فقط برای پیکربندی کل سامانه است/);
+ assert.match(admin,/مدیریت جامع، مرجع مشترک/);
  assert.match(admin,/\['structure','محدوده‌ها'\]/);
- assert.match(admin,/\['people','تخصیص دسترسی'\]/);
+ assert.match(admin,/\['people','افراد و دسترسی'\]/);
+ assert.match(admin,/\['positions','سمت‌ها و نقش‌ها'\]/);
  assert.doesNotMatch(admin,/\['people','افراد و سمت‌ها'\]/);
  assert.doesNotMatch(admin,/مدیریت تمام معاونت‌ها و واحدها؛ برای جزئیات پروفایل/);
 });

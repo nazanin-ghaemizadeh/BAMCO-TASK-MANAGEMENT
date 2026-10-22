@@ -107,7 +107,8 @@ const stylesheets = [
   'assets/css/home-welcome.css',
   'assets/css/home-phonebook-override.css',
   'assets/css/reference-tables.css',
-  'assets/css/launcher-icon-polish.css'
+  'assets/css/launcher-icon-polish.css',
+  'assets/css/organization-linked-views.css'
 ];
 
 const digest = value => createHash('sha256').update(value).digest('hex').slice(0, 16);

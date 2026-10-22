@@ -191,7 +191,8 @@
     const parts = personName(user).trim().split(/\s+/).filter(Boolean);
     return parts.at(-1) || '—';
   };
-  const matrix = { loading: false, loaded: false, saving: false, search: '', users: [], values: new Map(), initial: new Map(), protected: new Set(), error: '' };
+  const directory = () => window.BamcoOrganizationDirectory;
+  const matrix = { central:false, departmentId:'', unitId:'', loading: false, loaded: false, saving: false, search: '', users: [], values: new Map(), initial: new Map(), protected: new Set(), error: '' };
   const keyOf = (featureKey, userId) => `${featureKey}:${userId}`;
   const snapshotParts = payload => {
     const source = Array.isArray(payload) ? payload[0] : payload;
@@ -228,7 +229,7 @@
     view.dataset.featureKey = 'settings';
     view.dataset.featureAction = 'manage_access';
     if (!view.querySelector('.access-matrix-shell')) {
-      view.innerHTML = `<section id="accessMatrixFeatureRoot" class="access-matrix-shell enterprise-feature-root"><div class="feature-toolbar enterprise-toolbar"><div><h3>دسترسی‌ها</h3></div></div><div class="manager-toolbar bamco-command-bar access-matrix-toolbar"><button type="button" class="content-back ghost" data-home-action>بازگشت به خانه</button><button type="button" class="ghost" data-access-matrix-refresh>تازه‌سازی</button><button type="button" class="primary" data-access-matrix-save disabled>ذخیره تغییرات</button><input type="search" class="search" data-access-matrix-search placeholder="جست‌وجوی فرد…" aria-label="جست‌وجوی فرد"><span data-feature-access-suppressed="true" hidden></span></div><div class="access-matrix-content" aria-live="polite"><p class="access-matrix-status">برای دریافت دسترسی‌ها، تازه‌سازی کنید.</p></div></section>`;
+      view.innerHTML = `<section id="accessMatrixFeatureRoot" class="access-matrix-shell enterprise-feature-root"><div class="feature-toolbar enterprise-toolbar"><div><h3>دسترسی‌ها</h3></div></div><div class="manager-toolbar bamco-command-bar access-matrix-toolbar"><button type="button" class="content-back ghost" data-home-action>بازگشت به خانه</button><button type="button" class="ghost" data-access-matrix-refresh>تازه‌سازی</button><button type="button" class="primary" data-access-matrix-save disabled>ذخیره تغییرات</button><input type="search" class="search" data-access-matrix-search placeholder="جست‌وجوی فرد…" aria-label="جست‌وجوی فرد"><span class="access-matrix-scope" data-access-scope></span><span data-feature-access-suppressed="true" hidden></span></div><div class="access-matrix-content" aria-live="polite"><p class="access-matrix-status">برای دریافت دسترسی‌ها، تازه‌سازی کنید.</p></div></section>`;
     }
     bind(view);
     return view;
@@ -243,6 +244,7 @@
     button.setAttribute('aria-hidden', allowed ? 'false' : 'true');
     button.setAttribute('aria-disabled', allowed ? 'false' : 'true');
   }
+  function renderScope(){const host=ensureView().querySelector('[data-access-scope]');if(!host)return;host.innerHTML=matrix.central?`<label>معاونت<select data-access-department>${directory().departments().map(d=>`<option value="${d.id}" ${String(d.id)===matrix.departmentId?'selected':''}>${esc(d.title)}</option>`).join('')}</select></label><label>واحد<select data-access-unit>${directory().units(matrix.departmentId).map(u=>`<option value="${u.id}" ${String(u.id)===matrix.unitId?'selected':''}>${esc(u.title)}</option>`).join('')}</select></label>`:''}
   function dirtyKeys() {
     return [...matrix.values.keys()].filter(key => matrix.values.get(key) !== matrix.initial.get(key) && !matrix.protected.has(key));
   }
@@ -266,6 +268,7 @@
       }).join('');
       content.innerHTML = users.length ? `<div class="access-matrix-scroll"><table class="access-matrix-table" data-no-pagination="true"><thead><tr><th scope="col">کارت و تب</th>${heads}</tr></thead><tbody>${body}</tbody></table></div>` : '<p class="access-matrix-status">فردی با این عبارت پیدا نشد.</p>';
     }
+    view.querySelectorAll('[data-access-department],[data-access-unit]').forEach(select=>select.disabled=matrix.loading||matrix.saving);
     if (save) save.disabled = matrix.loading || matrix.saving || dirtyKeys().length === 0;
   }
   async function loadMatrix({ force = false } = {}) {
@@ -274,7 +277,19 @@
     matrix.loading = true; matrix.error = ''; renderTable();
     const token = state().token, snapshots = new Map();
     try {
-      await pool(featureKeys(), 5, async featureKey => snapshots.set(featureKey, snapshotParts(await rpc('feature_access_manage_snapshot', { p_feature_key: featureKey }))));
+      let central=null;
+      if(window.BamcoAccess?.isSystemManager?.()===true&&directory()){try{central=await directory().load()}catch(error){if(directory().data())throw error}}
+      matrix.central=!!central;
+      if(central){
+        if(!directory().departments().some(d=>String(d.id)===matrix.departmentId))matrix.departmentId=directory().defaults().departmentId;
+        const units=directory().units(matrix.departmentId);if(!units.some(u=>String(u.id)===matrix.unitId))matrix.unitId=String(units[0]?.id||'');
+        const people=directory().directory({departmentId:matrix.departmentId,unitId:matrix.unitId}).filter(p=>p.active!==false);
+        const effective=new Map();await pool(people,5,async p=>effective.set(p.id,await rpc('admin_org_effective',{p_unit_id:p.unit_id,p_user_id:p.id})));
+        for(const key of featureKeys())snapshots.set(key,{users:people,direct:[],effective:people.map(p=>{const row=effective.get(p.id)?.find(f=>f.feature_key===key);return{user_id:p.id,can_view:row?.permissions?.view===true,unit_enabled:row?.unit_enabled!==false}})});
+      }else{
+        await pool(featureKeys(), 5, async featureKey => snapshots.set(featureKey, snapshotParts(await rpc('feature_access_manage_snapshot', { p_feature_key: featureKey }))));
+      }
+      renderScope();
       if (state().token !== token) return;
       const users = new Map();
       snapshots.forEach(snapshot => snapshot.users.filter(user => user?.id && user.active !== false).forEach(user => users.set(String(user.id), user)));
@@ -287,7 +302,7 @@
           const id = String(user.id), directGrant = direct.get(id) || {}, grant = effective.get(id) || user.effective_access || user.effective_grant || directGrant;
           const key = keyOf(featureKey, id), protectedGrant = bool(user.protected) || bool(directGrant.protected) || (id === String(state().user?.id) && window.BamcoAccess?.isSystemManager?.() === true);
           const value = protectedGrant || bool(grant.can_view);
-          matrix.values.set(key, value); matrix.initial.set(key, value); if (protectedGrant) matrix.protected.add(key);
+          matrix.values.set(key, value); matrix.initial.set(key, value); if (protectedGrant || matrix.central&&effective.get(id)?.unit_enabled===false) matrix.protected.add(key);
         });
       });
       matrix.loaded = true;
@@ -308,7 +323,8 @@
     matrix.saving = true;
     const save = ensureView().querySelector('[data-access-matrix-save]'); if (save) save.disabled = true;
     try {
-      await pool([...grouped.entries()], 4, ([featureKey, grants]) => rpc('set_feature_access', { p_feature_key: featureKey, p_grants: grants }));
+      await pool([...grouped.entries()], 4, ([featureKey, grants]) => matrix.central?directory().request(matrix.unitId,'rpc/set_feature_access',{body:{p_feature_key:featureKey,p_grants:grants}}):rpc('set_feature_access', { p_feature_key: featureKey, p_grants: grants }));
+      if(matrix.central)await directory().changed();
       await window.BamcoAccess?.refresh?.({ force: true });
       matrix.initial = new Map(matrix.values);
       window.toast?.('ماتریس دسترسی‌ها ذخیره شد.');
@@ -316,12 +332,14 @@
       matrix.error = error?.message || 'ذخیره ماتریس دسترسی انجام نشد.';
     } finally {
       matrix.saving = false;
+      if(matrix.central)await loadMatrix({force:true});
       if (save) save.disabled = dirtyKeys().length === 0;
     }
   }
   function bind(view) {
     if (view.dataset.accessMatrixBound === '1') return;
     view.dataset.accessMatrixBound = '1';
+    view.addEventListener('change',event=>{if(matrix.saving)return;if(event.target.matches('[data-access-department]')){matrix.departmentId=event.target.value;matrix.unitId='';void loadMatrix({force:true})}else if(event.target.matches('[data-access-unit]')){matrix.unitId=event.target.value;void loadMatrix({force:true})}});
     view.addEventListener('input', event => {
       if (!event.target.matches('[data-access-matrix-search]')) return;
       matrix.search = event.target.value; renderTable();
@@ -358,6 +376,7 @@
       // table while the user was working and reset its scroll position.
       if (!matrix.saving && state().view !== ROUTE) matrix.loaded = false;
     });
+    window.addEventListener('bamco:organization-directory',()=>{matrix.loaded=false;if(matrix.central&&state().view===ROUTE&&!matrix.loading&&!matrix.saving)void loadMatrix({force:true})});
     document.addEventListener('bamco:profiles-updated', () => {
       matrix.loaded = false;
       if (state().view === ROUTE && !matrix.saving) void loadMatrix({ force: true });

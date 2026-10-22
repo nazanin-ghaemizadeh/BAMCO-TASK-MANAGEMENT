@@ -250,6 +250,7 @@
       if (!currentSession(actorId, snapshot)) return;
       if (!(model.global?saved?.ok:saved?.position_id)) throw new Error('ذخیره جایگاه تأیید نشد.');
       q('#organizationPositionDialog')?.close();
+      if(model.global)await directory().changed();
       await load({ ensureProfiles: false, force: true });
       if(!model.global)await window.bamcoOrganizationAccess?.refresh?.({ silent: true });
       if (!currentSession(actorId, snapshot)) return;
@@ -271,6 +272,7 @@
     try {
       await removeRows('organization_positions', `id=eq.${encodeURIComponent(id)}`);
       q('#organizationPositionDialog')?.close();
+      if(model.global)await directory().changed();
       await load({ ensureProfiles: false, force: true });
       await window.bamcoOrganizationAccess?.refresh?.({ silent: true });
       notify('جایگاه سازمانی حذف شد.');
@@ -413,9 +415,10 @@
     document.addEventListener('bamco:profiles-updated', () => {
       if (model.loaded && !root()?.closest('.view')?.classList.contains('hidden')) render();
     });
+    window.addEventListener('bamco:organization-directory',()=>{if(model.global&&model.loaded)void load({ensureProfiles:false})});
     document.addEventListener('bamco:domain-invalidated', event => {
       const domain = String(event.detail?.domain || event.detail?.table || '').toLowerCase();
-      if (domain === 'organization' && state?.view === 'organization') void load({ ensureProfiles: false, force: true });
+      if (!isSystemManager() && domain === 'organization' && state?.view === 'organization') void load({ ensureProfiles: false, force: true });
     });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true });

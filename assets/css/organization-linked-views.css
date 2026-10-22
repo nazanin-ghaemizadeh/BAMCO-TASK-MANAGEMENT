@@ -1,0 +1,42 @@
+/* The people panel is a vertical stack. Its table alone owns horizontal scroll;
+   headings, options and the pager must never become columns beside the table. */
+html body #appView#appView#appView#appView#appView #peopleView .people-directory-panel {
+ display:flex!important;flex-direction:column!important;align-items:stretch!important;
+ width:100%!important;max-width:100%!important;min-width:0!important;min-height:0!important;
+ flex:1 1 0!important;padding:0!important;overflow:hidden!important;border-radius:0!important;
+}
+html body #appView#appView#appView#appView#appView #peopleView .people-directory-panel>.panel-head,
+html body #appView#appView#appView#appView#appView #peopleView .people-directory-panel>:is(.table-pagination,.suite-table-options) {
+ flex:0 0 auto!important;width:100%!important;max-width:100%!important;box-sizing:border-box!important;
+}
+html body #appView#appView#appView#appView#appView #peopleView .people-directory-panel>.table-wrap {
+ flex:1 1 0!important;min-height:120px!important;width:100%!important;max-width:100%!important;
+ box-sizing:border-box!important;direction:rtl!important;overflow:auto!important;overscroll-behavior:contain;
+ -webkit-overflow-scrolling:touch;
+}
+html body #appView#appView#appView#appView#appView #peopleView .people-scope-note {overflow-wrap:anywhere;line-height:1.65}
+.access-matrix-scope{display:flex;align-items:center;gap:8px;min-width:0}
+.access-matrix-scope label{display:flex;align-items:center;gap:6px;min-width:0}
+.access-matrix-scope select{max-width:240px}
+html body #appView#appView#appView#appView#appView #organizationAdminView .org-admin {min-width:0!important;overflow-x:hidden}
+html body #appView#appView#appView#appView#appView #organizationAdminView .org-admin-workspace .panel {height:auto!important;min-height:0!important}
+html body #appView#appView#appView#appView#appView #organizationAdminView .org-admin-main {display:block!important}
+@media(max-width:700px){
+ html body #appView#appView#appView#appView#appView #peopleView .people-actions {display:flex!important;flex-wrap:wrap!important;overflow:visible!important;gap:8px!important}
+ html body #appView#appView#appView#appView#appView #peopleView .people-scope-field {flex:1 1 calc(50% - 8px)!important;display:flex!important;flex-direction:column!important;align-items:stretch!important;min-width:0!important;white-space:normal!important}
+ html body #appView#appView#appView#appView#appView #peopleView .people-scope-field select {width:100%!important;min-width:0!important;max-width:100%!important}
+ html body #appView#appView#appView#appView#appView #peopleView .table-pagination {display:flex!important;flex-wrap:wrap!important;gap:6px!important;justify-content:space-between!important}
+ html body #appView#appView#appView#appView#appView #peopleView .table-pagination .page-controls {display:flex!important;flex-wrap:wrap!important;gap:5px!important;align-items:center!important}
+ html body #appView#appView#appView#appView#appView #peopleView .people-directory-panel>.table-wrap {min-height:80px!important}
+ .access-matrix-scope{flex:1 1 100%;width:100%;flex-wrap:wrap}
+ .access-matrix-scope label{flex:1 1 140px;flex-direction:column;align-items:stretch}
+ .access-matrix-scope select{width:100%;max-width:100%}
+ html body #appView#appView#appView#appView#appView #organizationView .feature-toolbar-actions {flex-wrap:wrap!important;overflow:visible!important}
+ #organizationView .organization-scope-field{flex:1 1 140px;min-width:0;flex-direction:column;align-items:stretch;white-space:normal}
+ #organizationView .organization-scope-field select{width:100%;min-width:0}
+ #organizationAdminView .org-admin-tabs{flex-wrap:wrap!important;overflow:visible!important}
+ #organizationAdminView .org-admin-bulk label{min-width:0;width:100%}
+ #organizationAdminView .org-admin-department ul{padding-inline-start:10px}
+ #organizationAdminView .org-admin-node>button{max-width:100%;white-space:normal}
+ #organizationAdminView .org-admin-feature{flex-wrap:wrap}
+}
