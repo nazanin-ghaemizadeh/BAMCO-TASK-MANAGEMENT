@@ -51,15 +51,15 @@ html body .workspace-identity{display:block;margin:0 14px 10px;padding:7px 10px;
     <section class="login-card">
       <div class="brand-lockup">
         <img src="assets/images/bamco-white-cropped.png" alt="خودروسازان بم" width="220" height="122" />
-        <div><h1>سامانه مدیریت، پایش و پیگیری امور</h1></div>
+        <div><h1>سامانه مدیریت، پایش و پیگیری امور</h1><p data-workspace-label>ورود یکپارچه سازمانی</p></div>
       </div>
       <form id="loginForm">
-        <label>نام کاربری</label>
-        <input id="email" class="english" type="text" autocomplete="username" required placeholder="name@bamco.ir" dir="ltr" />
-        <label>رمز عبور</label>
-        <input id="password" class="english" type="password" autocomplete="current-password" required placeholder="••••••" dir="ltr" />
-        <button class="primary wide" type="submit">ورود به سامانه</button>
-        <p id="loginError" class="form-error"></p>
+        <div class="login-fields">
+          <label class="login-field" for="email"><span class="login-field-title bamco-fa">نام کاربری</span><span class="login-input-shell"><input id="email" class="english" type="text" autocomplete="username" required placeholder="نام کاربری" dir="ltr"><span class="login-leading-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm0 2c-4.42 0-8 2.24-8 5v1h16v-1c0-2.76-3.58-5.58-8-5.58Z"/></svg></span></span></label>
+          <label class="login-field" for="password"><span class="login-field-title bamco-fa">رمز عبور</span><span class="login-input-shell"><input id="password" class="english" type="password" autocomplete="current-password" required placeholder="••••••" dir="ltr"><span class="login-leading-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 8h-1V6a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2Zm-7-2a2 2 0 1 1 4 0v2h-4V6Zm3 9.73V18h-2v-2.27a2 2 0 1 1 2 0Z"/></svg></span><button type="button" class="login-password-toggle" aria-label="نمایش رمز عبور" title="نمایش رمز عبور"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5c5.2 0 9.3 4.6 10.5 6.1a1.4 1.4 0 0 1 0 1.8C21.3 14.4 17.2 19 12 19S2.7 14.4 1.5 12.9a1.4 1.4 0 0 1 0-1.8C2.7 9.6 6.8 5 12 5Zm0 2C8 7 4.6 10.4 3.5 12c1.1 1.6 4.5 5 8.5 5s7.4-3.4 8.5-5C19.4 10.4 16 7 12 7Zm0 2.2a2.8 2.8 0 1 1 0 5.6 2.8 2.8 0 0 1 0-5.6Z"/></svg></button></span></label>
+        </div>
+        <button class="primary wide login-submit" type="submit">ورود به سامانه</button>
+        <p id="loginError" class="form-error" aria-live="polite"></p>
       </form>
     </section>
   </main>
