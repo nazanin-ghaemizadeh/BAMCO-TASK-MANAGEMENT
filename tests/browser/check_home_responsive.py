@@ -85,6 +85,9 @@ def verify_home(d, width, height):
 
 async def settle(page):
     await page.evaluate('() => new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))')
+    # Layout-mode changes animate card geometry.  Measure the settled grid,
+    # not an intermediate transform frame on slower mobile runners.
+    await page.wait_for_timeout(250)
 
 async def check_dialog(page):
     return await page.evaluate('''() => {

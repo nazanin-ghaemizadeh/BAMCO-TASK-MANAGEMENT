@@ -7,7 +7,9 @@ ROOT=Path(__file__).resolve().parents[2]
 OUT=ROOT/'test-results'/'browser'
 MOCK=(Path(__file__).parent/'mock-api.js').read_text()
 MSG_MOCK=(Path(__file__).parent/'mock-messaging-api.js').read_text()
-FIXTURE=MOCK+'\n'+MSG_MOCK
+# Browser regressions exercise the checked-out build itself.  Prevent the
+# update watcher from navigating to another document while a case is running.
+FIXTURE=MOCK+'\n'+MSG_MOCK+'\nwindow.__bamcoUpdateNavigate=()=>{};'
 
 async def heartbeat(page):
     before=await page.evaluate('window.__testTicks')
