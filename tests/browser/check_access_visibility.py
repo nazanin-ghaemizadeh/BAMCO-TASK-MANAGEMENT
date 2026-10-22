@@ -21,7 +21,8 @@ from run_smoke import FIXTURE, login
 
 ROOT = Path(__file__).resolve().parents[2]
 EXPECTED = {
-    'people': 'people', 'accessMatrix': 'settings', 'organization': 'organization',
+    'people': 'people', 'organizationAdmin': 'organizationAdmin',
+    'accessMatrix': 'settings', 'organization': 'organization',
     'activeSessions': 'activeSessions', 'loginActivity': 'loginActivity',
     'messages': 'messages', 'messageCenter': 'messageCenter', 'sentMessages': 'sentMessages',
     'templates': 'templates', 'stickers': 'stickers', 'dashboard': 'dashboard',
@@ -33,10 +34,13 @@ EXPECTED = {
     'parts': 'parts', 'tools': 'tools', 'groupChat': 'groupChat', 'directMessages': 'directMessages',
     'taskChats': 'taskChats', 'documents': 'documents', 'testReports': 'documents',
     'sitesAccess': 'sitesAccess', 'lettersIncoming': 'letters', 'lettersOutgoing': 'letters',
-    'userGuide': 'userGuide', 'phoneBook': 'phonebook', 'notes': 'notes', 'voiceAssistant': 'voiceAssistant',
+    'userGuide': 'userGuide', 'phoneBook': 'phonebook', 'ovenAnalysis': 'ovenAnalysis',
+    'statisticalProcessControl': 'statisticalProcessControl',
+    'notes': 'notes', 'voiceAssistant': 'voiceAssistant',
 }
 INTERNAL = {'templates', 'alertSettings', 'emailSettings'}
-GRANTABLE = [key for key in EXPECTED if key not in INTERNAL and key != 'accessMatrix']
+SYSTEM_ONLY = {'organizationAdmin'}
+GRANTABLE = [key for key in EXPECTED if key not in INTERNAL | SYSTEM_ONLY and key != 'accessMatrix']
 VIEW_GRANTS = [{'feature_key': key, 'can_view': True, 'can_create': False,
                 'can_edit': False, 'can_delete': False, 'can_export': False,
                 'can_manage_access': False, 'can_bypass_approval': False}
@@ -65,6 +69,8 @@ async def one_case(browser, base, width, layout, role, scenario=None):
     grants = scenario['grants'] if scenario else VIEW_GRANTS
     by_feature = {row['feature_key']: row for row in grants}
     def allowed(route):
+        if route in SYSTEM_ONLY:
+            return role == 'manager'
         return (not scenario or scenario.get('active') is not False) and (role == 'manager' or by_feature.get(EXPECTED[route], {}).get('can_manage_access' if route == 'accessMatrix' else 'can_view') is True)
     context = await browser.new_context(viewport={'width': width, 'height': 844 if width < 700 else 1000},
                                         is_mobile=width < 700, has_touch=width < 700, service_workers='block')
@@ -90,7 +96,7 @@ async def one_case(browser, base, width, layout, role, scenario=None):
                              'nav': len(diag['source']), 'parents': len(diag['groups'])}
         if diag['catalog'] != EXPECTED:
             case['failures'].append({'inventory': 'catalog differs', 'actual': diag['catalog']})
-        if sorted(diag['grantable']) != sorted(GRANTABLE) or len(diag['source']) != 37 or len(diag['groups']) != 12:
+        if sorted(diag['grantable']) != sorted(GRANTABLE) or len(diag['source']) != len(EXPECTED) - len(INTERNAL) or len(diag['groups']) != 14:
             case['failures'].append({'inventory': diag})
         for key, group in diag['groups'].items():
             group_routes = await page.evaluate('(key)=>BamcoNavigationCatalog.byKey[key].routes', key)
@@ -176,7 +182,7 @@ async def one_case(browser, base, width, layout, role, scenario=None):
             else:
                 await page.locator('#nav [data-group="delivery"] .home-group-trigger').click()
                 assert await page.locator('.home-launcher-dialog [data-route="invoices"]').is_visible(), 'regranted invoice launcher option CSS-hidden'
-            case['denied_routes'] = 40
+            case['denied_routes'] = len(diag['source'])
             case['realtime_invoice_recovery'] = True
             # Access administration is controlled by the manage action, and
             # must work even without settings.view or people.view.

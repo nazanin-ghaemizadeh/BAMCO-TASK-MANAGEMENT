@@ -47,7 +47,7 @@ def overlaps(a, b):
 def verify_home(d, width, height):
     assert d['width'] == width, ('unexpected layout viewport', d['width'], width)
     assert d['pageWidth'] <= width + 2, ('horizontal page overflow', d)
-    assert len(d['groups']) == 12, ('missing groups', d)
+    assert len(d['groups']) == len(d['expectedOrder']), ('missing groups', d)
     ordered=sorted(d['groups'],key=lambda g:(round(g['rect']['y']),-round(g['rect']['x'])))
     assert [g['key'] for g in ordered]==d['expectedOrder'], ('RTL/custom order changed',d)
     compact = width <= 1200 or height <= 680
