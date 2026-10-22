@@ -55,7 +55,7 @@ def verify_home(d, width, height):
         expected = (1 if width <= 620 else 2 if width <= 900 else 3) if d['mode']=='cards' else (2 if width <= 620 else 3 if width <= 900 else 4)
         assert d['columns'] == expected, ('unexpected column count', d)
     else:
-        assert d['columns'] == 6, ('desktop columns changed', d)
+        assert d['columns'] == 7, ('desktop columns changed', d)
     for index, group in enumerate(d['groups']):
         assert group['rect']['x'] >= -2 and group['rect']['right'] <= width + 2, ('group outside viewport', group)
         for target in group['targets']:
