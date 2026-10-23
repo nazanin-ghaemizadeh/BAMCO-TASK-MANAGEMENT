@@ -20,7 +20,7 @@ html body #loginView #loginForm #loginVerifyDisplay{height:50px!important;min-he
 html body #loginView #loginForm .verification-digits{gap:6px!important;height:50px!important;direction:ltr!important}
 html body #loginView #loginForm .verification-digit{width:37px!important;height:50px!important;margin:0!important;border-radius:8px!important;border:1px solid #a9c5b5!important;font:700 25px var(--en-font)!important;text-align:center!important;text-align-last:center!important;padding:0!important}
 html body #loginView #loginForm #refreshLoginVerify{width:34px!important;height:42px!important;border:0!important;background:transparent!important;color:#0d6947!important;align-self:center!important;margin:0!important}
-html body #loginView #loginForm .login-submit{height:48px!important;margin:0!important;border-radius:10px!important;background:#126c4e!important;font-size:18px!important;text-align:center!important;text-align-last:center!important;box-shadow:0 5px 12px #0a51301a!important}
+html body #loginView #loginForm :is(.login-submit,.login-otp){height:48px!important;margin:0!important;border-radius:10px!important;background:#126c4e!important;font-size:18px!important;text-align:center!important;text-align-last:center!important;box-shadow:0 5px 12px #0a51301a!important}
 html body #loginView #loginForm .form-error:empty,html body #loginView #loginForm .login-code-error:empty{display:none!important}
 /* Consistent right-to-left command order; search stays at the left end. */
 html body.table-suite.content-only #appView :is(#kanbanView,#archiveView,.view) .suite-toolbar{direction:rtl!important;align-items:center!important;gap:6px!important;padding:8px!important;background:#f5f8f6!important;border-bottom:1px solid #d7e3dc!important}

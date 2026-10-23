@@ -1,8 +1,10 @@
 html,body{margin:0;min-height:100%;background:#f4f8f5}
 html body:not(.unified-login-ready) #loginView{visibility:hidden}
-html body #loginView{display:flex;min-height:100svh;align-items:center;justify-content:center;padding:24px;background:radial-gradient(ellipse at top,#deeee6,transparent 65%),#f4f8f5;direction:rtl;font-family:Tahoma,Arial,sans-serif}
-html body #loginView,html body #loginView *{font-family:Tahoma,Arial,sans-serif!important}
-html body #loginView #loginVerifyDisplay,html body #loginView #loginVerifyCode,html body #loginView .login-code-slots span{font-family:'Times New Roman',Times,serif!important}
+html body #loginView{display:flex;min-height:100svh;align-items:center;justify-content:center;padding:24px;background:radial-gradient(ellipse at top,#deeee6,transparent 65%),#f4f8f5;direction:rtl;font-family:'B Nazanin',Tahoma,serif}
+html body #loginView,html body #loginView *{font-family:'B Nazanin',Tahoma,serif!important}
+html body #loginView .english,html body #loginView #loginVerifyDisplay,html body #loginView #loginVerifyCode,html body #loginView .login-code-slots span{font-family:'Times New Roman',Times,serif!important}
+html body #loginView input::placeholder{font-family:'B Nazanin',Tahoma,serif!important}
+html body #loginView .login-otp{width:100%;height:46px;margin:8px 0 0;display:flex;align-items:center;justify-content:center;text-align:center;direction:rtl}
 html body #loginView.hidden,html body #appView.hidden{display:none!important}
 html body #loginView .login-card{width:min(460px,100%);margin:auto}
 html body #loginView #loginForm #loginError{display:block!important;min-height:28px!important;margin:2px 0 0!important;line-height:24px!important}

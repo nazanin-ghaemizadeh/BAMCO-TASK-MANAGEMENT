@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <meta name="bamco-app-version" content="2026.10.22.4" />
+  <meta name="bamco-app-version" content="2026.10.23.1" />
   <meta name="application-name" content="BAMCO" />
   <meta name="apple-mobile-web-app-title" content="BAMCO" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -13,7 +13,7 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.supabase.co https://cdn.jsdelivr.net/gh/jdecked/twemoji@v17.0.3/assets/svg/; font-src 'self' data:; connect-src 'self' https://zhhongjhhbvpmoquvkhl.supabase.co https://lsfqjjynrajthxnhmjyj.supabase.co wss://zhhongjhhbvpmoquvkhl.supabase.co wss://lsfqjjynrajthxnhmjyj.supabase.co https://api.openai.com; media-src 'self' blob: mediastream:; frame-src 'self' blob: https://*.supabase.co https://nazanin-ghaemizadeh.github.io/BAMCO-PAINT-SHOP/; object-src 'none'; base-uri 'self'; form-action 'self'">
   <title>سامانه یکپارچه مدیریت عملیات</title>
   <meta name="description" content="سامانه آنلاین مدیریت، پایش و پیگیری امور خودروسازان بم" />
-  <link rel="manifest" href="manifest.webmanifest?v=2026.10.22.4" />
+  <link rel="manifest" href="manifest.webmanifest?v=2026.10.23.1" />
   <link rel="icon" type="image/png" sizes="192x192" href="assets/images/bamco-icon-192.png" />
   <link rel="apple-touch-icon" sizes="180x180" href="assets/images/bamco-apple-touch-icon.png" />
   <script id="bamcoUpdateRecoveryBootstrap">
@@ -25,15 +25,17 @@
     if(changed)history.replaceState(history.state,'',url.pathname+(url.search?url.search:'')+url.hash);
   }catch{}})();
   </script>
-  <script defer src="assets/js/app-update.js?v=2026.10.22.4"></script>
-<link rel="stylesheet" href="assets/css/bamco.bundle.css?v=2026.10.22.4">
-<script defer src="assets/js/department-entry.js?v=2026.10.22.4"></script>
+  <script defer src="assets/js/app-update.js?v=2026.10.23.1"></script>
+<link rel="stylesheet" href="assets/css/bamco.bundle.css?v=2026.10.23.1">
+<script defer src="assets/js/department-entry.js?v=2026.10.23.1"></script>
 <style id="entryCritical">html,body{margin:0;min-height:100%;background:#f4f8f5}
 html,body{margin:0;min-height:100%;background:#f4f8f5}
 html body:not(.unified-login-ready) #loginView{visibility:hidden}
-html body #loginView{display:flex;min-height:100svh;align-items:center;justify-content:center;padding:24px;background:radial-gradient(ellipse at top,#deeee6,transparent 65%),#f4f8f5;direction:rtl;font-family:Tahoma,Arial,sans-serif}
-html body #loginView,html body #loginView *{font-family:Tahoma,Arial,sans-serif!important}
-html body #loginView #loginVerifyDisplay,html body #loginView #loginVerifyCode,html body #loginView .login-code-slots span{font-family:'Times New Roman',Times,serif!important}
+html body #loginView{display:flex;min-height:100svh;align-items:center;justify-content:center;padding:24px;background:radial-gradient(ellipse at top,#deeee6,transparent 65%),#f4f8f5;direction:rtl;font-family:'B Nazanin',Tahoma,serif}
+html body #loginView,html body #loginView *{font-family:'B Nazanin',Tahoma,serif!important}
+html body #loginView .english,html body #loginView #loginVerifyDisplay,html body #loginView #loginVerifyCode,html body #loginView .login-code-slots span{font-family:'Times New Roman',Times,serif!important}
+html body #loginView input::placeholder{font-family:'B Nazanin',Tahoma,serif!important}
+html body #loginView .login-otp{width:100%;height:46px;margin:8px 0 0;display:flex;align-items:center;justify-content:center;text-align:center;direction:rtl}
 html body #loginView.hidden,html body #appView.hidden{display:none!important}
 html body #loginView .login-card{width:min(460px,100%);margin:auto}
 html body #loginView #loginForm #loginError{display:block!important;min-height:28px!important;margin:2px 0 0!important;line-height:24px!important}
@@ -73,12 +75,13 @@ html body .workspace-identity{display:block;margin:0 14px 10px;padding:7px 10px;
           <div class="login-field login-verification-field"><span class="login-field-title bamco-fa">تأیید عددی</span><div id="loginVerification" class="login-verification-box"><div id="loginVerifyDisplay" class="login-code-display" aria-label="کد تأیید"></div><div class="login-code-input-shell"><input id="loginVerifyCode" type="text" inputmode="numeric" autocomplete="off" maxlength="4" pattern="[0-9۰-۹٠-٩]{4}" aria-label="کد را وارد نمایید"><div class="login-code-slots" aria-hidden="true"><span></span><span></span><span></span><span></span></div></div><button type="button" id="refreshLoginVerify" class="login-refresh-code" title="ساخت کد جدید" aria-label="ساخت کد جدید"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 8a7 7 0 1 0 1 4h-2a5 5 0 1 1-1.45-3.54L14 11h7V4l-2 2v2Z" fill="currentColor"/></svg></button></div><div id="loginVerifyError" class="login-code-error bamco-fa" aria-live="polite"></div></div>
         </div>
         <button class="primary wide login-submit" type="submit">ورود به سامانه</button>
+        <button class="primary wide login-otp" type="button">ورود با رمز یکبار مصرف</button>
         <p id="loginError" class="form-error" aria-live="polite"></p>
       </form>
     </section>
   </main>
 
-  <script defer src="assets/js/auth-ui.js?v=2026.10.22.4" data-login-controls></script>
+  <script defer src="assets/js/auth-ui.js?v=2026.10.23.1" data-login-controls></script>
 
   <div id="appView" class="app hidden">
     <aside id="sidebar" class="sidebar">
@@ -229,6 +232,6 @@ html body .chat-bubble.bamco-system-message .system-message-open-chips{grid-area
 html body .chat-bubble.bamco-system-message .system-message-open-cta{grid-area:cta!important;direction:rtl!important}
 @media(max-width:600px){html body .chat-bubble.bamco-system-message .system-message-open{grid-template-areas:"title title" "sender sender" "date date" "chips chips" "cta cta"!important}.system-message-open-date{white-space:normal!important}}
 </style>
-<script defer src="assets/js/bamco.bundle.js?v=2026.10.22.4"></script>
-<script defer src="assets/js/paint-shop-navigation.js?v=2026.10.22.4"></script><script defer src="assets/js/launcher-icon-polish.js?v=2026.10.22.4"></script></body>
+<script defer src="assets/js/bamco.bundle.js?v=2026.10.23.1"></script>
+<script defer src="assets/js/paint-shop-navigation.js?v=2026.10.23.1"></script><script defer src="assets/js/launcher-icon-polish.js?v=2026.10.23.1"></script></body>
 </html>
