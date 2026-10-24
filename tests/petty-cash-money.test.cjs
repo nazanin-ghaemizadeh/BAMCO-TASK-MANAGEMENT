@@ -56,3 +56,58 @@ test('petty cash categories are Persian sorted and a receipt saves without a des
   for (const name of ['counterparty','cost_center','document_no','notes']) assert.equal(name in saved.body, false);
   assert.equal(f.d.querySelector('#pettyCashDialog').open, false); assert.deepEqual(f.errors, []);
 });
+
+test('petty cash sorts by expense date before assigning sequential display rows and exports a real category workbook',async t=>{
+ const rows=[
+  {id:'gas-later',entry_no:99,event_date:'2026-10-03',entry_type:'expense',amount:'800',category:'بنزین',responsible_id:'test-manager',payment_method:'کارت',description:'بنزین دوم',status:'active'},
+  {id:'gas-earlier',entry_no:7,event_date:'2026-10-01',entry_type:'expense',amount:'100',category:'بنزین',responsible_id:'test-manager',payment_method:'نقدی',description:'بنزین اول',status:'active'},
+  {id:'received',entry_no:12,event_date:'2026-10-02',entry_type:'receipt',amount:'1500',category:'خدمات',responsible_id:'test-manager',payment_method:'کارت',description:'دریافت',status:'active'},
+  {id:'void',entry_no:44,event_date:'2026-10-04',entry_type:'expense',amount:'900',category:'بنزین',responsible_id:'test-manager',payment_method:'نقدی',description:'باطل',status:'void'},
+  {id:'training',entry_no:60,event_date:'2026-10-02',entry_type:'expense',amount:'200',category:'آموزش',responsible_id:'test-manager',payment_method:'کارت',description:'آموزش',status:'active'}
+ ];
+ const f=await fixture({tables:{petty_cash_entries:rows,petty_cash_attachments:[{id:'doc',entry_id:'gas-earlier'}]}});t.after(()=>f.dispose());
+ await f.open('pettyCash');await until(()=>f.d.querySelectorAll('#pettyCashBody tr[data-entry]').length===5);
+ const table=[...f.d.querySelectorAll('#pettyCashBody tr[data-entry]')];
+ assert.deepEqual(table.map(tr=>tr.dataset.entry),['gas-earlier','received','training','gas-later','void']);
+ assert.deepEqual(table.map(tr=>tr.cells[0].textContent),['۱','۲','۳','۴','۵']);
+ assert.deepEqual(table.map(tr=>tr.cells[1].textContent),['۷','۱۲','۶۰','۹۹','۴۴']);
+ assert.equal(table[0].cells[10].textContent,'۱');
+ assert.equal(table[4].cells[11].textContent,'باطل‌شده');
+ let exported;
+ f.w.ensureBamcoXLSX=async()=>({
+  utils:{
+   aoa_to_sheet:rows=>({rows}),
+   book_new:()=>({SheetNames:[],Sheets:{}}),
+   book_append_sheet:(wb,ws,name)=>{wb.SheetNames.push(name);wb.Sheets[name]=ws;}
+  },
+  writeFile:(wb,name)=>{exported={wb,name};}
+ });
+ f.d.querySelector('#exportCash').click();
+ await until(()=>exported);
+ assert.match(exported.name,/\.xlsx$/);
+ assert.deepEqual(exported.wb.SheetNames,['ریز تنخواه','جمع‌بندی دسته‌بندی']);
+ const detail=exported.wb.Sheets['ریز تنخواه'].rows;
+ assert.deepEqual(detail.slice(1).map(row=>row[1]),[7,12,60,99,44]);
+ assert.deepEqual(detail.slice(1).map(row=>row[0]),[1,2,3,4,5]);
+ assert.deepEqual(detail.slice(1).map(row=>row[5]),[-100,1400,1200,400,400]);
+ assert.equal(detail[1][10],1);
+ assert.equal(detail[5][11],'باطل‌شده');
+ const summary=exported.wb.Sheets['جمع‌بندی دسته‌بندی'].rows;
+ assert(summary.some(row=>row[1]==='بنزین'&&row[2]===2&&row[3]===900));
+ assert(summary.some(row=>row[1]==='آموزش'&&row[2]===1&&row[3]===200));
+ assert(summary.some(row=>row[1]==='جمع کل هزینه‌ها'&&row[2]===3&&row[3]===1100));
+ assert(summary.some(row=>row[1]==='جمع دریافت‌ها'&&row[3]===1500));
+ assert(summary.some(row=>row[1]==='مانده تنخواه'&&row[3]===400));
+ assert.deepEqual(f.errors,[]);
+});
+
+test('petty cash Excel keeps amounts above the safe numeric limit lossless',async t=>{
+ const amount='999999999999999999';
+ const f=await fixture({tables:{petty_cash_entries:[{id:'huge',entry_no:1,event_date:'2026-10-01',entry_type:'expense',amount,category:'بنزین',status:'active',responsible_id:'test-manager'}],petty_cash_attachments:[]}});
+ t.after(()=>f.dispose());await f.open('pettyCash');
+ let wb;
+ f.w.ensureBamcoXLSX=async()=>({utils:{aoa_to_sheet:rows=>({rows}),book_new:()=>({SheetNames:[],Sheets:{}}),book_append_sheet:(book,sheet,name)=>{book.SheetNames.push(name);book.Sheets[name]=sheet;}},writeFile:book=>{wb=book;}});
+ f.d.querySelector('#exportCash').click();await until(()=>wb);
+ assert.equal(wb.Sheets['ریز تنخواه'].rows[1][4],amount);
+ assert.equal(wb.Sheets['جمع‌بندی دسته‌بندی'].rows[1][3],amount);
+});
