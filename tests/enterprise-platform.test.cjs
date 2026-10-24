@@ -61,7 +61,7 @@ test('enterprise navigation places new modules in the approved groups', () => {
   const catalog = read('assets/js/navigation-registry.js');
   const runtime = read('assets/js/production-runtime.js');
   const documents = read('assets/js/documents-sites.js');
-  assert.match(catalog, /key: 'people'[\s\S]*routes: \['organizationAdmin', 'people', 'accessMatrix', 'organization', 'activeSessions', 'loginActivity'\]/);
+  assert.match(catalog, /key: 'people'[\s\S]*routes: \['people', 'accessMatrix', 'organization', 'activeSessions', 'loginActivity'\]/);
   assert.match(catalog, /key: 'vehicle'[\s\S]*'parts', 'tools'/);
   assert.match(catalog, /key: 'reports'[\s\S]*routes: \['dashboard', 'performanceReport'\]/);
   assert.match(catalog, /key: 'tasks'[\s\S]*'taskTimeline', 'projects', 'approvals'/);

@@ -9,7 +9,7 @@ const {fixture,until,pause}=require('./helpers/app-fixture.cjs');
 // This inventory is deliberately independent of the runtime catalog. A new
 // route must be consciously included here rather than silently escaping QA.
 const ROUTES={
- organizationAdmin:'organizationAdmin',people:'people',accessMatrix:'settings',organization:'organization',activeSessions:'activeSessions',loginActivity:'loginActivity',
+ people:'people',accessMatrix:'settings',organization:'organization',activeSessions:'activeSessions',loginActivity:'loginActivity',
  messages:'messages',messageCenter:'messageCenter',sentMessages:'sentMessages',templates:'templates',stickers:'stickers',
  dashboard:'dashboard',performanceReport:'performanceReport',pettyCash:'pettyCash',invoices:'invoices',systemOptions:'systemOptions',
  settings:'settings',alertSettings:'settings',emailSettings:'settings',kanban:'kanban',archive:'archive',taskTimeline:'taskTimeline',
@@ -18,7 +18,7 @@ const ROUTES={
  ovenAnalysis:'ovenAnalysis',statisticalProcessControl:'statisticalProcessControl',sitesAccess:'sitesAccess',lettersIncoming:'letters',lettersOutgoing:'letters',userGuide:'userGuide',phoneBook:'phonebook',notes:'notes',voiceAssistant:'voiceAssistant'
 };
 const INTERNAL=new Set(['alertSettings','emailSettings']);
-const ADMIN_ONLY=new Set(['templates','accessMatrix','organizationAdmin']);
+const ADMIN_ONLY=new Set(['templates','accessMatrix']);
 const GRANTABLE=Object.keys(ROUTES).filter(route=>!INTERNAL.has(route)&&!ADMIN_ONLY.has(route));
 const FEATURES=[...new Set(Object.values(ROUTES))];
 const grant=(feature_key,can_view=true)=>({feature_key,can_view,can_create:false,can_edit:false,can_delete:false,can_export:false,can_manage_access:false,can_bypass_approval:false});
@@ -69,7 +69,7 @@ test('each view-only grant independently reveals every matching route and its pa
  for(const key of FEATURES){
   await f.setGrants([grant(key)]);
   for(const [route,feature] of Object.entries(ROUTES)){
-   assert.equal(f.w.BamcoAccess.can(feature,'view'),feature===key&&!['organizationAdmin','templates'].includes(feature),`${key}: ${route} feature check`);
+   assert.equal(f.w.BamcoAccess.can(feature,'view'),feature===key&&!['templates'].includes(feature),`${key}: ${route} feature check`);
    for(const action of ['create','edit','delete','export','manage_access','bypass_approval'])assert.equal(f.w.BamcoAccess.can(feature,action),false,`${key}: no implicit ${action}`);
    if(!INTERNAL.has(route))assert.equal(available(button(f,route)),feature===key&&!ADMIN_ONLY.has(route),`${key}: ${route} source navigation`);
   }

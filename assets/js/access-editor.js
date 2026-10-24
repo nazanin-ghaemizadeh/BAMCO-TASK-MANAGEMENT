@@ -302,7 +302,7 @@
           const id = String(user.id), directGrant = direct.get(id) || {}, grant = effective.get(id) || user.effective_access || user.effective_grant || directGrant;
           const key = keyOf(featureKey, id), protectedGrant = bool(user.protected) || bool(directGrant.protected) || (id === String(state().user?.id) && window.BamcoAccess?.isSystemManager?.() === true);
           const value = protectedGrant || bool(grant.can_view);
-          matrix.values.set(key, value); matrix.initial.set(key, value); if (protectedGrant || matrix.central&&effective.get(id)?.unit_enabled===false) matrix.protected.add(key);
+          matrix.values.set(key, value); matrix.initial.set(key, value); if (protectedGrant) matrix.protected.add(key);
         });
       });
       matrix.loaded = true;
@@ -311,6 +311,28 @@
     } finally {
       matrix.loading = false; renderTable();
     }
+  }
+  // A checked card must be usable even when the selected unit excluded it.
+  // Keep every existing unit feature; add only the newly checked ones.
+  async function enableUnitFeaturesForCheckedGrants(changes) {
+    if (!matrix.central) return;
+    const org = directory(), unit = org?.unit(matrix.unitId), data = org?.data();
+    if (!unit || !data) throw new Error('محدوده واحد سازمانی معتبر نیست؛ تازه‌سازی کنید.');
+    if (!unit.features_configured) return;
+    const active = new Set((data.unit_features || [])
+      .filter(row => String(row.unit_id) === String(unit.id))
+      .map(row => String(row.feature_key)));
+    const additions = changes.filter(key => matrix.values.get(key) === true)
+      .map(key => key.slice(0, key.lastIndexOf(':')))
+      .filter(featureKey => !active.has(featureKey));
+    if (!additions.length) return;
+    additions.forEach(key => active.add(key));
+    const saved = await rpc('admin_org_save', {
+      p_action: 'features',
+      p_payload: { unit_id: unit.id, revision: unit.revision, features: [...active] }
+    });
+    if (saved?.ok !== true) throw new Error('فعال‌سازی قابلیت در سطح واحد تأیید نشد.');
+    await org.changed();
   }
   async function saveMatrix() {
     if (matrix.saving || !canManage()) return;
@@ -322,7 +344,9 @@
     if (!grouped.size) return;
     matrix.saving = true;
     const save = ensureView().querySelector('[data-access-matrix-save]'); if (save) save.disabled = true;
+    ensureView().querySelectorAll('[data-access-department],[data-access-unit]').forEach(select => { select.disabled = true; });
     try {
+      await enableUnitFeaturesForCheckedGrants(changes);
       await pool([...grouped.entries()], 4, ([featureKey, grants]) => matrix.central?directory().request(matrix.unitId,'rpc/set_feature_access',{body:{p_feature_key:featureKey,p_grants:grants}}):rpc('set_feature_access', { p_feature_key: featureKey, p_grants: grants }));
       if(matrix.central)await directory().changed();
       await window.BamcoAccess?.refresh?.({ force: true });
@@ -333,6 +357,7 @@
     } finally {
       matrix.saving = false;
       if(matrix.central)await loadMatrix({force:true});
+      else renderTable();
       if (save) save.disabled = dirtyKeys().length === 0;
     }
   }

@@ -43,7 +43,6 @@ const javascript = [
   'assets/js/personal-workspace.js',
   'assets/js/phonebook-directory-v2.js',
   'assets/js/quality-tools.js',
-  'assets/js/organization-admin.js',
   'assets/js/sidebar.js',
   'assets/js/phase2-message-engine.js',
   'assets/js/task-ui.js',

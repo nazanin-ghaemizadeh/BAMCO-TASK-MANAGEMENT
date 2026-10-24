@@ -21,7 +21,10 @@ test('people access matrix remains the module visibility and usability authority
   const catalog = read('assets/js/navigation-registry.js');
   const editor = read('assets/js/access-editor.js');
 
-  assert.match(catalog, /routes: \['organizationAdmin', 'people', 'accessMatrix', 'organization'/);
+  assert.match(catalog, /routes: \['people', 'accessMatrix', 'organization'/);
+  assert.doesNotMatch(catalog, /\['organizationAdmin',/);
+  assert.doesNotMatch(read('scripts/build-static-bundles.mjs'), /'assets\/js\/organization-admin\.js'/);
+  assert.doesNotMatch(read('assets/js/bamco.bundle.js'), /source: assets\/js\/organization-admin\.js/);
   assert.match(editor, /effect: enabled \? 'allow' : 'deny'/);
   assert.match(editor, /can_view: enabled, can_create: enabled, can_edit: enabled, can_delete: enabled, can_export: enabled/);
   assert.match(editor, /set_feature_access/);
