@@ -48,8 +48,8 @@
  function fixQualityLabels(){
   const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
   let node;
-  while((node=walker.nextNode()))node.nodeValue=node.nodeValue.replace(/کنترل آماری فرایند ?\\(SPC\\)/g,'Statistical Process Control').replace(/کنترل آماری فرایند/g,'Statistical Process Control').replace(/کنترل آماری کیفیت/g,'Quality Control');
-  document.body.querySelectorAll('*').forEach(element=>{for(const name of ['title','aria-label']){const value=element.getAttribute(name);if(value)element.setAttribute(name,value.replace(/کنترل آماری فرایند ?\\(SPC\\)/g,'Statistical Process Control').replace(/کنترل آماری فرایند/g,'Statistical Process Control').replace(/کنترل آماری کیفیت/g,'Quality Control'))}});
+  while((node=walker.nextNode()))node.nodeValue=node.nodeValue.replaceAll('کنترل آماری فرایند (SPC)','Statistical Process Control').replace(/کنترل آماری فرایند/g,'Statistical Process Control').replace(/کنترل آماری کیفیت/g,'Quality Control');
+  document.body.querySelectorAll('*').forEach(element=>{for(const name of ['title','aria-label']){const value=element.getAttribute(name);if(value)element.setAttribute(name,value.replaceAll('کنترل آماری فرایند (SPC)','Statistical Process Control').replace(/کنترل آماری فرایند/g,'Statistical Process Control').replace(/کنترل آماری کیفیت/g,'Quality Control'))}});
  }
  function fixThermalLabel(){
   const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
