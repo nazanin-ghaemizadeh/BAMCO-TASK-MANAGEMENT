@@ -19,9 +19,11 @@
   return String(values.find(value=>typeof value==='string'&&value.trim())||'').trim();
  }
  function updateBrand(){
-  const top=q('.card-topbar'),title=top?.querySelector(':scope > strong');
-  if(!top||!title)return;
+  const top=q('.card-topbar');
+  if(!top)return;
   let stack=top.querySelector('.brand-title-stack');
+  const title=top.querySelector(':scope > strong')||stack?.querySelector('strong');
+  if(!stack&&!title)return;
   if(!stack){
    stack=document.createElement('div');stack.className='brand-title-stack';
    const label=document.createElement('span');label.className='brand-department';label.id='currentDepartmentName';
