@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <meta name="bamco-app-version" content="2026.10.24.11" />
+  <meta name="bamco-app-version" content="2026.10.24.12" />
   <meta name="application-name" content="BAMCO" />
   <meta name="apple-mobile-web-app-title" content="BAMCO" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -13,7 +13,7 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.supabase.co https://cdn.jsdelivr.net/gh/jdecked/twemoji@v17.0.3/assets/svg/; font-src 'self' data:; connect-src 'self' https://zhhongjhhbvpmoquvkhl.supabase.co https://lsfqjjynrajthxnhmjyj.supabase.co wss://zhhongjhhbvpmoquvkhl.supabase.co wss://lsfqjjynrajthxnhmjyj.supabase.co https://api.openai.com; media-src 'self' blob: mediastream:; frame-src 'self' blob: https://*.supabase.co https://nazanin-ghaemizadeh.github.io/BAMCO-PAINT-SHOP/; object-src 'none'; base-uri 'self'; form-action 'self'">
   <title>سامانه یکپارچه مدیریت عملیات</title>
   <meta name="description" content="سامانه آنلاین مدیریت، پایش و پیگیری امور خودروسازان بم" />
-  <link rel="manifest" href="manifest.webmanifest?v=2026.10.24.11" />
+  <link rel="manifest" href="manifest.webmanifest?v=2026.10.24.12" />
   <link rel="icon" type="image/png" sizes="192x192" href="assets/images/bamco-icon-192.png" />
   <link rel="apple-touch-icon" sizes="180x180" href="assets/images/bamco-apple-touch-icon.png" />
   <script id="bamcoUpdateRecoveryBootstrap">
@@ -25,9 +25,9 @@
     if(changed)history.replaceState(history.state,'',url.pathname+(url.search?url.search:'')+url.hash);
   }catch{}})();
   </script>
-  <script defer src="assets/js/app-update.js?v=2026.10.24.11"></script>
-<link rel="stylesheet" href="assets/css/bamco.bundle.css?v=2026.10.24.11">
-<script defer src="assets/js/department-entry.js?v=2026.10.24.11"></script>
+  <script defer src="assets/js/app-update.js?v=2026.10.24.12"></script>
+<link rel="stylesheet" href="assets/css/bamco.bundle.css?v=2026.10.24.12">
+<script defer src="assets/js/department-entry.js?v=2026.10.24.12"></script>
 <style id="entryCritical">html,body{margin:0;min-height:100%;background:#f4f8f5}
 html,body{margin:0;min-height:100%;background:#f4f8f5}
 html body:not(.unified-login-ready) #loginView{visibility:hidden}
@@ -218,7 +218,7 @@ html body #loginView #loginForm #loginError:not(:empty){display:block!important;
     </section>
   </main>
 
-  <script defer src="assets/js/auth-ui.js?v=2026.10.24.11" data-login-controls></script>
+  <script defer src="assets/js/auth-ui.js?v=2026.10.24.12" data-login-controls></script>
 
   <div id="appView" class="app hidden">
     <aside id="sidebar" class="sidebar">
@@ -532,6 +532,37 @@ html body #loginView #loginError{margin-top:8px!important}
   html body #loginView .login-submit,html body #loginView .login-otp{height:42px!important;min-height:42px!important;margin-top:8px!important}
   html body #loginView .login-otp{margin-top:8px!important}
 }
+
+/* Final layout corrections: release legacy named grid areas. */
+html body #loginView .login-card{
+  grid-template-areas:none!important;grid-template-rows:minmax(0,1fr)!important
+}
+html body #loginView .login-card>.brand-lockup{
+  grid-area:auto!important;grid-column:1!important;grid-row:1!important
+}
+html body #loginView .login-card>#loginForm{
+  grid-area:auto!important;grid-column:2!important;grid-row:1!important
+}
+html body #loginView #loginForm #loginVerification{
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr) 38px!important;gap:9px!important
+}
+html body #loginView #loginForm #loginVerification #loginVerifyDisplay{
+  grid-column:1!important;width:100%!important;min-width:0!important
+}
+html body #loginView #loginForm #loginVerification .login-code-input-shell{
+  grid-column:2!important;width:100%!important;min-width:0!important
+}
+html body #loginView #loginForm #loginVerification #refreshLoginVerify{
+  grid-column:3!important;justify-self:center!important
+}
+html body #loginView #loginForm :is(.login-submit,.login-otp){
+  width:100%!important;min-height:50px!important;border-radius:14px!important
+}
+html body #loginView #loginForm .login-otp{
+  background:#f4faf6!important;color:#176b4d!important;border:1px solid #c9ddd1!important;
+  box-shadow:none!important
+}
+
 </style>
 <script defer src="assets/js/bamco.bundle.js?v=2026.10.24.9"></script>
 <script defer src="assets/js/paint-shop-navigation.js?v=2026.10.24.spc1"></script><script defer src="assets/js/launcher-icon-polish.js?v=2026.10.24.9"></script>\n<script defer src="assets/js/operations-ui-adjustments.js?v=2026.10.24.9"></script></body>
