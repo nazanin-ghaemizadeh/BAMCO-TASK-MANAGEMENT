@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <meta name="bamco-app-version" content="2026.10.24.4" />
+  <meta name="bamco-app-version" content="2026.10.24.5" />
   <meta name="application-name" content="BAMCO" />
   <meta name="apple-mobile-web-app-title" content="BAMCO" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -13,7 +13,7 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.supabase.co https://cdn.jsdelivr.net/gh/jdecked/twemoji@v17.0.3/assets/svg/; font-src 'self' data:; connect-src 'self' https://zhhongjhhbvpmoquvkhl.supabase.co https://lsfqjjynrajthxnhmjyj.supabase.co wss://zhhongjhhbvpmoquvkhl.supabase.co wss://lsfqjjynrajthxnhmjyj.supabase.co https://api.openai.com; media-src 'self' blob: mediastream:; frame-src 'self' blob: https://*.supabase.co https://nazanin-ghaemizadeh.github.io/BAMCO-PAINT-SHOP/; object-src 'none'; base-uri 'self'; form-action 'self'">
   <title>سامانه یکپارچه مدیریت عملیات</title>
   <meta name="description" content="سامانه آنلاین مدیریت، پایش و پیگیری امور خودروسازان بم" />
-  <link rel="manifest" href="manifest.webmanifest?v=2026.10.24.4" />
+  <link rel="manifest" href="manifest.webmanifest?v=2026.10.24.5" />
   <link rel="icon" type="image/png" sizes="192x192" href="assets/images/bamco-icon-192.png" />
   <link rel="apple-touch-icon" sizes="180x180" href="assets/images/bamco-apple-touch-icon.png" />
   <script id="bamcoUpdateRecoveryBootstrap">
@@ -25,9 +25,9 @@
     if(changed)history.replaceState(history.state,'',url.pathname+(url.search?url.search:'')+url.hash);
   }catch{}})();
   </script>
-  <script defer src="assets/js/app-update.js?v=2026.10.24.4"></script>
-<link rel="stylesheet" href="assets/css/bamco.bundle.css?v=2026.10.24.4">
-<script defer src="assets/js/department-entry.js?v=2026.10.24.4"></script>
+  <script defer src="assets/js/app-update.js?v=2026.10.24.5"></script>
+<link rel="stylesheet" href="assets/css/bamco.bundle.css?v=2026.10.24.5">
+<script defer src="assets/js/department-entry.js?v=2026.10.24.5"></script>
 <style id="entryCritical">html,body{margin:0;min-height:100%;background:#f4f8f5}
 html,body{margin:0;min-height:100%;background:#f4f8f5}
 html body:not(.unified-login-ready) #loginView{visibility:hidden}
@@ -54,7 +54,24 @@ html body .workspace-identity{display:block;margin:0 14px 10px;padding:7px 10px;
 #templatesView .template-preview-head{display:flex;justify-content:space-between;gap:10px;padding:9px 12px;background:#edf5f1;border-bottom:1px solid #d5e2dc}
 #templatesView #templateSaveState{color:#477065}#templatesView #templateSaveState.error{color:#b42318}
 #templatesView .template-preview{padding:14px 16px;line-height:2;white-space:normal}
-#templatesView .template-preview h4{margin:0 0 10px;color:#18513f}.message-template-panel .manager-note p{margin:2px 0 0}</style>
+#templatesView .template-preview h4{margin:0 0 10px;color:#18513f}.message-template-panel .manager-note p{margin:2px 0 0}
+/* Compact, centered login card that stays inside short browser windows. */
+html body #loginView{height:100svh;min-height:100svh;box-sizing:border-box;padding:12px;overflow-y:auto}
+html body #loginView .login-card{box-sizing:border-box;width:min(480px,calc(100vw - 24px));max-height:calc(100svh - 24px);padding:12px 24px 14px;overflow:auto;scrollbar-width:thin}
+html body #loginView .brand-lockup{gap:2px;margin:0 0 4px}
+html body #loginView .brand-lockup img{width:82px!important;height:82px!important}
+html body #loginView .brand-lockup h1{font-size:17px;line-height:1.2}
+html body #loginView .login-fields{gap:7px}
+html body #loginView .login-field-title{font-size:13px;line-height:1.25}
+html body #loginView .login-input-shell input{height:40px!important;padding-block:6px}
+html body #loginView .login-verification-box{height:auto!important;min-height:48px;gap:6px!important;padding:4px 8px}
+html body #loginView .login-submit,html body #loginView .login-otp{height:40px!important;min-height:40px;margin-top:5px}
+@media(max-height:700px){
+ html body #loginView{padding:8px}
+ html body #loginView .login-card{max-height:calc(100svh - 16px);padding:10px 20px 12px}
+ html body #loginView .brand-lockup img{width:72px!important;height:72px!important}
+}
+</style>
 <style id="bamcoNavIconUnification">
 /* Unified colorful navigation icon system */
 #nav button{--nav-accent:#167cbb}#nav button:nth-child(9n+1){--nav-accent:#0c8f75}#nav button:nth-child(9n+2){--nav-accent:#8659ce}#nav button:nth-child(9n+3){--nav-accent:#d27b22}#nav button:nth-child(9n+4){--nav-accent:#d34d79}#nav button:nth-child(9n+5){--nav-accent:#178fa3}#nav button:nth-child(9n+6){--nav-accent:#a05cbe}#nav button:nth-child(9n+7){--nav-accent:#b46b37}#nav button:nth-child(9n+8){--nav-accent:#4779cf}#nav button:nth-child(9n){--nav-accent:#c14c56}
@@ -82,7 +99,7 @@ html body .workspace-identity{display:block;margin:0 14px 10px;padding:7px 10px;
     </section>
   </main>
 
-  <script defer src="assets/js/auth-ui.js?v=2026.10.24.4" data-login-controls></script>
+  <script defer src="assets/js/auth-ui.js?v=2026.10.24.5" data-login-controls></script>
 
   <div id="appView" class="app hidden">
     <aside id="sidebar" class="sidebar">
@@ -233,7 +250,7 @@ html body .chat-bubble.bamco-system-message .system-message-open-chips{grid-area
 html body .chat-bubble.bamco-system-message .system-message-open-cta{grid-area:cta!important;direction:rtl!important}
 @media(max-width:600px){html body .chat-bubble.bamco-system-message .system-message-open{grid-template-areas:"title title" "sender sender" "date date" "chips chips" "cta cta"!important}.system-message-open-date{white-space:normal!important}}
 </style>
-<script defer src="assets/js/bamco.bundle.js?v=2026.10.24.4"></script>
-<script defer src="assets/js/paint-shop-navigation.js?v=2026.10.24.spc1"></script><script defer src="assets/js/launcher-icon-polish.js?v=2026.10.24.4"></script>\n<script defer src="assets/js/operations-ui-adjustments.js?v=2026.10.24.7"></script></body>
+<script defer src="assets/js/bamco.bundle.js?v=2026.10.24.5"></script>
+<script defer src="assets/js/paint-shop-navigation.js?v=2026.10.24.spc1"></script><script defer src="assets/js/launcher-icon-polish.js?v=2026.10.24.5"></script>\n<script defer src="assets/js/operations-ui-adjustments.js?v=2026.10.24.7"></script></body>
 </html>
 
