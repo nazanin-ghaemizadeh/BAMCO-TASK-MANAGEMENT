@@ -5,6 +5,7 @@
  const q=(selector,root=document)=>root.querySelector(selector);
  const style=document.createElement('style');
  style.textContent=`
+  #homeFixedFooter{display:none!important}
   .card-topbar .brand-title-stack{grid-column:2!important;grid-row:1!important;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.35}
   .card-topbar .brand-title-stack>strong{display:block!important;grid-column:auto!important;grid-row:auto!important;margin:0!important;color:#fff!important;text-align:center!important;font-size:22px!important;line-height:1.35!important}
   .card-topbar .brand-department{display:block;margin-top:2px;color:#d8eee3;font-size:12px;line-height:1.25;white-space:nowrap;text-align:center}
@@ -21,7 +22,6 @@
   return department?('معاونت: '+department):'';
  }
  function updateBrand(){
-  q('#homeFixedFooter')?.remove();
   const top=q('.card-topbar');
   if(!top)return;
   let stack=top.querySelector('.brand-title-stack');
@@ -70,10 +70,13 @@
   }
  }
  document.addEventListener('click',event=>{
-  const target=event.target instanceof Element?event.target.closest('[data-view="ovenAnalysis"]'):null;
+  const target=event.target instanceof Element?event.target.closest('[data-view="ovenAnalysis"],[data-route="ovenAnalysis"]'):null;
   if(!target)return;
   event.preventDefault();event.stopImmediatePropagation();
   window.open(PAINT_URL,'_blank','noopener,noreferrer');
+  q('.home-launcher-dialog[open]')?.close();
+  if(typeof window.bamcoShowHome==='function')window.bamcoShowHome();
+  else q('.home-return')?.click();
  },true);
  const observer=new MutationObserver(()=>{updateBrand();fixThermalLabel();fixArabicHeh()});
  function start(){
