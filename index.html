@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <meta name="bamco-app-version" content="2026.10.24.9" />
+  <meta name="bamco-app-version" content="2026.10.24.10" />
   <meta name="application-name" content="BAMCO" />
   <meta name="apple-mobile-web-app-title" content="BAMCO" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -13,7 +13,7 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.supabase.co https://cdn.jsdelivr.net/gh/jdecked/twemoji@v17.0.3/assets/svg/; font-src 'self' data:; connect-src 'self' https://zhhongjhhbvpmoquvkhl.supabase.co https://lsfqjjynrajthxnhmjyj.supabase.co wss://zhhongjhhbvpmoquvkhl.supabase.co wss://lsfqjjynrajthxnhmjyj.supabase.co https://api.openai.com; media-src 'self' blob: mediastream:; frame-src 'self' blob: https://*.supabase.co https://nazanin-ghaemizadeh.github.io/BAMCO-PAINT-SHOP/; object-src 'none'; base-uri 'self'; form-action 'self'">
   <title>سامانه یکپارچه مدیریت عملیات</title>
   <meta name="description" content="سامانه آنلاین مدیریت، پایش و پیگیری امور خودروسازان بم" />
-  <link rel="manifest" href="manifest.webmanifest?v=2026.10.24.9" />
+  <link rel="manifest" href="manifest.webmanifest?v=2026.10.24.10" />
   <link rel="icon" type="image/png" sizes="192x192" href="assets/images/bamco-icon-192.png" />
   <link rel="apple-touch-icon" sizes="180x180" href="assets/images/bamco-apple-touch-icon.png" />
   <script id="bamcoUpdateRecoveryBootstrap">
@@ -25,9 +25,9 @@
     if(changed)history.replaceState(history.state,'',url.pathname+(url.search?url.search:'')+url.hash);
   }catch{}})();
   </script>
-  <script defer src="assets/js/app-update.js?v=2026.10.24.9"></script>
-<link rel="stylesheet" href="assets/css/bamco.bundle.css?v=2026.10.24.9">
-<script defer src="assets/js/department-entry.js?v=2026.10.24.9"></script>
+  <script defer src="assets/js/app-update.js?v=2026.10.24.10"></script>
+<link rel="stylesheet" href="assets/css/bamco.bundle.css?v=2026.10.24.10">
+<script defer src="assets/js/department-entry.js?v=2026.10.24.10"></script>
 <style id="entryCritical">html,body{margin:0;min-height:100%;background:#f4f8f5}
 html,body{margin:0;min-height:100%;background:#f4f8f5}
 html body:not(.unified-login-ready) #loginView{visibility:hidden}
@@ -218,7 +218,7 @@ html body #loginView #loginForm #loginError:not(:empty){display:block!important;
     </section>
   </main>
 
-  <script defer src="assets/js/auth-ui.js?v=2026.10.24.9" data-login-controls></script>
+  <script defer src="assets/js/auth-ui.js?v=2026.10.24.10" data-login-controls></script>
 
   <div id="appView" class="app hidden">
     <aside id="sidebar" class="sidebar">
@@ -374,6 +374,148 @@ html body #loginView .login-verification-box{grid-template-columns:minmax(0,1fr)
 html body #loginView #loginVerifyDisplay{grid-column:1!important;width:100%!important;min-width:0!important}
 html body #loginView .login-code-input-shell{grid-column:2!important;width:100%!important;min-width:0!important}
 html body #loginView #refreshLoginVerify{grid-column:3!important;justify-self:center!important}
+
+/* Full login refresh */
+html body #loginView{
+  position:relative!important;isolation:isolate!important;overflow:hidden!important;
+  min-height:100svh!important;box-sizing:border-box!important;padding:20px!important;
+  background:radial-gradient(ellipse at 50% 0%,#e2f1e9 0%,transparent 55%),linear-gradient(135deg,#f4f8f6 0%,#edf4f0 100%)!important
+}
+html body #loginView::before{
+  content:"";position:absolute;z-index:-1;width:420px;height:420px;right:-170px;top:-190px;border-radius:50%;
+  background:radial-gradient(circle,rgba(28,112,81,.10),rgba(28,112,81,0) 68%);pointer-events:none
+}
+html body #loginView::after{
+  content:"";position:absolute;z-index:-1;width:360px;height:360px;left:-150px;bottom:-190px;border-radius:50%;
+  background:radial-gradient(circle,rgba(52,139,103,.08),rgba(52,139,103,0) 68%);pointer-events:none
+}
+html body #loginView .login-card{
+  position:relative!important;z-index:1!important;direction:rtl!important;
+  display:grid!important;grid-template-columns:minmax(0,.88fr) minmax(0,1.12fr)!important;
+  align-items:stretch!important;width:min(960px,calc(100vw - 40px))!important;max-width:960px!important;
+  min-height:560px!important;margin:auto!important;overflow:hidden!important;
+  border:1px solid #dce9e2!important;border-radius:28px!important;background:#fff!important;
+  box-shadow:0 28px 80px rgba(24,65,49,.14),0 5px 18px rgba(24,65,49,.06)!important
+}
+html body #loginView .brand-lockup{
+  position:relative!important;isolation:isolate!important;grid-column:1!important;
+  display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;
+  gap:22px!important;min-width:0!important;padding:44px 34px!important;overflow:hidden!important;
+  color:#fff!important;text-align:center!important;
+  background:linear-gradient(150deg,#0b4d3c 0%,#126b50 55%,#1c8060 100%)!important
+}
+html body #loginView .brand-lockup::before{
+  content:"";position:absolute;z-index:-1;width:320px;height:320px;right:-130px;top:-150px;border:1px solid rgba(255,255,255,.12);border-radius:50%;
+  box-shadow:0 0 0 36px rgba(255,255,255,.035),0 0 0 72px rgba(255,255,255,.025);pointer-events:none
+}
+html body #loginView .brand-lockup::after{
+  content:"";position:absolute;z-index:-1;width:210px;height:210px;left:-100px;bottom:-110px;border:1px solid rgba(255,255,255,.10);border-radius:50%;
+  box-shadow:0 0 0 28px rgba(255,255,255,.03),0 0 0 56px rgba(255,255,255,.02);pointer-events:none
+}
+html body #loginView .brand-lockup img{
+  display:block!important;width:min(250px,100%)!important;height:auto!important;max-height:150px!important;
+  object-fit:contain!important;filter:drop-shadow(0 8px 18px rgba(0,0,0,.16))!important
+}
+html body #loginView .brand-lockup h1{
+  max-width:310px!important;margin:0!important;color:#fff!important;font-size:25px!important;font-weight:700!important;line-height:1.65!important;
+  text-wrap:balance!important
+}
+html body #loginView #loginForm{
+  grid-column:2!important;align-self:center!important;width:100%!important;max-width:520px!important;
+  margin:0 auto!important;padding:46px 54px!important;box-sizing:border-box!important
+}
+html body #loginView .login-fields{display:grid!important;gap:16px!important}
+html body #loginView .login-field{display:grid!important;gap:7px!important;min-width:0!important}
+html body #loginView .login-field-title{color:#31483d!important;font-size:15px!important;font-weight:700!important;line-height:1.4!important}
+html body #loginView .login-input-shell{
+  position:relative!important;display:flex!important;align-items:center!important;width:100%!important;height:52px!important;
+  border:1px solid #d8e4dd!important;border-radius:14px!important;background:#f8fbf9!important;
+  box-shadow:inset 0 1px 2px rgba(22,62,45,.025)!important;transition:border-color .18s ease,box-shadow .18s ease,background .18s ease!important
+}
+html body #loginView .login-input-shell:focus-within{
+  border-color:#278363!important;background:#fff!important;box-shadow:0 0 0 4px rgba(39,131,99,.12)!important
+}
+html body #loginView .login-input-shell input{
+  width:100%!important;height:100%!important;min-width:0!important;padding:0 46px!important;border:0!important;outline:0!important;
+  background:transparent!important;color:#203b2f!important;font-size:16px!important;box-shadow:none!important
+}
+html body #loginView .login-leading-icon{color:#6b8377!important;opacity:.85!important}
+html body #loginView .login-password-toggle{color:#6b8377!important}
+html body #loginView .login-verification-box{
+  display:grid!important;direction:rtl!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 42px!important;
+  align-items:center!important;gap:9px!important;width:100%!important;min-width:0!important;height:62px!important;min-height:62px!important;
+  padding:7px!important;border:1px solid #d8e4dd!important;border-radius:15px!important;background:#f8fbf9!important
+}
+html body #loginView #loginVerifyDisplay{
+  grid-column:1!important;width:100%!important;min-width:0!important;height:46px!important;border:1px dashed #b9cfc2!important;border-radius:11px!important;
+  background:#fff!important;color:#145b43!important;font-size:25px!important;letter-spacing:5px!important
+}
+html body #loginView .login-code-input-shell{
+  position:relative!important;grid-column:2!important;display:flex!important;align-items:center!important;width:100%!important;min-width:0!important;height:46px!important
+}
+html body #loginView .login-code-input-shell #loginVerifyCode{
+  position:absolute!important;inset:0!important;width:100%!important;height:100%!important;min-width:0!important;z-index:2!important
+}
+html body #loginView .login-code-slots{
+  display:grid!important;width:100%!important;min-width:0!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:6px!important
+}
+html body #loginView .login-code-slots span{
+  display:grid!important;place-items:center!important;width:100%!important;height:42px!important;border:1px solid #d2e0d8!important;border-radius:9px!important;background:#fff!important;color:#145b43!important
+}
+html body #loginView #refreshLoginVerify{
+  grid-column:3!important;justify-self:center!important;width:36px!important;height:36px!important;border:0!important;border-radius:11px!important;
+  background:#e7f2ec!important;color:#176b4d!important
+}
+html body #loginView .login-code-error{color:#b42318!important;font-size:13px!important}
+html body #loginView .login-submit,html body #loginView .login-otp{
+  display:flex!important;align-items:center!important;justify-content:center!important;width:100%!important;height:50px!important;min-height:50px!important;
+  margin-top:14px!important;border-radius:14px!important;font-size:16px!important;font-weight:700!important;transition:transform .16s ease,box-shadow .16s ease,background .16s ease!important
+}
+html body #loginView .login-submit{
+  border:1px solid #126447!important;background:linear-gradient(135deg,#176e50,#0e5b43)!important;
+  box-shadow:0 8px 18px rgba(17,99,69,.18)!important
+}
+html body #loginView .login-otp{
+  margin-top:10px!important;border:1px solid #c9ddd1!important;background:#f4faf6!important;color:#176b4d!important;box-shadow:none!important
+}
+html body #loginView .login-submit:hover,html body #loginView .login-otp:hover{transform:translateY(-1px)!important}
+html body #loginView .login-submit:hover{box-shadow:0 11px 22px rgba(17,99,69,.24)!important}
+html body #loginView .login-otp:hover{background:#eaf5ee!important}
+html body #loginView #loginError{margin-top:8px!important}
+@media(max-width:780px){
+  html body #loginView{padding:14px!important;align-items:center!important}
+  html body #loginView .login-card{
+    display:flex!important;flex-direction:column!important;width:min(460px,calc(100vw - 28px))!important;min-height:0!important;border-radius:23px!important
+  }
+  html body #loginView .brand-lockup{
+    flex-direction:row!important;justify-content:center!important;gap:16px!important;min-height:126px!important;padding:17px 22px!important;text-align:right!important
+  }
+  html body #loginView .brand-lockup img{width:min(150px,38%)!important;max-height:82px!important}
+  html body #loginView .brand-lockup h1{max-width:230px!important;font-size:20px!important;line-height:1.55!important}
+  html body #loginView #loginForm{max-width:none!important;padding:28px 30px 30px!important}
+  html body #loginView .login-fields{gap:12px!important}
+}
+@media(max-height:680px) and (min-width:781px){
+  html body #loginView{padding:16px!important}
+  html body #loginView .login-card{min-height:min(560px,calc(100svh - 32px))!important}
+  html body #loginView .brand-lockup{gap:16px!important;padding:28px!important}
+  html body #loginView .brand-lockup img{width:min(215px,100%)!important;max-height:126px!important}
+  html body #loginView .brand-lockup h1{font-size:23px!important}
+  html body #loginView #loginForm{padding:28px 42px!important}
+  html body #loginView .login-fields{gap:10px!important}
+  html body #loginView .login-input-shell{height:46px!important}
+  html body #loginView .login-verification-box{height:56px!important;min-height:56px!important}
+  html body #loginView #loginVerifyDisplay,html body #loginView .login-code-input-shell{height:42px!important}
+  html body #loginView .login-code-slots span{height:38px!important}
+  html body #loginView .login-submit,html body #loginView .login-otp{height:44px!important;min-height:44px!important;margin-top:10px!important}
+}
+@media(max-width:480px){
+  html body #loginView .brand-lockup{gap:11px!important;padding-inline:15px!important}
+  html body #loginView .brand-lockup img{width:min(122px,36%)!important}
+  html body #loginView .brand-lockup h1{font-size:18px!important}
+  html body #loginView #loginForm{padding:22px 20px 24px!important}
+  html body #loginView .login-verification-box{gap:6px!important;padding:6px!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 36px!important}
+}
 </style>
 <script defer src="assets/js/bamco.bundle.js?v=2026.10.24.9"></script>
 <script defer src="assets/js/paint-shop-navigation.js?v=2026.10.24.spc1"></script><script defer src="assets/js/launcher-icon-polish.js?v=2026.10.24.9"></script>\n<script defer src="assets/js/operations-ui-adjustments.js?v=2026.10.24.9"></script></body>
