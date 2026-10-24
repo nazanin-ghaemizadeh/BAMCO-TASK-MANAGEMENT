@@ -101,4 +101,26 @@
  }
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
  window.setInterval(updateBrand,2000);
+ function restoreSPCSubtitle(){
+  const route=document.querySelector('.home-launcher-route[data-view="statisticalProcessControl"],.home-launcher-route[data-route="statisticalProcessControl"],[data-view="statisticalProcessControl"],[data-route="statisticalProcessControl"]');
+  if(!route)return;
+  route.removeAttribute('hidden');
+  let label=route.querySelector('span:last-child');
+  if(!label||label.classList.contains('home-launcher-route-icon')){
+   label=document.createElement('span');
+   route.append(label);
+  }
+  if(label.textContent!=='کنترل آماری فرایند')label.textContent='کنترل آماری فرایند';
+  label.hidden=false;
+  label.style.setProperty('visibility','visible','important');
+  label.style.setProperty('opacity','1','important');
+ }
+ const spcSubtitleObserver=new MutationObserver(restoreSPCSubtitle);
+ function observeSPCSubtitle(){
+  restoreSPCSubtitle();
+  if(document.body)spcSubtitleObserver.observe(document.body,{childList:true,subtree:true});
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',observeSPCSubtitle,{once:true});
+ else observeSPCSubtitle();
+ window.setInterval(restoreSPCSubtitle,1500);
 })();
