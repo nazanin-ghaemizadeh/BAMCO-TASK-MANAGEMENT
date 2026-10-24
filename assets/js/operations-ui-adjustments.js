@@ -2,6 +2,7 @@
 (()=>{
  'use strict';
  const PAINT_URL='https://nazanin-ghaemizadeh.github.io/BAMCO-PAINT-SHOP/';
+ const SPC_URL='https://nazanin-ghaemizadeh.github.io/BAMCO-STATISTICAL-PROCESS-CONTROL/';
  const q=(selector,root=document)=>root.querySelector(selector);
  const style=document.createElement('style');
  style.textContent=`
@@ -44,6 +45,12 @@
   const active=[...document.querySelectorAll('.view:not(.hidden)')];
   return active.filter(view=>!view.id||/organization|admin/i.test(view.id));
  }
+ function fixQualityLabels(){
+  const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
+  let node;
+  while((node=walker.nextNode()))node.nodeValue=node.nodeValue.replace(/کنترل آماری فرایند ?\\(SPC\\)/g,'Statistical Process Control').replace(/کنترل آماری فرایند/g,'Statistical Process Control').replace(/کنترل آماری کیفیت/g,'Quality Control');
+  document.body.querySelectorAll('*').forEach(element=>{for(const name of ['title','aria-label']){const value=element.getAttribute(name);if(value)element.setAttribute(name,value.replace(/کنترل آماری فرایند ?\\(SPC\\)/g,'Statistical Process Control').replace(/کنترل آماری فرایند/g,'Statistical Process Control').replace(/کنترل آماری کیفیت/g,'Quality Control'))}});
+ }
  function fixThermalLabel(){
   const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
   let node;
@@ -70,17 +77,18 @@
   }
  }
  document.addEventListener('click',event=>{
-  const target=event.target instanceof Element?event.target.closest('[data-view="ovenAnalysis"],[data-route="ovenAnalysis"]'):null;
+  const target=event.target instanceof Element?event.target.closest('[data-view="ovenAnalysis"],[data-route="ovenAnalysis"],[data-view="statisticalProcessControl"],[data-route="statisticalProcessControl"]'):null;
   if(!target)return;
   event.preventDefault();event.stopImmediatePropagation();
-  window.open(PAINT_URL,'_blank','noopener,noreferrer');
+  const isSpc=target.dataset.view==='statisticalProcessControl'||target.dataset.route==='statisticalProcessControl';
+  window.open(isSpc?SPC_URL:PAINT_URL,'_blank','noopener,noreferrer');
   q('.home-launcher-dialog[open]')?.close();
   if(typeof window.bamcoShowHome==='function')window.bamcoShowHome();
   else q('.home-return')?.click();
  },true);
  const observer=new MutationObserver(()=>{updateBrand();fixThermalLabel();fixArabicHeh()});
  function start(){
-  updateBrand();fixThermalLabel();fixArabicHeh();
+  updateBrand();fixThermalLabel();fixArabicHeh();fixQualityLabels();
   observer.observe(document.body,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['class','hidden','title','aria-label','placeholder','alt']});
  }
  for(const eventName of ['bamco:department-selected','bamco:profile-updated','bamco:profiles-updated','bamco:auth-state','bamco:session-ready','bamco:authenticated']){
