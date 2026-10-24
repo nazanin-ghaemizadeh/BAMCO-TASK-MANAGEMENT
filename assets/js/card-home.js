@@ -128,14 +128,21 @@ function install(){
     nav.contains(group)&&!group.classList.contains('hidden')&&option.source.isConnected&&
     getGroupOptions(group).some(item=>item.key===option.key&&item.source===option.source);
    if(!stillAvailable())return syncHomeOptions();
+   // Preserve user activation so external modules are not popup-blocked.
+   // A timer also races against refreshed access and reparented route buttons.
    if(groupDialog.open)groupDialog.close();
-   // Recheck after the event boundary: grants or the active account may have
-   // changed while the original click and dialog-close handlers were running.
-   setTimeout(()=>{
-    if(!stillAvailable())return syncHomeOptions();
-    if(option.section&&typeof window.bamcoPhonebook?.open==='function')window.bamcoPhonebook.open(option.section);
-    else option.source.click();
-   },0);
+   if(option.section&&typeof window.bamcoPhonebook?.open==='function'){
+    window.bamcoPhonebook.open(option.section);
+   }else{
+    option.source.click();
+    // Native click listeners own the route first. Recover an authorized
+    // internal module if its delegated listener was lost during reparenting.
+    const route=option.route,definition=catalog?.routeFor?.(route);
+    if(!['ovenAnalysis','statisticalProcessControl'].includes(route)&&
+       state.view==='home'&&definition&&window.BamcoAccess?.can?.(definition.featureKey,definition.action)===true){
+     window.BamcoNavigation?.navigate?.(route);
+    }
+   }
   });
   return shortcut;
  }
