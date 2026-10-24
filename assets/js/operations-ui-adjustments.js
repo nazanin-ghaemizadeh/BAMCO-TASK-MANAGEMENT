@@ -46,10 +46,15 @@
   return active.filter(view=>!view.id||/organization|admin/i.test(view.id));
  }
  function fixQualityLabels(){
+  const toPersian=value=>value
+   .replace(/Statistical\\s+Process\\s+Control(?:\\s*\\(SPC\\))?/gi,'کنترل آماری فرایند')
+   .replace(/Quality\\s+Control/gi,'کنترل آماری فرایند')
+   .replace(/کنترل آماری کیفیت/g,'کنترل آماری فرایند')
+   .replace(/کنترل آماری فرایند\\s*\\(SPC\\)/g,'کنترل آماری فرایند');
   const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
   let node;
-  while((node=walker.nextNode()))node.nodeValue=node.nodeValue.replaceAll('کنترل آماری فرایند (SPC)','Statistical Process Control').replace(/کنترل آماری فرایند/g,'Statistical Process Control').replace(/کنترل آماری کیفیت/g,'Quality Control');
-  document.body.querySelectorAll('*').forEach(element=>{for(const name of ['title','aria-label']){const value=element.getAttribute(name);if(value)element.setAttribute(name,value.replaceAll('کنترل آماری فرایند (SPC)','Statistical Process Control').replace(/کنترل آماری فرایند/g,'Statistical Process Control').replace(/کنترل آماری کیفیت/g,'Quality Control'))}});
+  while((node=walker.nextNode())){const value=toPersian(node.nodeValue);if(value!==node.nodeValue)node.nodeValue=value;}
+  document.body.querySelectorAll('*').forEach(element=>{for(const name of ['title','aria-label']){const value=element.getAttribute(name);if(value){const translated=toPersian(value);if(translated!==value)element.setAttribute(name,translated);}}});
  }
  function fixThermalLabel(){
   const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
