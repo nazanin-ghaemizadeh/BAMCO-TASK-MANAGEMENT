@@ -29,7 +29,7 @@
   }
   const label=stack.querySelector('.brand-department');
   const department=departmentName();
-  if(label)label.textContent=department?('معاونت: '+department):'';
+  if(label){const value=department?('معاونت: '+department):'';if(label.textContent!==value)label.textContent=value;}
  }
  function organizationRoots(){
   const explicit=[...document.querySelectorAll('#organizationAdminView,#organizationAdminRoot,#organizationAdminFeatureRoot,[data-feature-key="organizationAdmin"]')];
@@ -38,6 +38,17 @@
   if(!title.includes('مدیریت جامع سازمان'))return [];
   const active=[...document.querySelectorAll('.view:not(.hidden)')];
   return active.filter(view=>!view.id||/organization|admin/i.test(view.id));
+ }
+ function fixThermalLabel(){
+  const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
+  let node;
+  while((node=walker.nextNode()))if(node.nodeValue.includes('پایش حرارتی سالن رنگ'))node.nodeValue=node.nodeValue.replace(/پایش حرارتی سالن رنگ/g,'پایش حرارتی');
+  document.body.querySelectorAll('*').forEach(element=>{
+   for(const name of ['title','aria-label']){
+    const value=element.getAttribute(name);
+    if(value?.includes('پایش حرارتی سالن رنگ'))element.setAttribute(name,value.replace(/پایش حرارتی سالن رنگ/g,'پایش حرارتی'));
+   }
+  });
  }
  function fixArabicHeh(){
   const roots=organizationRoots();
@@ -59,9 +70,9 @@
   event.preventDefault();event.stopImmediatePropagation();
   window.open(PAINT_URL,'_blank','noopener,noreferrer');
  },true);
- const observer=new MutationObserver(()=>{updateBrand();fixArabicHeh()});
+ const observer=new MutationObserver(()=>{updateBrand();fixThermalLabel();fixArabicHeh()});
  function start(){
-  updateBrand();fixArabicHeh();
+  updateBrand();fixThermalLabel();fixArabicHeh();
   observer.observe(document.body,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['class','hidden','title','aria-label','placeholder','alt']});
  }
  for(const eventName of ['bamco:department-selected','bamco:profile-updated','bamco:profiles-updated','bamco:auth-state','bamco:session-ready','bamco:authenticated']){
