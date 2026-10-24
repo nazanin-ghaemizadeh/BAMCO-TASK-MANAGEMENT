@@ -11,14 +11,17 @@
   @media(max-width:700px){.card-topbar .brand-title-stack>strong{font-size:18px!important}.card-topbar .brand-department{font-size:11px}}
  `;
  (document.head||document.documentElement).append(style);
- function departmentName(){
+ function identityLabel(){
+  if(window.BamcoAccess?.isSystemManager?.()===true)return 'ادمین سامانه';
   const profile=window.Bamco?.state?.profile||window.state?.profile||{};
   const user=window.Bamco?.state?.user||window.state?.user||{};
   const meta=user.user_metadata||{};
   const values=[profile.department_title,profile.division_title,profile.department_name,profile.department,meta.department_title,meta.division_title,meta.department,window.BamcoWorkspace?.title?.()];
-  return String(values.find(value=>typeof value==='string'&&value.trim())||'').trim();
+  const department=String(values.find(value=>typeof value==='string'&&value.trim())||'').trim();
+  return department?('معاونت: '+department):'';
  }
  function updateBrand(){
+  q('#homeFixedFooter')?.remove();
   const top=q('.card-topbar');
   if(!top)return;
   let stack=top.querySelector('.brand-title-stack');
@@ -30,8 +33,8 @@
    title.replaceWith(stack);stack.append(title,label);
   }
   const label=stack.querySelector('.brand-department');
-  const department=departmentName();
-  if(label){const value=department?('معاونت: '+department):'';if(label.textContent!==value)label.textContent=value;}
+  const value=identityLabel();
+  if(label&&label.textContent!==value)label.textContent=value;
  }
  function organizationRoots(){
   const explicit=[...document.querySelectorAll('#organizationAdminView,#organizationAdminRoot,#organizationAdminFeatureRoot,[data-feature-key="organizationAdmin"]')];
