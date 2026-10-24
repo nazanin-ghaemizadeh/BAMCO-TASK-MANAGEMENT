@@ -47,10 +47,10 @@
  }
  function fixQualityLabels(){
   const toPersian=value=>value
-   .replace(/Statistical\\s+Process\\s+Control(?:\\s*\\(SPC\\))?/gi,'کنترل آماری فرایند')
-   .replace(/Quality\\s+Control/gi,'کنترل آماری فرایند')
+   .replace(/Statistical\s+Process\s+Control(?:\s*\(SPC\))?/gi,'کنترل آماری فرایند')
+   .replace(/Quality\s+Control/gi,'کنترل آماری فرایند')
    .replace(/کنترل آماری کیفیت/g,'کنترل آماری فرایند')
-   .replace(/کنترل آماری فرایند\\s*\\(SPC\\)/g,'کنترل آماری فرایند');
+   .replace(/کنترل آماری فرایند\s*\(SPC\)/g,'کنترل آماری فرایند');
   const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
   let node;
   while((node=walker.nextNode())){const value=toPersian(node.nodeValue);if(value!==node.nodeValue)node.nodeValue=value;}
