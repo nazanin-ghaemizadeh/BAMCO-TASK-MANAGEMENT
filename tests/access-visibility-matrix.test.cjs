@@ -119,6 +119,9 @@ test('authorized launcher modules activate in the original user click',async t=>
  group.querySelector('.home-group-trigger').click();
  const dialog=f.d.querySelector('.home-launcher-dialog'),route=dialog.querySelector('[data-route="kanban"]');
  assert(dialog.open&&route,'authorized module should be shown');
+ // A harmless home refresh must not invalidate an otherwise permitted click.
+ f.w.bamcoShowHome();
+ assert.equal(dialog.open,true,'launcher survives a same-user home refresh');
  route.click();
  assert.equal(sourceClicks,1,'source route click is synchronous');
  assert.equal(state(f).view,'kanban','authorized module opens on first click');

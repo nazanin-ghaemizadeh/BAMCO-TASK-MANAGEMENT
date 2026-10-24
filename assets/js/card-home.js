@@ -121,9 +121,9 @@ function install(){
   const count=routeBadgeText(option.route);
   if(count){const badge=document.createElement('b');badge.className='home-launcher-route-badge';badge.textContent=count;badge.setAttribute('aria-label',`${count} اعلان جدید`);shortcut.prepend(badge)}
   shortcut.addEventListener('click',()=>{
-   const user=currentUser(),session=window.bamcoAuth?.snapshot?.(),epoch=homeEpoch;
+   const user=currentUser(),session=window.bamcoAuth?.snapshot?.();
    const stillAvailable=()=>user===currentUser()&&(!session||window.bamcoAuth.isCurrent(session))&&
-    epoch===homeEpoch&&(typeof state==='undefined'||state.view==='home')&&!home.classList.contains('hidden')&&
+    (typeof state==='undefined'||state.view==='home')&&!home.classList.contains('hidden')&&
     !app.classList.contains('hidden')&&group.hidden!==true&&group.isConnected&&
     nav.contains(group)&&!group.classList.contains('hidden')&&option.source.isConnected&&
     getGroupOptions(group).some(item=>item.key===option.key&&item.source===option.source);
