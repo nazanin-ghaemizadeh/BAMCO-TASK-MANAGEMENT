@@ -72,17 +72,21 @@ function apiErrorMessage(data,status){
     (status>=500?'سرویس پایگاه داده موقتاً در دسترس نیست.':'درخواست به پایگاه داده انجام نشد.');
 }
 
-const safeReadRpcs=new Set(['chat_directory_v3','chat_directory_v2','chat_directory','chat_conversation_list','chat_system_message_payload','resolve_message_sticker']);
+const safeReadRpcs=new Set(['resolve_my_workspace','chat_directory_v3','chat_directory_v2','chat_directory','chat_conversation_list','chat_system_message_payload','resolve_message_sticker']);
 window.bamcoNetworkErrors=[];
 async function api(path,{method='GET',body,auth=true,prefer,keepalive=false}={}){
  const session=window.bamcoAuth?.snapshot?.(),current=()=>session?window.bamcoAuth.isCurrent(session):token===state.token;
  const token=state.token,headers={apikey:SB_KEY,'Content-Type':'application/json',Accept:'application/json'};
  if(auth&&token)headers.Authorization=`Bearer ${token}`;if(prefer)headers.Prefer=prefer;
  const endpoint=path.split('?')[0],readOnly=method==='GET'||(method==='POST'&&safeReadRpcs.has(endpoint.split('/').pop()));
+ // Password admission can safely recover once after a transport failure. Do
+ // not extend this policy to refresh-token rotation or application writes.
+ const passwordLogin=method==='POST'&&!auth&&path==='/auth/v1/token?grant_type=password';
+ const recoverable=readOnly||passwordLogin,timeoutMs=passwordLogin?45000:20000;
  const taskMutation=method!=='GET'&&(endpoint==='/rest/v1/tasks'||(endpoint==='/functions/v1/admin-users'&&method==='DELETE')||['delete_tasks_and_resequence','restore_tasks_to_kanban_and_resequence','review_request_stage'].includes(endpoint.split('/').pop()));
  if(taskMutation)state.taskRevision=(state.taskRevision||0)+1;
- for(let attempt=0;attempt<(readOnly?2:1);attempt++){
-  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),20000);
+ for(let attempt=0;attempt<(recoverable?2:1);attempt++){
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeoutMs);
   try{
    if(auth&&!current())throw new Error('حساب ورود تغییر کرده است.');
    if(auth&&state.token)headers.Authorization=`Bearer ${state.token}`;
@@ -93,8 +97,8 @@ async function api(path,{method='GET',body,auth=true,prefer,keepalive=false}={})
    return data;
   }catch(err){
    const network=err.name==='TypeError'||err.name==='AbortError'||controller.signal.aborted,temporary=network||[502,503,504].includes(err.status);
-   if(readOnly&&attempt===0&&temporary&&(!auth||current())&&navigator.onLine!==false){await new Promise(resolve=>setTimeout(resolve,350));continue}
-   if(network){const detail=navigator.onLine===false?'اتصال اینترنت قطع است.':controller.signal.aborted?'پاسخ سرور در زمان مقرر دریافت نشد.':'ارتباط با سرور برقرار نشد.';const error=new Error(detail+(readOnly?' دوباره تلاش کنید.':' نتیجه عملیات مشخص نیست؛ پیش از تکرار، وضعیت آن را بررسی کنید.'));error.code='NETWORK_ERROR';error.cause=err;err=error}
+   if(recoverable&&attempt===0&&temporary&&(!auth||current())&&navigator.onLine!==false){clearTimeout(timer);await new Promise(resolve=>setTimeout(resolve,350));continue}
+   if(network){const detail=navigator.onLine===false?'اتصال اینترنت قطع است.':controller.signal.aborted?'پاسخ سرور در زمان مقرر دریافت نشد.':'ارتباط با سرور برقرار نشد.';const guidance=passwordLogin?' ارتباط با سرور ورود برقرار نشد؛ اینترنت دیگری را امتحان کنید و دوباره وارد شوید.':readOnly?' دوباره تلاش کنید.':' نتیجه عملیات مشخص نیست؛ پیش از تکرار، وضعیت آن را بررسی کنید.';const error=new Error(detail+guidance);error.code='NETWORK_ERROR';error.cause=err;err=error}
    window.bamcoNetworkErrors.push({endpoint,method,status:err.status||0,code:err.code||'REQUEST_ERROR',at:new Date().toISOString()});if(window.bamcoNetworkErrors.length>30)window.bamcoNetworkErrors.shift();
    throw err;
   }finally{clearTimeout(timer);if(taskMutation)state.taskRevision=(state.taskRevision||0)+1}
@@ -390,10 +394,10 @@ function showLogin(){
   $('#loginView').classList.remove('hidden');
 }
 
-$('#loginForm').addEventListener('submit',async e=>{e.preventDefault();$('#loginError').textContent='';const submit=e.currentTarget.querySelector('button[type="submit"]');submit.disabled=true;
+$('#loginForm').addEventListener('submit',async e=>{e.preventDefault();$('#loginError').textContent='';const submit=e.currentTarget.querySelector('button[type="submit"]'),label=submit.textContent;submit.disabled=true;submit.textContent='در حال اتصال به سامانه…';
   try{const data=await signInWithLogin($('#email').value,$('#password').value);window.bamcoAuth.accept(data);await window.BamcoWorkspace.identify();await enterApp()}
   catch(err){showLogin();$('#loginError').textContent=err.message}
-  finally{submit.disabled=false}
+  finally{submit.textContent=label;submit.disabled=false}
 });
 async function enterApp(){
   const enteringUser=state.user.id;
