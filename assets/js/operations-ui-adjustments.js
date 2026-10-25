@@ -9,19 +9,22 @@
   #homeFixedFooter{display:none!important}
   .card-topbar .brand-title-stack{grid-column:2!important;grid-row:1!important;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.35}
   .card-topbar .brand-title-stack>strong{display:block!important;grid-column:auto!important;grid-row:auto!important;margin:0!important;color:#fff!important;text-align:center!important;font-size:22px!important;line-height:1.35!important}
-  .card-topbar .brand-department{display:block;margin-top:2px;color:#d8eee3;font-size:12px;line-height:1.25;white-space:nowrap;text-align:center}
+  .card-topbar .brand-department[hidden]{display:none}
+  .card-topbar .brand-department{display:block;margin-top:2px;color:#d8eee3;font-size:12px;line-height:1.25;white-space:normal;text-align:center}
   @media(max-width:700px){.card-topbar .brand-title-stack>strong{font-size:18px!important}.card-topbar .brand-department{font-size:11px}}
  `;
  (document.head||document.documentElement).append(style);
- function identityLabel(){
-  if(window.BamcoAccess?.isSystemManager?.()===true)return 'ادمین سامانه';
+ function identityLabels(){
+  if(window.BamcoAccess?.isSystemManager?.()===true)return {department:'ادمین سامانه',unit:''};
   const profile=window.Bamco?.state?.profile||window.state?.profile||{};
   const user=window.Bamco?.state?.user||window.state?.user||{};
-  const meta=user.user_metadata||{};
-  const values=[profile.department_title,profile.division_title,profile.department_name,profile.department,meta.department_title,meta.division_title,meta.department,window.BamcoWorkspace?.title?.()];
-  const department=String(values.find(value=>typeof value==='string'&&value.trim())||'').trim();
-  return department?('معاونت: '+department):'';
+  const meta=user.user_metadata||{},identity=window.BamcoWorkspace?.identity?.()||{};
+  const first=values=>String(values.find(value=>typeof value==='string'&&value.trim())||'—').trim();
+  const department=first([identity.department_title,profile.department_title,profile.division_title,profile.department_name,profile.department,meta.department_title,meta.division_title,meta.department]);
+  const unit=first([identity.title,profile.unit_title,profile.unit_name,meta.unit_title,meta.unit_name,window.BamcoWorkspace?.title?.()]);
+  return {department:'معاونت: '+department,unit:'واحد: '+unit};
  }
+
  function updateBrand(){
   const top=q('.card-topbar');
   if(!top)return;
@@ -34,8 +37,12 @@
    title.replaceWith(stack);stack.append(title,label);
   }
   const label=stack.querySelector('.brand-department');
-  const value=identityLabel();
-  if(label&&label.textContent!==value)label.textContent=value;
+  let unit=stack.querySelector('.brand-unit');
+  if(!unit){unit=document.createElement('span');unit.className='brand-department brand-unit';unit.id='currentUnitName';stack.append(unit)}
+  const value=identityLabels();
+  if(label&&label.textContent!==value.department)label.textContent=value.department;
+  if(unit.textContent!==value.unit)unit.textContent=value.unit;
+  if(unit.hidden!==!value.unit)unit.hidden=!value.unit;
  }
  function organizationRoots(){
   const explicit=[...document.querySelectorAll('#organizationAdminView,#organizationAdminRoot,#organizationAdminFeatureRoot,[data-feature-key="organizationAdmin"]')];
