@@ -61,3 +61,11 @@ test('opening live voice preserves prior roles and cancels a pending text respon
  assert.equal(items[1].content[0].text,'پاسخ قبلی');assert(peer);
  }finally{h.runtime.dispose();h.dom.window.close()}
 });
+
+test('the production static sticker never starts the animated puppet',()=>{
+ const h=harness();try{
+  h.runtime.dispose();h.view.dataset.avatarMode='static';const before=h.starts;
+  const runtime=h.w.BamcoAssistantRuntime.create(h.view,{session:()=>({token:'token',userId:'u1'}),loadSticker:async()=>{}});
+  runtime.activate();assert.equal(h.starts,before);runtime.dispose();
+ }finally{h.runtime.dispose();h.dom.window.close()}
+});

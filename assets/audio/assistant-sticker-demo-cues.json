@@ -1,0 +1,265 @@
+{
+  "text": "Hi! I'm your assistant. I can help you plan your day. Let's work together.",
+  "cues": [
+    {
+      "start": 0.0,
+      "end": 0.202,
+      "phone": "pau"
+    },
+    {
+      "start": 0.202,
+      "end": 0.2544,
+      "phone": "hh"
+    },
+    {
+      "start": 0.2544,
+      "end": 0.574,
+      "phone": "ay"
+    },
+    {
+      "start": 0.574,
+      "end": 0.8564,
+      "phone": "pau"
+    },
+    {
+      "start": 0.8564,
+      "end": 0.9712,
+      "phone": "ih"
+    },
+    {
+      "start": 0.9712,
+      "end": 1.0397,
+      "phone": "m"
+    },
+    {
+      "start": 1.0397,
+      "end": 1.1364,
+      "phone": "y"
+    },
+    {
+      "start": 1.1364,
+      "end": 1.3171,
+      "phone": "ao"
+    },
+    {
+      "start": 1.3171,
+      "end": 1.4125,
+      "phone": "r"
+    },
+    {
+      "start": 1.4125,
+      "end": 1.4574,
+      "phone": "ax"
+    },
+    {
+      "start": 1.4574,
+      "end": 1.6125,
+      "phone": "s"
+    },
+    {
+      "start": 1.6125,
+      "end": 1.7059,
+      "phone": "ih"
+    },
+    {
+      "start": 1.7059,
+      "end": 1.7856,
+      "phone": "s"
+    },
+    {
+      "start": 1.7856,
+      "end": 1.8814,
+      "phone": "t"
+    },
+    {
+      "start": 1.8814,
+      "end": 2.0128,
+      "phone": "ax"
+    },
+    {
+      "start": 2.0128,
+      "end": 2.0707,
+      "phone": "n"
+    },
+    {
+      "start": 2.0707,
+      "end": 2.1375,
+      "phone": "t"
+    },
+    {
+      "start": 2.1375,
+      "end": 2.278,
+      "phone": "pau"
+    },
+    {
+      "start": 2.278,
+      "end": 2.4451,
+      "phone": "ay"
+    },
+    {
+      "start": 2.4451,
+      "end": 2.5692,
+      "phone": "k"
+    },
+    {
+      "start": 2.5692,
+      "end": 2.6677,
+      "phone": "ae"
+    },
+    {
+      "start": 2.6677,
+      "end": 2.7098,
+      "phone": "n"
+    },
+    {
+      "start": 2.7098,
+      "end": 2.7812,
+      "phone": "hh"
+    },
+    {
+      "start": 2.7812,
+      "end": 2.8706,
+      "phone": "eh"
+    },
+    {
+      "start": 2.8706,
+      "end": 3.0016,
+      "phone": "l"
+    },
+    {
+      "start": 3.0016,
+      "end": 3.1257,
+      "phone": "p"
+    },
+    {
+      "start": 3.1257,
+      "end": 3.1846,
+      "phone": "y"
+    },
+    {
+      "start": 3.1846,
+      "end": 3.2421,
+      "phone": "uw"
+    },
+    {
+      "start": 3.2421,
+      "end": 3.3384,
+      "phone": "p"
+    },
+    {
+      "start": 3.3384,
+      "end": 3.4164,
+      "phone": "l"
+    },
+    {
+      "start": 3.4164,
+      "end": 3.5637,
+      "phone": "ae"
+    },
+    {
+      "start": 3.5637,
+      "end": 3.6699,
+      "phone": "n"
+    },
+    {
+      "start": 3.6699,
+      "end": 3.7433,
+      "phone": "y"
+    },
+    {
+      "start": 3.7433,
+      "end": 3.7849,
+      "phone": "ao"
+    },
+    {
+      "start": 3.7849,
+      "end": 3.8277,
+      "phone": "r"
+    },
+    {
+      "start": 3.8277,
+      "end": 3.8881,
+      "phone": "d"
+    },
+    {
+      "start": 3.8881,
+      "end": 4.0622,
+      "phone": "ey"
+    },
+    {
+      "start": 4.0622,
+      "end": 4.3511,
+      "phone": "pau"
+    },
+    {
+      "start": 4.3511,
+      "end": 4.4094,
+      "phone": "l"
+    },
+    {
+      "start": 4.4094,
+      "end": 4.4816,
+      "phone": "eh"
+    },
+    {
+      "start": 4.4816,
+      "end": 4.5568,
+      "phone": "t"
+    },
+    {
+      "start": 4.5568,
+      "end": 4.6487,
+      "phone": "s"
+    },
+    {
+      "start": 4.6487,
+      "end": 4.7616,
+      "phone": "w"
+    },
+    {
+      "start": 4.7616,
+      "end": 4.9659,
+      "phone": "er"
+    },
+    {
+      "start": 4.9659,
+      "end": 5.0605,
+      "phone": "k"
+    },
+    {
+      "start": 5.0605,
+      "end": 5.1721,
+      "phone": "t"
+    },
+    {
+      "start": 5.1721,
+      "end": 5.2058,
+      "phone": "ax"
+    },
+    {
+      "start": 5.2058,
+      "end": 5.2991,
+      "phone": "g"
+    },
+    {
+      "start": 5.2991,
+      "end": 5.3965,
+      "phone": "eh"
+    },
+    {
+      "start": 5.3965,
+      "end": 5.4695,
+      "phone": "dh"
+    },
+    {
+      "start": 5.4695,
+      "end": 5.715,
+      "phone": "er"
+    },
+    {
+      "start": 5.715,
+      "end": 5.927,
+      "phone": "pau"
+    }
+  ]
+}

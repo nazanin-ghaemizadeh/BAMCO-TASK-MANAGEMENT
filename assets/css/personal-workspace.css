@@ -166,3 +166,12 @@ html body #appView [data-feature-access-control="local"],html body #appView .veh
 }
 @media(max-height:500px) and (max-width:900px){#voiceAssistantView .assistant-stage{grid-template-rows:76px minmax(0,1fr)}}
 @media(prefers-reduced-motion:reduce){#voiceAssistantView .assistant-avatar-frame,#voiceAssistantView .assistant-avatar-canvas{transition-duration:.01ms}#voiceAssistantView .assistant-avatar-frame,#voiceAssistantView .assistant-avatar-face,#voiceAssistantView .assistant-avatar-floor{animation:none!important}}
+
+/* Keep the production assistant on its original still sticker. */
+#voiceAssistantView[data-avatar-mode="static"] .assistant-avatar-scene,
+#voiceAssistantView[data-avatar-mode="static"] .assistant-avatar-frame,
+#voiceAssistantView[data-avatar-mode="static"] .assistant-avatar-floor{animation:none!important;transform:none!important;transition:none!important}
+#voiceAssistantView[data-avatar-mode="static"] .assistant-avatar-frame{visibility:visible!important;opacity:1!important}
+#voiceAssistantView[data-avatar-mode="static"] .assistant-avatar-canvas,
+#voiceAssistantView[data-avatar-mode="static"] .assistant-avatar-face,
+#voiceAssistantView[data-avatar-mode="static"] .assistant-avatar-floor{display:none!important}

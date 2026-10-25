@@ -31,7 +31,7 @@ function waitForIce(peer,signal){
 function create(view,{session,loadSticker}){
  const messages=$('.assistant-messages',view),input=$('.assistant-composer textarea',view),mic=$('.assistant-mic',view);
  const status=$('.assistant-status',view),voiceLevel=$('.assistant-voice-activity',view),historyButton=$('[data-assistant-history]',view),liveButton=$('[data-assistant-live]',view),playButton=$('[data-assistant-play]',view);
- const puppet=window.BamcoAssistantPuppet?.create(view);
+ const puppet=view.dataset.avatarMode==='static'?null:window.BamcoAssistantPuppet?.create(view);
  const conversationId=()=>crypto.randomUUID?.()||String(Date.now());
  let conversation=conversationId(),history=[],generation=0,active=false,busy=false,live=null,liveAttempt=0;
  let audio=null,audioUrl='',audioContext=null,audioFrame=0,answerAbort=null,speechAbort=null;
