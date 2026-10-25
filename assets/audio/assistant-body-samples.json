@@ -1,0 +1,1841 @@
+[
+  {
+    "key": "explain",
+    "title": "توضیح دادن",
+    "fa": "اول مسئله را به چند بخش تقسیم کنیم. بعد گزینه‌ها را با هم بررسی می‌کنیم.",
+    "en": "First, let us break this into a few steps. Then we can look at the options together.",
+    "audio": "assets/audio/assistant-body-explain.mp3",
+    "cues": [
+      {
+        "start": 0.0,
+        "end": 0.2047,
+        "phone": "pau"
+      },
+      {
+        "start": 0.2047,
+        "end": 0.3259,
+        "phone": "f"
+      },
+      {
+        "start": 0.3259,
+        "end": 0.4889,
+        "phone": "er"
+      },
+      {
+        "start": 0.4889,
+        "end": 0.6053,
+        "phone": "s"
+      },
+      {
+        "start": 0.6053,
+        "end": 0.6598,
+        "phone": "t"
+      },
+      {
+        "start": 0.6598,
+        "end": 0.7848,
+        "phone": "pau"
+      },
+      {
+        "start": 0.7848,
+        "end": 0.8715,
+        "phone": "l"
+      },
+      {
+        "start": 0.8715,
+        "end": 0.9836,
+        "phone": "eh"
+      },
+      {
+        "start": 0.9836,
+        "end": 1.0352,
+        "phone": "t"
+      },
+      {
+        "start": 1.0352,
+        "end": 1.155,
+        "phone": "ah"
+      },
+      {
+        "start": 1.155,
+        "end": 1.2692,
+        "phone": "s"
+      },
+      {
+        "start": 1.2692,
+        "end": 1.3143,
+        "phone": "b"
+      },
+      {
+        "start": 1.3143,
+        "end": 1.3769,
+        "phone": "r"
+      },
+      {
+        "start": 1.3769,
+        "end": 1.5317,
+        "phone": "ey"
+      },
+      {
+        "start": 1.5317,
+        "end": 1.7195,
+        "phone": "k"
+      },
+      {
+        "start": 1.7195,
+        "end": 1.7551,
+        "phone": "dh"
+      },
+      {
+        "start": 1.7551,
+        "end": 1.8287,
+        "phone": "ih"
+      },
+      {
+        "start": 1.8287,
+        "end": 1.9847,
+        "phone": "s"
+      },
+      {
+        "start": 1.9847,
+        "end": 2.0515,
+        "phone": "ih"
+      },
+      {
+        "start": 2.0515,
+        "end": 2.1375,
+        "phone": "n"
+      },
+      {
+        "start": 2.1375,
+        "end": 2.2193,
+        "phone": "t"
+      },
+      {
+        "start": 2.2193,
+        "end": 2.2905,
+        "phone": "uw"
+      },
+      {
+        "start": 2.2905,
+        "end": 2.3545,
+        "phone": "ax"
+      },
+      {
+        "start": 2.3545,
+        "end": 2.4666,
+        "phone": "f"
+      },
+      {
+        "start": 2.4666,
+        "end": 2.5108,
+        "phone": "y"
+      },
+      {
+        "start": 2.5108,
+        "end": 2.6086,
+        "phone": "uw"
+      },
+      {
+        "start": 2.6086,
+        "end": 2.7555,
+        "phone": "s"
+      },
+      {
+        "start": 2.7555,
+        "end": 2.8755,
+        "phone": "t"
+      },
+      {
+        "start": 2.8755,
+        "end": 3.0437,
+        "phone": "eh"
+      },
+      {
+        "start": 3.0437,
+        "end": 3.1377,
+        "phone": "p"
+      },
+      {
+        "start": 3.1377,
+        "end": 3.2541,
+        "phone": "s"
+      },
+      {
+        "start": 3.2541,
+        "end": 3.3768,
+        "phone": "pau"
+      },
+      {
+        "start": 3.3768,
+        "end": 3.4484,
+        "phone": "dh"
+      },
+      {
+        "start": 3.4484,
+        "end": 3.5178,
+        "phone": "eh"
+      },
+      {
+        "start": 3.5178,
+        "end": 3.5773,
+        "phone": "n"
+      },
+      {
+        "start": 3.5773,
+        "end": 3.6406,
+        "phone": "w"
+      },
+      {
+        "start": 3.6406,
+        "end": 3.7199,
+        "phone": "iy"
+      },
+      {
+        "start": 3.7199,
+        "end": 3.844,
+        "phone": "k"
+      },
+      {
+        "start": 3.844,
+        "end": 3.9395,
+        "phone": "ae"
+      },
+      {
+        "start": 3.9395,
+        "end": 4.0452,
+        "phone": "n"
+      },
+      {
+        "start": 4.0452,
+        "end": 4.1202,
+        "phone": "l"
+      },
+      {
+        "start": 4.1202,
+        "end": 4.1938,
+        "phone": "uh"
+      },
+      {
+        "start": 4.1938,
+        "end": 4.2839,
+        "phone": "k"
+      },
+      {
+        "start": 4.2839,
+        "end": 4.3905,
+        "phone": "ae"
+      },
+      {
+        "start": 4.3905,
+        "end": 4.4694,
+        "phone": "t"
+      },
+      {
+        "start": 4.4694,
+        "end": 4.5095,
+        "phone": "dh"
+      },
+      {
+        "start": 4.5095,
+        "end": 4.6061,
+        "phone": "iy"
+      },
+      {
+        "start": 4.6061,
+        "end": 4.8414,
+        "phone": "aa"
+      },
+      {
+        "start": 4.8414,
+        "end": 4.9297,
+        "phone": "p"
+      },
+      {
+        "start": 4.9297,
+        "end": 5.0742,
+        "phone": "sh"
+      },
+      {
+        "start": 5.0742,
+        "end": 5.131,
+        "phone": "ax"
+      },
+      {
+        "start": 5.131,
+        "end": 5.2432,
+        "phone": "n"
+      },
+      {
+        "start": 5.2432,
+        "end": 5.3006,
+        "phone": "z"
+      },
+      {
+        "start": 5.3006,
+        "end": 5.3673,
+        "phone": "t"
+      },
+      {
+        "start": 5.3673,
+        "end": 5.4149,
+        "phone": "ax"
+      },
+      {
+        "start": 5.4149,
+        "end": 5.5082,
+        "phone": "g"
+      },
+      {
+        "start": 5.5082,
+        "end": 5.6112,
+        "phone": "eh"
+      },
+      {
+        "start": 5.6112,
+        "end": 5.6842,
+        "phone": "dh"
+      },
+      {
+        "start": 5.6842,
+        "end": 5.9297,
+        "phone": "er"
+      },
+      {
+        "start": 5.9297,
+        "end": 6.1416,
+        "phone": "pau"
+      }
+    ]
+  },
+  {
+    "key": "assertive",
+    "title": "قاطعیت",
+    "fa": "این کار باید امروز انجام شود. لطفاً روی این اولویت تمرکز کن.",
+    "en": "This needs to be completed today. Please focus on this priority. It is important.",
+    "audio": "assets/audio/assistant-body-assertive.mp3",
+    "cues": [
+      {
+        "start": 0.0,
+        "end": 0.2466,
+        "phone": "pau"
+      },
+      {
+        "start": 0.2466,
+        "end": 0.3108,
+        "phone": "dh"
+      },
+      {
+        "start": 0.3108,
+        "end": 0.4085,
+        "phone": "ih"
+      },
+      {
+        "start": 0.4085,
+        "end": 0.5298,
+        "phone": "s"
+      },
+      {
+        "start": 0.5298,
+        "end": 0.6018,
+        "phone": "n"
+      },
+      {
+        "start": 0.6018,
+        "end": 0.7667,
+        "phone": "iy"
+      },
+      {
+        "start": 0.7667,
+        "end": 0.8207,
+        "phone": "d"
+      },
+      {
+        "start": 0.8207,
+        "end": 0.9333,
+        "phone": "z"
+      },
+      {
+        "start": 0.9333,
+        "end": 1.0636,
+        "phone": "t"
+      },
+      {
+        "start": 1.0636,
+        "end": 1.1097,
+        "phone": "ax"
+      },
+      {
+        "start": 1.1097,
+        "end": 1.2032,
+        "phone": "b"
+      },
+      {
+        "start": 1.2032,
+        "end": 1.322,
+        "phone": "iy"
+      },
+      {
+        "start": 1.322,
+        "end": 1.4264,
+        "phone": "k"
+      },
+      {
+        "start": 1.4264,
+        "end": 1.4924,
+        "phone": "ax"
+      },
+      {
+        "start": 1.4924,
+        "end": 1.569,
+        "phone": "m"
+      },
+      {
+        "start": 1.569,
+        "end": 1.6777,
+        "phone": "p"
+      },
+      {
+        "start": 1.6777,
+        "end": 1.7219,
+        "phone": "l"
+      },
+      {
+        "start": 1.7219,
+        "end": 1.8113,
+        "phone": "iy"
+      },
+      {
+        "start": 1.8113,
+        "end": 1.8442,
+        "phone": "t"
+      },
+      {
+        "start": 1.8442,
+        "end": 1.8899,
+        "phone": "ax"
+      },
+      {
+        "start": 1.8899,
+        "end": 1.985,
+        "phone": "d"
+      },
+      {
+        "start": 1.985,
+        "end": 2.088,
+        "phone": "t"
+      },
+      {
+        "start": 2.088,
+        "end": 2.1276,
+        "phone": "ax"
+      },
+      {
+        "start": 2.1276,
+        "end": 2.1916,
+        "phone": "d"
+      },
+      {
+        "start": 2.1916,
+        "end": 2.4865,
+        "phone": "ey"
+      },
+      {
+        "start": 2.4865,
+        "end": 2.6983,
+        "phone": "pau"
+      },
+      {
+        "start": 2.6983,
+        "end": 2.8247,
+        "phone": "p"
+      },
+      {
+        "start": 2.8247,
+        "end": 2.875,
+        "phone": "l"
+      },
+      {
+        "start": 2.875,
+        "end": 3.0171,
+        "phone": "iy"
+      },
+      {
+        "start": 3.0171,
+        "end": 3.1494,
+        "phone": "z"
+      },
+      {
+        "start": 3.1494,
+        "end": 3.3089,
+        "phone": "f"
+      },
+      {
+        "start": 3.3089,
+        "end": 3.4695,
+        "phone": "ow"
+      },
+      {
+        "start": 3.4695,
+        "end": 3.5639,
+        "phone": "k"
+      },
+      {
+        "start": 3.5639,
+        "end": 3.645,
+        "phone": "ax"
+      },
+      {
+        "start": 3.645,
+        "end": 3.8148,
+        "phone": "s"
+      },
+      {
+        "start": 3.8148,
+        "end": 3.9345,
+        "phone": "aa"
+      },
+      {
+        "start": 3.9345,
+        "end": 4.0319,
+        "phone": "n"
+      },
+      {
+        "start": 4.0319,
+        "end": 4.0609,
+        "phone": "dh"
+      },
+      {
+        "start": 4.0609,
+        "end": 4.1585,
+        "phone": "ih"
+      },
+      {
+        "start": 4.1585,
+        "end": 4.2203,
+        "phone": "s"
+      },
+      {
+        "start": 4.2203,
+        "end": 4.3368,
+        "phone": "p"
+      },
+      {
+        "start": 4.3368,
+        "end": 4.4013,
+        "phone": "r"
+      },
+      {
+        "start": 4.4013,
+        "end": 4.5974,
+        "phone": "ay"
+      },
+      {
+        "start": 4.5974,
+        "end": 4.7026,
+        "phone": "ao"
+      },
+      {
+        "start": 4.7026,
+        "end": 4.8165,
+        "phone": "r"
+      },
+      {
+        "start": 4.8165,
+        "end": 4.847,
+        "phone": "ax"
+      },
+      {
+        "start": 4.847,
+        "end": 4.9683,
+        "phone": "t"
+      },
+      {
+        "start": 4.9683,
+        "end": 5.2311,
+        "phone": "iy"
+      },
+      {
+        "start": 5.2311,
+        "end": 5.5055,
+        "phone": "pau"
+      },
+      {
+        "start": 5.5055,
+        "end": 5.5595,
+        "phone": "ih"
+      },
+      {
+        "start": 5.5595,
+        "end": 5.6233,
+        "phone": "t"
+      },
+      {
+        "start": 5.6233,
+        "end": 5.6905,
+        "phone": "ih"
+      },
+      {
+        "start": 5.6905,
+        "end": 5.7963,
+        "phone": "z"
+      },
+      {
+        "start": 5.7963,
+        "end": 5.8515,
+        "phone": "ih"
+      },
+      {
+        "start": 5.8515,
+        "end": 5.983,
+        "phone": "m"
+      },
+      {
+        "start": 5.983,
+        "end": 6.0638,
+        "phone": "p"
+      },
+      {
+        "start": 6.0638,
+        "end": 6.1963,
+        "phone": "ao"
+      },
+      {
+        "start": 6.1963,
+        "end": 6.3074,
+        "phone": "r"
+      },
+      {
+        "start": 6.3074,
+        "end": 6.3409,
+        "phone": "t"
+      },
+      {
+        "start": 6.3409,
+        "end": 6.4154,
+        "phone": "ax"
+      },
+      {
+        "start": 6.4154,
+        "end": 6.5388,
+        "phone": "n"
+      },
+      {
+        "start": 6.5388,
+        "end": 6.638,
+        "phone": "t"
+      },
+      {
+        "start": 6.638,
+        "end": 6.8332,
+        "phone": "pau"
+      }
+    ]
+  },
+  {
+    "key": "thinking",
+    "title": "فکر کردن",
+    "fa": "اجازه بده کمی فکر کنم. شاید راه بهتری برای حل این مسئله وجود داشته باشد.",
+    "en": "Let me think about that for a moment. There may be a better way to solve this problem.",
+    "audio": "assets/audio/assistant-body-thinking.mp3",
+    "cues": [
+      {
+        "start": 0.0,
+        "end": 0.2898,
+        "phone": "pau"
+      },
+      {
+        "start": 0.2898,
+        "end": 0.4285,
+        "phone": "l"
+      },
+      {
+        "start": 0.4285,
+        "end": 0.4558,
+        "phone": "eh"
+      },
+      {
+        "start": 0.4558,
+        "end": 0.5226,
+        "phone": "t"
+      },
+      {
+        "start": 0.5226,
+        "end": 0.606,
+        "phone": "m"
+      },
+      {
+        "start": 0.606,
+        "end": 0.6941,
+        "phone": "iy"
+      },
+      {
+        "start": 0.6941,
+        "end": 0.816,
+        "phone": "th"
+      },
+      {
+        "start": 0.816,
+        "end": 0.8954,
+        "phone": "ih"
+      },
+      {
+        "start": 0.8954,
+        "end": 0.9893,
+        "phone": "ng"
+      },
+      {
+        "start": 0.9893,
+        "end": 1.0901,
+        "phone": "k"
+      },
+      {
+        "start": 1.0901,
+        "end": 1.1478,
+        "phone": "ax"
+      },
+      {
+        "start": 1.1478,
+        "end": 1.2007,
+        "phone": "b"
+      },
+      {
+        "start": 1.2007,
+        "end": 1.3902,
+        "phone": "aw"
+      },
+      {
+        "start": 1.3902,
+        "end": 1.4746,
+        "phone": "t"
+      },
+      {
+        "start": 1.4746,
+        "end": 1.5297,
+        "phone": "dh"
+      },
+      {
+        "start": 1.5297,
+        "end": 1.6109,
+        "phone": "ae"
+      },
+      {
+        "start": 1.6109,
+        "end": 1.663,
+        "phone": "t"
+      },
+      {
+        "start": 1.663,
+        "end": 1.7689,
+        "phone": "f"
+      },
+      {
+        "start": 1.7689,
+        "end": 1.8271,
+        "phone": "ao"
+      },
+      {
+        "start": 1.8271,
+        "end": 1.9099,
+        "phone": "r"
+      },
+      {
+        "start": 1.9099,
+        "end": 1.964,
+        "phone": "ax"
+      },
+      {
+        "start": 1.964,
+        "end": 2.0678,
+        "phone": "m"
+      },
+      {
+        "start": 2.0678,
+        "end": 2.2193,
+        "phone": "ow"
+      },
+      {
+        "start": 2.2193,
+        "end": 2.2955,
+        "phone": "m"
+      },
+      {
+        "start": 2.2955,
+        "end": 2.4269,
+        "phone": "ax"
+      },
+      {
+        "start": 2.4269,
+        "end": 2.4849,
+        "phone": "n"
+      },
+      {
+        "start": 2.4849,
+        "end": 2.5844,
+        "phone": "t"
+      },
+      {
+        "start": 2.5844,
+        "end": 2.7171,
+        "phone": "pau"
+      },
+      {
+        "start": 2.7171,
+        "end": 2.7548,
+        "phone": "dh"
+      },
+      {
+        "start": 2.7548,
+        "end": 2.791,
+        "phone": "eh"
+      },
+      {
+        "start": 2.791,
+        "end": 2.8581,
+        "phone": "r"
+      },
+      {
+        "start": 2.8581,
+        "end": 2.916,
+        "phone": "m"
+      },
+      {
+        "start": 2.916,
+        "end": 3.0794,
+        "phone": "ey"
+      },
+      {
+        "start": 3.0794,
+        "end": 3.1689,
+        "phone": "b"
+      },
+      {
+        "start": 3.1689,
+        "end": 3.2775,
+        "phone": "iy"
+      },
+      {
+        "start": 3.2775,
+        "end": 3.3397,
+        "phone": "ax"
+      },
+      {
+        "start": 3.3397,
+        "end": 3.4327,
+        "phone": "b"
+      },
+      {
+        "start": 3.4327,
+        "end": 3.5379,
+        "phone": "eh"
+      },
+      {
+        "start": 3.5379,
+        "end": 3.5769,
+        "phone": "t"
+      },
+      {
+        "start": 3.5769,
+        "end": 3.6539,
+        "phone": "er"
+      },
+      {
+        "start": 3.6539,
+        "end": 3.8107,
+        "phone": "w"
+      },
+      {
+        "start": 3.8107,
+        "end": 3.9634,
+        "phone": "ey"
+      },
+      {
+        "start": 3.9634,
+        "end": 4.0184,
+        "phone": "t"
+      },
+      {
+        "start": 4.0184,
+        "end": 4.0686,
+        "phone": "ax"
+      },
+      {
+        "start": 4.0686,
+        "end": 4.2084,
+        "phone": "s"
+      },
+      {
+        "start": 4.2084,
+        "end": 4.3558,
+        "phone": "aa"
+      },
+      {
+        "start": 4.3558,
+        "end": 4.4801,
+        "phone": "l"
+      },
+      {
+        "start": 4.4801,
+        "end": 4.5637,
+        "phone": "v"
+      },
+      {
+        "start": 4.5637,
+        "end": 4.63,
+        "phone": "dh"
+      },
+      {
+        "start": 4.63,
+        "end": 4.7004,
+        "phone": "ih"
+      },
+      {
+        "start": 4.7004,
+        "end": 4.7622,
+        "phone": "s"
+      },
+      {
+        "start": 4.7622,
+        "end": 4.91,
+        "phone": "p"
+      },
+      {
+        "start": 4.91,
+        "end": 4.9525,
+        "phone": "r"
+      },
+      {
+        "start": 4.9525,
+        "end": 5.076,
+        "phone": "aa"
+      },
+      {
+        "start": 5.076,
+        "end": 5.1416,
+        "phone": "b"
+      },
+      {
+        "start": 5.1416,
+        "end": 5.2559,
+        "phone": "l"
+      },
+      {
+        "start": 5.2559,
+        "end": 5.3084,
+        "phone": "ax"
+      },
+      {
+        "start": 5.3084,
+        "end": 5.5115,
+        "phone": "m"
+      },
+      {
+        "start": 5.5115,
+        "end": 5.7236,
+        "phone": "pau"
+      }
+    ]
+  },
+  {
+    "key": "crossed",
+    "title": "دست‌به‌سینه و مخالفت",
+    "fa": "با این تصمیم موافق نیستم. قبل از ادامه باید دلیل روشن‌تری داشته باشیم.",
+    "en": "I do not agree with this decision. Before we continue, we need a clearer reason.",
+    "audio": "assets/audio/assistant-body-crossed.mp3",
+    "cues": [
+      {
+        "start": 0.0,
+        "end": 0.2618,
+        "phone": "pau"
+      },
+      {
+        "start": 0.2618,
+        "end": 0.4074,
+        "phone": "ay"
+      },
+      {
+        "start": 0.4074,
+        "end": 0.4793,
+        "phone": "d"
+      },
+      {
+        "start": 0.4793,
+        "end": 0.657,
+        "phone": "uw"
+      },
+      {
+        "start": 0.657,
+        "end": 0.7386,
+        "phone": "n"
+      },
+      {
+        "start": 0.7386,
+        "end": 0.9433,
+        "phone": "aa"
+      },
+      {
+        "start": 0.9433,
+        "end": 0.9848,
+        "phone": "t"
+      },
+      {
+        "start": 0.9848,
+        "end": 1.0371,
+        "phone": "ax"
+      },
+      {
+        "start": 1.0371,
+        "end": 1.1662,
+        "phone": "g"
+      },
+      {
+        "start": 1.1662,
+        "end": 1.2008,
+        "phone": "r"
+      },
+      {
+        "start": 1.2008,
+        "end": 1.2759,
+        "phone": "iy"
+      },
+      {
+        "start": 1.2759,
+        "end": 1.4054,
+        "phone": "w"
+      },
+      {
+        "start": 1.4054,
+        "end": 1.4629,
+        "phone": "ih"
+      },
+      {
+        "start": 1.4629,
+        "end": 1.551,
+        "phone": "dh"
+      },
+      {
+        "start": 1.551,
+        "end": 1.6173,
+        "phone": "dh"
+      },
+      {
+        "start": 1.6173,
+        "end": 1.6878,
+        "phone": "ih"
+      },
+      {
+        "start": 1.6878,
+        "end": 1.8438,
+        "phone": "s"
+      },
+      {
+        "start": 1.8438,
+        "end": 1.9235,
+        "phone": "d"
+      },
+      {
+        "start": 1.9235,
+        "end": 1.9899,
+        "phone": "ih"
+      },
+      {
+        "start": 1.9899,
+        "end": 2.1195,
+        "phone": "s"
+      },
+      {
+        "start": 2.1195,
+        "end": 2.198,
+        "phone": "ih"
+      },
+      {
+        "start": 2.198,
+        "end": 2.2904,
+        "phone": "zh"
+      },
+      {
+        "start": 2.2904,
+        "end": 2.4218,
+        "phone": "ax"
+      },
+      {
+        "start": 2.4218,
+        "end": 2.4909,
+        "phone": "n"
+      },
+      {
+        "start": 2.4909,
+        "end": 2.6276,
+        "phone": "pau"
+      },
+      {
+        "start": 2.6276,
+        "end": 2.6552,
+        "phone": "b"
+      },
+      {
+        "start": 2.6552,
+        "end": 2.7212,
+        "phone": "ih"
+      },
+      {
+        "start": 2.7212,
+        "end": 2.8645,
+        "phone": "f"
+      },
+      {
+        "start": 2.8645,
+        "end": 2.8961,
+        "phone": "ao"
+      },
+      {
+        "start": 2.8961,
+        "end": 2.9389,
+        "phone": "r"
+      },
+      {
+        "start": 2.9389,
+        "end": 3.0341,
+        "phone": "w"
+      },
+      {
+        "start": 3.0341,
+        "end": 3.0946,
+        "phone": "iy"
+      },
+      {
+        "start": 3.0946,
+        "end": 3.199,
+        "phone": "k"
+      },
+      {
+        "start": 3.199,
+        "end": 3.2583,
+        "phone": "ax"
+      },
+      {
+        "start": 3.2583,
+        "end": 3.3554,
+        "phone": "n"
+      },
+      {
+        "start": 3.3554,
+        "end": 3.459,
+        "phone": "t"
+      },
+      {
+        "start": 3.459,
+        "end": 3.5375,
+        "phone": "ih"
+      },
+      {
+        "start": 3.5375,
+        "end": 3.6075,
+        "phone": "n"
+      },
+      {
+        "start": 3.6075,
+        "end": 3.6855,
+        "phone": "y"
+      },
+      {
+        "start": 3.6855,
+        "end": 3.8123,
+        "phone": "uw"
+      },
+      {
+        "start": 3.8123,
+        "end": 4.1029,
+        "phone": "pau"
+      },
+      {
+        "start": 4.1029,
+        "end": 4.1912,
+        "phone": "w"
+      },
+      {
+        "start": 4.1912,
+        "end": 4.332,
+        "phone": "iy"
+      },
+      {
+        "start": 4.332,
+        "end": 4.4454,
+        "phone": "n"
+      },
+      {
+        "start": 4.4454,
+        "end": 4.6103,
+        "phone": "iy"
+      },
+      {
+        "start": 4.6103,
+        "end": 4.6643,
+        "phone": "d"
+      },
+      {
+        "start": 4.6643,
+        "end": 4.7268,
+        "phone": "ax"
+      },
+      {
+        "start": 4.7268,
+        "end": 4.8928,
+        "phone": "k"
+      },
+      {
+        "start": 4.8928,
+        "end": 4.9487,
+        "phone": "l"
+      },
+      {
+        "start": 4.9487,
+        "end": 4.9912,
+        "phone": "ih"
+      },
+      {
+        "start": 4.9912,
+        "end": 5.1111,
+        "phone": "r"
+      },
+      {
+        "start": 5.1111,
+        "end": 5.2302,
+        "phone": "er"
+      },
+      {
+        "start": 5.2302,
+        "end": 5.4046,
+        "phone": "r"
+      },
+      {
+        "start": 5.4046,
+        "end": 5.503,
+        "phone": "iy"
+      },
+      {
+        "start": 5.503,
+        "end": 5.6378,
+        "phone": "z"
+      },
+      {
+        "start": 5.6378,
+        "end": 5.7057,
+        "phone": "ax"
+      },
+      {
+        "start": 5.7057,
+        "end": 5.8685,
+        "phone": "n"
+      },
+      {
+        "start": 5.8685,
+        "end": 6.0994,
+        "phone": "pau"
+      }
+    ]
+  },
+  {
+    "key": "concern",
+    "title": "هشدار و همدلی",
+    "fa": "نگران نباش، با هم حلش می‌کنیم. ولی باید مراقب این خطر باشیم.",
+    "en": "Do not worry. We can work through this together. But we need to be careful about this risk.",
+    "audio": "assets/audio/assistant-body-concern.mp3",
+    "cues": [
+      {
+        "start": 0.0,
+        "end": 0.2416,
+        "phone": "pau"
+      },
+      {
+        "start": 0.2416,
+        "end": 0.2964,
+        "phone": "d"
+      },
+      {
+        "start": 0.2964,
+        "end": 0.4226,
+        "phone": "uw"
+      },
+      {
+        "start": 0.4226,
+        "end": 0.4796,
+        "phone": "n"
+      },
+      {
+        "start": 0.4796,
+        "end": 0.6467,
+        "phone": "aa"
+      },
+      {
+        "start": 0.6467,
+        "end": 0.6774,
+        "phone": "t"
+      },
+      {
+        "start": 0.6774,
+        "end": 0.7907,
+        "phone": "w"
+      },
+      {
+        "start": 0.7907,
+        "end": 0.9965,
+        "phone": "er"
+      },
+      {
+        "start": 0.9965,
+        "end": 1.1852,
+        "phone": "iy"
+      },
+      {
+        "start": 1.1852,
+        "end": 1.4528,
+        "phone": "pau"
+      },
+      {
+        "start": 1.4528,
+        "end": 1.5086,
+        "phone": "w"
+      },
+      {
+        "start": 1.5086,
+        "end": 1.6432,
+        "phone": "iy"
+      },
+      {
+        "start": 1.6432,
+        "end": 1.7673,
+        "phone": "k"
+      },
+      {
+        "start": 1.7673,
+        "end": 1.8876,
+        "phone": "ae"
+      },
+      {
+        "start": 1.8876,
+        "end": 1.9373,
+        "phone": "n"
+      },
+      {
+        "start": 1.9373,
+        "end": 2.0355,
+        "phone": "w"
+      },
+      {
+        "start": 2.0355,
+        "end": 2.2413,
+        "phone": "er"
+      },
+      {
+        "start": 2.2413,
+        "end": 2.3522,
+        "phone": "k"
+      },
+      {
+        "start": 2.3522,
+        "end": 2.4589,
+        "phone": "th"
+      },
+      {
+        "start": 2.4589,
+        "end": 2.5294,
+        "phone": "r"
+      },
+      {
+        "start": 2.5294,
+        "end": 2.5988,
+        "phone": "uw"
+      },
+      {
+        "start": 2.5988,
+        "end": 2.6589,
+        "phone": "dh"
+      },
+      {
+        "start": 2.6589,
+        "end": 2.7429,
+        "phone": "ih"
+      },
+      {
+        "start": 2.7429,
+        "end": 2.8188,
+        "phone": "s"
+      },
+      {
+        "start": 2.8188,
+        "end": 2.9393,
+        "phone": "t"
+      },
+      {
+        "start": 2.9393,
+        "end": 2.9869,
+        "phone": "ax"
+      },
+      {
+        "start": 2.9869,
+        "end": 3.0803,
+        "phone": "g"
+      },
+      {
+        "start": 3.0803,
+        "end": 3.1833,
+        "phone": "eh"
+      },
+      {
+        "start": 3.1833,
+        "end": 3.2763,
+        "phone": "dh"
+      },
+      {
+        "start": 3.2763,
+        "end": 3.6201,
+        "phone": "er"
+      },
+      {
+        "start": 3.6201,
+        "end": 3.8922,
+        "phone": "pau"
+      },
+      {
+        "start": 3.8922,
+        "end": 3.9518,
+        "phone": "b"
+      },
+      {
+        "start": 3.9518,
+        "end": 4.0301,
+        "phone": "ah"
+      },
+      {
+        "start": 4.0301,
+        "end": 4.0869,
+        "phone": "t"
+      },
+      {
+        "start": 4.0869,
+        "end": 4.1509,
+        "phone": "w"
+      },
+      {
+        "start": 4.1509,
+        "end": 4.2606,
+        "phone": "iy"
+      },
+      {
+        "start": 4.2606,
+        "end": 4.3183,
+        "phone": "n"
+      },
+      {
+        "start": 4.3183,
+        "end": 4.4832,
+        "phone": "iy"
+      },
+      {
+        "start": 4.4832,
+        "end": 4.532,
+        "phone": "d"
+      },
+      {
+        "start": 4.532,
+        "end": 4.6382,
+        "phone": "t"
+      },
+      {
+        "start": 4.6382,
+        "end": 4.6844,
+        "phone": "ax"
+      },
+      {
+        "start": 4.6844,
+        "end": 4.7778,
+        "phone": "b"
+      },
+      {
+        "start": 4.7778,
+        "end": 4.8967,
+        "phone": "iy"
+      },
+      {
+        "start": 4.8967,
+        "end": 5.0606,
+        "phone": "k"
+      },
+      {
+        "start": 5.0606,
+        "end": 5.1125,
+        "phone": "eh"
+      },
+      {
+        "start": 5.1125,
+        "end": 5.1896,
+        "phone": "r"
+      },
+      {
+        "start": 5.1896,
+        "end": 5.284,
+        "phone": "f"
+      },
+      {
+        "start": 5.284,
+        "end": 5.3322,
+        "phone": "ax"
+      },
+      {
+        "start": 5.3322,
+        "end": 5.4378,
+        "phone": "l"
+      },
+      {
+        "start": 5.4378,
+        "end": 5.469,
+        "phone": "ax"
+      },
+      {
+        "start": 5.469,
+        "end": 5.5219,
+        "phone": "b"
+      },
+      {
+        "start": 5.5219,
+        "end": 5.6722,
+        "phone": "aw"
+      },
+      {
+        "start": 5.6722,
+        "end": 5.7568,
+        "phone": "t"
+      },
+      {
+        "start": 5.7568,
+        "end": 5.8119,
+        "phone": "dh"
+      },
+      {
+        "start": 5.8119,
+        "end": 5.8693,
+        "phone": "ih"
+      },
+      {
+        "start": 5.8693,
+        "end": 6.0393,
+        "phone": "s"
+      },
+      {
+        "start": 6.0393,
+        "end": 6.1058,
+        "phone": "r"
+      },
+      {
+        "start": 6.1058,
+        "end": 6.2519,
+        "phone": "ih"
+      },
+      {
+        "start": 6.2519,
+        "end": 6.4255,
+        "phone": "s"
+      },
+      {
+        "start": 6.4255,
+        "end": 6.5679,
+        "phone": "k"
+      },
+      {
+        "start": 6.5679,
+        "end": 6.7383,
+        "phone": "pau"
+      }
+    ]
+  },
+  {
+    "key": "agree",
+    "title": "تأیید و خوشحالی",
+    "fa": "بله، دقیقاً همین است. عالی شد، حالا می‌توانیم مرحله بعد را شروع کنیم.",
+    "en": "Yes, exactly. That is a good result. Now we can move on to the next step.",
+    "audio": "assets/audio/assistant-body-agree.mp3",
+    "cues": [
+      {
+        "start": 0.0,
+        "end": 0.2898,
+        "phone": "pau"
+      },
+      {
+        "start": 0.2898,
+        "end": 0.3475,
+        "phone": "y"
+      },
+      {
+        "start": 0.3475,
+        "end": 0.5337,
+        "phone": "eh"
+      },
+      {
+        "start": 0.5337,
+        "end": 0.7415,
+        "phone": "s"
+      },
+      {
+        "start": 0.7415,
+        "end": 0.8658,
+        "phone": "pau"
+      },
+      {
+        "start": 0.8658,
+        "end": 0.988,
+        "phone": "ih"
+      },
+      {
+        "start": 0.988,
+        "end": 1.0641,
+        "phone": "g"
+      },
+      {
+        "start": 1.0641,
+        "end": 1.1102,
+        "phone": "z"
+      },
+      {
+        "start": 1.1102,
+        "end": 1.2117,
+        "phone": "ae"
+      },
+      {
+        "start": 1.2117,
+        "end": 1.3472,
+        "phone": "k"
+      },
+      {
+        "start": 1.3472,
+        "end": 1.3716,
+        "phone": "t"
+      },
+      {
+        "start": 1.3716,
+        "end": 1.471,
+        "phone": "l"
+      },
+      {
+        "start": 1.471,
+        "end": 1.5768,
+        "phone": "iy"
+      },
+      {
+        "start": 1.5768,
+        "end": 1.8182,
+        "phone": "pau"
+      },
+      {
+        "start": 1.8182,
+        "end": 1.8922,
+        "phone": "dh"
+      },
+      {
+        "start": 1.8922,
+        "end": 2.044,
+        "phone": "ae"
+      },
+      {
+        "start": 2.044,
+        "end": 2.0789,
+        "phone": "t"
+      },
+      {
+        "start": 2.0789,
+        "end": 2.1461,
+        "phone": "ih"
+      },
+      {
+        "start": 2.1461,
+        "end": 2.2634,
+        "phone": "z"
+      },
+      {
+        "start": 2.2634,
+        "end": 2.2905,
+        "phone": "ax"
+      },
+      {
+        "start": 2.2905,
+        "end": 2.4084,
+        "phone": "g"
+      },
+      {
+        "start": 2.4084,
+        "end": 2.4776,
+        "phone": "uh"
+      },
+      {
+        "start": 2.4776,
+        "end": 2.5241,
+        "phone": "d"
+      },
+      {
+        "start": 2.5241,
+        "end": 2.5841,
+        "phone": "r"
+      },
+      {
+        "start": 2.5841,
+        "end": 2.6226,
+        "phone": "ih"
+      },
+      {
+        "start": 2.6226,
+        "end": 2.7385,
+        "phone": "z"
+      },
+      {
+        "start": 2.7385,
+        "end": 2.8042,
+        "phone": "ah"
+      },
+      {
+        "start": 2.8042,
+        "end": 3.0421,
+        "phone": "l"
+      },
+      {
+        "start": 3.0421,
+        "end": 3.1774,
+        "phone": "t"
+      },
+      {
+        "start": 3.1774,
+        "end": 3.3191,
+        "phone": "pau"
+      },
+      {
+        "start": 3.3191,
+        "end": 3.3724,
+        "phone": "n"
+      },
+      {
+        "start": 3.3724,
+        "end": 3.5984,
+        "phone": "aw"
+      },
+      {
+        "start": 3.5984,
+        "end": 3.6545,
+        "phone": "w"
+      },
+      {
+        "start": 3.6545,
+        "end": 3.7338,
+        "phone": "iy"
+      },
+      {
+        "start": 3.7338,
+        "end": 3.8579,
+        "phone": "k"
+      },
+      {
+        "start": 3.8579,
+        "end": 3.9674,
+        "phone": "ae"
+      },
+      {
+        "start": 3.9674,
+        "end": 4.0406,
+        "phone": "n"
+      },
+      {
+        "start": 4.0406,
+        "end": 4.115,
+        "phone": "m"
+      },
+      {
+        "start": 4.115,
+        "end": 4.2262,
+        "phone": "uw"
+      },
+      {
+        "start": 4.2262,
+        "end": 4.3094,
+        "phone": "v"
+      },
+      {
+        "start": 4.3094,
+        "end": 4.4081,
+        "phone": "aa"
+      },
+      {
+        "start": 4.4081,
+        "end": 4.4941,
+        "phone": "n"
+      },
+      {
+        "start": 4.4941,
+        "end": 4.6041,
+        "phone": "t"
+      },
+      {
+        "start": 4.6041,
+        "end": 4.6361,
+        "phone": "ax"
+      },
+      {
+        "start": 4.6361,
+        "end": 4.7221,
+        "phone": "dh"
+      },
+      {
+        "start": 4.7221,
+        "end": 4.7833,
+        "phone": "ax"
+      },
+      {
+        "start": 4.7833,
+        "end": 4.9152,
+        "phone": "n"
+      },
+      {
+        "start": 4.9152,
+        "end": 5.0872,
+        "phone": "eh"
+      },
+      {
+        "start": 5.0872,
+        "end": 5.1793,
+        "phone": "k"
+      },
+      {
+        "start": 5.1793,
+        "end": 5.2728,
+        "phone": "s"
+      },
+      {
+        "start": 5.2728,
+        "end": 5.3433,
+        "phone": "t"
+      },
+      {
+        "start": 5.3433,
+        "end": 5.4903,
+        "phone": "s"
+      },
+      {
+        "start": 5.4903,
+        "end": 5.6103,
+        "phone": "t"
+      },
+      {
+        "start": 5.6103,
+        "end": 5.7213,
+        "phone": "eh"
+      },
+      {
+        "start": 5.7213,
+        "end": 5.9111,
+        "phone": "p"
+      },
+      {
+        "start": 5.9111,
+        "end": 6.0901,
+        "phone": "pau"
+      }
+    ]
+  }
+]
