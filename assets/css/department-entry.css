@@ -13,7 +13,7 @@ html body .workspace-identity{display:block;margin:0 14px 10px;padding:7px 10px;
 @media(max-width:620px){html body #loginView{padding:14px}html body #loginView .login-card{width:100%}}
 
 /* Admin message-template editor */
-#templatesView .message-template-panel{max-width:1050px;margin-inline:auto}
+#templatesView .message-template-panel{width:100%;max-width:none;margin-inline:0}
 #templatesView .template-subject-field,#templatesView .template-body-field{display:grid;gap:6px;margin:12px 0;font-weight:700}
 #templatesView #templateSubject{width:100%;border:1px solid #bdcdc6;border-radius:9px;padding:9px 11px;background:#fff}
 #templatesView .template-variable-chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}
@@ -24,3 +24,138 @@ html body .workspace-identity{display:block;margin:0 14px 10px;padding:7px 10px;
 #templatesView #templateSaveState{color:#477065}#templatesView #templateSaveState.error{color:#b42318}
 #templatesView .template-preview{padding:14px 16px;line-height:2;white-space:normal}
 #templatesView .template-preview h4{margin:0 0 10px;color:#18513f}.message-template-panel .manager-note p{margin:2px 0 0}
+/* Compact centered login card with a horizontal brand header. */
+html body #loginView{
+  display:flex!important;
+  box-sizing:border-box!important;
+  width:100%!important;
+  min-height:100dvh!important;
+  height:auto!important;
+  align-items:center!important;
+  justify-content:center!important;
+  padding:18px!important;
+  overflow-x:hidden!important;
+  overflow-y:auto!important;
+  background:radial-gradient(ellipse at 50% 0%,#e0eee7 0,transparent 62%),#f4f8f5!important;
+}
+html body #loginView .login-card{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr)!important;
+  grid-template-areas:"brand" "form"!important;
+  align-items:stretch!important;
+  box-sizing:border-box!important;
+  width:min(460px,calc(100vw - 36px))!important;
+  max-width:460px!important;
+  max-height:calc(100dvh - 36px)!important;
+  min-width:0!important;
+  min-height:0!important;
+  margin:auto!important;
+  padding:0!important;
+  overflow-x:hidden!important;
+  overflow-y:auto!important;
+  border:1px solid #cbd9d2!important;
+  border-radius:18px!important;
+  background:#fff!important;
+  box-shadow:0 20px 52px #1742331b!important;
+  scrollbar-width:thin;
+}
+html body #loginView .brand-lockup{
+  grid-area:brand!important;
+  display:flex!important;
+  flex-direction:row!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:16px!important;
+  min-width:0!important;
+  margin:0!important;
+  padding:15px 22px!important;
+  background:linear-gradient(110deg,#0b4638,#0e674c)!important;
+  color:#fff!important;
+  text-align:right!important;
+}
+html body #loginView .brand-lockup img{
+  display:block!important;
+  flex:0 0 90px!important;
+  width:90px!important;
+  height:52px!important;
+  max-width:90px!important;
+  object-fit:contain!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+}
+html body #loginView .brand-lockup>div{min-width:0!important}
+html body #loginView .brand-lockup h1{
+  margin:0!important;
+  color:#fff!important;
+  font-size:18px!important;
+  line-height:1.6!important;
+  font-weight:700!important;
+}
+html body #loginView #loginForm{
+  grid-area:form!important;
+  align-self:center!important;
+  width:100%!important;
+  min-width:0!important;
+  margin:0!important;
+  padding:20px 24px 22px!important;
+}
+html body #loginView .login-fields,
+html body #loginView .login-field,
+html body #loginView .login-verification-field,
+html body #loginView .login-input-shell{min-width:0!important}
+html body #loginView .login-fields{gap:7px!important}
+html body #loginView .login-field-title{font-size:13px!important;line-height:1.3!important}
+html body #loginView .login-input-shell input{height:39px!important;padding-block:6px!important}
+html body #loginView .login-verification-box{
+  grid-template-columns:minmax(62px,.72fr) minmax(0,1fr) 30px!important;
+  height:46px!important;
+  min-height:46px!important;
+  padding:4px 7px!important;
+  gap:6px!important;
+  min-width:0!important;
+}
+html body #loginView .login-code-display,
+html body #loginView .login-code-input-shell,
+html body #loginView .login-code-input-shell #loginVerifyCode{height:36px!important;min-width:0!important}
+html body #loginView .login-code-input-shell{width:100%!important}
+html body #loginView .login-code-slots{width:100%!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:5px!important}
+html body #loginView .login-code-slots span{width:100%!important;height:32px!important}
+html body #loginView .login-refresh-code{width:30px!important;height:30px!important}
+html body #loginView .login-submit,html body #loginView .login-otp{
+  width:100%!important;
+  height:39px!important;
+  min-height:39px!important;
+  margin-top:6px!important;
+}
+html body #loginView #loginForm #loginError:empty{display:none!important;min-height:0!important;margin:0!important}
+html body #loginView #loginForm #loginError:not(:empty){display:block!important;min-height:22px!important;margin:3px 0 0!important;line-height:1.45!important}
+@media(max-width:480px){
+  html body #loginView{padding:12px!important}
+  html body #loginView .login-card{width:min(420px,calc(100vw - 24px))!important}
+  html body #loginView .brand-lockup{gap:11px!important;padding:13px 16px!important}
+  html body #loginView .brand-lockup img{flex-basis:76px!important;width:76px!important;height:44px!important;max-width:76px!important}
+  html body #loginView .brand-lockup h1{font-size:16px!important;line-height:1.45!important}
+  html body #loginView #loginForm{padding:16px 18px 18px!important}
+}
+@media(max-height:680px){
+  html body #loginView{padding:10px!important}
+  html body #loginView .login-card{max-height:calc(100dvh - 20px)!important}
+  html body #loginView .brand-lockup{gap:10px!important;padding:10px 18px!important}
+  html body #loginView .brand-lockup img{flex-basis:70px!important;width:70px!important;height:40px!important;max-width:70px!important}
+  html body #loginView .brand-lockup h1{font-size:16px!important}
+  html body #loginView #loginForm{padding:12px 20px 14px!important}
+  html body #loginView .login-fields{gap:5px!important}
+  html body #loginView .login-field-title{font-size:12px!important}
+  html body #loginView .login-input-shell input{height:34px!important}
+  html body #loginView .login-verification-box{height:40px!important;min-height:40px!important}
+  html body #loginView .login-code-display,
+  html body #loginView .login-code-input-shell,
+  html body #loginView .login-code-input-shell #loginVerifyCode{height:31px!important}
+  html body #loginView .login-code-slots span{height:28px!important}
+  html body #loginView .login-refresh-code{height:28px!important}
+  html body #loginView .login-submit,html body #loginView .login-otp{
+    height:34px!important;min-height:34px!important;margin-top:4px!important
+  }
+}

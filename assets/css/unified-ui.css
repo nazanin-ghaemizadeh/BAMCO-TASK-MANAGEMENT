@@ -689,3 +689,7 @@ html body #appView#appView #stickersView .sticker-pair img{display:block!importa
 /* The shared !important button layout must not reveal supervision-denied
    controls. Match its scoped specificity; capability state owns availability. */
 html body #appView#appView #kanbanView.bamco-interior [data-bamco-supervision-denied="true"]{display:none!important}
+
+/* The message template editor uses the complete workspace width. */
+html body #appView#appView #templatesView.bamco-interior>.message-template-panel{width:100%!important;max-width:none!important;margin-inline:0!important}
+html body #appView#appView #templatesView.bamco-interior #templateBody.template-editor{width:100%!important;min-height:420px!important;height:55dvh!important;resize:vertical}
