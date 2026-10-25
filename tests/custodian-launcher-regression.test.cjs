@@ -27,3 +27,23 @@ test('custodian launchers yield to timers, preserve denied routes and open autho
  }
  assert.deepEqual(f.errors,[]);
 });
+
+
+test('SPC category opens its subicon before the external site, matching thermal monitoring',async t=>{
+ const f=await fixture(),{w,d}=f;t.after(()=>f.dispose());
+ const opened=[];w.open=(...args)=>{opened.push(args);return null};
+ for(const [group,route,url] of [
+  ['statisticalQuality','statisticalProcessControl','https://nazanin-ghaemizadeh.github.io/BAMCO-STATISTICAL-PROCESS-CONTROL/'],
+  ['paintThermal','ovenAnalysis','https://nazanin-ghaemizadeh.github.io/BAMCO-PAINT-SHOP/']
+ ]){
+  w.bamcoShowHome();const count=opened.length;
+  d.querySelector(`.nav-group[data-group="${group}"] .home-group-trigger`).click();await pause(40);
+  assert.equal(opened.length,count,'category must not open an external tab');
+  assert.equal(d.querySelector('.home-launcher-dialog').open,true);
+  const shortcut=d.querySelector(`.home-launcher-route[data-route="${route}"]`);assert(shortcut);
+  shortcut.click();await pause(40);
+  assert.equal(opened.length,count+1);assert.equal(opened.at(-1)[0],url);
+  assert.equal(d.querySelector('.home-launcher-dialog').open,false);
+ }
+ assert.deepEqual(f.errors,[]);
+});

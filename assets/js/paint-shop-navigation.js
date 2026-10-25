@@ -7,20 +7,16 @@
   const SPC_TITLE='کنترل آماری فرایند';
   const SPC_OLD='کنترل آماری فرایند (SPC)';
   const labelOf=node=>[node.textContent,node.getAttribute?.('aria-label'),node.getAttribute?.('title'),node.getAttribute?.('href'),node.getAttribute?.('data-url')].filter(Boolean).join(' ');
-  const isSPC=node=>{
-    const text=labelOf(node);
-    return node.dataset?.view==='statisticalProcessControl'||node.dataset?.route==='statisticalProcessControl'||node.dataset?.featureKey==='statisticalProcessControl'||/کنترل\s*آماری\s*فرایند|statisticalProcessControl/i.test(text);
-  };
   const isPaint=node=>/پینت[\s\u200c-]*شاپ|paint[\s_-]*shop|BAMCO-PAINT-SHOP/i.test(labelOf(node));
   const renameSPC=()=>{
     const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
     let node;
     while((node=walker.nextNode()))if(node.nodeValue.includes(SPC_OLD))node.nodeValue=node.nodeValue.replaceAll(SPC_OLD,SPC_TITLE);
   };
-  const targetSPC=event=>{
-    const target=event.target instanceof Element?event.target.closest('a,button,[role="button"],[data-view],[data-route],[data-feature-key]'):null;
-    return target&&isSPC(target)?target:null;
-  };
+  // Category buttons open the shared launcher. Only an explicit route button
+  // may open the external SPC site; matching the category's text skips it.
+  const targetSPC=event=>event.target instanceof Element
+    ?event.target.closest('[data-view="statisticalProcessControl"],[data-route="statisticalProcessControl"]'):null;
   const targetPaint=event=>{
     const target=event.target instanceof Element?event.target.closest('a,button,[role="button"],[data-view]'):null;
     return target&&isPaint(target)?target:null;
@@ -30,6 +26,7 @@
     if(spc){
       event.preventDefault();event.stopImmediatePropagation();
       window.open(SPC_URL,'_blank');
+      document.querySelector('.home-launcher-dialog[open]')?.close();
       window.bamcoShowHome?.();
       return;
     }

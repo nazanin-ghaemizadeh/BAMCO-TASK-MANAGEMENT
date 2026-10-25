@@ -69,7 +69,7 @@ test('petty cash displays newest active events first with matching sequential ro
  await f.open('pettyCash');await until(()=>f.d.querySelectorAll('#pettyCashBody tr[data-entry]').length===4);
  const table=[...f.d.querySelectorAll('#pettyCashBody tr[data-entry]')];
  assert.deepEqual(table.map(tr=>tr.dataset.entry),['gas-later','training','received','gas-earlier']);
- assert.deepEqual(table.map(tr=>tr.cells[0].textContent),['۱','۲','۳','۴']);
+ assert.deepEqual(table.map(tr=>tr.cells[0].textContent),['۴','۳','۲','۱']);
  assert.equal(table[3].cells[9].textContent,'۱');
  assert.equal(table[0].cells.length,11);
  assert.equal(f.d.querySelector('[data-entry=void]'),null);
@@ -89,7 +89,7 @@ test('petty cash displays newest active events first with matching sequential ro
  const detail=exported.wb.Sheets['ریز تنخواه'].rows;
  assert.deepEqual(detail[0],['ردیف','تاریخ','نوع','مبلغ (ریال)','مانده (ریال)','دسته‌بندی','متولی','روش پرداخت','شرح','ضمیمه']);
  assert.deepEqual(detail.slice(1).map(row=>row[8]),['بنزین دوم','آموزش','دریافت','بنزین اول']);
- assert.deepEqual(detail.slice(1).map(row=>row[0]),[1,2,3,4]);
+ assert.deepEqual(detail.slice(1).map(row=>row[0]),[4,3,2,1]);
  assert.deepEqual(detail.slice(1).map(row=>row[4]),[400,1200,1400,-100]);
  assert.equal(detail[4][9],1);
  const summary=exported.wb.Sheets['جمع‌بندی دسته‌بندی'].rows;
@@ -126,11 +126,11 @@ test('deleting a middle petty cash event removes it and resequences the table an
  await until(()=>f.d.querySelectorAll('#pettyCashBody tr[data-entry]').length===2);
  const displayed=[...f.d.querySelectorAll('#pettyCashBody tr[data-entry]')];
  assert.deepEqual(displayed.map(row=>row.dataset.entry),['last','first']);
- assert.deepEqual(displayed.map(row=>row.cells[0].textContent),['۱','۲']);
+ assert.deepEqual(displayed.map(row=>row.cells[0].textContent),['۲','۱']);
  assert.deepEqual(displayed.map(row=>row.cells[4].textContent),['۸۰۰','۱,۰۰۰']);
  let wb;f.w.ensureBamcoXLSX=async()=>({utils:{aoa_to_sheet:rows=>({rows:JSON.parse(JSON.stringify(rows))}),book_new:()=>({Sheets:{}}),book_append_sheet:(book,sheet,name)=>book.Sheets[name]=sheet},writeFile:book=>wb=book});
  f.d.querySelector('#exportCash').click();await until(()=>wb);
- assert.deepEqual(wb.Sheets['ریز تنخواه'].rows.slice(1).map(row=>[row[0],row[4]]),[[1,800],[2,1000]]);
+ assert.deepEqual(wb.Sheets['ریز تنخواه'].rows.slice(1).map(row=>[row[0],row[4]]),[[2,800],[1,1000]]);
  assert(wb.Sheets['جمع‌بندی دسته‌بندی'].rows.some(row=>row[1]==='جمع کل هزینه‌ها'&&row[3]===200));
  assert.deepEqual(f.errors,[]);
 });
