@@ -7,13 +7,17 @@ test('temporary refueling saves Persian decimals and round-trips numeric Excel c
  assert.deepEqual(headers.slice(fuel,fuel+3),['وضعیت بنزین','بنزین افزوده‌شده (لیتر)','مبلغ بنزین (ریال)']);
  d.querySelector('#vehicleTemporaryView tbody tr[data-id]').click();d.querySelector('#vehicleTemporaryView .vehicle-edit').click();
  const form=d.querySelector('#vehicleRecordForm');assert.equal(form.elements.fuel_liters.value,'');
+ assert.deepEqual([...d.querySelectorAll('#vehicleRecordFields>label')].slice(6,10).map(x=>x.firstChild.textContent),['تاریخ واگذاری','ساعت خروج','تاریخ تحویل‌گیری','ساعت ورود']);
+ form.elements.assignment_date.value='۱۴۰۵/۰۸/۰۴';form.elements.exit_time.value='۰۸:۳۰';form.elements.return_date.value='۱۴۰۵/۰۸/۰۵';form.elements.entry_time.value='۱۶:۴۵';
  form.elements.fuel_liters.value='۲۵٫۵';form.elements.fuel_amount.value='۱٬۲۷۵٬۰۰۰';form.requestSubmit();
  await until(()=>!d.querySelector('#vehicleRecordDialog').open);
  assert.equal(f.tables.vehicle_temporary_records[0].fuel_liters,25.5);assert.equal(f.tables.vehicle_temporary_records[0].fuel_amount,1275000);
  d.querySelector('#vehicleTemporaryView .vehicle-export').click();await until(()=>f.downloads.length===1);
  const bytes=new Uint8Array(await f.downloads[0].blob.arrayBuffer()),book=w.XLSX.read(bytes,{type:'array'}),matrix=w.XLSX.utils.sheet_to_json(book.Sheets[book.SheetNames[0]],{header:1});
+ assert.deepEqual([...matrix[0].slice(7,11)],['تاریخ واگذاری','ساعت خروج','تاریخ تحویل‌گیری','ساعت ورود']);assert.deepEqual([...matrix[1].slice(7,11)],['۱۴۰۵/۰۸/۰۴','۰۸:۳۰','۱۴۰۵/۰۸/۰۵','۱۶:۴۵']);
  assert.deepEqual([...matrix[0].slice(fuel,fuel+3)],headers.slice(fuel,fuel+3));assert.equal(matrix[1][fuel+1],25.5);assert.equal(matrix[1][fuel+2],1275000);
  w.bamcoConfirm=async()=>true;const input=d.querySelector('#vehicleExcelInput');Object.defineProperty(input,'files',{configurable:true,value:[{arrayBuffer:async()=>new w.Uint8Array(bytes).buffer}]});await input.onchange({target:input});
  assert.equal(f.tables.vehicle_temporary_records.length,2,JSON.stringify(f.calls.filter(c=>c.endpoint==='ui-notice')));assert.equal(f.tables.vehicle_temporary_records[1].fuel_liters,25.5);assert.equal(f.tables.vehicle_temporary_records[1].fuel_amount,1275000);
+ assert.equal(f.tables.vehicle_temporary_records[1].return_date,'1405/08/05');
  assert.deepEqual(f.errors,[]);
 });

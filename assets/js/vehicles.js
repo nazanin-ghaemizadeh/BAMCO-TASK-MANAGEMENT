@@ -14,7 +14,7 @@
   const TEMPORARY=[
     ['plate_number','شماره پلاک'],['vehicle_type','نوع خودرو'],['body_color','رنگ بدنه'],['chassis_number','شماره شاسی'],
     ['handover_from','نام شخص تحویل‌دهنده هنگام واگذاری',null,'نام شخص تحویل دهنده در زمان واگذاری'],['handover_to','نام شخص تحویل‌گیرنده هنگام واگذاری',null,'نام شخص تحویل گیرنده در زمان واگذاری'],
-    ['assignment_date','تاریخ واگذاری'],['exit_time','ساعت خروج'],['entry_time','ساعت ورود'],['last_mileage','آخرین کیلومتر کارکرد','number'],
+    ['assignment_date','تاریخ واگذاری'],['exit_time','ساعت خروج'],['return_date','تاریخ تحویل‌گیری'],['entry_time','ساعت ورود'],['last_mileage','آخرین کیلومتر کارکرد','number'],
     ['fuel_status','وضعیت بنزین'],['fuel_liters','بنزین افزوده‌شده (لیتر)','number'],['fuel_amount','مبلغ بنزین (ریال)','number'],['receipt_reason','علت دریافت خودرو'],['notes','توضیحات','textarea']
   ];
   const CFG={
