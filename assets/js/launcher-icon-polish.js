@@ -3,6 +3,8 @@
  const palette=['#087e76','#8652c6','#c27b18','#b253bd','#108ca2','#c64976','#b44d51','#4277ce','#aa6633','#00877d','#7754c6','#d04479','#1796a8'];
  const svg=(paths)=>'<svg viewBox="0 0 24 24" width="64" height="64" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+paths+'</svg>';
  const icons={
+  emission:svg('<rect x="2" y="10" width="11" height="9" rx="2"/><path d="M5 10V6h8l3 3h5M16 13h5M16 17h4M5 19v2M10 19v2"/>'),
+  faces:svg('<circle cx="8" cy="9" r="6"/><path d="M5 10q3 4 6 0M6 7h.01M10 7h.01"/><circle cx="16" cy="16" r="6"/><path d="M13 19q3-4 6 0M14 14h.01M18 14h.01M19 15l1 2-1 1"/>'),
   heat:svg('<rect x="4" y="15" width="16" height="5" rx="1.5"/><path d="M7 12c-2-2 2-3 0-6M12 12c-2-2 2-4 0-8M17 12c-2-2 2-3 0-6"/>'),
   quality:svg('<path d="m12 2 8 4v6c0 5-3.4 8.4-8 10-4.6-1.6-8-5-8-10V6z"/><path d="m8 12 2.6 2.6L16 9"/>')
  };
@@ -13,7 +15,7 @@
    const accent=palette[i%palette.length];group.style.setProperty('--tile-accent',accent);
    const title=group.querySelector('.home-group-trigger');if(title)title.style.setProperty('color',accent,'important');
    const label=group.querySelector('.home-group-label,.home-group-title,.nav-group-title');if(label)label.style.setProperty('color',accent,'important');
-   const symbol=group.querySelector('.home-group-symbol');if(symbol){const n=name(group);const key=/پایش حرارتی|سالن رنگ|thermal|paint shop/i.test(n)?'heat':/کنترل.*کیفیت|quality control/i.test(n)?'quality':null;if(key&&symbol.dataset.bamcoIcon!==key){symbol.innerHTML=icons[key];symbol.dataset.bamcoIcon=key;}}
+   const symbol=group.querySelector('.home-group-symbol');if(symbol){const n=name(group);const key=group.dataset.group==='emissionTests'?'emission':/پایش حرارتی|سالن رنگ|thermal|paint shop/i.test(n)?'heat':/کنترل.*کیفیت|quality control/i.test(n)?'quality':null;if(key&&symbol.dataset.bamcoIcon!==key){symbol.innerHTML=icons[key];symbol.dataset.bamcoIcon=key;}}
   });
   // Every submenu is assigned its own accent, not the parent's color.
   const submenus=[...document.querySelectorAll('.home-launcher-routes')];
@@ -28,7 +30,7 @@
     symbol.style.setProperty('color',accent,'important');
     symbol.style.setProperty('border-color','hsl('+hue+' 54% 80%)','important');
     symbol.style.setProperty('background','hsl('+hue+' 75% 95%)','important');
-    const n=name(route);const key=/پایش حرارتی|سالن رنگ|thermal|paint shop/i.test(n)?'heat':/کنترل.*کیفیت|quality control/i.test(n)?'quality':null;
+    const n=name(route);const key=route.dataset.route==='emissionTests'?'faces':/پایش حرارتی|سالن رنگ|thermal|paint shop/i.test(n)?'heat':/کنترل.*کیفیت|quality control/i.test(n)?'quality':null;
     if(key&&symbol.dataset.bamcoIcon!==key){symbol.innerHTML=icons[key];symbol.dataset.bamcoIcon=key;}
     symbol.querySelectorAll('svg').forEach(svg=>{svg.style.setProperty('stroke',accent,'important');svg.style.setProperty('width','54%','important');svg.style.setProperty('height','54%','important');});
    });

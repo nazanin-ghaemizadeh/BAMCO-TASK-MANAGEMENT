@@ -24,7 +24,7 @@
     { key: 'phonebook', title: 'دفتر تلفن', icon: '☎', routes: ['phoneBook'] },
     { key: 'paintThermal', title: 'پایش حرارتی سالن رنگ', icon: '♨', routes: ['ovenAnalysis'] },
     { key: 'statisticalQuality', title: 'کنترل آماری کیفیت', icon: '▥', routes: ['statisticalProcessControl'] },
-    { key: 'emissionTests', title: 'اشک و لبخند', icon: '☺', routes: ['emissionTests'] },
+    { key: 'emissionTests', title: 'تست آلایندگی', icon: '♧', routes: ['emissionTests'] },
     { key: 'personal', title: 'میز شخصی', icon: '✦', routes: ['notes', 'voiceAssistant'] }
   ]);
 

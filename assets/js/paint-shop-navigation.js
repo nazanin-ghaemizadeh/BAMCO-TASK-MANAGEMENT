@@ -27,7 +27,7 @@
     if(emission){
       event.preventDefault();event.stopImmediatePropagation();
       if(!window.BamcoAccess?.can?.('emissionTests','view'))return;
-      window.open(EMISSION_URL,'_blank','noopener,noreferrer');
+      window.open(EMISSION_URL,'_blank');
       document.querySelector('.home-launcher-dialog[open]')?.close();
       window.bamcoShowHome?.();
       return;
@@ -35,6 +35,7 @@
     const spc=targetSPC(event);
     if(spc){
       event.preventDefault();event.stopImmediatePropagation();
+      if(!window.BamcoAccess?.can?.('statisticalProcessControl','view'))return;
       window.open(SPC_URL,'_blank');
       document.querySelector('.home-launcher-dialog[open]')?.close();
       window.bamcoShowHome?.();
@@ -43,16 +44,22 @@
     const paint=targetPaint(event);
     if(paint){event.preventDefault();event.stopImmediatePropagation();window.open(PAINT_URL,'_blank','noopener,noreferrer');}
   },true);
+  const modules={
+    'bamco.spc.request-session':{path:SPC_PATH,feature:'statisticalProcessControl',name:'spc'},
+    'bamco.emission.request-session':{path:new URL(EMISSION_URL).pathname,feature:'emissionTests',name:'emission'}
+  };
   window.addEventListener('message',async event=>{
-    if(event.origin!==location.origin||event.data?.type!=='bamco.spc.request-session')return;
+    const module=modules[event.data?.type];if(event.origin!==location.origin||!module)return;
     try{
       const source=event.source;
-      if(!source||source===window||source.location.origin!==location.origin||source.location.pathname!==SPC_PATH)return;
+      if(!source||source===window||source.location.origin!==location.origin||source.location.pathname!==module.path||source.opener!==window)return;
       await window.bamcoAuth?.ensureFresh?.();
       const state=window.Bamco?.state,token=state?.token,userId=state?.user?.id;
-      if(!token||!userId)return;
-      source.postMessage({type:'bamco.spc.session',accessToken:token,userId},event.origin);
-    }catch(error){console.warn('Could not share the active session with SPC.',error)}
+      if(!token||!userId||!window.BamcoAccess?.can?.(module.feature,'view')){
+        source.postMessage({type:'bamco.'+module.name+'.revoked'},event.origin);return;
+      }
+      source.postMessage({type:'bamco.'+module.name+'.session',accessToken:token,userId},event.origin);
+    }catch(error){console.warn('Could not share the active BAMCO session.',error)}
   });
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',renameSPC,{once:true});else renameSPC();
   new MutationObserver(renameSPC).observe(document.documentElement,{childList:true,subtree:true,characterData:true});
