@@ -1,7 +1,7 @@
 /* Shared live Paint Shop workspace, authorized by the canonical access service. */
 (()=>{'use strict';
  const nav=document.querySelector('#nav'),workspace=document.querySelector('.workspace');if(!nav||!workspace)return;
- const routes=[['ovenAnalysis','♨','تحلیل دمای کوره'],['statisticalProcessControl','▥','کنترل آماری فرایند (SPC)']];
+ const routes=[['emissionTests','☺','اشک و لبخند'],['ovenAnalysis','♨','تحلیل دمای کوره'],['statisticalProcessControl','▥','کنترل آماری فرایند (SPC)']];
  for(const [route,icon,title] of routes){
   const button=document.createElement('button');button.type='button';button.dataset.view=route;button.dataset.featureKey=route;button.className='hidden';button.innerHTML=`<b>${icon}</b><span>${title}</span>`;nav.append(button);
   const view=document.createElement('section');view.id=route+'View';view.className='view hidden quality-tool-view';view.dataset.featureKey=route;

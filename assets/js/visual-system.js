@@ -30,6 +30,7 @@ const paths={
  organization:'M12 3v4M5 11V7h14v4M12 7v4M5 11a2 2 0 1 0 0 4 2 2 0 0 0 0-4ZM12 11a2 2 0 1 0 0 4 2 2 0 0 0 0-4ZM19 11a2 2 0 1 0 0 4 2 2 0 0 0 0-4ZM2 20c0-2 1-3 3-3s3 1 3 3M9 20c0-2 1-3 3-3s3 1 3 3M16 20c0-2 1-3 3-3s3 1 3 3',
  reports:'M4 3v18h17M8 17v-5M13 17V7M18 17v-9',
  performance:'M4 18a8 8 0 1 1 16 0M12 14l4-5M8 18h8',
+ emissionTests:'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18ZM8 9h.01M16 9h.01M7 14c2 4 8 4 10 0M17 10l2 3-2 1',
  paintThermal:'M5 20h14M7 17c0-2 2-3 2-5s-2-3-2-5M12 17c0-2 2-3 2-5s-2-3-2-5M17 17c0-2 2-3 2-5s-2-3-2-5',
  ovenAnalysis:'M3 18h18M5 15h14V7H5zM8 11c1-1 1-3 0-4M12 11c1-1 1-3 0-4M16 11c1-1 1-3 0-4',
  statisticalQuality:'M4 20V4M4 20h16M7 16l3-5 3 3 4-7 3 4',

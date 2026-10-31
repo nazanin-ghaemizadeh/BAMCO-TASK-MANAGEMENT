@@ -1,6 +1,7 @@
 /* Open Paint Shop and SPC as standalone modules while sharing the active BAMCO session. */
 (()=>{
   'use strict';
+  const EMISSION_URL='https://nazanin-ghaemizadeh.github.io/BAMCO-EMISSION-TEST/';
   const PAINT_URL='https://nazanin-ghaemizadeh.github.io/BAMCO-PAINT-SHOP/';
   const SPC_URL='https://nazanin-ghaemizadeh.github.io/BAMCO-STATISTICAL-PROCESS-CONTROL/';
   const SPC_PATH=new URL(SPC_URL).pathname;
@@ -22,6 +23,15 @@
     return target&&isPaint(target)?target:null;
   };
   document.addEventListener('click',event=>{
+    const emission=event.target instanceof Element?event.target.closest('[data-view="emissionTests"],[data-route="emissionTests"]'):null;
+    if(emission){
+      event.preventDefault();event.stopImmediatePropagation();
+      if(!window.BamcoAccess?.can?.('emissionTests','view'))return;
+      window.open(EMISSION_URL,'_blank','noopener,noreferrer');
+      document.querySelector('.home-launcher-dialog[open]')?.close();
+      window.bamcoShowHome?.();
+      return;
+    }
     const spc=targetSPC(event);
     if(spc){
       event.preventDefault();event.stopImmediatePropagation();
