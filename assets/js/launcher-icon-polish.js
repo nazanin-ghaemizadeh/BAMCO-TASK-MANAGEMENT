@@ -56,9 +56,13 @@
    const textNodes=document.createTreeWalker(heading,NodeFilter.SHOW_TEXT);
    let n;while((n=textNodes.nextNode())){if(/تست\s*آلایندگی/.test(n.nodeValue))n.nodeValue=n.nodeValue.replace(/تست\s*آلایندگی/g,'آلایندگی');}
   }
-  const routes=group.querySelector('.home-launcher-routes')||
-   document.querySelector('.home-launcher-dialog[open] .home-launcher-routes');
-  if(!routes||routes.querySelector('[data-route="'+routeId+'"]'))return;
+  const routes=document.querySelector('.home-launcher-dialog[open] .home-launcher-routes');
+  if(!routes)return;
+  if(!routes.querySelector('[data-route="emissionTests"]')){
+   routes.querySelectorAll('[data-route="'+routeId+'"]').forEach(item=>item.remove());
+   return;
+  }
+  if(routes.querySelector('[data-route="'+routeId+'"]'))return;
   const existing=routes.querySelector('.home-launcher-route');
   const item=document.createElement(existing?.tagName?.toLowerCase()==='a'?'a':'button');
   item.className='home-launcher-route';
