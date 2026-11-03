@@ -192,7 +192,7 @@
     return parts.at(-1) || '—';
   };
   const directory = () => window.BamcoOrganizationDirectory;
-  const matrix = { central:false, departmentId:'', unitId:'', loading: false, loaded: false, saving: false, search: '', users: [], values: new Map(), initial: new Map(), protected: new Set(), error: '' };
+  const matrix = { stale:false, central:false, departmentId:'', unitId:'', loading: false, loaded: false, saving: false, search: '', users: [], values: new Map(), initial: new Map(), protected: new Set(), error: '' };
   const keyOf = (featureKey, userId) => `${featureKey}:${userId}`;
   const snapshotParts = payload => {
     const source = Array.isArray(payload) ? payload[0] : payload;
@@ -251,6 +251,17 @@
   function renderTable() {
     const view = ensureView(), content = view.querySelector('.access-matrix-content'), save = view.querySelector('[data-access-matrix-save]');
     if (!content) return;
+    const scroller = content.querySelector('.access-matrix-scroll');
+    const position = scroller && { top: scroller.scrollTop, left: scroller.scrollLeft };
+    const active = document.activeElement;
+    const focused = content.contains(active) && active.dataset.accessFeature
+      ? { feature: active.dataset.accessFeature, user: active.dataset.accessUser } : null;
+    content.setAttribute('aria-busy', String(matrix.loading));
+    if (matrix.loading && matrix.loaded) {
+      if (save) save.disabled = true;
+      view.querySelectorAll('[data-access-feature][data-access-user],[data-access-department],[data-access-unit]').forEach(control => { control.disabled = true; });
+      return;
+    }
     if (matrix.loading) content.innerHTML = '<p class="access-matrix-status" role="status">در حال دریافت دسترسی‌ها…</p>';
     else if (matrix.error) content.innerHTML = `<p class="access-matrix-status error" role="alert">${esc(matrix.error)}</p>`;
     else if (!matrix.loaded) content.innerHTML = '<p class="access-matrix-status">برای دریافت دسترسی‌ها، تازه‌سازی کنید.</p>';
@@ -268,13 +279,17 @@
       }).join('');
       content.innerHTML = users.length ? `<div class="access-matrix-scroll"><table class="access-matrix-table" data-no-pagination="true"><thead><tr><th scope="col">کارت و تب</th>${heads}</tr></thead><tbody>${body}</tbody></table></div>` : '<p class="access-matrix-status">فردی با این عبارت پیدا نشد.</p>';
     }
+    const nextScroller = content.querySelector('.access-matrix-scroll');
+    if (position && nextScroller) { nextScroller.scrollTop = position.top; nextScroller.scrollLeft = position.left; }
+    if (focused) [...content.querySelectorAll('[data-access-feature][data-access-user]')]
+      .find(button => button.dataset.accessFeature === focused.feature && button.dataset.accessUser === focused.user)?.focus({ preventScroll: true });
     view.querySelectorAll('[data-access-department],[data-access-unit]').forEach(select=>select.disabled=matrix.loading||matrix.saving);
     if (save) save.disabled = matrix.loading || matrix.saving || dirtyKeys().length === 0;
   }
   async function loadMatrix({ force = false } = {}) {
-    if (matrix.loading || (matrix.loaded && !force)) { renderTable(); return; }
+    if (matrix.loading || (matrix.loaded && !force)) return;
     if (!canManage()) { syncRouteVisibility(); window.BamcoAccess?.denied?.('settings', 'manage_access', { route: ROUTE }); return; }
-    matrix.loading = true; matrix.error = ''; renderTable();
+    matrix.loading = true; matrix.stale = false; matrix.error = ''; renderTable();
     const token = state().token, snapshots = new Map();
     try {
       let central=null;
@@ -368,12 +383,12 @@
     view.addEventListener('input', event => {
       if (!event.target.matches('[data-access-matrix-search]')) return;
       matrix.search = event.target.value; renderTable();
-      const input = view.querySelector('[data-access-matrix-search]'); if (input) { input.value = matrix.search; input.focus(); }
+      const input = view.querySelector('[data-access-matrix-search]'); if (input) { input.value = matrix.search; }
     });
     view.addEventListener('click', event => {
       if (event.target.closest('[data-access-matrix-refresh]')) return void loadMatrix({ force: true });
       if (event.target.closest('[data-access-matrix-save]')) return void saveMatrix();
-      const toggle = event.target.closest('[data-access-feature][data-access-user]'); if (!toggle || toggle.disabled) return;
+      const toggle = event.target.closest('[data-access-feature][data-access-user]'); if (!toggle || toggle.disabled || matrix.loading || matrix.saving) return;
       const key = keyOf(toggle.dataset.accessFeature, toggle.dataset.accessUser), enabled = matrix.values.get(key) !== true;
       matrix.values.set(key, enabled);
       view.querySelectorAll('[data-access-feature][data-access-user]').forEach(button => {
@@ -389,7 +404,7 @@
   function activate() {
     syncRouteVisibility();
     if (!canManage()) { window.BamcoAccess?.denied?.('settings', 'manage_access', { route: ROUTE }); window.bamcoShowHome?.(); return; }
-    void loadMatrix();
+    void loadMatrix({ force: matrix.stale && dirtyKeys().length === 0 });
   }
   function boot() {
     ensureView(); syncRouteVisibility();
@@ -399,13 +414,13 @@
       // Access refreshes are emitted by login/session refreshes as well as by
       // edits.  Re-fetching the whole matrix for every event replaced the
       // table while the user was working and reset its scroll position.
-      if (!matrix.saving && state().view !== ROUTE) matrix.loaded = false;
+      matrix.stale = true;
     });
-    window.addEventListener('bamco:organization-directory',()=>{matrix.loaded=false;if(matrix.central&&state().view===ROUTE&&!matrix.loading&&!matrix.saving)void loadMatrix({force:true})});
-    document.addEventListener('bamco:profiles-updated', () => {
-      matrix.loaded = false;
-      if (state().view === ROUTE && !matrix.saving) void loadMatrix({ force: true });
-    });
+    // Background directory/profile notifications must not replace an active
+    // matrix or discard pending grants. Refresh explicitly, or on next entry.
+    const invalidate = () => { if (!matrix.loading && !matrix.saving) matrix.stale = true; };
+    window.addEventListener('bamco:organization-directory', invalidate);
+    document.addEventListener('bamco:profiles-updated', invalidate);
     window.bamcoAccessMatrix = Object.freeze({ load: () => loadMatrix({ force: true }), state: matrix });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true }); else boot();

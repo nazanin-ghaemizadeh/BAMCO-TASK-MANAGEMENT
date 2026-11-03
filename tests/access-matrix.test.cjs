@@ -35,10 +35,10 @@ test('people access matrix mirrors aliases and saves through the canonical acces
       'گزارش تنخواه', 'صورتحساب‌ها و تعهدات مالی',
       'تحویل دائم خودرو', 'تحویل موقت خودرو', 'مدیریت قطعات', 'مدیریت ابزار',
       'گفت‌وگوی عمومی و گروه‌ها', 'گفت‌وگوی خصوصی', 'گفت‌وگوی مرتبط با وظیفه',
-      'فرم‌ها و مستندات', 'گزارش آزمون', 'سایت‌ها و دسترسی‌ها', 'راهنمای استفاده سامانه', 'نامه‌های ورودی', 'نامه‌های خروجی', 'دفتر تلفن', 'تحلیل دمای کوره', 'کنترل آماری فرایند (SPC)', 'یادداشت‌ها', 'دستیار هوشمند'
+      'فرم‌ها و مستندات', 'گزارش آزمون', 'سایت‌ها و دسترسی‌ها', 'راهنمای استفاده سامانه', 'نامه‌های ورودی', 'نامه‌های خروجی', 'دفتر تلفن', 'تحلیل دمای کوره', 'کنترل آماری فرایند', 'اشک و لبخند', 'تعیین گرید آلایندگی و مصرف سوخت و انرژی', 'یادداشت‌ها', 'دستیار هوشمند'
     ];
     const actualTabs = [...f.d.querySelectorAll('.access-matrix-route > th > span')].map(cell => cell.textContent.trim());
-    assert.equal(actualTabs.length, 38, 'ماتریس همهٔ تب‌های قابل‌واگذاری را دارد و دسترسی مدیر سامانه را فهرست نمی‌کند');
+    assert.equal(actualTabs.length, 40, 'ماتریس همهٔ تب‌های قابل‌واگذاری را دارد و دسترسی مدیر سامانه را فهرست نمی‌کند');
     assert.deepEqual(actualTabs, expectedTabs, 'عنوان و ترتیب تب‌های قابل‌واگذاری دقیقاً با صفحهٔ اصلی یکسان است');
     assert.equal(actualTabs.includes('دسترسی‌ها'), false, 'تب دسترسی مدیر سامانه داخل ماتریس قابل‌واگذاری نیست');
     assert.equal(f.d.querySelector('.access-matrix-table').textContent.includes('قالب‌ها'), false);
@@ -73,9 +73,27 @@ test('people access matrix mirrors aliases and saves through the canonical acces
     assert.equal(f.d.querySelector('.access-matrix-table'), tableBeforeToggle, 'تغییر تیک جدول را بازسازی و اسکرول را صفر نمی‌کند');
     assert.ok([...f.d.querySelectorAll('[data-access-feature="letters"][data-access-user="test-owner"]')].every(button => button.getAttribute('aria-pressed') === 'true'));
 
+    const scroll = f.d.querySelector('.access-matrix-scroll');
+    scroll.scrollTop = 620; scroll.scrollLeft = -180;
+    letterCells[0].focus({ preventScroll: true });
+    const callsBeforeNotifications = f.calls.filter(call => call.endpoint === 'feature_access_manage_snapshot').length;
+    f.d.dispatchEvent(new f.w.CustomEvent('bamco:profiles-updated'));
+    f.w.dispatchEvent(new f.w.CustomEvent('bamco:organization-directory'));
+    await new Promise(resolve => setTimeout(resolve, 100));
+    assert.equal(f.d.querySelector('.access-matrix-table'), tableBeforeToggle, 'background updates retain the active table');
+    assert.equal(scroll.scrollTop, 620);
+    assert.equal(scroll.scrollLeft, -180);
+    assert.equal(f.d.activeElement, letterCells[0]);
+    assert.equal(f.w.bamcoAccessMatrix.state.values.get('letters:test-owner'), true, 'pending edits survive notifications');
+    assert.equal(f.calls.filter(call => call.endpoint === 'feature_access_manage_snapshot').length, callsBeforeNotifications);
+    assert.equal(f.d.querySelector('#accessMatrixView .suite-table-options,.access-matrix-table .suite-filters'), null, 'generic table decorators do not rewrite the matrix');
+
+    f.d.querySelector('[data-access-feature="fuelEconomyGrade"][data-access-user="test-owner"]').click();
     f.d.querySelector('[data-access-feature="projects"][data-access-user="test-owner"]').click();
     f.d.querySelector('[data-access-matrix-save]').click();
     await until(() => f.calls.some(call => call.endpoint === 'set_feature_access' && call.body.p_feature_key === 'projects'));
+    await until(() => f.calls.some(call => call.endpoint === 'set_feature_access' && call.body.p_feature_key === 'fuelEconomyGrade'));
+    assert.equal(effective.get('fuelEconomyGrade'), true);
     const saved = f.calls.find(call => call.endpoint === 'set_feature_access' && call.body.p_feature_key === 'projects').body.p_grants[0];
     assert.deepEqual({ view: saved.can_view, create: saved.can_create, edit: saved.can_edit, delete: saved.can_delete, export: saved.can_export }, { view: true, create: true, edit: true, delete: true, export: true });
   } finally {

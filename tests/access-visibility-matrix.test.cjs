@@ -15,7 +15,7 @@ const ROUTES={
  settings:'settings',alertSettings:'settings',emailSettings:'settings',kanban:'kanban',archive:'archive',taskTimeline:'taskTimeline',
  approvals:'approvals',requestHistory:'requestHistory',projects:'projects',vehiclePermanent:'vehiclePermanent',vehicleTemporary:'vehicleTemporary',
  parts:'parts',tools:'tools',groupChat:'groupChat',directMessages:'directMessages',taskChats:'taskChats',documents:'documents',testReports:'documents',
- ovenAnalysis:'ovenAnalysis',statisticalProcessControl:'statisticalProcessControl',sitesAccess:'sitesAccess',lettersIncoming:'letters',lettersOutgoing:'letters',userGuide:'userGuide',phoneBook:'phonebook',notes:'notes',voiceAssistant:'voiceAssistant'
+ emissionTests:'emissionTests',fuelEconomyGrade:'fuelEconomyGrade',ovenAnalysis:'ovenAnalysis',statisticalProcessControl:'statisticalProcessControl',sitesAccess:'sitesAccess',lettersIncoming:'letters',lettersOutgoing:'letters',userGuide:'userGuide',phoneBook:'phonebook',notes:'notes',voiceAssistant:'voiceAssistant'
 };
 const INTERNAL=new Set(['alertSettings','emailSettings']);
 const ADMIN_ONLY=new Set(['templates','accessMatrix']);
@@ -39,11 +39,11 @@ async function owner(t,initial=FEATURES.map(key=>grant(key))){
 
 // CSS/layout is asserted separately in browser/check_access_visibility.py,
 // which runs real Chromium with the shipped HTML, styles and JS bundle.
-test('visibility inventory covers all 43 routes, 38 grantable cards, 41 nav entries and 14 parent groups',async t=>{
+test('visibility inventory covers all 45 routes, 40 grantable cards, 43 nav entries and 15 parent groups',async t=>{
  const f=await owner(t),catalog=f.w.BamcoNavigationCatalog;
  assert.deepEqual(Object.fromEntries(Object.entries(catalog.byRoute).map(([key,r])=>[key,r.featureKey])),ROUTES);
  assert.deepEqual([...catalog.accessMatrixRoutes].sort(),[...GRANTABLE].sort());
- assert.equal(catalog.groups.length,14);
+ assert.equal(catalog.groups.length,15);
  assert.deepEqual([...f.d.querySelectorAll('#nav button[data-view]')].map(node=>node.dataset.view).sort(),Object.keys(ROUTES).filter(key=>!INTERNAL.has(key)).sort());
  for(const route of Object.keys(ROUTES))assert.equal(!!f.d.getElementById(route+'View'),!INTERNAL.has(route),`${route}: actual view or intentionally absent legacy route`);
  for(const route of GRANTABLE){assert(available(button(f,route)),`${route}: granted nav entry is available`);assert(!button(f,route).closest('.nav-group').classList.contains('hidden'),`${route}: parent is available`);}
@@ -82,8 +82,11 @@ test('each view-only grant independently reveals every matching route and its pa
 
 test('all granted routes open through source navigation and direct navigation without another view leaking',async t=>{
  const f=await owner(t);
+ const external = {emissionTests:'BAMCO-EMISSION-TEST/',fuelEconomyGrade:'BAMCO-CO2-ENERGY-CALCULATOR/',statisticalProcessControl:'BAMCO-STATISTICAL-PROCESS-CONTROL/'};
+ const opened=[];f.w.open=url=>opened.push(url);
  for(const route of GRANTABLE){
   await home(f);button(f,route).click();
+  if(external[route]){assert(opened.at(-1)?.endsWith(external[route]),`${route}: authorized external module opens`);assert.equal(state(f).view,'home');continue;}
   await until(()=>state(f).view===route&&!f.d.getElementById(route+'View').classList.contains('hidden'));
   await pause(40);
   assert.equal(state(f).view,route,`${route}: source click remains on selected route`);
