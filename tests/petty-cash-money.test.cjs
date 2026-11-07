@@ -2,6 +2,49 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { fixture, until } = require('./helpers/app-fixture.cjs');
 
+test('weekly petty cash export uses Tehran Saturday–Friday dates and the existing workbook format',async t=>{
+ const rows=[
+  {id:'opening',entry_no:1,event_date:'2026-10-30',entry_type:'receipt',amount:'1000',status:'active'},
+  {id:'previous-friday',entry_no:2,event_date:'2026-11-06',entry_type:'expense',amount:'100',status:'active'},
+  {id:'saturday',entry_no:3,event_date:'2026-11-07',entry_type:'receipt',amount:'500',status:'active'},
+  {id:'friday',entry_no:4,event_date:'2026-11-13',entry_type:'expense',amount:'200',status:'active'},
+  {id:'void',entry_no:5,event_date:'2026-11-10',entry_type:'expense',amount:'999',status:'void'},
+  {id:'next-saturday',entry_no:6,event_date:'2026-11-14',entry_type:'expense',amount:'50',status:'active'}
+ ].map(row=>({...row,category:'بنزین',description:row.id,responsible_id:'test-manager'}));
+ const f=await fixture({tables:{petty_cash_entries:rows,petty_cash_attachments:[{id:'weekly-file',entry_id:'friday'}]}});t.after(()=>f.dispose());
+ await f.open('pettyCash');await until(()=>f.d.querySelectorAll('#pettyCashBody tr[data-entry]').length===5);
+ const weekly=f.d.querySelector('#exportWeeklyCash');
+ assert.equal(f.d.querySelector('#exportCash').nextElementSibling,weekly);
+ assert.equal(weekly.textContent,'گزارش هفتگی');assert.equal(weekly.disabled,false);
+ const NativeDate=f.w.Date;let instant;
+ f.w.Date=class extends NativeDate{constructor(...args){super(...(args.length?args:[instant]));}static now(){return new NativeDate(instant).getTime();}};
+ let exported;
+ f.w.ensureBamcoXLSX=async()=>({utils:{aoa_to_sheet:rows=>({rows:JSON.parse(JSON.stringify(rows))}),book_new:()=>({SheetNames:[],Sheets:{}}),book_append_sheet:(wb,sheet,name)=>{wb.SheetNames.push(name);wb.Sheets[name]=sheet;}},writeFile:(wb,name,options)=>{exported={wb,name,options};}});
+ // Every day in the week, including the exact Tehran midnight boundaries.
+ for(const now of ['2026-11-06T20:30:00Z','2026-11-08T08:00:00Z','2026-11-09T08:00:00Z','2026-11-10T08:00:00Z','2026-11-11T08:00:00Z','2026-11-12T08:00:00Z','2026-11-13T20:29:59Z']){
+  instant=now;exported=null;weekly.click();await until(()=>exported);
+  assert.deepEqual(exported.wb.SheetNames,['ریز تنخواه','جمع‌بندی دسته‌بندی']);
+  const detail=exported.wb.Sheets['ریز تنخواه'];
+  assert.deepEqual(detail.rows.slice(1).map(row=>[row[0],row[4],row[8],row[9]]),[[4,1200,'friday',1],[3,1400,'saturday',0]]);
+  assert.equal(detail.rows[0].length,10);assert.equal(detail['!views'][0].rightToLeft,true);
+  const summary=exported.wb.Sheets['جمع‌بندی دسته‌بندی'].rows;
+  assert(summary.some(row=>row[1]==='جمع کل هزینه‌ها'&&row[2]===1&&row[3]===200));
+  assert(summary.some(row=>row[1]==='جمع دریافت‌ها'&&row[3]===500));
+  assert(summary.some(row=>row[1]==='مانده تنخواه'&&row[3]===1200));
+  assert.match(exported.name,/^گزارش هفتگی تنخواه_.+_.+\.xlsx$/);
+ }
+ for(const [now,expected] of [['2026-11-06T20:29:59Z',['previous-friday']],['2026-11-13T20:30:00Z',['next-saturday']],['2026-12-01T08:00:00Z',[]]]){
+  instant=now;exported=null;weekly.click();await until(()=>exported);
+  assert.deepEqual(exported.wb.Sheets['ریز تنخواه'].rows.slice(1).map(row=>row[8]),expected);
+ }
+ // Running a weekly report never filters the table or the full export.
+ exported=null;f.d.querySelector('#exportCash').click();await until(()=>exported);
+ assert.equal(exported.wb.Sheets['ریز تنخواه'].rows.length,6);
+ assert.match(exported.name,/^گزارش تنخواه_/);
+ assert.equal(f.d.querySelectorAll('#pettyCashBody tr[data-entry]').length,5);
+ assert.deepEqual(f.errors,[]);
+});
+
 test('petty cash edits retain every large rial digit and send an exact ungrouped string', async t => {
   const row = { id: 'cash-exact', version: 1, entry_no: 1, event_date: '2026-10-01', entry_type: 'receipt', amount: '999999999999999999', status: 'active', category: 'Office', description: 'Large exact entry', responsible_id: 'test-manager' };
   const f = await fixture({ tables: { petty_cash_entries: [row], petty_cash_attachments: [] } }); t.after(() => f.dispose());
