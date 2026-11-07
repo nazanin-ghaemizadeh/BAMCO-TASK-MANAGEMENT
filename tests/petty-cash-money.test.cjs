@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { fixture, until } = require('./helpers/app-fixture.cjs');
 
-test('weekly petty cash export uses Tehran Saturday–Friday dates and the existing workbook format',async t=>{
+test('petty cash report dialog defaults to Tehran week and exports inclusive custom date ranges',async t=>{
  const rows=[
   {id:'opening',entry_no:1,event_date:'2026-10-30',entry_type:'receipt',amount:'1000',status:'active'},
   {id:'previous-friday',entry_no:2,event_date:'2026-11-06',entry_type:'expense',amount:'100',status:'active'},
@@ -22,7 +22,9 @@ test('weekly petty cash export uses Tehran Saturday–Friday dates and the exist
  f.w.ensureBamcoXLSX=async()=>({utils:{aoa_to_sheet:rows=>({rows:JSON.parse(JSON.stringify(rows))}),book_new:()=>({SheetNames:[],Sheets:{}}),book_append_sheet:(wb,sheet,name)=>{wb.SheetNames.push(name);wb.Sheets[name]=sheet;}},writeFile:(wb,name,options)=>{exported={wb,name,options};}});
  // Every day in the week, including the exact Tehran midnight boundaries.
  for(const now of ['2026-11-06T20:30:00Z','2026-11-08T08:00:00Z','2026-11-09T08:00:00Z','2026-11-10T08:00:00Z','2026-11-11T08:00:00Z','2026-11-12T08:00:00Z','2026-11-13T20:29:59Z']){
-  instant=now;exported=null;weekly.click();await until(()=>exported);
+  instant=now;exported=null;weekly.click();
+  const report=f.d.querySelector('#cashReportDialog');assert.equal(report.open,true);assert.equal(exported,null);
+  await report.querySelector('form').onsubmit({preventDefault(){}});await until(()=>exported);assert.equal(report.open,false);
   assert.deepEqual(exported.wb.SheetNames,['ریز تنخواه','جمع‌بندی دسته‌بندی']);
   const detail=exported.wb.Sheets['ریز تنخواه'];
   assert.deepEqual(detail.rows.slice(1).map(row=>[row[0],row[4],row[8],row[9]]),[[4,1200,'friday',1],[3,1400,'saturday',0]]);
@@ -34,9 +36,36 @@ test('weekly petty cash export uses Tehran Saturday–Friday dates and the exist
   assert.match(exported.name,/^گزارش هفتگی تنخواه_.+_.+\.xlsx$/);
  }
  for(const [now,expected] of [['2026-11-06T20:29:59Z',['previous-friday']],['2026-11-13T20:30:00Z',['next-saturday']],['2026-12-01T08:00:00Z',[]]]){
-  instant=now;exported=null;weekly.click();await until(()=>exported);
+  instant=now;exported=null;weekly.click();
+  const report=f.d.querySelector('#cashReportDialog');assert.equal(report.open,true);assert.equal(exported,null);
+  await report.querySelector('form').onsubmit({preventDefault(){}});await until(()=>exported);assert.equal(report.open,false);
   assert.deepEqual(exported.wb.Sheets['ریز تنخواه'].rows.slice(1).map(row=>row[8]),expected);
  }
+ // Select a custom range with the same Persian calendar used for entry dates.
+ instant='2026-11-07T08:00:00Z';exported=null;weekly.click();
+ const report=f.d.querySelector('#cashReportDialog'),form=report.querySelector('form');
+ const pick=(name,iso)=>{
+  form.querySelector(`[name="${name}_text"]`).click();assert.equal(f.d.querySelector('#calendarDialog').open,true);
+  const parts=new Intl.DateTimeFormat('en-US-u-ca-persian-nu-latn',{year:'numeric',month:'numeric',day:'numeric'}).formatToParts(new Date(iso+'T12:00:00Z'));
+  const part=type=>parts.find(p=>p.type===type).value;
+  f.d.querySelector('#calYear').value=part('year');f.d.querySelector('#calMonth').value=part('month');
+  f.w.eval('fillCalendarDays()');f.d.querySelector('#calDay').value=part('day');f.d.querySelector('#setDateBtn').click();
+  assert.equal(form.elements[name].value,iso);assert.equal(f.d.querySelector('#calendarDialog').open,false);
+ };
+ pick('from_date','2026-11-06');pick('to_date','2026-11-07');
+ await form.onsubmit({preventDefault(){}});assert.equal(report.open,false);
+ assert.deepEqual(exported.wb.Sheets['ریز تنخواه'].rows.slice(1).map(row=>row[8]),['saturday','previous-friday']);
+ assert(exported.wb.Sheets['جمع‌بندی دسته‌بندی'].rows.some(row=>row[1]==='مانده تنخواه'&&row[3]===1400));
+ // Missing or reversed dates keep the dialog open and do not download.
+ exported=null;weekly.click();
+ let current=report.querySelector('form');current.elements.from_date.value='';
+ await current.onsubmit({preventDefault(){}});assert.equal(exported,null);assert.equal(report.open,true);assert.ok(current.querySelector('.form-error').textContent);
+ current.elements.from_date.value='2026-11-14';current.elements.to_date.value='2026-11-07';
+ await current.onsubmit({preventDefault(){}});assert.equal(exported,null);assert.equal(report.open,true);assert.match(current.querySelector('.form-error').textContent,/نباید/);
+ current.elements.from_date.value='2026-11-13';current.elements.to_date.value='2026-11-13';
+ await current.onsubmit({preventDefault(){}});
+ assert.deepEqual(exported.wb.Sheets['ریز تنخواه'].rows.slice(1).map(row=>row[8]),['friday']);
+ exported=null;weekly.click();report.querySelector('[data-close]').click();assert.equal(report.open,false);assert.equal(exported,null);
  // Running a weekly report never filters the table or the full export.
  exported=null;f.d.querySelector('#exportCash').click();await until(()=>exported);
  assert.equal(exported.wb.Sheets['ریز تنخواه'].rows.length,6);
