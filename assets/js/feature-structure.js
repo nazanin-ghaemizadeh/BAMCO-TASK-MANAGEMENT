@@ -135,12 +135,14 @@
     } catch (error) { toast(error.message, true); }
     finally { button.disabled = false; }
   }
-  async function openCashDashboard() {
-    if (window.bamcoPettyCash?.load) await window.bamcoPettyCash.load();
-    let dialog = q('#cashDashboardDialog');
-    if (!dialog) { dialog = document.createElement('dialog'); dialog.id = 'cashDashboardDialog'; dialog.className = 'modal cash-dashboard-dialog'; document.body.append(dialog); }
-    const source = q('#pettyCashSummary');
-    dialog.innerHTML = `<div class="modal-head"><div><h3>داشبورد تنخواه</h3><p>خلاصه لحظه‌ای رویدادهای مالی</p></div><button type="button" data-close>×</button></div><div class="cash-summary">${source?.innerHTML || ''}</div><div class="modal-actions"><button class="primary" data-close>بستن</button></div>`;
+  async function openCashDashboard(mileage = false) {
+    const report = mileage ? window.bamcoMileageCosts : window.bamcoPettyCash;
+    if (report?.load) await report.load();
+    const id = mileage ? 'mileageDashboardDialog' : 'cashDashboardDialog';
+    let dialog = q('#' + id);
+    if (!dialog) { dialog = document.createElement('dialog'); dialog.id = id; dialog.className = 'modal cash-dashboard-dialog'; document.body.append(dialog); }
+    const source = q(mileage ? '#mileageCostsSummary' : '#pettyCashSummary');
+    dialog.innerHTML = `<div class="modal-head"><div><h3>${mileage ? 'داشبورد هزینه‌های پیمایش' : 'داشبورد تنخواه'}</h3><p>خلاصه لحظه‌ای رویدادهای مالی</p></div><button type="button" data-close>×</button></div><div class="cash-summary">${source?.innerHTML || ''}</div><div class="modal-actions"><button class="primary" data-close>بستن</button></div>`;
     qa('[data-close]', dialog).forEach(button => button.onclick = () => dialog.close()); dialog.showModal();
   }
   document.addEventListener('click', event => {
@@ -150,7 +152,7 @@
     if (category) { event.preventDefault(); event.stopPropagation(); const id = category.dataset.categoryToggle; openCategories.has(id) ? openCategories.delete(id) : openCategories.add(id); enhanceCategories(); return; }
     const add = event.target.closest('[data-add-subcategory]');
     if (add) { event.preventDefault(); if (!requireDocuments('create')) return; q('#addDocumentCategory')?.click(); populateParent(add.dataset.addSubcategory); return; }
-    if (event.target.closest('#cashDashboardToggle')) { event.preventDefault(); event.stopImmediatePropagation(); void openCashDashboard(); }
+    if (event.target.closest('#cashDashboardToggle, #mileageDashboardToggle')) { event.preventDefault(); event.stopImmediatePropagation(); void openCashDashboard(!!event.target.closest('#mileageDashboardToggle')); }
   }, true);
   document.addEventListener('submit', saveCategory, true);
   const categoryDialog = q('#docCategoryDialog');
