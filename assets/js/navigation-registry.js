@@ -16,7 +16,7 @@
     { key: 'reports', title: 'گزارش‌ها', icon: '▦', routes: ['dashboard', 'performanceReport'] },
     { key: 'configuration', title: 'تنظیمات', icon: '⚙', routes: ['systemOptions', 'settings', 'alertSettings', 'emailSettings'] },
     { key: 'tasks', title: 'مدیریت وظایف', icon: '☑', routes: ['kanban', 'archive', 'taskTimeline', 'projects', 'approvals', 'requestHistory'] },
-    { key: 'delivery', title: 'مدیریت مالی', icon: '▰', routes: ['pettyCash', 'invoices'] },
+    { key: 'delivery', title: 'مدیریت مالی', icon: '▰', routes: ['pettyCash', 'mileageCosts', 'invoices'] },
     { key: 'vehicle', title: 'مدیریت منابع', icon: '◇', routes: ['vehiclePermanent', 'vehicleTemporary', 'parts', 'tools'] },
     { key: 'conversations', title: 'گفتگوها', icon: '☵', routes: ['groupChat', 'directMessages', 'taskChats'] },
     { key: 'resources', title: 'اسناد و سامانه‌ها', icon: '▧', routes: ['documents', 'testReports', 'sitesAccess', 'userGuide'] },
@@ -38,7 +38,7 @@
     'dashboard', 'performanceReport',
     'systemOptions', 'settings',
     'kanban', 'archive', 'taskTimeline', 'projects', 'approvals', 'requestHistory',
-    'pettyCash', 'invoices',
+    'pettyCash', 'mileageCosts', 'invoices',
     'vehiclePermanent', 'vehicleTemporary', 'parts', 'tools',
     'groupChat', 'directMessages', 'taskChats',
     'documents', 'testReports', 'sitesAccess', 'lettersIncoming', 'lettersOutgoing', 'userGuide', 'phoneBook',
@@ -63,6 +63,7 @@
     ['dashboard', 'dashboard', 'داشبورد'],
     ['performanceReport', 'performanceReport', 'گزارش عملکرد'],
     ['pettyCash', 'pettyCash', 'گزارش تنخواه'],
+    ['mileageCosts', 'mileageCosts', 'هزینه‌های پیمایش'],
     ['invoices', 'invoices', 'صورتحساب‌ها و تعهدات مالی'],
     ['systemOptions', 'systemOptions', 'وضعیت‌ها و اولویت‌ها'],
     ['settings', 'settings', 'تنظیمات کاربری'],
@@ -107,7 +108,7 @@
   const standaloneLayoutRoutes = Object.freeze(new Set(['projects', 'parts', 'invoices', 'organization', 'tools', 'accessMatrix', 'vehiclePermanent', 'vehicleTemporary', 'testReports', 'ovenAnalysis', 'statisticalProcessControl', 'emissionTests']));
   // These routes render their own table, toolbar and loading states. Shared
   // presentation engines must not rewrite their DOM while they are active.
-  const featureOwnedRoutes = Object.freeze(new Set(['accessMatrix', 'vehiclePermanent', 'vehicleTemporary', 'lettersIncoming', 'lettersOutgoing', 'pettyCash', 'invoices', 'testReports', 'ovenAnalysis', 'statisticalProcessControl', 'emissionTests']));
+  const featureOwnedRoutes = Object.freeze(new Set(['accessMatrix', 'vehiclePermanent', 'vehicleTemporary', 'lettersIncoming', 'lettersOutgoing', 'pettyCash', 'mileageCosts', 'invoices', 'testReports', 'ovenAnalysis', 'statisticalProcessControl', 'emissionTests']));
   // Standalone layouts own their toolbar. The interior reconciler still
   // guarantees a native return control inside those toolbars.
   const noHomeReturnRoutes = new Set(['projects', 'invoices']);

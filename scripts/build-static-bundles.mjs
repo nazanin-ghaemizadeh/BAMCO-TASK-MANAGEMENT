@@ -31,6 +31,7 @@ const javascript = [
   'assets/js/excel.js',
   'assets/js/vehicles.js',
   'assets/js/petty-cash.js',
+  'assets/js/mileage-costs.js',
   'assets/js/tasks-io.js',
   'assets/js/table-ui.js',
   'assets/js/timeline.js',

@@ -235,3 +235,7 @@ html body #appView#appView#appView#appView#appView .view:has(table) :is(.bamco-c
 @media(max-width:700px){
  html body #appView#appView#appView#appView#appView .view:has(table) :is(.bamco-command-bar,.workspace-report-tools,.vehicle-toolbar,.letter-toolbar,.cash-toolbar,.feature-toolbar-actions){flex-wrap:wrap!important;overflow:visible!important}
 }
+
+/* Mileage costs use the same financial report layout. */
+
+html body #appView#appView #mileageCostsView:has(table) .cash-panel {height:100dvh!important;min-height:0!important;gap:0!important}

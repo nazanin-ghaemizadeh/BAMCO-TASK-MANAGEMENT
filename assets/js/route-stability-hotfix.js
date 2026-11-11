@@ -1,7 +1,7 @@
 /* Route-stability hotfix: prevents shared UI engines from rebuilding feature-owned routes. */
 (()=>{
   'use strict';
-  const owned=['vehiclePermanentView','vehicleTemporaryView','pettyCashView','lettersIncomingView','lettersOutgoingView','invoicesView'];
+  const owned=['vehiclePermanentView','vehicleTemporaryView','pettyCashView','mileageCostsView','lettersIncomingView','lettersOutgoingView','invoicesView'];
   const mark=()=>owned.forEach(id=>document.getElementById(id)?.setAttribute('data-bamco-ui-owner','feature'));
   mark();
   try{
