@@ -30,3 +30,13 @@ test('short and trivially weak replacement passwords never reach Auth',async()=>
  const s=session(async()=>Response.json({}));for(const password of ['123456','aaaaaaaaaaaa','password12345678'])await assert.rejects(()=>s.auth.changePassword(password));
  assert.equal(s.state.profile.must_change_password,true);
 });
+test('a temporary refresh outage keeps the current session and can recover',async t=>{
+ let offline=true;const s=session(async()=>offline?Response.json({message:'temporary outage'},{status:503}):Response.json({access_token:'recovered',refresh_token:'new-refresh',expires_in:3600}));t.after(()=>s.auth.clear());
+ s.auth.accept({access_token:'old',refresh_token:'refresh',expires_in:3600});const identity=s.auth.snapshot();
+ await assert.rejects(s.auth.ensureFresh(true));assert.equal(s.state.token,'old');assert.equal(s.auth.isCurrent(identity),true);
+ offline=false;await s.auth.ensureFresh(true);assert.equal(s.state.token,'recovered');assert.equal(s.auth.isCurrent(identity),true);
+});
+test('an invalid refresh token still ends the session',async()=>{
+ const s=session(async()=>Response.json({message:'Invalid Refresh Token'},{status:400}));s.auth.accept({access_token:'old',refresh_token:'invalid',expires_in:3600});
+ await assert.rejects(s.auth.ensureFresh(true));assert.equal(s.state.token,'');assert.equal(s.state.user,null);
+});

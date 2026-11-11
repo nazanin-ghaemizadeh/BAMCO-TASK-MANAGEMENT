@@ -14,7 +14,8 @@ function makeUuid(){
 }
 function deviceId(){let id='';try{id=localStorage.getItem(DEVICE_KEY)||''}catch{}if(!uuidPattern.test(id)){id=makeUuid();try{localStorage.setItem(DEVICE_KEY,id)}catch{}}return id}
 const DEVICE_ID=deviceId();
-for(const event of ['pointerdown','keydown','touchstart'])document.addEventListener(event,()=>{lastActivity=Date.now()},{passive:true});
+function noteActivity(){if(state?.token&&!ending)lastActivity=Date.now();}
+for(const event of ['pointerdown','keydown','touchstart'])document.addEventListener(event,noteActivity,{passive:true});
 const call=async(action,extra={},options={})=>{
  if(typeof state==='undefined'||!state.token)return null;
  return api('/functions/v1/session-audit',{method:'POST',body:{action,device_id:DEVICE_ID,...extra},...options});
@@ -63,7 +64,7 @@ async function end(reason='logout',options={}){
  }finally{ending=false}
 }
 function clear(){generation++;sessionStorage.removeItem(KEY);starting=null;confirmedId=null}
-window.bamcoSession={start,heartbeat,end,clear,currentId:()=>sessionStorage.getItem(KEY),deviceId:()=>DEVICE_ID};
+window.bamcoSession={start,heartbeat,end,clear,noteActivity,currentId:()=>sessionStorage.getItem(KEY),deviceId:()=>DEVICE_ID};
 // Presence is independent from user activity: even an idle, open tab checks in.
 setInterval(()=>heartbeat().catch(error=>console.warn('BAMCO session heartbeat',error.message)),30000);
 // Session management screens should not wait for the older 15-second report poll.

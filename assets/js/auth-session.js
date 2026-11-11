@@ -7,8 +7,9 @@
   state.token=data.access_token;if(data.user)state.user=data.user;
   if(data.refresh_token)refreshToken=data.refresh_token;
   expiresAt=Number(data.expires_at||0)*1000||Date.now()+Number(data.expires_in||3600)*1000;
-  clearTimeout(timer);const epoch=generation;if(refreshToken)timer=setTimeout(()=>ensureFresh(true).catch(()=>{if(epoch===generation)expire()}),Math.max(1000,expiresAt-Date.now()-60000));
+  scheduleRefresh(Math.max(1000,expiresAt-Date.now()-60000));
  }
+ function scheduleRefresh(delay){clearTimeout(timer);const epoch=generation;if(refreshToken)timer=setTimeout(()=>ensureFresh(true).catch(()=>{if(epoch===generation&&refreshToken)scheduleRefresh(15000)}),delay);}
  function snapshot(){return {generation,userId:state.user?.id}}
  function isCurrent(value){return !!value&&value.generation===generation&&value.userId===state.user?.id&&!!state.token}
  function clear(){generation++;clearTimeout(timer);timer=null;refreshToken='';expiresAt=0;refreshing=null;window.bamcoMedia?.clear()}
@@ -18,7 +19,7 @@
   if(!refreshing)refreshing=(async()=>{
    const started=generation;
    const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),15000);
-   try{const response=await transport(SB_URL+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{apikey:SB_KEY,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:refreshToken}),signal:controller.signal}),data=await response.json();if(started!==generation)return;if(!response.ok){expire();throw Error('اعتبار ورود پایان یافته است؛ دوباره وارد شوید.')}accept(data)}
+   try{const response=await transport(SB_URL+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{apikey:SB_KEY,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:refreshToken}),signal:controller.signal}),data=await response.json();if(started!==generation)return;if(!response.ok){if([400,401,403].includes(response.status)){expire();throw Error('اعتبار ورود پایان یافته است؛ دوباره وارد شوید.')}throw Error('ارتباط تمدید نشست موقتاً برقرار نیست؛ دوباره تلاش می‌شود.')}accept(data)}
    finally{clearTimeout(timeout);if(started===generation)refreshing=null}
   })();
   return refreshing;

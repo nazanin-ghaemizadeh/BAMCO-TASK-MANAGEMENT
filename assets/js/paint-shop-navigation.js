@@ -58,18 +58,31 @@
     'bamco.spc.request-session':{path:SPC_PATH,feature:'statisticalProcessControl',name:'spc'},
     'bamco.emission.request-session':{path:new URL(EMISSION_URL).pathname,feature:'emissionTests',name:'emission'}
   };
+  const activityModules={
+    'bamco.spc.activity':modules['bamco.spc.request-session'],
+    'bamco.emission.activity':modules['bamco.emission.request-session']
+  };
   window.addEventListener('message',async event=>{
-    const module=modules[event.data?.type];if(event.origin!==location.origin||!module)return;
+    const activityModule=activityModules[event.data?.type],module=modules[event.data?.type]||activityModule;if(event.origin!==location.origin||!module)return;
+    let source;
     try{
-      const source=event.source;
+      source=event.source;
       if(!source||source===window||source.location.origin!==location.origin||source.location.pathname!==module.path||source.opener!==window)return;
-      await window.bamcoAuth?.ensureFresh?.();
+      if(activityModule){
+        const state=window.Bamco?.state;
+        if(state?.token&&event.data.userId===state.user?.id&&window.BamcoAccess?.can?.(module.feature,'view'))window.bamcoSession?.noteActivity?.();
+        return;
+      }
+      await window.bamcoAuth?.ensureFresh?.(event.data.refresh===true);
       const state=window.Bamco?.state,token=state?.token,userId=state?.user?.id;
       if(!token||!userId||!window.BamcoAccess?.can?.(module.feature,'view')){
         source.postMessage({type:'bamco.'+module.name+'.revoked'},event.origin);return;
       }
       source.postMessage({type:'bamco.'+module.name+'.session',accessToken:token,userId},event.origin);
-    }catch(error){console.warn('Could not share the active BAMCO session.',error)}
+    }catch(error){
+      try{if(source&&source.location.origin===location.origin&&source.location.pathname===module.path&&source.opener===window)source.postMessage({type:'bamco.'+module.name+'.'+(window.Bamco?.state?.token?'reconnecting':'revoked')},event.origin);}catch{}
+      console.warn('Could not share the active BAMCO session.',error);
+    }
   });
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',renameSPC,{once:true});else renameSPC();
   new MutationObserver(renameSPC).observe(document.documentElement,{childList:true,subtree:true,characterData:true});
