@@ -66,6 +66,10 @@ async function fixture(options={}){
    calls.push({endpoint,method,body,url:url.href,cache:init.cache});let data=[],status=200;
    if(failures.has(endpoint))return new Response(JSON.stringify({message:'خطای آزمایشی '+endpoint}),{status:500});
    const filter=rows=>rows.filter(row=>[...url.searchParams].every(([k,v])=>{
+    if(k==='or' && endpoint==='tool_movements') {
+      const matches=[...v.matchAll(/and\(id\.eq\.([^,()]+),revision\.eq\.(\d+)\)/g)];
+      return matches.some(([,id,revision])=>String(row.id)===id && String(row.revision)===revision);
+    }
     if(v==='is.null')return row[k]==null;
     if(v.startsWith('eq.'))return String(row[k])===v.slice(3);
     if(v.startsWith('gte.'))return String(row[k]??'')>=v.slice(4);

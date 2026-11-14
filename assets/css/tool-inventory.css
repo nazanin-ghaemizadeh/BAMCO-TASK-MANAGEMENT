@@ -9,8 +9,6 @@
 #toolsView .tool-status { white-space: nowrap; border: 1px solid var(--border); border-radius: 20px; padding: 1px 9px; color: var(--ink); font-weight: bold; }
 #toolsView .tool-card-line bdi { text-align: end; font-weight: bold; }
 #toolsView tr[data-movement] { cursor: pointer; }
-#toolsView .tool-row-pick { display: inline-flex; align-items: center; gap: 5px; }
-#toolsView .tool-row-pick input { width: 15px; height: 15px; margin: 0; accent-color: #14684e; }
 #toolsView .tool-empty { grid-column: 1/-1; padding: 18px; text-align: center; }
 .tool-editor { width: min(640px, 95vw); max-height: 85dvh; overflow: auto; }
 .tool-editor .tool-fields { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
