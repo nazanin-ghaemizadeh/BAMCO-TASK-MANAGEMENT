@@ -1,6 +1,6 @@
 /* One table surface for every workspace table, including feature-owned tables.
    The cell and control palette follows the approved task-register reference. */
-html body #appView#appView#appView#appView#appView .view:has(table) {
+html body #appView#appView#appView#appView#appView .view:is(:has(table),.tool-register) {
   --register-line:#cbdad2;
   --register-head:#e8f1ed;
   --register-toolbar:#f5f8f6;
@@ -30,13 +30,13 @@ html body #appView#appView #pettyCashView:has(table) .cash-panel {height:100dvh!
 html body #appView#appView :is(#lettersIncomingView,#lettersOutgoingView):has(table) .letters-heading {order:-1!important}
 
 /* Vehicle registers inject older card and search styles after the main bundle. */
-html body #appView#appView#appView#appView#appView .view.vehicle-view:has(table):not(.hidden) {
+html body #appView#appView#appView#appView#appView .view.vehicle-view:is(:has(table),.tool-register):not(.hidden) {
   height:100dvh!important;
   min-height:0!important;
   max-height:100dvh!important;
   overflow:hidden!important;
 }
-html body #appView#appView#appView#appView#appView .view.vehicle-view:has(table)>.vehicle-panel {
+html body #appView#appView#appView#appView#appView .view.vehicle-view:is(:has(table),.tool-register)>.vehicle-panel {
   display:flex!important;
   flex-direction:column!important;
   box-sizing:border-box!important;
@@ -50,7 +50,7 @@ html body #appView#appView#appView#appView#appView .view.vehicle-view:has(table)
   background:#fff!important;
   overflow:hidden!important;
 }
-html body #appView#appView#appView#appView#appView .view.vehicle-view:has(table) .vehicle-panel-head {
+html body #appView#appView#appView#appView#appView .view.vehicle-view:is(:has(table),.tool-register) .vehicle-panel-head {
   flex:none!important;
   min-height:64px!important;
   margin:0!important;
@@ -59,18 +59,19 @@ html body #appView#appView#appView#appView#appView .view.vehicle-view:has(table)
   border-bottom:1px solid var(--register-line)!important;
   background:#fff!important;
 }
-html body #appView#appView#appView#appView#appView .view.vehicle-view:has(table) .vehicle-toolbar {
+html body #appView#appView#appView#appView#appView .view.vehicle-view:is(:has(table),.tool-register) .vehicle-toolbar {
   flex:none!important;
   flex-wrap:nowrap!important;
   overflow-x:auto!important;
 }
-html body #appView#appView#appView#appView#appView .view.vehicle-view:has(table) .vehicle-search {
+html body #appView#appView#appView#appView#appView .view.vehicle-view:is(:has(table),.tool-register) .vehicle-search {
   display:block!important;
   visibility:visible!important;
   opacity:1!important;
 }
-html body #appView#appView#appView#appView#appView .view.vehicle-view:has(table) .vehicle-search-toggle {display:none!important}
+html body #appView#appView#appView#appView#appView .view.vehicle-view:is(:has(table),.tool-register) .vehicle-search-toggle {display:none!important}
 
+html body #appView#appView#appView#appView#appView .tool-register .vehicle-toolbar,
 html body #appView#appView#appView#appView#appView .view:has(table) :is(.task-toolbar,.people-actions,.manager-toolbar,.vehicle-toolbar,.cash-toolbar,.letter-toolbar,.prod-toolbar,.table-toolbar,.feature-toolbar-actions,.bamco-management-toolbar,.bamco-command-bar,.suite-toolbar,.workspace-actions,.workspace-report-tools) {
   display:flex!important;
   flex:0 0 auto!important;
@@ -91,6 +92,8 @@ html body #appView#appView#appView#appView#appView .view:has(table) :is(.task-to
 /* Toolbar search geometry is shared with card/loading views in unified-ui.css. */
 
 /* Buttons on register pages have one neutral appearance, regardless of action. */
+html body #appView#appView#appView#appView .tool-register .vehicle-toolbar button,
+html body #appView#appView#appView#appView .tool-register .vehicle-toolbar button:is(:hover,:active,:focus-visible),
 html body #appView#appView#appView#appView .view:has(table) button,
 html body #appView#appView#appView#appView .view:has(table) button:is(:hover,:active,:focus-visible) {
   background:#fff!important;
@@ -104,6 +107,7 @@ html body #appView#appView#appView#appView .view:has(table) button:is(:hover,:ac
   font-weight:400!important;
   transition:none!important;
 }
+html body #appView#appView#appView#appView .tool-register .vehicle-toolbar button:focus-visible,
 html body #appView#appView#appView#appView .view:has(table) button:focus-visible {outline:2px solid #7b9387!important;outline-offset:2px!important}
 html body #appView#appView#appView#appView .view:has(table) button:disabled {opacity:.42!important;cursor:default!important}
 html body #appView#appView#appView#appView .view:has(table) button[aria-pressed=true] {box-shadow:inset 0 -2px #879e92!important}
@@ -231,9 +235,9 @@ html body #appView#appView#appView#appView#appView .view:has(table) table.suite-
 html body #appView#appView#appView#appView#appView .view:has(table) table.suite-table th {position:relative!important}
 html body #appView#appView#appView#appView#appView .view:has(table) table.suite-table :is(th,td) {overflow-wrap:anywhere!important;white-space:normal!important}
 html body #appView#appView#appView#appView#appView .view:has(table) table.suite-table:not(.suite-compact) :is(th,td) {padding:10px 8px!important}
-html body #appView#appView#appView#appView#appView .view:has(table) :is(.bamco-command-bar,.workspace-report-tools,.vehicle-toolbar,.letter-toolbar,.cash-toolbar,.feature-toolbar-actions)>button {flex:0 0 auto!important;white-space:nowrap!important}
+html body #appView#appView#appView#appView#appView .view:is(:has(table),.tool-register) :is(.bamco-command-bar,.workspace-report-tools,.vehicle-toolbar,.letter-toolbar,.cash-toolbar,.feature-toolbar-actions)>button {flex:0 0 auto!important;white-space:nowrap!important}
 @media(max-width:700px){
- html body #appView#appView#appView#appView#appView .view:has(table) :is(.bamco-command-bar,.workspace-report-tools,.vehicle-toolbar,.letter-toolbar,.cash-toolbar,.feature-toolbar-actions){flex-wrap:wrap!important;overflow:visible!important}
+ html body #appView#appView#appView#appView#appView .view:is(:has(table),.tool-register) :is(.bamco-command-bar,.workspace-report-tools,.vehicle-toolbar,.letter-toolbar,.cash-toolbar,.feature-toolbar-actions){flex-wrap:wrap!important;overflow:visible!important}
 }
 
 /* Mileage costs use the same financial report layout. */

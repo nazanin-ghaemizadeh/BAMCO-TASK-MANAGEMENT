@@ -1,7 +1,4 @@
-#toolsView .tool-panel { padding: 16px; overflow: auto; max-height: 100dvh; box-sizing: border-box; }
-#toolsView .tool-list-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 12px 0 18px; }
-#toolsView .tool-list-actions input { width: min(300px, 100%); }
-#toolsView .tool-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 14px; }
+#toolsView .tool-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 14px; padding: 16px; overflow: auto; min-height: 0; align-content: start; }
 #appView #toolsView .tool-card { --tint: #edf8f0; --border: #abd9b9; --ink: #1e6440; display: flex; flex-direction: column; gap: 8px; width: 100%; height: auto; min-width: 0; box-sizing: border-box; padding: 16px; color: #24382c; border: 1px solid var(--border); border-inline-start: 5px solid var(--ink); border-radius: 12px; background: var(--tint); font: inherit; text-align: start; white-space: normal; cursor: pointer; }
 #appView #toolsView .tool-card[data-state=repair] { --tint: #fff5ce; --border: #ecd071; --ink: #775500; }
 #appView #toolsView .tool-card[data-state=outside] { --tint: #fff0ef; --border: #eab5b2; --ink: #933b38; }
@@ -11,11 +8,23 @@
 #toolsView .tool-card-head strong { font-size: 1.12rem; }
 #toolsView .tool-status { white-space: nowrap; border: 1px solid var(--border); border-radius: 20px; padding: 1px 9px; color: var(--ink); font-weight: bold; }
 #toolsView .tool-card-line bdi { text-align: end; font-weight: bold; }
+#toolsView .tool-card-wrap { display: flex; flex-direction: column; min-width: 0; }
+#toolsView .tool-card-actions { display: flex; flex-wrap: wrap; gap: 6px; padding: 6px 4px 0; }
+#toolsView .tool-card-actions:not(:has(button:not([hidden]))) { display: none; }
+#appView #toolsView .tool-card-actions [hidden] { display: none !important; }
+#toolsView tr[data-movement] { cursor: pointer; }
+#toolsView .tool-row-pick { display: inline-flex; align-items: center; gap: 5px; }
+#toolsView .tool-row-pick input { width: 15px; height: 15px; margin: 0; accent-color: #14684e; }
 #toolsView .tool-empty { grid-column: 1/-1; padding: 18px; text-align: center; }
 .tool-editor { width: min(640px, 95vw); max-height: 85dvh; overflow: auto; }
 .tool-editor .tool-fields { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
 .tool-editor .tool-fields label { display: grid; gap: 4px; }
 .tool-editor .tool-fields :is(input,textarea,select) { width: 100%; box-sizing: border-box; min-width: 0; }
+#appView #toolsView .vehicle-toolbar [hidden], #toolsView .tool-load-error[hidden] { display: none !important; }
+#toolsView .tool-load-error { padding: 8px 16px; }
+.tool-editor .tool-fields .tool-exit-field { align-content: start; }
+.tool-editor .tool-exit-field :is(select,textarea) { height: 42px !important; min-height: 42px !important; max-height: 42px; margin: 0; resize: none; }
+.tool-editor .tool-time { direction: ltr !important; text-align: center; }
 .tool-editor .tool-date { display: grid; grid-template-columns: 1fr auto; gap: 4px; }
 .tool-editor .form-error:empty { display: none; }
 @media (max-width: 1000px) { #toolsView .tool-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }
