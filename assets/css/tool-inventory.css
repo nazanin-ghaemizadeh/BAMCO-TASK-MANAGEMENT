@@ -8,10 +8,6 @@
 #toolsView .tool-card-head strong { font-size: 1.12rem; }
 #toolsView .tool-status { white-space: nowrap; border: 1px solid var(--border); border-radius: 20px; padding: 1px 9px; color: var(--ink); font-weight: bold; }
 #toolsView .tool-card-line bdi { text-align: end; font-weight: bold; }
-#toolsView .tool-card-wrap { display: flex; flex-direction: column; min-width: 0; }
-#toolsView .tool-card-actions { display: flex; flex-wrap: wrap; gap: 6px; padding: 6px 4px 0; }
-#toolsView .tool-card-actions:not(:has(button:not([hidden]))) { display: none; }
-#appView #toolsView .tool-card-actions [hidden] { display: none !important; }
 #toolsView tr[data-movement] { cursor: pointer; }
 #toolsView .tool-row-pick { display: inline-flex; align-items: center; gap: 5px; }
 #toolsView .tool-row-pick input { width: 15px; height: 15px; margin: 0; accent-color: #14684e; }
@@ -23,7 +19,7 @@
 #appView #toolsView .vehicle-toolbar [hidden], #toolsView .tool-load-error[hidden] { display: none !important; }
 #toolsView .tool-load-error { padding: 8px 16px; }
 .tool-editor .tool-fields .tool-exit-field { align-content: start; }
-.tool-editor .tool-exit-field :is(select,textarea) { height: 42px !important; min-height: 42px !important; max-height: 42px; margin: 0; resize: none; }
+dialog#toolInventoryEditor.tool-editor .tool-exit-field :is(select,textarea) { height: 42px !important; min-height: 42px !important; max-height: 42px; margin: 0; resize: none; }
 .tool-editor .tool-time { direction: ltr !important; text-align: center; }
 .tool-editor .tool-date { display: grid; grid-template-columns: 1fr auto; gap: 4px; }
 .tool-editor .form-error:empty { display: none; }

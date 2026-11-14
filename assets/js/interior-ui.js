@@ -134,7 +134,14 @@
       document.querySelectorAll('.workspace>.view:not(#homeView)').forEach(v=>v.classList.add('hidden'));
     },true);
     observer=new MutationObserver(records=>{
-      if(!records.some(r=>r.target.nodeType===1&&(r.target.closest('.workspace,.bamco-dialog')||[...r.addedNodes].some(n=>n.nodeType===1&&n.matches?.('dialog')))))return;
+      // A dynamically opened form only needs its dialog styling. Changes in
+      // a feature-owned register do not require redecorating the other tabs.
+      for(const record of records)for(const node of record.addedNodes){
+        if(node.nodeType!==1)continue;
+        if(node.matches('dialog:not(.home-welcome-dialog,.bamco-dialog)'))node.classList.add('bamco-dialog');
+        if(node.childElementCount)node.querySelectorAll('dialog:not(.home-welcome-dialog,.bamco-dialog)').forEach(dialog=>dialog.classList.add('bamco-dialog'));
+      }
+      if(!records.some(({target})=>target.nodeType===1&&target.closest('.workspace')&&!target.closest('dialog')&&!featureOwned(target.closest('.view'))))return;
       if(!pending){pending=true;requestAnimationFrame(scan)}
     });
     scan();

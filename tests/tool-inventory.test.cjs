@@ -68,7 +68,7 @@ test('tool cards follow the four custody roles across a checkout, repair and rec
   assert.equal(f.tables.tool_movements.length,2);
 });
 
-test('edit cards from the grid, correct open and closed history rows, and confirm deletion', async t => {
+test('one toolbar handles card edits and deletes, and row corrections keep the other rows in place', async t => {
   const tool = {id:'asset',name:'دریل',asset_code:'T-1',purchased_on:null,revision:1};
   const closed = {id:'closed',tool_id:tool.id,kind:'outside',exited_at:'2026-11-14T07:00:00',entered_at:'2026-11-14T09:00:00',exit_receiver:'الف',exit_deliverer:'ب',entry_receiver:'ج',entry_deliverer:'د',reason:'بازدید',revision:1};
   const open = {...closed,id:'open',exited_at:'2026-11-14T11:00:00',entered_at:null,entry_receiver:null,entry_deliverer:null};
@@ -87,14 +87,21 @@ test('edit cards from the grid, correct open and closed history rows, and confir
     form.dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));
     await until(()=>!d.querySelector('.tool-editor[open]'));
   }
-  await click('[data-action=edit]');await edit({name:'دریل برقی',asset_code:'T-2'});
-  await until(()=>view.querySelector('.tool-card')?.textContent.includes('T-2'));
+  assert.equal(view.querySelector('[data-action=edit],[data-action=deleteAsset]'),null);
   await click('.tool-card');await wait('[data-movement=open]');
+  assert.equal(view.querySelectorAll('[data-action=edit]').length,1);
+  assert.equal(view.querySelectorAll('[data-action=deleteAsset]').length,1);
+  const reads = () => f.calls.filter(c=>c.method==='GET' && ['tool_movements','tool_assets'].includes(c.endpoint)).length;
+  const initialReads = reads(), closedElement = view.querySelector('[data-movement=closed]');
+  await click('[data-action=edit]');await edit({name:'دریل برقی',asset_code:'T-2'});
+  assert.match(view.querySelector('h3').textContent,/دریل برقی · T-2/);
   assert.equal(view.querySelector('[data-action=editRow]').disabled,true);
   await click('[data-movement=open] input');await click('[data-action=editRow]');
   assert.equal(d.querySelector('.tool-editor [name=entry_time]'),null);
   await edit({kind:'repair',receiver:'تعمیرکار',time:'۱۱:۳۰',reason:'تعمیر موتور'});
   await until(()=>view.querySelector('[data-movement=open]')?.textContent.includes('تعمیر موتور'));
+  assert.equal(view.querySelector('[data-movement=closed]'),closedElement);
+  assert.equal(reads(),initialReads);
   await click('[data-action=list]');await wait('.tool-card[data-state=repair]');
   assert.match(view.querySelector('.tool-card').textContent,/اکنون در اختیارتعمیرکار/);
   await click('.tool-card');await click('[data-movement=closed]');await click('[data-action=editRow]');
@@ -112,8 +119,43 @@ test('edit cards from the grid, correct open and closed history rows, and confir
   assert.ok(view.querySelector('[data-movement=closed]'));
   await click('[data-action=list]');await wait('.tool-card[data-state=stock]');
   assert.match(view.querySelector('.tool-card').textContent,/اکنون در اختیار—/);
+  await click('.tool-card');
   confirmed=false;await click('[data-action=deleteAsset]');await until(()=>prompt.includes('تمام سوابق'));
-  assert.ok(view.querySelector('.tool-card'));
+  assert.match(view.querySelector('h3').textContent,/دریل برقی/);
   confirmed=true;await click('[data-action=deleteAsset]');await until(()=>view.querySelector('.tool-empty')?.textContent.includes('هنوز ابزاری'));
   assert.equal(f.tables.tool_assets.length,0);
+});
+
+test('return form and save work while the initial history request is still pending', async t => {
+  const row = {id:'movement',tool_id:'tool',revision:3,kind:'repair',exited_at:'2026-01-01T08:00:00',entered_at:null,exit_receiver:'تعمیرکار',exit_deliverer:'انبار',reason:'تعمیر'};
+  const asset = {id:'tool',revision:1,name:'دریل',asset_code:'T2',latest:[row]};
+  let release, historyReads=0;
+  const f=await fixture({tables:{tool_assets:[asset],tool_movements:[row]},fetchResult({endpoint,method,data}) {
+    if(endpoint==='tool_movements' && method==='GET'){
+      historyReads++;
+      const old=structuredClone(data);
+      return new Promise(resolve=>{release=()=>resolve(old)});
+    }
+    if(endpoint==='tool_movements' && method==='PATCH') data[0].revision++;
+  }});
+  t.after(()=>{release?.();return f.dispose()});
+  await f.open('tools');
+  const {w,d}=f, view=d.querySelector('#toolsView');
+  view.querySelector('.tool-card').click();
+  await until(()=>release);
+  const button=view.querySelector('[data-action=return]');
+  assert.equal(button.hidden,false);
+  button.click();
+  const form=d.querySelector('.tool-editor[open] form');
+  assert.equal(form.elements.deliverer.value,row.exit_receiver);
+  form.elements.receiver.value='انباردار';
+  form.requestSubmit();
+  await until(()=>!d.querySelector('.tool-editor[open]') && !view.querySelector('[data-action=exit]').hidden);
+  release();await until(()=>view.querySelector('tr[data-revision="4"]'));
+  await new Promise(resolve=>setTimeout(resolve,60));
+  assert.equal(historyReads,1);
+  assert.equal(view.querySelectorAll('[data-movement]').length,1);
+  assert.match(view.querySelector('tbody').textContent,/انباردار/);
+  assert.equal(view.querySelector('[data-action=return]').hidden,true);
+  assert.equal(f.calls.filter(c=>c.endpoint==='tool_movements'&&c.method==='PATCH').length,1);
 });

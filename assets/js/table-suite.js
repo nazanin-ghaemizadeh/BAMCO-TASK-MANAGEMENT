@@ -12,7 +12,7 @@ function install(){
  const featureOwned=view=>window.BamcoNavigationCatalog?.isFeatureOwnedRoute?.(view?.id?.replace(/View$/,''))===true;
  const featureOwnedTable=table=>featureOwned(table?.closest('.view'));
  const settings=new WeakMap(),preferences=new Map();let scheduled=false;
- const observer=new MutationObserver(records=>{if(records.every(r=>r.target.nodeType===1&&r.target.closest('.table-pagination,#archivePager,.suite-table-options')))return;schedule()});
+ const observer=new MutationObserver(records=>{if(records.every(r=>r.target.nodeType===1&&(r.target.closest('.table-pagination,#archivePager,.suite-table-options')||featureOwned(r.target.closest('.view')))))return;schedule()});
  const observe=()=>observer.observe(root,{childList:true,subtree:true});
  function schedule(){if(scheduled)return;scheduled=true;queueMicrotask(()=>{scheduled=false;observer.disconnect();scan();observe()})}
  function dataRows(table){return [...(table.tBodies[0]?.rows||[])].filter(r=>!(r.cells.length===1&&r.cells[0].colSpan>1))}
@@ -116,7 +116,8 @@ function install(){
  // own fixed table and pager.  Decorating them again creates a second filter
  // row/pager and changes the parent height while the user returns to cards.
  function scan(){root.querySelectorAll('.view table:not([data-table-suite="off"])').forEach(table=>{if(!featureOwnedTable(table))decorate(table)});toolbars()}
- document.addEventListener('input',e=>{const field=e.target;if(!field.matches('textarea,input[type=text]')||field.matches('[data-money-input]')||field.closest('#loginVerification'))return;const english=/[A-Za-z]/.test(field.value)&&!/[\u0600-\u06ff]/.test(field.value);field.classList.toggle('suite-english',english);field.dir=english?'ltr':'rtl'});
+ document.addEventListener('input',e=>{const field=e.target;if(!field.matches('textarea,input[type=text]')||field.matches('[data-money-input]')||field.closest('#loginVerification'))return;const english=/[A-Za-z]/.test(field.value)&&!/[\u0600-\u06ff]/.test(field.value);if(field.classList.contains('suite-english')!==english)field.classList.toggle('suite-english',english);
+  const direction=english||field.matches('.tool-time,.tool-date input')?'ltr':'rtl';if(field.dir!==direction)field.dir=direction});
  document.addEventListener('pointerdown',resize,true);
  document.addEventListener('click',e=>{
   const th=e.target.closest('thead tr:first-child th'),table=th?.closest('table');

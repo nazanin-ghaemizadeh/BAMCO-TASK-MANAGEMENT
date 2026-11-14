@@ -95,7 +95,6 @@ const stylesheets = [
   'assets/css/letters-push.css',
   'assets/css/petty-cash.css',
   'assets/css/enterprise-features.css',
-  'assets/css/tool-inventory.css',
   'assets/css/navigation-completeness.css',
   'assets/css/personal-workspace.css',
   'assets/css/card-home.css',
@@ -109,6 +108,7 @@ const stylesheets = [
   'assets/css/home-welcome.css',
   'assets/css/home-phonebook-override.css',
   'assets/css/reference-tables.css',
+  'assets/css/tool-inventory.css',
   'assets/css/launcher-icon-polish.css',
   'assets/css/organization-linked-views.css'
 ];

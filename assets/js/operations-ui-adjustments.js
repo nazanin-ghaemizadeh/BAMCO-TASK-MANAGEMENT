@@ -98,7 +98,18 @@
   if(typeof window.bamcoShowHome==='function')window.bamcoShowHome();
   else q('.home-return')?.click();
  },true);
- const observer=new MutationObserver(()=>{updateBrand();fixThermalLabel();fixArabicHeh()});
+ // Inventory edits change user-entered data and form controls, not the
+ // navigation or organization labels maintained by these decorators.
+ const toolSurface = '#toolsView,.tool-editor';
+ function inventoryOnly(records){
+  return records.every(record=>{
+   const target=record.target.nodeType===1?record.target:record.target.parentElement;
+   if(target?.closest(toolSurface))return true;
+   const nodes=[...record.addedNodes,...record.removedNodes];
+   return target===document.body && nodes.length && nodes.every(node=>node.nodeType===1&&node.matches('.tool-editor'));
+  });
+ }
+ const observer=new MutationObserver(records=>{if(!inventoryOnly(records)){updateBrand();fixThermalLabel();fixArabicHeh()}});
  function start(){
   updateBrand();fixThermalLabel();fixArabicHeh();fixQualityLabels();
   observer.observe(document.body,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['class','hidden','title','aria-label','placeholder','alt']});
@@ -122,7 +133,7 @@
   if(label.textContent!=='کنترل آماری فرایند')label.textContent='کنترل آماری فرایند';
 
  }
- const spcSubtitleObserver=new MutationObserver(restoreSPCSubtitle);
+ const spcSubtitleObserver=new MutationObserver(records=>{if(!inventoryOnly(records))restoreSPCSubtitle()});
  function observeSPCSubtitle(){
   restoreSPCSubtitle();
   if(document.body)spcSubtitleObserver.observe(document.body,{childList:true,subtree:true});

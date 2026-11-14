@@ -71,7 +71,7 @@
     }
    });
   }
-  function schedule(records){if(records?.every(r=>r.target.nodeType===1&&r.target.closest('.table-pagination,#archivePager')))return;if(!pending){pending=true;queueMicrotask(scan)}}
+  function schedule(records){if(records?.every(r=>r.target.nodeType===1&&(r.target.closest('.table-pagination,#archivePager')||featureOwned(r.target.closest('.view')))))return;if(!pending){pending=true;queueMicrotask(scan)}}
   new MutationObserver(schedule).observe(workspace,{childList:true,subtree:true});scan();
   if(footer&&typeof ResizeObserver!=='undefined')new ResizeObserver(()=>{document.documentElement.style.setProperty('--home-footer-height',footer.offsetHeight+'px')}).observe(footer);
  }
