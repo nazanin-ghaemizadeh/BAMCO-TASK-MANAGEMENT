@@ -108,7 +108,7 @@
   const standaloneLayoutRoutes = Object.freeze(new Set(['projects', 'parts', 'invoices', 'organization', 'tools', 'accessMatrix', 'vehiclePermanent', 'vehicleTemporary', 'testReports', 'ovenAnalysis', 'statisticalProcessControl', 'emissionTests']));
   // These routes render their own table, toolbar and loading states. Shared
   // presentation engines must not rewrite their DOM while they are active.
-  const featureOwnedRoutes = Object.freeze(new Set(['accessMatrix', 'vehiclePermanent', 'vehicleTemporary', 'lettersIncoming', 'lettersOutgoing', 'pettyCash', 'mileageCosts', 'invoices', 'testReports', 'ovenAnalysis', 'statisticalProcessControl', 'emissionTests']));
+  const featureOwnedRoutes = Object.freeze(new Set(['accessMatrix', 'tools', 'vehiclePermanent', 'vehicleTemporary', 'lettersIncoming', 'lettersOutgoing', 'pettyCash', 'mileageCosts', 'invoices', 'testReports', 'ovenAnalysis', 'statisticalProcessControl', 'emissionTests']));
   // Standalone layouts own their toolbar. The interior reconciler still
   // guarantees a native return control inside those toolbars.
   const noHomeReturnRoutes = new Set(['projects', 'invoices']);

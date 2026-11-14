@@ -1,0 +1,22 @@
+#toolsView .tool-panel { padding: 16px; overflow: auto; max-height: 100dvh; box-sizing: border-box; }
+#toolsView .tool-list-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 12px 0 18px; }
+#toolsView .tool-list-actions input { width: min(300px, 100%); }
+#toolsView .tool-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 14px; }
+#appView #toolsView .tool-card { --tint: #edf8f0; --border: #abd9b9; --ink: #1e6440; display: flex; flex-direction: column; gap: 8px; width: 100%; height: auto; min-width: 0; box-sizing: border-box; padding: 16px; color: #24382c; border: 1px solid var(--border); border-inline-start: 5px solid var(--ink); border-radius: 12px; background: var(--tint); font: inherit; text-align: start; white-space: normal; cursor: pointer; }
+#appView #toolsView .tool-card[data-state=repair] { --tint: #fff5ce; --border: #ecd071; --ink: #775500; }
+#appView #toolsView .tool-card[data-state=outside] { --tint: #fff0ef; --border: #eab5b2; --ink: #933b38; }
+#toolsView .tool-card:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+#toolsView .tool-card-head, #toolsView .tool-card-line { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; width: 100%; overflow-wrap: anywhere; }
+#toolsView .tool-card-head { align-items: center; margin-bottom: 3px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+#toolsView .tool-card-head strong { font-size: 1.12rem; }
+#toolsView .tool-status { white-space: nowrap; border: 1px solid var(--border); border-radius: 20px; padding: 1px 9px; color: var(--ink); font-weight: bold; }
+#toolsView .tool-card-line bdi { text-align: end; font-weight: bold; }
+#toolsView .tool-empty { grid-column: 1/-1; padding: 18px; text-align: center; }
+.tool-editor { width: min(640px, 95vw); max-height: 85dvh; overflow: auto; }
+.tool-editor .tool-fields { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+.tool-editor .tool-fields label { display: grid; gap: 4px; }
+.tool-editor .tool-fields :is(input,textarea,select) { width: 100%; box-sizing: border-box; min-width: 0; }
+.tool-editor .tool-date { display: grid; grid-template-columns: 1fr auto; gap: 4px; }
+.tool-editor .form-error:empty { display: none; }
+@media (max-width: 1000px) { #toolsView .tool-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+@media (max-width: 620px) { #toolsView .tool-grid,.tool-editor .tool-fields { grid-template-columns: 1fr; } }
