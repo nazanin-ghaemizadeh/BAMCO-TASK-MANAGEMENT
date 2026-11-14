@@ -61,7 +61,6 @@
   }
   function paintSelection(tr) {
     const active = pickedIds.has(tr.dataset.movement);
-    tr.classList.toggle('vehicle-selected',active);
     tr.classList.toggle('task-selected',active);
     tr.setAttribute('aria-selected',String(active));
   }

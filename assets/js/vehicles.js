@@ -60,7 +60,7 @@
       #appView .vehicle-data-table .vehicle-loading-state::before{content:"";display:inline-block;width:15px;height:15px;margin-inline-end:8px;border:2px solid #c5d8cf;border-top-color:#176b4d;border-radius:50%;vertical-align:-2px;animation:bamcoVehicleSpin .75s linear infinite}
       @keyframes bamcoVehicleSpin{to{transform:rotate(360deg)}}
       #appView .vehicle-data-table tr:nth-child(even) td{background:#fafcfa!important}#appView .vehicle-data-table tbody tr{cursor:pointer!important}
-      #appView .vehicle-data-table tbody tr:hover td{background:#edf6f1!important}#appView .vehicle-data-table tr.vehicle-selected td{background:#dfeee7!important;outline:1px solid #4e917a!important;outline-offset:-1px!important}
+      #appView .vehicle-data-table tbody tr:hover:where(:not([data-movement][aria-selected=true])) td{background:#edf6f1!important}#appView .vehicle-data-table tr.vehicle-selected td{background:#dfeee7!important;outline:1px solid #4e917a!important;outline-offset:-1px!important}
       #appView .vehicle-data-table .vehicle-filters th{padding:5px!important;background:#edf3f0!important}#appView .vehicle-data-table .vehicle-filters select{width:100%!important;height:34px!important;direction:rtl!important;text-align:right!important;font-family:"B Nazanin",BNazanin,Tahoma,sans-serif!important}
       #appView .vehicle-data-table .vehicle-pick-cell{text-align:center!important;vertical-align:middle!important}
       #appView .vehicle-data-table .vehicle-pick{width:18px!important;height:18px!important;accent-color:#176b4d!important;cursor:pointer!important}

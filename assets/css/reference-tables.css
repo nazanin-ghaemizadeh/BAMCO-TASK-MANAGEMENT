@@ -206,7 +206,7 @@ html body #appView#appView#appView#appView#appView .view:has(table) table tbody 
 html body #appView#appView#appView#appView#appView .view:has(table) table tbody tr:is(.row-warning,.row-waiting)>td {background:#fff8e4!important}
 html body #appView#appView#appView#appView#appView .view:has(table) table tbody tr.row-overdue>td {background:#fff0ef!important}
 html body #appView#appView#appView#appView#appView .view:has(table) table tbody tr:is(.suite-selected,.task-selected,.vehicle-selected,.person-selected,.selected,[aria-selected=true])>td {background:#e3ebe6!important;box-shadow:inset 0 -1px #a5b9ad!important}
-html body #appView#appView#appView#appView#appView .view:has(table) table tbody tr:hover>td {background:#e9f0eb!important}
+html body #appView#appView#appView#appView#appView .view:has(table) table tbody tr:hover:where(:not([data-movement][aria-selected=true]))>td {background:#e9f0eb!important}
 html body #appView#appView#appView#appView#appView .view:has(table) table tbody tr:is(.reference-filtered-out,.reference-page-hidden)>td {display:none!important}
 html body #appView#appView#appView#appView#appView .view:has(table) table tbody tr:is(.reference-filtered-out,.reference-page-hidden) {display:none!important}
 

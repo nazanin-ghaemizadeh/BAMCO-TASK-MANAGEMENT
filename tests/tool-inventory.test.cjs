@@ -61,6 +61,19 @@ test('tool cards follow the four custody roles across a checkout, repair and rec
     await find('[data-action=exit]');
     const table=view.querySelector('.vehicle-table-wrap .vehicle-data-table');
     assert.equal(table.tHead.rows[0].cells.length,10);assert.equal(table.querySelectorAll('.vehicle-filters select').length,10);assert.ok(view.querySelector('.reference-pagination'));
+    const firstRow = table.tBodies[0].rows[0];
+    firstRow.cells[0].click();
+    for (const event of ['mouseover','mouseout']) {
+      firstRow.dispatchEvent(new w.MouseEvent(event,{bubbles:true}));
+      for (const cell of firstRow.cells) {
+        const selectedStyle = style(cell);
+        assert.equal(selectedStyle.backgroundColor,'rgb(227, 235, 230)');
+        assert.equal(selectedStyle.boxShadow,'inset 0 -1px #a5b9ad');
+        assert.equal(selectedStyle.outline,'0px');
+      }
+    }
+    firstRow.cells[0].click();
+    assert.notEqual(style(firstRow.cells[0]).backgroundColor,'rgb(227, 235, 230)');
     const cells=[...table.tBodies[0].rows[0].cells].map(cell=>cell.textContent);
     assert.deepEqual([cells[3],cells[4],cells[8],cells[9]],['متولی','انباردار اول','انباردار دوم','نماینده']);
     await click('[data-action=list]');await find('.tool-card[data-state=stock]');assert.match(view.querySelector('.tool-card').textContent,/اکنون در اختیار—/);
@@ -99,7 +112,8 @@ test('one toolbar handles card edits and deletes, and row corrections keep the o
   assert.equal(view.querySelector('tbody input'),null);
   await click('[data-movement=open] td');
   const active = view.querySelector('[data-movement=open]');
-  assert.ok(active.classList.contains('vehicle-selected') && active.classList.contains('task-selected'));
+  assert.ok(active.classList.contains('task-selected'));
+  assert.equal(active.classList.contains('vehicle-selected'),false);
   assert.equal(active.getAttribute('aria-selected'),'true');
   assert.equal(active.tabIndex,0);
   await click('[data-movement=closed] td');
