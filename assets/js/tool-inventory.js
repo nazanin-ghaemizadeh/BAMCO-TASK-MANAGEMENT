@@ -12,7 +12,8 @@
   const home = '<button type="button" class="ghost" data-home-action>بازگشت به خانه</button>';
   let assets = [], movements = [], selected = null, query = '', version = 0, editor = null;
   let owner = null, loaded = false, deleting = false, pendingHistory = null;
-  const assetOrder = new Intl.Collator('fa');
+  const assetOrder = new Intl.Collator('fa',{numeric:true,sensitivity:'base'});
+  const compareAssets = (a,b) => assetOrder.compare(a.asset_code,b.asset_code) || assetOrder.compare(a.name,b.name) || String(a.id).localeCompare(String(b.id));
   const pickedIds = new Set();
   const openMovement = () => loaded ? movements.find(row => !row.entered_at) : selected?.latest?.find(row => !row.entered_at);
   const recordFilter = record => `id=eq.${encodeURIComponent(record.id)}&revision=eq.${encodeURIComponent(record.revision)}`;
@@ -32,7 +33,7 @@
     const grid = view.querySelector('.tool-grid');
     if (!grid) return;
     const key = normalize(query);
-    const visible = assets.filter(tool => normalize(tool.name).includes(key) || normalize(tool.asset_code).includes(key));
+    const visible = assets.filter(tool => normalize(tool.name).includes(key) || normalize(tool.asset_code).includes(key)).sort(compareAssets);
     grid.innerHTML = visible.length ? visible.map(card).join('') : `<p class="tool-empty">${key ? 'ابزاری با این نام یا کد اموال پیدا نشد.' : 'هنوز ابزاری ثبت نشده است.'}</p>`;
   }
   function mount(tool) {
@@ -134,7 +135,7 @@
         tool.latest = open ? [open] : [];
         renderHistory();
       } else {
-        const rows = await fetchRows('tool_assets','select=*,latest:tool_movements(id,revision,kind,exited_at,exit_receiver,entered_at)&latest.entered_at=is.null&latest.order='+order+'&latest.limit=1&order=name.asc,asset_code.asc,id.asc');
+        const rows = await fetchRows('tool_assets','select=*,latest:tool_movements(id,revision,kind,exited_at,exit_receiver,entered_at)&latest.entered_at=is.null&latest.order='+order+'&latest.limit=1&order=asset_code.asc,id.asc');
         if (!current()) return;
         const gridReady = view.querySelector('.tool-card,.tool-empty:not([role=status])');
         const sameCards = gridReady && rows.length === assets.length && rows.every((row,index)=>{
@@ -287,7 +288,7 @@
           view.querySelector('h3').textContent = `گردش ابزار · ${tool.name} · ${tool.asset_code}`;
         } else if (loaded) {
           assets.push({...persisted,latest:[]});
-          assets.sort((a,b)=>assetOrder.compare(a.name,b.name) || assetOrder.compare(a.asset_code,b.asset_code) || String(a.id).localeCompare(String(b.id)));
+          assets.sort(compareAssets);
           showCards();
         } else { await load(); }
       } catch (error) {
