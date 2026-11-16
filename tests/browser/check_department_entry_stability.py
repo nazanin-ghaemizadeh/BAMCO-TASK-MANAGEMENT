@@ -33,6 +33,8 @@ async def run_case(browser, base, width, height):
     context = await browser.new_context(viewport={'width': width, 'height': height},
                                         is_mobile=mobile, has_touch=mobile)
     page = await context.new_page()
+    page_errors = []
+    page.on('pageerror', lambda error: page_errors.append(str(error)))
     page.set_default_timeout(8000)
     await page.add_init_script(MOCK + '\n' + MSG_MOCK)
     await page.add_init_script("""
@@ -43,6 +45,12 @@ async def run_case(browser, base, width, height):
       }).observe({type:'layout-shift',buffered:true}); } catch {}
     """)
     await page.goto(base, wait_until='domcontentloaded', timeout=15000)
+    await page.wait_for_timeout(250)
+    core = await page.evaluate("""() => ({ auth: typeof window.bamcoAuth, accept: typeof window.bamcoAuth?.accept,
+      ready: document.querySelector('#loginForm')?.dataset.bamcoCoreReady,
+      scripts: [...document.scripts].filter(s => /bamco\\.bundle|auth-ui/.test(s.src)).map(s => ({src:s.src,defer:s.defer,async:s.async})),
+      resources: performance.getEntriesByType('resource').filter(r => /bamco\\.bundle|auth-ui/.test(r.name)).map(r => ({name:r.name,duration:r.duration,transfer:r.transferSize})) })""")
+    print(json.dumps({'width': width, 'core': core, 'page_errors': page_errors}, ensure_ascii=False), flush=True)
     await expect(page.locator('#loginView')).to_be_visible()
     await expect(page.locator('#loginView .brand-lockup img')).to_have_count(1)
     await expect(page.locator('#departmentEntry')).to_have_count(0)
