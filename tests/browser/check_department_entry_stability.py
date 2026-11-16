@@ -34,7 +34,7 @@ async def run_case(browser, base, width, height):
                                         is_mobile=mobile, has_touch=mobile)
     page = await context.new_page()
     page_errors = []
-    page.on('pageerror', lambda error: page_errors.append(str(error)))
+    page.on('pageerror', lambda error: page_errors.append({'message': str(error), 'stack': error.stack}))
     page.set_default_timeout(8000)
     await page.add_init_script(MOCK + '\n' + MSG_MOCK)
     await page.add_init_script("""
