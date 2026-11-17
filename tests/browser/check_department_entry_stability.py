@@ -53,9 +53,12 @@ async def run_case(browser, base, width, height):
     await page.wait_for_timeout(250)
     core = await page.evaluate("""() => ({ auth: typeof window.bamcoAuth, accept: typeof window.bamcoAuth?.accept,
       ready: document.querySelector('#loginForm')?.dataset.bamcoCoreReady,
-      scripts: [...document.scripts].filter(s => /bamco\\.bundle|auth-ui/.test(s.src)).map(s => ({src:s.src,defer:s.defer,async:s.async})),
+      scripts: [...document.scripts].filter(s => /bamco\\.bundle|auth-ui|auth-session/.test(s.src)).map(s => ({src:s.src,defer:s.defer,async:s.async})),
       resources: performance.getEntriesByType('resource').filter(r => /bamco\\.bundle|auth-ui/.test(r.name)).map(r => ({name:r.name,duration:r.duration,transfer:r.transferSize})) })""")
     core['startupErrors'] = await page.evaluate('window.__startupErrors')
+    script_order = [item['src'].split('/')[-1].split('?')[0] for item in core['scripts']]
+    assert script_order.index('auth-ui.js') < script_order.index('bamco.bundle.js') < script_order.index('auth-session.js'), f'login bootstrap order: {script_order}'
+    assert core['auth'] == 'object' and core['accept'] == 'function' and core['ready'] == '1', f'auth core not ready: {core}'
     print(json.dumps({'width': width, 'core': core, 'page_errors': page_errors}, ensure_ascii=False), flush=True)
     await expect(page.locator('#loginView')).to_be_visible()
     await expect(page.locator('#loginView .brand-lockup img')).to_have_count(1)
