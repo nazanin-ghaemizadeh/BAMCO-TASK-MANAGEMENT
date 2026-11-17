@@ -22,7 +22,8 @@ test('component-level custody is atomic, independent and workspace-scoped in all
     '20261114184409_tool_inventory_and_custody.sql',
     '20261114192054_edit_tool_inventory_and_custody.sql',
     '20261117061354_tool_component_level_tracking.sql',
-    '20261117062351_tool_component_batch_integrity_and_indexes.sql'
+    '20261117062351_tool_component_batch_integrity_and_indexes.sql',
+    '20261117062814_tool_component_primary_seed_privilege.sql'
   ]) await db.exec(fs.readFileSync(path.join(__dirname,'../supabase/migrations',file),'utf8'));
 
   await db.exec("set role authenticated; set test.tool_grants='view create edit delete'; set request.jwt.claim.sub='"+actor+"'");
