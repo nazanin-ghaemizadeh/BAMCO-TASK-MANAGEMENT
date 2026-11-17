@@ -77,3 +77,6 @@ jobs:
         run: npm run test:regression
       - name: Verify catalog task lifecycle in isolated PostgreSQL
         run: npm run test:task-lifecycle-db
+      - name: Verify component-level custody in isolated PostgreSQL
+        timeout-minutes: 2
+        run: node --test tests/tool-components-db.validation.cjs
