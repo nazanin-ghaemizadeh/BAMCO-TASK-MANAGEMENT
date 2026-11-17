@@ -2,377 +2,277 @@
   'use strict';
   const view = document.getElementById('toolsView');
   if (!view) return;
-  const {esc, fa, date, fetchRows, insert, update, openJalaliPicker, notify} = window.bamcoEnterprise;
-  const can = action => window.BamcoAccess?.can('tools', action) === true;
-  const statusNames = {stock: 'در انبار', repair: 'در دست تعمیر', outside: 'خارج از انبار'};
-  const headers = ['ردیف', 'تاریخ خروج', 'ساعت خروج', 'تحویل‌گیرنده حین خروج', 'تحویل‌دهنده حین خروج', 'علت خروج', 'تاریخ ورود', 'ساعت ورود', 'تحویل‌گیرنده حین ورود', 'تحویل‌دهنده حین ورود'];
-  const normalize = value => String(value ?? '').replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/ي/g,'ی').replace(/ك/g,'ک').trim().toLowerCase();
-  const timeFormat = new Intl.DateTimeFormat('sv-SE', {timeZone: 'Asia/Tehran', year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', hourCycle:'h23'});
-  const order = 'exited_at.desc,registered_at.desc,id.desc';
+  const {esc,fa,date,fetchRows,insert,update,rpc,openJalaliPicker,notify} = window.bamcoEnterprise;
+  const can = action => window.BamcoAccess?.can('tools',action) === true;
+  const normalize = value => String(value ?? '').replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/ي/g,'ی').replace(/ك/g,'ک').trim().toLowerCase();
+  const timeFormat = new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Tehran',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
   const home = '<button type="button" class="ghost" data-home-action>بازگشت به خانه</button>';
-  let assets = [], movements = [], selected = null, query = '', version = 0, editor = null;
-  let owner = null, loaded = false, deleting = false, pendingHistory = null;
   const assetOrder = new Intl.Collator('fa',{numeric:true,sensitivity:'base'});
   const compareAssets = (a,b) => assetOrder.compare(a.asset_code,b.asset_code) || assetOrder.compare(a.name,b.name) || String(a.id).localeCompare(String(b.id));
-  const pickedIds = new Set();
-  const openMovement = () => loaded ? movements.find(row => !row.entered_at) : selected?.latest?.find(row => !row.entered_at);
-  const recordFilter = record => `id=eq.${encodeURIComponent(record.id)}&revision=eq.${encodeURIComponent(record.revision)}`;
-  const staleMessage = 'این مورد تغییر کرده یا حذف شده است. اطلاعات را دوباره باز کنید.';
-  const latest = tool => tool.latest?.[0];
-  const status = row => row && !row.entered_at ? row.kind : 'stock';
+  const statusNames = {stock:'موجود در انبار',outside:'خارج از انبار',repair:'در تعمیر',container:'محفظه / جعبه',inactive:'غیرفعال'};
+  const movementHeaders = ['تاریخ خروج','ساعت خروج','تحویل‌گیرنده','تحویل‌دهنده','نوع خروج','علت خروج','تاریخ عودت','ساعت عودت','تحویل‌گیرنده هنگام عودت','تحویل‌دهنده هنگام عودت'];
+  let assets=[],components=[],selected=null,query='',version=0,owner=null,loaded=false,editor=null,historyComponent=null,historyRows=[];
+  const selectedIds = new Set();
+  const identity = () => [window.Bamco?.state?.user?.id,window.BamcoWorkspace?.key?.()].join('/');
+  const openMovement = component => component?.openMovement || null;
+  const componentStatus = component => !component.active ? 'inactive' : component.is_container ? 'container' : openMovement(component)?.kind || 'stock';
   const partDate = stamp => stamp ? date(stamp.slice(0,10)) : '—';
   const partTime = stamp => stamp ? fa(stamp.slice(11,16)) : '—';
-  const identity = () => [window.Bamco?.state?.user?.id, window.BamcoWorkspace?.key?.()].join('/');
+  const recordFilter = row => 'id=eq.'+encodeURIComponent(row.id)+'&revision=eq.'+encodeURIComponent(row.revision);
+  const staleMessage = 'این اطلاعات تغییر کرده است. صفحه را دوباره باز کنید.';
 
+  function summarize(tool) {
+    const active = (tool.components||[]).filter(item=>item.active && !item.is_container);
+    const counts = {stock:0,outside:0,repair:0};
+    for (const item of active) counts[componentStatus(item)]++;
+    const state = !active.length ? 'partial' : counts.repair ? 'repair' : counts.outside===active.length ? 'outside' : counts.outside || counts.repair ? 'partial' : 'stock';
+    return {active,counts,state};
+  }
   function card(tool) {
-    const row = latest(tool), state = status(row);
-    const fields = [['کد اموال',tool.asset_code],['تاریخ خرید',date(tool.purchased_on)],['تحویل‌گیرنده هنگام خرید',tool.purchase_receiver],['اکنون در اختیار',state === 'stock' ? '—' : row.exit_receiver]];
-    return `<button type="button" class="tool-card" data-state="${state}" data-tool="${esc(tool.id)}"><span class="tool-card-head"><strong dir="auto">${esc(tool.name)}</strong><span class="tool-status" aria-label="وضعیت: ${statusNames[state]}">${statusNames[state]}</span></span>${fields.map(([label,value])=>`<span class="tool-card-line"><span>${label}</span><bdi>${esc(value || '—')}</bdi></span>`).join('')}</button>`;
+    const summary=summarize(tool);
+    const current=summary.active.filter(item=>openMovement(item)).length;
+    const fields=[
+      ['کد اموال',tool.asset_code],
+      ['تعداد قطعات قابل ردیابی',fa(summary.active.length)],
+      ['موجود در انبار',fa(summary.counts.stock)],
+      ['خارج از انبار / تعمیر',fa(current)]
+    ];
+    return '<button type="button" class="tool-card" data-state="'+summary.state+'" data-tool="'+esc(tool.id)+'"><span class="tool-card-head"><strong dir="auto">'+esc(tool.name)+'</strong><span class="tool-status">'+(summary.active.length?fa(summary.active.length)+' قطعه':'نیازمند تعریف قطعات')+'</span></span>'+fields.map(([label,value])=>'<span class="tool-card-line"><span>'+label+'</span><bdi>'+esc(value||'—')+'</bdi></span>').join('')+'</button>';
   }
   function showCards() {
-    const grid = view.querySelector('.tool-grid');
-    if (!grid) return;
-    const key = normalize(query);
-    const visible = assets.filter(tool => normalize(tool.name).includes(key) || normalize(tool.asset_code).includes(key)).sort(compareAssets);
-    grid.innerHTML = visible.length ? visible.map(card).join('') : `<p class="tool-empty">${key ? 'ابزاری با این نام یا کد اموال پیدا نشد.' : 'هنوز ابزاری ثبت نشده است.'}</p>`;
+    const grid=view.querySelector('.tool-grid'); if(!grid)return;
+    const key=normalize(query);
+    const visible=assets.filter(tool=>normalize(tool.name).includes(key)||normalize(tool.asset_code).includes(key)||tool.components?.some(c=>normalize(c.component_name).includes(key)||normalize(c.component_code).includes(key))).sort(compareAssets);
+    grid.innerHTML=visible.length?visible.map(card).join(''):'<p class="tool-empty">'+(key?'ابزاری با این نام یا کد پیدا نشد.':'هنوز ابزاری ثبت نشده است.')+'</p>';
   }
-  function mount(tool) {
-    const heading = tool ? `گردش ابزار · ${esc(tool.name)} · ${esc(tool.asset_code)}` : 'مدیریت ابزار';
-    const toolbar = tool
-      ? `<button type="button" class="ghost" data-action="list">بازگشت به کارت‌ها</button><button type="button" class="primary" data-action="exit" hidden>ثبت خروج</button><button type="button" class="primary" data-action="return" hidden>ثبت ورود</button><button type="button" class="ghost" data-action="edit" hidden>ویرایش کارت</button><button type="button" class="danger" data-action="deleteAsset" hidden>حذف کارت</button><button type="button" class="ghost" data-action="editRow" hidden disabled>ویرایش ردیف</button><button type="button" class="danger" data-action="deleteRow" hidden disabled>حذف ردیف</button>`
-      : `${home}<button type="button" class="primary" data-action="asset" hidden>افزودن ابزار</button><input type="search" class="search vehicle-search" data-tool-search aria-label="جست‌وجوی ابزار" placeholder="جست‌وجوی نام ابزار یا کد اموال" value="${esc(query)}">`;
-    const content = tool
-      ? `<div class="vehicle-table-wrap"><table class="vehicle-data-table" data-table-key="toolMovements" data-local-selection="true" data-table-suite="off" data-no-pagination="true" aria-label="سوابق گردش ابزار"><thead><tr>${headers.map(label=>`<th scope="col">${label}</th>`).join('')}</tr></thead><tbody><tr><td class="empty" colspan="${headers.length}">در حال دریافت سوابق…</td></tr></tbody></table></div>`
+  function mount(tool=null) {
+    const heading=tool?'محتویات و گردش قطعات · '+esc(tool.name)+' · '+esc(tool.asset_code):'مدیریت ابزار';
+    const toolbar=tool
+      ? '<button type="button" class="ghost" data-action="list">بازگشت به کارت‌ها</button><button type="button" class="primary" data-action="componentAdd" hidden>افزودن قطعه</button><button type="button" class="ghost" data-action="componentEdit" hidden disabled>ویرایش قطعه</button><button type="button" class="danger" data-action="componentDeactivate" hidden disabled>غیرفعال‌سازی قطعه</button><button type="button" class="primary" data-action="exit" hidden>تحویل قطعات انتخاب‌شده</button><button type="button" class="primary" data-action="return" hidden>عودت قطعات انتخاب‌شده</button><button type="button" class="ghost" data-action="history" hidden disabled>تاریخچه قطعه</button><button type="button" class="ghost" data-action="edit" hidden>ویرایش کارت</button><button type="button" class="danger" data-action="deleteAsset" hidden>حذف کارت</button>'
+      : home+'<button type="button" class="primary" data-action="asset" hidden>افزودن ابزار</button><input type="search" class="search vehicle-search" data-tool-search aria-label="جست‌وجوی ابزار یا قطعه" placeholder="جست‌وجوی نام ابزار، قطعه یا کد اموال" value="'+esc(query)+'">';
+    const content=tool
+      ? '<div class="tool-component-summary" data-component-summary></div><div class="vehicle-table-wrap"><table class="vehicle-data-table tool-components-table" aria-label="فهرست قطعات ابزار"><thead><tr><th>انتخاب</th><th>نام قطعه</th><th>شناسه قطعه</th><th>شماره سریال</th><th>وضعیت</th><th>تحویل‌گیرنده فعلی</th></tr></thead><tbody><tr><td class="empty" colspan="6">در حال دریافت قطعات…</td></tr></tbody></table></div><section class="tool-history-panel" hidden><div class="panel-head"><h4 data-history-title>تاریخچه قطعه</h4><button type="button" class="ghost" data-action="closeHistory">بستن تاریخچه</button></div><div class="vehicle-table-wrap"><table class="vehicle-data-table tool-history-table"><thead><tr>'+movementHeaders.map(x=>'<th>'+x+'</th>').join('')+'</tr></thead><tbody></tbody></table></div></section>'
       : '<div class="tool-grid"><p class="tool-empty" role="status">در حال دریافت ابزارها…</p></div>';
     view.classList.add('vehicle-view','tool-register');
-    view.innerHTML = `<div class="panel vehicle-panel"><div class="panel-head vehicle-panel-head"><div><h3>${heading}</h3></div></div><div class="vehicle-toolbar" ${tool ? 'data-home-return-suppressed="true"' : ''}>${toolbar}</div><div class="tool-load-error" role="alert" hidden><span></span> <button type="button" class="ghost" data-action="retry">تلاش دوباره</button></div>${content}</div>`;
+    view.innerHTML='<div class="panel vehicle-panel"><div class="panel-head vehicle-panel-head"><div><h3>'+heading+'</h3><small>'+(tool?'هر قطعه شناسه، وضعیت و گردش مستقل دارد.':'موجودی بر اساس قطعات مستقل هر کارت محاسبه می‌شود.')+'</small></div></div><div class="vehicle-toolbar" '+(tool?'data-home-return-suppressed="true"':'')+'>'+toolbar+'</div><div class="tool-load-error" role="alert" hidden><span></span> <button type="button" class="ghost" data-action="retry">تلاش دوباره</button></div>'+content+'</div>';
+  }
+  function renderComponents() {
+    if(!selected)return;
+    const body=view.querySelector('.tool-components-table tbody'); if(!body)return;
+    const summary=summarize(selected);
+    view.querySelector('[data-component-summary]').innerHTML=[
+      ['کل قطعات',summary.active.length,'neutral'],
+      ['موجود در انبار',summary.counts.stock,'success'],
+      ['خارج از انبار',summary.counts.outside,'warning'],
+      ['در تعمیر',summary.counts.repair,'warning']
+    ].map(([label,value,color])=>'<div class="tool-summary-item"><span>'+label+'</span><strong data-tone="'+color+'">'+fa(value)+'</strong></div>').join('');
+    const visible=(selected.components||[]).slice().sort((a,b)=>Number(a.component_no)-Number(b.component_no));
+    body.innerHTML=visible.length?visible.map(component=>{
+      const state=componentStatus(component),movement=openMovement(component);
+      const disabled=!component.active||component.is_container;
+      return '<tr data-component="'+esc(component.id)+'" data-revision="'+esc(component.revision)+'"><td><input type="checkbox" data-component-select value="'+esc(component.id)+'" '+(selectedIds.has(component.id)?'checked ':'')+(disabled?'disabled':'')+' aria-label="انتخاب '+esc(component.component_name)+'"></td><td><strong>'+esc(component.component_name)+'</strong>'+(component.description?'<small class="tool-component-description">'+esc(component.description)+'</small>':'')+'</td><td><bdi>'+esc(component.component_code)+'</bdi></td><td><bdi>'+esc(component.serial_number||'—')+'</bdi></td><td><span class="tool-component-status" data-state="'+state+'">'+statusNames[state]+'</span></td><td>'+esc(movement?.exit_receiver||'—')+'</td></tr>';
+    }).join(''):'<tr><td class="empty" colspan="6">برای این کارت هنوز قطعه‌ای تعریف نشده است.</td></tr>';
+    syncActions();
   }
   function syncActions() {
-    const outside = Boolean(openMovement());
-    const available = {asset:can('create'), edit:can('edit'), deleteAsset:can('delete'), editRow:can('edit'), deleteRow:can('delete'), exit:!outside && can('create'), return:outside && can('edit')};
-    for (const button of view.querySelectorAll('.vehicle-toolbar [data-action]')) {
-      const action = button.dataset.action;
-      if (!Object.hasOwn(available,action)) continue;
-      if (button.hidden === available[action]) button.hidden = !available[action];
-      if (action === 'editRow' || action === 'deleteRow') {
-        const disabled = action === 'editRow' ? pickedIds.size !== 1 : pickedIds.size === 0;
-        if (button.disabled !== disabled) button.disabled = disabled;
-      }
+    const selectedRows=(selected?.components||[]).filter(c=>selectedIds.has(c.id)&&c.active&&!c.is_container);
+    const stock=selectedRows.filter(c=>componentStatus(c)==='stock');
+    const outside=selectedRows.filter(c=>!!openMovement(c));
+    const one=selectedRows.length===1;
+    const available={
+      asset:can('create'),componentAdd:can('create'),
+      componentEdit:one&&can('edit'),componentDeactivate:selectedRows.length>0&&can('delete'),
+      exit:stock.length>0&&can('create'),return:outside.length>0&&can('edit'),
+      history:one&&can('view'),edit:can('edit'),deleteAsset:can('delete')
+    };
+    for(const button of view.querySelectorAll('.vehicle-toolbar [data-action]')){
+      const action=button.dataset.action;
+      if(!Object.hasOwn(available,action))continue;
+      button.hidden=!available[action];
+      if(['componentEdit','componentDeactivate','history'].includes(action))button.disabled=!available[action];
     }
   }
-  function paintSelection(tr) {
-    const active = pickedIds.has(tr.dataset.movement);
-    tr.classList.toggle('task-selected',active);
-    tr.setAttribute('aria-selected',String(active));
-  }
-  function toggleRow(tr) {
-    const id = tr.dataset.movement;
-    if (pickedIds.has(id)) pickedIds.delete(id);
-    else pickedIds.add(id);
-    paintSelection(tr);
-    syncActions();
-  }
-  function renderHistory() {
-    const table = view.querySelector('table');
-    const body = table.tBodies[0], current = new Map([...body.rows].map(tr=>[tr.dataset.movement,tr]));
-    if (!movements.length) {
-      body.innerHTML = `<tr><td class="empty" colspan="${headers.length}">هنوز گردشی برای این ابزار ثبت نشده است.</td></tr>`;
-    } else {
-      let next = body.firstElementChild;
-      for (const [index,row] of movements.entries()) {
-        const number = fa(movements.length-index);
-        let tr = current.get(row.id);
-        if (!tr || tr.dataset.revision !== String(row.revision)) {
-          const cells = [number,partDate(row.exited_at),partTime(row.exited_at),row.exit_receiver,row.exit_deliverer,row.reason,partDate(row.entered_at),partTime(row.entered_at),row.entry_receiver,row.entry_deliverer];
-          const replacement = document.createElement('tr');
-          replacement.dataset.movement = row.id;
-          replacement.dataset.revision = row.revision;
-          replacement.tabIndex = 0;
-          paintSelection(replacement);
-          replacement.innerHTML = cells.map(value=>`<td><span class="vehicle-persian-value">${esc(value || '—')}</span></td>`).join('');
-          if (tr) { if (next === tr) next = replacement; tr.replaceWith(replacement); }
-          tr = replacement;
-        } else {
-          const indexCell = tr.cells[0].firstElementChild;
-          if (indexCell.textContent !== number) indexCell.textContent = number;
-        }
-        current.delete(row.id);
-        if (tr !== next) body.insertBefore(tr,next);
-        next = tr.nextElementSibling;
+  async function load(tool=null) {
+    if(!can('view')){reset();return}
+    const ticket=++version,actor=identity();
+    owner=actor;selected=tool?assets.find(item=>item.id===tool.id)||tool:null;
+    selectedIds.clear();historyComponent=null;historyRows=[];
+    mount(selected);
+    const warning=view.querySelector('.tool-load-error');warning.hidden=true;
+    const current=()=>ticket===version&&actor===identity()&&can('view');
+    try{
+      if(!tool){
+        const [assetRows,componentRows,openRows]=await Promise.all([
+          fetchRows('tool_assets','select=*&order=asset_code.asc,id.asc'),
+          fetchRows('tool_components','select=*&order=tool_id.asc,component_no.asc'),
+          fetchRows('tool_movements','select=id,tool_id,component_id,kind,exited_at,exit_receiver,revision&entered_at=is.null&order=exited_at.desc')
+        ]);
+        if(!current())return;
+        const openById=new Map(openRows.map(row=>[String(row.component_id),row]));
+        const byTool=new Map();
+        for(const component of componentRows){component.openMovement=openById.get(String(component.id))||null;const rows=byTool.get(component.tool_id)||[];rows.push(component);byTool.set(component.tool_id,rows)}
+        assets=assetRows.map(asset=>({...asset,components:byTool.get(asset.id)||[]})).sort(compareAssets);
+        loaded=true;showCards();
+      }else{
+        const [componentRows,openRows]=await Promise.all([
+          fetchRows('tool_components','select=*&tool_id=eq.'+encodeURIComponent(tool.id)+'&order=component_no.asc'),
+          fetchRows('tool_movements','select=id,tool_id,component_id,kind,exited_at,exit_receiver,revision&tool_id=eq.'+encodeURIComponent(tool.id)+'&entered_at=is.null&order=exited_at.desc')
+        ]);
+        if(!current())return;
+        const openById=new Map(openRows.map(row=>[String(row.component_id),row]));
+        selected.components=componentRows.map(component=>({...component,openMovement:openById.get(String(component.id))||null}));
+        const index=assets.findIndex(item=>item.id===selected.id);if(index>=0)assets[index]=selected;
+        loaded=true;renderComponents();
       }
-    }
-    for (const [id,obsolete] of current) { pickedIds.delete(id); obsolete.remove(); }
-    window.bamcoReferenceTable?.refresh(table,{filters:true});
-    table.querySelector('.reference-filters')?.classList.add('vehicle-filters');
-  }
-  async function load(tool = null) {
-    if (!can('view')) { reset(); return; }
-    const ticket = ++version, actor = identity();
-    const samePage = actor === owner && selected?.id === tool?.id && view.querySelector('.vehicle-panel');
-    if (actor !== owner) { assets = []; query = ''; }
-    pendingHistory = tool ? new Map() : null;
-    owner = actor;
-    selected = tool;
-    if (!samePage) { loaded = false; pickedIds.clear(); movements = []; mount(tool); }
-    else if (tool) view.querySelector('h3').textContent = `گردش ابزار · ${tool.name} · ${tool.asset_code}`;
-    if (!samePage && !tool && assets.length) showCards();
-    const warning = view.querySelector('.tool-load-error');
-    warning.hidden = true;
-    syncActions();
-    const current = () => ticket === version && actor === identity() && can('view');
-    try {
-      if (tool) {
-        const rows = await fetchRows('tool_movements',`select=*&tool_id=eq.${encodeURIComponent(tool.id)}&order=${order}`);
-        if (!current()) return;
-        movements = rows;
-        for (const [id,record] of pendingHistory) {
-          const fromServer = rows.find(item=>item.id === id);
-          if (!record || !fromServer || Number(record.revision) > Number(fromServer.revision)) mergeMovement(id,record);
-        }
-        pendingHistory = null;
-        loaded = true;
-        const open = openMovement();
-        tool.latest = open ? [open] : [];
-        renderHistory();
-      } else {
-        const rows = await fetchRows('tool_assets','select=*,latest:tool_movements(id,revision,kind,exited_at,exit_receiver,entered_at)&latest.entered_at=is.null&latest.order='+order+'&latest.limit=1&order=asset_code.asc,id.asc');
-        if (!current()) return;
-        const gridReady = view.querySelector('.tool-card,.tool-empty:not([role=status])');
-        const sameCards = gridReady && rows.length === assets.length && rows.every((row,index)=>{
-          const cached = assets[index], last = latest(row), previous = latest(cached);
-          return row.id === cached.id && row.revision === cached.revision && last?.id === previous?.id && last?.revision === previous?.revision;
-        });
-        assets = rows;
-        if (!sameCards) showCards();
-      }
-      loaded = true;
-      syncActions();
-    } catch (error) {
-      if (!current()) return;
-      if (!loaded && !(tool ? movements.length : assets.length)) view.querySelector('.tool-grid,tbody')?.replaceChildren();
-      warning.querySelector('span').textContent = error.message;
-      warning.hidden = false;
+    }catch(error){
+      if(!current())return;
+      warning.querySelector('span').textContent=error.message;warning.hidden=false;
     }
   }
-
-  // The write response contains the committed row and revision. A history read
-  // already in flight may predate that write, so replay it onto that snapshot.
-  function mergeMovement(id,record) {
-    movements = movements.filter(row=>row.id !== id);
-    if (!record) return;
-    movements.push(record);
-    movements.sort((a,b)=>b.exited_at.localeCompare(a.exited_at)
-      || String(b.registered_at || '').localeCompare(String(a.registered_at || '')) || String(b.id).localeCompare(String(a.id)));
+  const textField=(name,label,value='',required=false)=>'<label>'+label+'<input name="'+name+'" type="text" value="'+esc(value||'')+'" '+(required?'required':'')+'></label>';
+  function dateField(label,iso='') {
+    return '<label>'+label+'<span class="tool-date"><input name="dateText" autocomplete="off" dir="ltr" placeholder="۱۴۰۵/۰۸/۲۳" value="'+(iso?esc(date(iso)):'')+'" required><button type="button" class="ghost" data-calendar aria-label="تقویم '+label+'">▦</button></span><input type="hidden" name="isoDate" value="'+esc(iso||'')+'"></label>';
   }
-  function applyMovement(tool,id,record) {
-    pendingHistory?.set(id,record);
-    mergeMovement(id,record);
-    if (record && !record.entered_at) tool.latest = [record];
-    else if (tool.latest?.[0]?.id === id) tool.latest = [];
-    renderHistory();
-    syncActions();
-  }
-  const textField = (name,label,value='',required=true,people=false) => `<label>${label}<input name="${name}" type="text" value="${esc(value || '')}" ${required ? 'required' : ''} ${people ? 'list="toolPeople"' : ''}></label>`;
-  function dateField(label,iso='',required=true,prefix='') {
-    return `<label>${label}<span class="tool-date"><input name="${prefix}dateText" autocomplete="off" dir="ltr" placeholder="۱۴۰۵/۰۸/۲۳" value="${iso ? esc(date(iso)) : ''}" ${required ? 'required' : ''}><button type="button" class="ghost" data-calendar="${prefix}" aria-label="تقویم ${label}">▦</button></span><input type="hidden" name="${prefix}isoDate" value="${esc(iso || '')}"></label>`;
-  }
-  function readDate(form,prefix='') {
-    const value = normalize(form.elements.namedItem(prefix+'dateText').value);
-    if (!value) return null;
-    const stored = form.elements.namedItem(prefix+'isoDate').value;
-    if (stored && value === normalize(date(stored))) return stored;
-    const match = /^(\d{4})[/-](\d{1,2})[/-](\d{1,2})$/.exec(value);
-    const iso = match && jalaliToISO(...match.slice(1));
-    if (!iso) throw Error('تاریخ شمسی را به صورت سال/ماه/روز وارد کنید.');
+  function readDate(form) {
+    const value=normalize(form.elements.dateText.value),stored=form.elements.isoDate.value;
+    if(stored&&value===normalize(date(stored)))return stored;
+    const match=/^(\d{4})[/-](\d{1,2})[/-](\d{1,2})$/.exec(value);
+    const iso=match&&jalaliToISO(...match.slice(1));
+    if(!iso)throw Error('تاریخ شمسی را به صورت سال/ماه/روز وارد کنید.');
     return iso;
   }
   function readTime(value) {
-    const match = /^(\d{1,2}):?(\d{2})$/.exec(normalize(value));
-    if (!match || Number(match[1]) > 23 || Number(match[2]) > 59) throw Error('ساعت را در قالب ۲۴ ساعته وارد کنید، مانند ۰۸:۳۰.');
-    return `${match[1].padStart(2,'0')}:${match[2]}`;
+    const match=/^(\d{1,2}):(\d{2})$/.exec(normalize(value));
+    if(!match||Number(match[1])>23||Number(match[2])>59)throw Error('ساعت را در قالب ۲۴ ساعته وارد کنید، مانند ۰۸:۳۰.');
+    return match[1].padStart(2,'0')+':'+match[2];
   }
-  function custodyFields(entering,day,time,receiver,deliverer,prefix='') {
-    const action = entering ? 'ورود' : 'خروج';
-    return dateField(`تاریخ ${action}`,day,true,prefix)
-      + `<label>ساعت ${action}<input type="text" class="tool-time" name="${prefix}time" dir="ltr" autocomplete="off" placeholder="۰۸:۳۰" maxlength="5" value="${esc(fa(time))}" required></label>`
-      + textField(prefix+'receiver',`تحویل‌گیرنده حین ${action}`,receiver,true,true)
-      + textField(prefix+'deliverer',`تحویل‌دهنده حین ${action}`,deliverer,true,true);
-  }
-  function readCustody(form,entering,prefix='') {
-    const value = key => form.elements.namedItem(prefix+key).value.trim();
-    const iso = readDate(form,prefix), time = readTime(value('time'));
-    const receiver = value('receiver'), deliverer = value('deliverer');
-    if (!iso || !receiver || !deliverer) throw Error('تاریخ و نام هر دو طرف را وارد کنید.');
-    const stamp = `${iso}T${time}:00`;
-    return entering ? {entered_at:stamp,entry_receiver:receiver,entry_deliverer:deliverer} : {exited_at:stamp,exit_receiver:receiver,exit_deliverer:deliverer};
-  }
-  function openForm(mode,tool=selected) {
-    const isAsset = mode === 'asset' || mode === 'edit', editingRow = mode === 'editRow';
-    const permission = ['edit','return','editRow'].includes(mode) ? 'edit' : 'create';
-    if (editor || !can(permission)) return;
-    const actor = identity();
-    const row = editingRow && pickedIds.size === 1 ? movements.find(item=>pickedIds.has(item.id)) : mode === 'return' ? openMovement() : null;
-    if ((editingRow || mode === 'return') && !row) return;
-    const [today,now] = timeFormat.format(new Date()).split(' ');
-    const title = {asset:'افزودن ابزار',edit:'ویرایش کارت',editRow:'ویرایش ردیف گردش',exit:'ثبت خروج',return:'ثبت ورود'}[mode];
-    let fields;
-    if (isAsset) {
-      const values = mode === 'edit' ? tool : {};
-      fields = textField('name','نام ابزار',values.name)+textField('asset_code','کد اموال',values.asset_code)+dateField('تاریخ خرید',values.purchased_on,false)+textField('purchase_receiver','تحویل‌گیرنده هنگام خرید',values.purchase_receiver,false,true);
-    } else if (mode === 'return') {
-      fields = custodyFields(true,today,now,'',row.exit_receiver);
-    } else {
-      const exit = row?.exited_at;
-      fields = custodyFields(false,exit?.slice(0,10) || today,exit?.slice(11,16) || now,row?.exit_receiver,row?.exit_deliverer)
-        + `<label class="tool-exit-field">نوع خروج<select name="kind"><option value="outside">خروج از انبار</option><option value="repair" ${row?.kind === 'repair' ? 'selected' : ''}>ارسال برای تعمیر</option></select></label><label class="tool-exit-field">علت خروج<textarea name="reason" required rows="1">${esc(row?.reason || '')}</textarea></label>`;
-      if (row?.entered_at) fields += custodyFields(true,row.entered_at.slice(0,10),row.entered_at.slice(11,16),row.entry_receiver,row.entry_deliverer,'entry_');
-    }
-    const dialog = document.createElement('dialog');
-    editor = dialog;
-    dialog.id = 'toolInventoryEditor';
-    dialog.className = 'modal tool-editor bamco-dialog';
-    dialog.setAttribute('aria-labelledby','toolEditorTitle');
-    const names = [...new Set((window.Bamco?.state?.profiles || []).map(person=>person.display_name || person.full_name).filter(Boolean))];
-    dialog.innerHTML = `<form><div class="modal-head"><h3 id="toolEditorTitle">${title}${tool ? ' · '+esc(tool.name) : ''}</h3><button type="button" data-cancel aria-label="بستن">×</button></div><div class="tool-fields">${fields}</div><datalist id="toolPeople">${names.map(name=>`<option value="${esc(name)}"></option>`).join('')}</datalist><p class="form-error" role="alert"></p><div class="modal-actions"><button type="button" class="ghost" data-cancel>انصراف</button><button class="primary" type="submit">ثبت</button></div></form>`;
+  function openDialog({title,fields,permission,onSave}) {
+    if(editor||!can(permission))return;
+    const actor=identity(),dialog=document.createElement('dialog');
+    editor=dialog;dialog.id='toolInventoryEditor';dialog.className='modal tool-editor bamco-dialog';
+    dialog.innerHTML='<form><div class="modal-head"><h3>'+title+'</h3><button type="button" data-cancel aria-label="بستن">×</button></div><div class="tool-fields">'+fields+'</div><p class="form-error" role="alert"></p><div class="modal-actions"><button type="button" class="ghost" data-cancel>انصراف</button><button class="primary" type="submit">ثبت</button></div></form>';
     document.body.append(dialog);
-    const form = dialog.querySelector('form'), elements = form.elements;
-    let saving = false;
-    dialog.addEventListener('close',()=>{dialog.remove(); if(editor===dialog) editor=null;},{once:true});
-    dialog.addEventListener('cancel',event=>{if(saving) event.preventDefault();});
+    const form=dialog.querySelector('form');let saving=false;
+    dialog.addEventListener('close',()=>{dialog.remove();if(editor===dialog)editor=null},{once:true});
+    dialog.addEventListener('cancel',event=>{if(saving)event.preventDefault()});
     dialog.addEventListener('click',event=>{
-      if (event.target.closest('[data-cancel]') && !saving) dialog.close();
-      const calendar = event.target.closest('[data-calendar]');
-      if (calendar) {
-        const prefix = calendar.dataset.calendar;
-        const hidden = elements.namedItem(prefix+'isoDate');
-        try { hidden.value = readDate(form,prefix) || ''; } catch { hidden.value = ''; }
-        openJalaliPicker({visible:elements.namedItem(prefix+'dateText'),hidden,label:calendar.getAttribute('aria-label')});
-      }
+      if(event.target.closest('[data-cancel]')&&!saving)dialog.close();
+      const calendar=event.target.closest('[data-calendar]');
+      if(calendar){const hidden=form.elements.isoDate;try{hidden.value=readDate(form)||''}catch{hidden.value=''}openJalaliPicker({visible:form.elements.dateText,hidden,label:calendar.getAttribute('aria-label')})}
     });
     form.addEventListener('submit',async event=>{
-      event.preventDefault();
-      if (saving || actor !== identity() || !can(permission)) return;
-      const button = form.querySelector('[type=submit]'), feedback = form.querySelector('[role=alert]');
-      saving = true; button.disabled = true; button.textContent = 'در حال ثبت…'; feedback.textContent = '';
-      const val = key => elements.namedItem(key).value.trim();
-      let persisted = null;
-      try {
-        if (isAsset) {
-          const body = {name:val('name'),asset_code:val('asset_code'),purchased_on:readDate(form),purchase_receiver:val('purchase_receiver') || null};
-          if (!body.name || !body.asset_code) throw Error('نام ابزار و کد اموال را وارد کنید.');
-          const result = mode === 'asset' ? await insert('tool_assets',body) : await update('tool_assets',recordFilter(tool),body);
-          if (!result?.length) throw Error(staleMessage);
-          persisted = result[0];
-        } else {
-          const entering = mode === 'return';
-          const body = readCustody(form,entering);
-          if (!entering) {
-            body.kind = val('kind'); body.reason = val('reason');
-            if (!body.reason) throw Error('علت خروج را وارد کنید.');
-          }
-          if (editingRow && row.entered_at) Object.assign(body,readCustody(form,true,'entry_'));
-          if (body.entered_at && body.entered_at < (body.exited_at || row.exited_at).slice(0,19)) throw Error('زمان ورود نمی‌تواند پیش از خروج باشد.');
-          const result = mode === 'exit' ? await insert('tool_movements',{tool_id:tool.id,...body})
-            : await update('tool_movements',recordFilter(row) + (entering ? '&entered_at=is.null' : ''),body);
-          if (!result?.length) throw Error(staleMessage);
-          persisted = result[0];
-        }
-        if (editor !== dialog || actor !== identity()) return;
-        dialog.close(); notify('اطلاعات ثبت شد.');
-        if (!isAsset) {
-          if (editingRow) pickedIds.delete(persisted.id);
-          applyMovement(tool,persisted.id,persisted);
-        }
-        else if (mode === 'edit') {
-          Object.assign(tool,persisted);
-          view.querySelector('h3').textContent = `گردش ابزار · ${tool.name} · ${tool.asset_code}`;
-        } else if (loaded) {
-          assets.push({...persisted,latest:[]});
-          assets.sort(compareAssets);
-          showCards();
-        } else { await load(); }
-      } catch (error) {
-        feedback.textContent = error.code === '23505' ? (isAsset ? 'این کد اموال قبلاً ثبت شده است.' : 'این ابزار یک خروج باز دارد.') : error.message;
-      } finally { saving = false; button.disabled = false; button.textContent = 'ثبت'; }
+      event.preventDefault();if(saving||actor!==identity()||!can(permission))return;
+      saving=true;const button=form.querySelector('[type=submit]'),feedback=form.querySelector('[role=alert]');
+      button.disabled=true;button.textContent='در حال ثبت…';feedback.textContent='';
+      try{await onSave(form);if(editor!==dialog||actor!==identity())return;dialog.close();notify('اطلاعات ثبت شد.')}
+      catch(error){feedback.textContent=error.code==='23505'?'کد اموال یا شناسه قطعه تکراری است.':error.message}
+      finally{saving=false;button.disabled=false;button.textContent='ثبت'}
     });
     dialog.showModal();
   }
-  async function deleteRecords(tool,rows = null) {
-    if (deleting || !tool || !can('delete') || rows?.length === 0) return;
-    const actor = identity(), page = selected?.id;
-    const current = () => actor === identity() && owner === actor && page === selected?.id;
-    let description = `کارت «${tool.name}» با کد اموال ${tool.asset_code} و تمام سوابق گردش آن برای همیشه حذف شود؟`;
-    if (rows?.length === 1) description = `ردیف خروج «${tool.name}» در تاریخ ${partDate(rows[0].exited_at)} ساعت ${partTime(rows[0].exited_at)} حذف شود؟`;
-    else if (rows) description = `${fa(rows.length)} ردیف انتخاب‌شده از گردش «${tool.name}» برای همیشه حذف شوند؟`;
-    deleting = true;
-    try {
-      if (!await window.bamcoConfirm(description) || !current() || !can('delete')) return;
-      if (!rows) {
-        const result = await window.BamcoData.remove('tool_assets',recordFilter(tool));
-        if (!current()) return;
-        if (result?.length) assets = assets.filter(asset=>asset.id !== tool.id);
-        notify(result?.length ? 'کارت ابزار حذف شد.' : staleMessage,!result?.length);
-        await load();
-        return;
-      }
-      // Match each ID against the revision the user confirmed. Keep URLs
-      // bounded even when selecting across many pages of the register.
-      let deleted = 0;
-      for (let start=0; start<rows.length; start+=40) {
-        if (!current() || !can('delete')) return;
-        const batch = rows.slice(start,start+40);
-        const filter = batch.length === 1 ? recordFilter(batch[0])
-          : 'or=('+batch.map(row=>`and(id.eq.${encodeURIComponent(row.id)},revision.eq.${encodeURIComponent(row.revision)})`).join(',')+')';
-        const result = await window.BamcoData.remove('tool_movements',`tool_id=eq.${encodeURIComponent(tool.id)}&${filter}`);
-        if (!current()) return;
-        for (const row of result) {
-          pendingHistory?.set(row.id,null);
-          pickedIds.delete(row.id);
-          if (tool.latest?.[0]?.id === row.id) tool.latest = [];
-        }
-        const removed = new Set(result.map(row=>row.id));
-        movements = movements.filter(row=>!removed.has(row.id));
-        deleted += result.length;
-      }
-      if (deleted !== rows.length) {
-        notify(`${fa(deleted)} ردیف حذف شد. سایر ردیف‌ها تغییر کرده‌اند یا قبلاً حذف شده‌اند.`,true);
-        await load(tool);
-      } else {
-        renderHistory(); syncActions();
-        notify(rows.length === 1 ? 'ردیف گردش حذف شد.' : `${fa(deleted)} ردیف گردش حذف شد.`);
-      }
-    } catch (error) {
-      if (current()) { notify(error.message,true); await load(rows ? tool : null); }
-    } finally { deleting = false; }
+  function openAssetForm(mode) {
+    const tool=mode==='edit'?selected:null;
+    const fields=textField('name','نام ابزار',tool?.name,true)+textField('asset_code','کد اموال',tool?.asset_code,true)+dateField('تاریخ خرید',tool?.purchased_on||'')+textField('purchase_receiver','تحویل‌گیرنده هنگام خرید',tool?.purchase_receiver||'');
+    openDialog({title:mode==='edit'?'ویرایش کارت ابزار':'افزودن ابزار',fields,permission:mode==='edit'?'edit':'create',onSave:async form=>{
+      const body={name:form.elements.name.value.trim(),asset_code:form.elements.asset_code.value.trim(),purchased_on:form.elements.dateText.value.trim()?readDate(form):null,purchase_receiver:form.elements.purchase_receiver.value.trim()||null};
+      if(!body.name||!body.asset_code)throw Error('نام ابزار و کد اموال را وارد کنید.');
+      if(mode==='edit'){const result=await update('tool_assets',recordFilter(tool),body);if(!result?.length)throw Error(staleMessage)}
+      else {const result=await insert('tool_assets',body);if(!result?.length)throw Error(staleMessage)}
+      await load(tool||null);
+    }});
   }
-  view.addEventListener('input',event=>{if(event.target.matches('[data-tool-search]')){query=event.target.value;showCards();}});
+  function openComponentForm(mode) {
+    const component=mode==='edit'?selected.components.find(item=>selectedIds.has(item.id)):null;
+    const fields=textField('component_name','نام قطعه',component?.component_name||'',true)
+      +textField('serial_number','شماره سریال',component?.serial_number||'')
+      +'<label class="tool-full-field">توضیحات<textarea name="description" rows="2">'+esc(component?.description||'')+'</textarea></label>'
+      +'<label class="tool-check-field"><input type="checkbox" name="is_container" '+(component?.is_container?'checked':'')+'> این ردیف فقط جعبه یا محفظه است و خودش تحویل داده نمی‌شود.</label>';
+    openDialog({title:component?'ویرایش قطعه':'افزودن قطعه مستقل',fields,permission:component?'edit':'create',onSave:async form=>{
+      const body={component_name:form.elements.component_name.value.trim(),serial_number:form.elements.serial_number.value.trim()||null,description:form.elements.description.value.trim()||null,is_container:form.elements.is_container.checked};
+      if(!body.component_name)throw Error('نام قطعه را وارد کنید.');
+      if(component){const result=await update('tool_components',recordFilter(component),body);if(!result?.length)throw Error(staleMessage)}
+      else {const result=await insert('tool_components',{tool_id:selected.id,...body});if(!result?.length)throw Error(staleMessage)}
+      await load(selected);
+    }});
+  }
+  function openCustodyForm(mode) {
+    const exiting=mode==='exit';
+    const ids=(selected.components||[]).filter(c=>selectedIds.has(c.id)&&c.active&&!c.is_container&&(exiting?componentStatus(c)==='stock':!!openMovement(c))).map(c=>c.id);
+    if(!ids.length)return;
+    const [today,now]=timeFormat.format(new Date()).split(' ');
+    const fields=dateField(exiting?'تاریخ خروج':'تاریخ عودت',today)
+      +'<label>ساعت '+(exiting?'خروج':'عودت')+'<input name="time" class="tool-time" dir="ltr" maxlength="5" placeholder="۰۸:۳۰" value="'+esc(fa(now))+'" required></label>'
+      +textField('receiver',exiting?'تحویل‌گیرنده':'تحویل‌گیرنده هنگام عودت','',true)
+      +textField('deliverer',exiting?'تحویل‌دهنده':'تحویل‌دهنده هنگام عودت','',true)
+      +(exiting?'<label>نوع خروج<select name="kind"><option value="outside">خروج از انبار</option><option value="repair">ارسال برای تعمیر</option></select></label><label class="tool-full-field">علت خروج<textarea name="reason" rows="2" required></textarea></label>':'<label class="tool-full-field">توضیحات عودت<textarea name="reason" rows="2"></textarea></label>');
+    openDialog({title:(exiting?'تحویل ':'عودت ')+fa(ids.length)+' قطعه',fields,permission:exiting?'create':'edit',onSave:async form=>{
+      const occurred=readDate(form)+'T'+readTime(form.elements.time.value)+':00';
+      const receiver=form.elements.receiver.value.trim(),deliverer=form.elements.deliverer.value.trim();
+      if(!receiver||!deliverer)throw Error('نام تحویل‌گیرنده و تحویل‌دهنده را وارد کنید.');
+      const args={p_tool_id:selected.id,p_component_ids:ids,p_occurred_at:occurred,p_receiver:receiver,p_deliverer:deliverer,p_reason:form.elements.reason.value.trim()||null};
+      if(exiting){args.p_kind=form.elements.kind.value;const result=await rpc('checkout_tool_components',args);if(!Array.isArray(result)||result.length!==ids.length)throw Error('ثبت گروهی خروج کامل نشد؛ وضعیت قطعات را دوباره بررسی کنید.')}
+      else {const result=await rpc('return_tool_components',args);if(!Array.isArray(result)||result.length!==ids.length)throw Error('ثبت گروهی عودت کامل نشد؛ وضعیت قطعات را دوباره بررسی کنید.')}
+      await load(selected);
+    }});
+  }
+  async function showHistory() {
+    const rows=(selected.components||[]).filter(c=>selectedIds.has(c.id));
+    if(rows.length!==1)return;
+    const component=rows[0],ticket=version,actor=identity();
+    try{
+      const history=await fetchRows('tool_movements','select=*&component_id=eq.'+encodeURIComponent(component.id)+'&order=exited_at.desc,registered_at.desc,id.desc');
+      if(ticket!==version||actor!==identity())return;
+      historyComponent=component;historyRows=history;
+      const panel=view.querySelector('.tool-history-panel');panel.hidden=false;
+      view.querySelector('[data-history-title]').textContent='تاریخچه · '+component.component_name+' · '+component.component_code;
+      const body=panel.querySelector('tbody');
+      body.innerHTML=history.length?history.map(row=>'<tr><td>'+partDate(row.exited_at)+'</td><td>'+partTime(row.exited_at)+'</td><td>'+esc(row.exit_receiver)+'</td><td>'+esc(row.exit_deliverer)+'</td><td>'+ (row.kind==='repair'?'تعمیر':'خروج')+'</td><td>'+esc(row.reason)+'</td><td>'+partDate(row.entered_at)+'</td><td>'+partTime(row.entered_at)+'</td><td>'+esc(row.entry_receiver||'—')+'</td><td>'+esc(row.entry_deliverer||'—')+'</td></tr>').join(''):'<tr><td class="empty" colspan="10">هنوز گردش ثبت نشده است.</td></tr>';
+    }catch(error){notify(error.message,true)}
+  }
+  async function deactivateSelected() {
+    const rows=(selected.components||[]).filter(c=>selectedIds.has(c.id)&&c.active);
+    if(!rows.length||!can('delete'))return;
+    if(!await window.bamcoConfirm('قطعات انتخاب‌شده غیرفعال شوند؟ سوابق گردش آن‌ها حفظ خواهد شد.'))return;
+    for(const component of rows){const result=await update('tool_components',recordFilter(component),{active:false});if(!result?.length){notify(staleMessage,true);break}}
+    await load(selected);
+  }
+  async function deleteAsset() {
+    if(!selected||!can('delete'))return;
+    if(!await window.bamcoConfirm('کارت «'+selected.name+'» و تمام قطعات و سوابق گردش وابسته به آن حذف شوند؟'))return;
+    const result=await window.BamcoData.remove('tool_assets',recordFilter(selected));
+    if(!result?.length){notify(staleMessage,true);return}
+    notify('کارت ابزار حذف شد.');await load();
+  }
+  view.addEventListener('input',event=>{if(event.target.matches('[data-tool-search]')){query=event.target.value;showCards()}});
+  view.addEventListener('change',event=>{
+    if(!event.target.matches('[data-component-select]'))return;
+    const id=event.target.value;
+    if(event.target.checked)selectedIds.add(id);else selectedIds.delete(id);
+    syncActions();
+  });
   view.addEventListener('click',event=>{
-    const tr = event.target.closest('tr[data-movement]');
-    if (tr) { toggleRow(tr); return; }
-    const button = event.target.closest('button');
-    if (!button) return;
-    if (button.dataset.tool) { const tool = assets.find(item=>item.id===button.dataset.tool); if(tool) void load(tool); return; }
-    const action = button.dataset.action;
-    const tool = selected;
-    if (action==='list') void load();
-    else if (action==='retry') void load(selected);
-    else if (action==='deleteAsset') void deleteRecords(tool);
-    else if (action==='deleteRow') void deleteRecords(tool,movements.filter(row=>pickedIds.has(row.id)));
-    else if (['asset','edit','exit','return','editRow'].includes(action)) openForm(action,tool);
+    const button=event.target.closest('button');if(!button)return;
+    if(button.dataset.tool){const tool=assets.find(item=>item.id===button.dataset.tool);if(tool)void load(tool);return}
+    const action=button.dataset.action;
+    if(action==='list')void load();
+    else if(action==='retry')void load(selected);
+    else if(action==='asset')openAssetForm('asset');
+    else if(action==='edit')openAssetForm('edit');
+    else if(action==='componentAdd')openComponentForm('add');
+    else if(action==='componentEdit')openComponentForm('edit');
+    else if(action==='componentDeactivate')void deactivateSelected();
+    else if(action==='exit'||action==='return')openCustodyForm(action);
+    else if(action==='history')void showHistory();
+    else if(action==='closeHistory'){view.querySelector('.tool-history-panel').hidden=true;historyComponent=null;historyRows=[]}
+    else if(action==='deleteAsset')void deleteAsset();
   });
-  function reset() {
-    ++version; editor?.close(); editor = null;
-    selected = null; pickedIds.clear(); pendingHistory = null; assets = []; movements = []; query = ''; owner = null; loaded = false;
-    view.classList.remove('vehicle-view','tool-register'); view.replaceChildren();
-  }
+  function reset(){++version;editor?.close();editor=null;selected=null;selectedIds.clear();historyComponent=null;historyRows=[];assets=[];components=[];query='';owner=null;loaded=false;view.classList.remove('vehicle-view','tool-register');view.replaceChildren()}
   window.BamcoNavigation.registerView('tools',{activate:()=>load(),dispose:reset});
-  document.addEventListener('bamco:department-selected',event=>{
-    if (owner !== null && (owner !== identity() || event.detail?.resolved === false)) reset();
-  });
+  document.addEventListener('bamco:department-selected',event=>{if(owner!==null&&(owner!==identity()||event.detail?.resolved===false))reset()});
   window.addEventListener('bamco:feature-access-changed',()=>{
-    if (!can('view')) { if (owner !== null) reset(); return; }
-    if (window.Bamco.state.view !== 'tools' || view.classList.contains('hidden')) return;
-    if (owner !== identity()) { reset(); void load(); return; }
+    if(!can('view')){if(owner!==null)reset();return}
+    if(window.Bamco.state.view!=='tools'||view.classList.contains('hidden'))return;
+    if(owner!==identity()){reset();void load();return}
     syncActions();
   });
 })();
