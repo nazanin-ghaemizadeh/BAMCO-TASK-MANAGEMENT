@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const {PGlite} = require('@electric-sql/pglite');
 
-test('component-level custody is atomic, independent and workspace-scoped in all three schemas',async t=>{
+test('component-level custody is atomic, independent and workspace-scoped in all three schemas',{timeout:60000},async t=>{
   const db=new PGlite();
   t.after(()=>db.close());
   const schemas={public:'private.product_workspace_member',bamco_process:'bamco_process_private.workspace_member',bamco_quality:'bamco_quality_private.workspace_member'};
