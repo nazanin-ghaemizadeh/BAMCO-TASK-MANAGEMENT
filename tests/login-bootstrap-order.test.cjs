@@ -24,3 +24,4 @@ test('login UI is independent of the large application bundle',()=>{
   assert.match(sessionSource,/window\.bamcoAuth=\{snapshot,isCurrent,accept/);
   assert.match(sessionSource,/bamco:auth-core-ready/);
 });
+
