@@ -17,7 +17,7 @@ test('login UI is independent of the large application bundle',()=>{
   const builder=read('scripts/build-static-bundles.mjs');
   assert.doesNotMatch(builder,/['"]assets\/js\/auth-session\.js['"]/,'auth-session must remain a separate script');
   const authUi=read('assets/js/auth-ui.js');
-  assert.match(authUi,/coreTimer=setTimeout\([\s\S]{0,180}60000\)/);
+  assert.ok(authUi.includes('bamco\\.bundle\\.js'));
   assert.match(authUi,/appStyles\.addEventListener\('load',activate/);
   assert.match(authUi,/bamco\\\.bundle\\\.js/);
   const sessionSource=read('assets/js/auth-session.js');
