@@ -69,21 +69,22 @@
     const visible=(selected.components||[]).slice().sort((a,b)=>Number(a.component_no)-Number(b.component_no));
     body.innerHTML=visible.length?visible.map(component=>{
       const state=componentStatus(component),movement=openMovement(component);
-      const disabled=!component.active||component.is_container;
+      const disabled=!component.active;
       return '<tr data-component="'+esc(component.id)+'" data-revision="'+esc(component.revision)+'"><td><input type="checkbox" data-component-select value="'+esc(component.id)+'" '+(selectedIds.has(component.id)?'checked ':'')+(disabled?'disabled':'')+' aria-label="انتخاب '+esc(component.component_name)+'"></td><td><strong>'+esc(component.component_name)+'</strong>'+(component.description?'<small class="tool-component-description">'+esc(component.description)+'</small>':'')+'</td><td><bdi>'+esc(component.component_code)+'</bdi></td><td><bdi>'+esc(component.serial_number||'—')+'</bdi></td><td><span class="tool-component-status" data-state="'+state+'">'+statusNames[state]+'</span></td><td>'+esc(movement?.exit_receiver||'—')+'</td></tr>';
     }).join(''):'<tr><td class="empty" colspan="6">برای این کارت هنوز قطعه‌ای تعریف نشده است.</td></tr>';
     syncActions();
   }
   function syncActions() {
-    const selectedRows=(selected?.components||[]).filter(c=>selectedIds.has(c.id)&&c.active&&!c.is_container);
-    const stock=selectedRows.filter(c=>componentStatus(c)==='stock');
-    const outside=selectedRows.filter(c=>!!openMovement(c));
+    const selectedRows=(selected?.components||[]).filter(c=>selectedIds.has(c.id)&&c.active);
+    const trackable=selectedRows.filter(c=>!c.is_container);
+    const stock=trackable.filter(c=>componentStatus(c)==='stock');
+    const outside=trackable.filter(c=>!!openMovement(c));
     const one=selectedRows.length===1;
     const available={
       asset:can('create'),componentAdd:can('create'),
       componentEdit:one&&can('edit'),componentDeactivate:selectedRows.length>0&&can('edit'),
       exit:stock.length>0&&can('create'),return:outside.length>0&&can('edit'),
-      history:one&&can('view'),edit:can('edit'),deleteAsset:can('delete')
+      history:one&&!selectedRows[0]?.is_container&&can('view'),edit:can('edit'),deleteAsset:can('delete')
     };
     for(const button of view.querySelectorAll('.vehicle-toolbar [data-action]')){
       const action=button.dataset.action;
@@ -218,7 +219,7 @@
     }});
   }
   async function showHistory() {
-    const rows=(selected.components||[]).filter(c=>selectedIds.has(c.id));
+    const rows=(selected.components||[]).filter(c=>selectedIds.has(c.id)&&!c.is_container);
     if(rows.length!==1)return;
     const component=rows[0],ticket=version,actor=identity();
     try{
