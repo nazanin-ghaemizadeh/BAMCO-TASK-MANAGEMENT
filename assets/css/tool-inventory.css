@@ -27,11 +27,25 @@ dialog#toolInventoryEditor.tool-editor .tool-exit-field :is(select,textarea) { h
 @media (max-width: 620px) { #toolsView .tool-grid,.tool-editor .tool-fields { grid-template-columns: 1fr; } }
 
 #appView #toolsView .tool-card[data-state=partial] { --tint:#f2f5ff; --border:#c7d2f0; --ink:#40558a; }
-#toolsView .tool-component-summary { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; padding:12px 16px 0; }
-#toolsView .tool-summary-item { display:flex; align-items:center; justify-content:space-between; gap:8px; min-width:0; padding:10px 12px; border:1px solid var(--line,#dce4de); border-radius:12px; background:var(--surface,#fff); }
-#toolsView .tool-summary-item strong { font-size:1.15rem; }
-#toolsView .tool-summary-item strong[data-tone=success] { color:#16834c; }
-#toolsView .tool-summary-item strong[data-tone=warning] { color:#a76a00; }
+#toolsView .tool-component-summary {
+  display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px;
+  padding:14px 16px 20px;
+}
+#toolsView .tool-summary-item {
+  display:flex; align-items:center; justify-content:space-between; gap:8px; min-width:0;
+  padding:9px 12px; border:1px solid var(--tile-border); border-inline-start:4px solid var(--tile-accent);
+  border-radius:12px; background:var(--tile-bg); color:var(--tile-ink);
+}
+#toolsView .tool-summary-item[data-state=total] { --tile-bg:#edf5ff; --tile-border:#c5d9ef; --tile-accent:#5789bd; --tile-ink:#264e7a; }
+#toolsView .tool-summary-item[data-state=stock] { --tile-bg:#eaf7ef; --tile-border:#bddfc9; --tile-accent:#4c956a; --tile-ink:#205b3c; }
+#toolsView .tool-summary-item[data-state=outside] { --tile-bg:#fff2e6; --tile-border:#f1d0ae; --tile-accent:#ce8745; --tile-ink:#774519; }
+#toolsView .tool-summary-item[data-state=repair] { --tile-bg:#f3edfb; --tile-border:#d9c9ec; --tile-accent:#9473b9; --tile-ink:#5f4382; }
+#toolsView .tool-summary-item strong {
+  display:inline-grid; place-items:center; min-width:2rem; padding:0 6px; line-height:1.8rem;
+  background:rgba(255,255,255,.8); border:1px solid var(--tile-border); border-radius:9px;
+  color:var(--tile-ink); font-size:1.15rem;
+}
+#toolsView .tool-component-code { display:inline-block; direction:ltr; unicode-bidi:isolate; white-space:nowrap; }
 #toolsView .tool-components-table td:first-child { width:54px; text-align:center; }
 #toolsView .tool-components-table input[type=checkbox] { width:18px; height:18px; accent-color:var(--accent,#16834c); }
 #toolsView .tool-components-table tr[data-component] { cursor:default; }

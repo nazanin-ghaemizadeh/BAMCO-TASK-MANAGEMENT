@@ -18,6 +18,7 @@
   const componentStatus = component => !component.active ? 'inactive' : component.is_container ? 'container' : openMovement(component)?.kind || 'stock';
   const partDate = stamp => stamp ? date(stamp.slice(0,10)) : '—';
   const partTime = stamp => stamp ? fa(stamp.slice(11,16)) : '—';
+  const componentCode = code => '<bdi dir="ltr" class="latin-run tool-component-code">'+esc(code)+'</bdi>';
   const recordFilter = row => 'id=eq.'+encodeURIComponent(row.id)+'&revision=eq.'+encodeURIComponent(row.revision);
   const staleMessage = 'این اطلاعات تغییر کرده است. صفحه را دوباره باز کنید.';
 
@@ -61,15 +62,15 @@
     const body=view.querySelector('.tool-components-table tbody'); if(!body)return;
     const summary=summarize(selected);
     view.querySelector('[data-component-summary]').innerHTML=[
-      ['کل قطعات',summary.active.length,'neutral'],
-      ['موجود در انبار',summary.counts.stock,'success'],
-      ['خارج از انبار',summary.counts.outside,'warning'],
-      ['در تعمیر',summary.counts.repair,'warning']
-    ].map(([label,value,color])=>'<div class="tool-summary-item"><span>'+label+'</span><strong data-tone="'+color+'">'+fa(value)+'</strong></div>').join('');
+      ['کل قطعات',summary.active.length,'total'],
+      ['موجود در انبار',summary.counts.stock,'stock'],
+      ['خارج از انبار',summary.counts.outside,'outside'],
+      ['در تعمیر',summary.counts.repair,'repair']
+    ].map(([label,value,state])=>'<div class="tool-summary-item" data-state="'+state+'"><span>'+label+'</span><strong>'+fa(value)+'</strong></div>').join('');
     const visible=(selected.components||[]).slice().sort((a,b)=>Number(a.component_no)-Number(b.component_no));
     body.innerHTML=visible.length?visible.map(component=>{
       const state=componentStatus(component),movement=openMovement(component);
-      return '<tr data-component="'+esc(component.id)+'" data-revision="'+esc(component.revision)+'"><td><input type="checkbox" data-component-select value="'+esc(component.id)+'" '+(selectedIds.has(component.id)?'checked ':'')+' aria-label="انتخاب '+esc(component.component_name)+'"></td><td><strong>'+esc(component.component_name)+'</strong>'+(component.description?'<small class="tool-component-description">'+esc(component.description)+'</small>':'')+'</td><td><bdi>'+esc(component.component_code)+'</bdi></td><td><bdi>'+esc(component.serial_number||'—')+'</bdi></td><td><span class="tool-component-status" data-state="'+state+'">'+statusNames[state]+'</span></td><td>'+esc(movement?.exit_receiver||'—')+'</td></tr>';
+      return '<tr data-component="'+esc(component.id)+'" data-revision="'+esc(component.revision)+'"><td><input type="checkbox" data-component-select value="'+esc(component.id)+'" '+(selectedIds.has(component.id)?'checked ':'')+' aria-label="انتخاب '+esc(component.component_name)+'"></td><td><strong>'+esc(component.component_name)+'</strong>'+(component.description?'<small class="tool-component-description">'+esc(component.description)+'</small>':'')+'</td><td>'+componentCode(component.component_code)+'</td><td><bdi>'+esc(component.serial_number||'—')+'</bdi></td><td><span class="tool-component-status" data-state="'+state+'">'+statusNames[state]+'</span></td><td>'+esc(movement?.exit_receiver||'—')+'</td></tr>';
     }).join(''):'<tr><td class="empty" colspan="6">برای این کارت هنوز قطعه‌ای تعریف نشده است.</td></tr>';
     syncActions();
   }
@@ -251,7 +252,7 @@
       if(ticket!==version||actor!==identity()||historyComponent!==component)return;
       historyRows=history;
       const panel=view.querySelector('.tool-history-panel');panel.hidden=false;
-      view.querySelector('[data-history-title]').textContent='تاریخچه · '+component.component_name+' · '+component.component_code;
+      view.querySelector('[data-history-title]').innerHTML='تاریخچه · '+esc(component.component_name)+' · '+componentCode(component.component_code);
       const body=panel.querySelector('tbody');
       body.innerHTML=history.length?history.map(row=>'<tr><td>'+partDate(row.exited_at)+'</td><td>'+partTime(row.exited_at)+'</td><td>'+esc(row.exit_receiver)+'</td><td>'+esc(row.exit_deliverer)+'</td><td>'+ (row.kind==='repair'?'تعمیر':'خروج')+'</td><td>'+esc(row.reason)+'</td><td>'+partDate(row.entered_at)+'</td><td>'+partTime(row.entered_at)+'</td><td>'+esc(row.entry_receiver||'—')+'</td><td>'+esc(row.entry_deliverer||'—')+'</td><td data-edit-column hidden><button type="button" class="ghost" data-action="editHistoryExit" data-id="'+esc(row.id)+'">ویرایش خروج</button></td></tr>').join(''):'<tr><td class="empty" colspan="11">هنوز گردش ثبت نشده است.</td></tr>';
       syncActions();

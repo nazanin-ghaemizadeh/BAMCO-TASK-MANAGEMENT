@@ -116,6 +116,10 @@ test('each component can be checked out and returned independently; one grouped 
   assert.equal(view.querySelector('.tool-history-panel').hidden,false);
   assert.match(view.querySelector('.tool-history-table tbody').textContent,/علت اصلاح‌شده/);
   assert.match(view.querySelector('[data-history-title]').textContent,/بکس شماره ۱۰/);
+  const tableCode=view.querySelector('[data-component="part-10"] bdi[dir="ltr"]');
+  const historyCode=view.querySelector('[data-history-title] bdi[dir="ltr"]');
+  assert.equal(tableCode.textContent,components[0].component_code);
+  assert.equal(historyCode.textContent,tableCode.textContent);
   assert.equal(tables.tool_movement_batches.filter(row=>row.action==='exit').length,1);
   assert.equal(tables.tool_movement_batches.filter(row=>row.action==='return').length,1);
 });
