@@ -113,7 +113,7 @@
         const byTool=new Map();
         for(const component of componentRows){component.openMovement=openById.get(String(component.id))||null;const rows=byTool.get(component.tool_id)||[];rows.push(component);byTool.set(component.tool_id,rows)}
         assets=assetRows.map(asset=>({...asset,components:byTool.get(asset.id)||[]})).sort(compareAssets);
-        loaded=true;showCards();
+        loaded=true;showCards();syncActions();
       }else{
         const [componentRows,openRows]=await Promise.all([
           fetchRows('tool_components','select=*&tool_id=eq.'+encodeURIComponent(tool.id)+'&order=component_no.asc'),
