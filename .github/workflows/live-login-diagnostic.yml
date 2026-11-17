@@ -6,6 +6,12 @@ on:
     paths:
       - 'tests/browser/check_live_login_startup.py'
       - '.github/workflows/live-login-diagnostic.yml'
+      - 'index.html'
+      - 'version.json'
+      - 'assets/js/auth-ui.js'
+      - 'assets/js/auth-session.js'
+      - 'assets/js/app-update.js'
+      - 'scripts/build-static-bundles.mjs'
 
 permissions:
   contents: read
