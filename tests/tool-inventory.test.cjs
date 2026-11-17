@@ -17,7 +17,7 @@ function fakeDatabase(tables) {
     if(method==='POST'&&endpoint==='tool_components'){
       data.forEach(row=>{
         row.id='component-'+(tables.tool_components.length);
-        row.component_no=Math.max(0,...tables.tool_components.filter(x=>x.tool_id===row.tool_id).map(x=>x.component_no))+1;
+        row.component_no=Math.max(0,...tables.tool_components.filter(x=>x.tool_id===row.tool_id).map(x=>Number(x.component_no||0)))+1;
         row.component_code='۲-C-'+String(row.component_no).padStart(4,'0');
         row.revision=1;
       });
