@@ -3,6 +3,8 @@
 if(window.__bamcoAppUpdateV2)return;
 window.__bamcoAppUpdateV2=true;
 
+const appStyles=document.getElementById('bamcoAppStyles');if(appStyles)appStyles.media='all';
+
 const current=document.querySelector('meta[name="bamco-app-version"]')?.content||'';
 const installedKey='bamco.app.installed-version';
 const announcedKey='bamco.app.announced-update';
