@@ -51,7 +51,7 @@
       ? '<button type="button" class="ghost" data-action="list">بازگشت به کارت‌ها</button><button type="button" class="primary" data-action="componentAdd" hidden>افزودن قطعه</button><button type="button" class="ghost" data-action="componentEdit" hidden disabled>ویرایش قطعه</button><button type="button" class="danger" data-action="componentDeactivate" hidden disabled>غیرفعال‌سازی قطعه</button><button type="button" class="primary" data-action="exit" hidden>تحویل قطعات انتخاب‌شده</button><button type="button" class="primary" data-action="return" hidden>عودت قطعات انتخاب‌شده</button><button type="button" class="ghost" data-action="history" hidden disabled>تاریخچه قطعه</button><button type="button" class="ghost" data-action="edit" hidden>ویرایش کارت</button><button type="button" class="danger" data-action="deleteAsset" hidden>حذف کارت</button>'
       : home+'<button type="button" class="primary" data-action="asset" hidden>افزودن ابزار</button><input type="search" class="search vehicle-search" data-tool-search aria-label="جست‌وجوی ابزار یا قطعه" placeholder="جست‌وجوی نام ابزار، قطعه یا کد اموال" value="'+esc(query)+'">';
     const content=tool
-      ? '<div class="tool-component-summary" data-component-summary></div><div class="vehicle-table-wrap"><table class="vehicle-data-table tool-components-table" aria-label="فهرست قطعات ابزار"><thead><tr><th>انتخاب</th><th>نام قطعه</th><th>شناسه قطعه</th><th>شماره سریال</th><th>وضعیت</th><th>تحویل‌گیرنده فعلی</th></tr></thead><tbody><tr><td class="empty" colspan="6">در حال دریافت قطعات…</td></tr></tbody></table></div><section class="tool-history-panel" hidden><div class="panel-head"><h4 data-history-title>تاریخچه قطعه</h4><button type="button" class="ghost" data-action="closeHistory">بستن تاریخچه</button></div><div class="vehicle-table-wrap"><table class="vehicle-data-table tool-history-table"><thead><tr>'+movementHeaders.map(x=>'<th>'+x+'</th>').join('')+'</tr></thead><tbody></tbody></table></div></section>'
+      ? '<div class="tool-component-summary" data-component-summary></div><p class="tool-component-guidance">برای ابزارهای مجموعه‌ای، ردیف اولیه را ویرایش و گزینه «محفظه / جعبه» را فعال کنید؛ سپس هر قطعه را جداگانه اضافه کنید. محفظه قابل تحویل نیست.</p><div class="vehicle-table-wrap"><table class="vehicle-data-table tool-components-table" aria-label="فهرست قطعات ابزار"><thead><tr><th>انتخاب</th><th>نام قطعه</th><th>شناسه قطعه</th><th>شماره سریال</th><th>وضعیت</th><th>تحویل‌گیرنده فعلی</th></tr></thead><tbody><tr><td class="empty" colspan="6">در حال دریافت قطعات…</td></tr></tbody></table></div><section class="tool-history-panel" hidden><div class="panel-head"><h4 data-history-title>تاریخچه قطعه</h4><button type="button" class="ghost" data-action="closeHistory">بستن تاریخچه</button></div><div class="vehicle-table-wrap"><table class="vehicle-data-table tool-history-table"><thead><tr>'+movementHeaders.map(x=>'<th>'+x+'</th>').join('')+'</tr></thead><tbody></tbody></table></div></section>'
       : '<div class="tool-grid"><p class="tool-empty" role="status">در حال دریافت ابزارها…</p></div>';
     view.classList.add('vehicle-view','tool-register');
     view.innerHTML='<div class="panel vehicle-panel"><div class="panel-head vehicle-panel-head"><div><h3>'+heading+'</h3><small>'+(tool?'هر قطعه شناسه، وضعیت و گردش مستقل دارد.':'موجودی بر اساس قطعات مستقل هر کارت محاسبه می‌شود.')+'</small></div></div><div class="vehicle-toolbar" '+(tool?'data-home-return-suppressed="true"':'')+'>'+toolbar+'</div><div class="tool-load-error" role="alert" hidden><span></span> <button type="button" class="ghost" data-action="retry">تلاش دوباره</button></div>'+content+'</div>';
@@ -69,20 +69,20 @@
     const visible=(selected.components||[]).slice().sort((a,b)=>Number(a.component_no)-Number(b.component_no));
     body.innerHTML=visible.length?visible.map(component=>{
       const state=componentStatus(component),movement=openMovement(component);
-      const disabled=!component.active;
-      return '<tr data-component="'+esc(component.id)+'" data-revision="'+esc(component.revision)+'"><td><input type="checkbox" data-component-select value="'+esc(component.id)+'" '+(selectedIds.has(component.id)?'checked ':'')+(disabled?'disabled':'')+' aria-label="انتخاب '+esc(component.component_name)+'"></td><td><strong>'+esc(component.component_name)+'</strong>'+(component.description?'<small class="tool-component-description">'+esc(component.description)+'</small>':'')+'</td><td><bdi>'+esc(component.component_code)+'</bdi></td><td><bdi>'+esc(component.serial_number||'—')+'</bdi></td><td><span class="tool-component-status" data-state="'+state+'">'+statusNames[state]+'</span></td><td>'+esc(movement?.exit_receiver||'—')+'</td></tr>';
+      return '<tr data-component="'+esc(component.id)+'" data-revision="'+esc(component.revision)+'"><td><input type="checkbox" data-component-select value="'+esc(component.id)+'" '+(selectedIds.has(component.id)?'checked ':'')+' aria-label="انتخاب '+esc(component.component_name)+'"></td><td><strong>'+esc(component.component_name)+'</strong>'+(component.description?'<small class="tool-component-description">'+esc(component.description)+'</small>':'')+'</td><td><bdi>'+esc(component.component_code)+'</bdi></td><td><bdi>'+esc(component.serial_number||'—')+'</bdi></td><td><span class="tool-component-status" data-state="'+state+'">'+statusNames[state]+'</span></td><td>'+esc(movement?.exit_receiver||'—')+'</td></tr>';
     }).join(''):'<tr><td class="empty" colspan="6">برای این کارت هنوز قطعه‌ای تعریف نشده است.</td></tr>';
     syncActions();
   }
   function syncActions() {
-    const selectedRows=(selected?.components||[]).filter(c=>selectedIds.has(c.id)&&c.active);
-    const trackable=selectedRows.filter(c=>!c.is_container);
+    const selectedRows=(selected?.components||[]).filter(c=>selectedIds.has(c.id));
+    const activeRows=selectedRows.filter(c=>c.active);
+    const trackable=activeRows.filter(c=>!c.is_container);
     const stock=trackable.filter(c=>componentStatus(c)==='stock');
     const outside=trackable.filter(c=>!!openMovement(c));
     const one=selectedRows.length===1;
     const available={
       asset:can('create'),componentAdd:can('create'),
-      componentEdit:one&&can('edit'),componentDeactivate:selectedRows.length>0&&can('edit'),
+      componentEdit:one&&can('edit'),componentDeactivate:activeRows.length>0&&can('edit'),
       exit:stock.length>0&&can('create'),return:outside.length>0&&can('edit'),
       history:one&&!selectedRows[0]?.is_container&&can('view'),edit:can('edit'),deleteAsset:can('delete')
     };
@@ -189,9 +189,10 @@
     const fields=textField('component_name','نام قطعه',component?.component_name||'',true)
       +textField('serial_number','شماره سریال',component?.serial_number||'')
       +'<label class="tool-full-field">توضیحات<textarea name="description" rows="2">'+esc(component?.description||'')+'</textarea></label>'
-      +'<label class="tool-check-field"><input type="checkbox" name="is_container" '+(component?.is_container?'checked':'')+'> این ردیف فقط جعبه یا محفظه است و خودش تحویل داده نمی‌شود.</label>';
+      +'<label class="tool-check-field"><input type="checkbox" name="is_container" '+(component?.is_container?'checked':'')+'> این ردیف فقط جعبه یا محفظه است و خودش تحویل داده نمی‌شود.</label>'
+      +(component?'<label class="tool-check-field"><input type="checkbox" name="active" '+(component.active?'checked':'')+'> قطعه فعال است و در فهرست موجودی نمایش داده شود.</label>':'');
     openDialog({title:component?'ویرایش قطعه':'افزودن قطعه مستقل',fields,permission:component?'edit':'create',onSave:async form=>{
-      const body={component_name:form.elements.component_name.value.trim(),serial_number:form.elements.serial_number.value.trim()||null,description:form.elements.description.value.trim()||null,is_container:form.elements.is_container.checked};
+      const body={component_name:form.elements.component_name.value.trim(),serial_number:form.elements.serial_number.value.trim()||null,description:form.elements.description.value.trim()||null,is_container:form.elements.is_container.checked,active:component?form.elements.active.checked:true};
       if(!body.component_name)throw Error('نام قطعه را وارد کنید.');
       if(component){const result=await update('tool_components',recordFilter(component),body);if(!result?.length)throw Error(staleMessage)}
       else {const result=await insert('tool_components',{tool_id:selected.id,...body});if(!result?.length)throw Error(staleMessage)}
