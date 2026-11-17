@@ -23,7 +23,7 @@ function fakeDatabase(tables) {
         row.revision=1;
       });
     }
-    if(method==='PATCH'&&endpoint==='tool_components')data.forEach(row=>row.revision++);
+    if(method==='PATCH'&&['tool_components','tool_movements'].includes(endpoint))data.forEach(row=>row.revision++);
     if(method==='POST'&&endpoint==='tool_assets'){
       data.forEach(row=>{
         row.revision=1;
@@ -84,6 +84,18 @@ test('each component can be checked out and returned independently; one grouped 
   assert.equal(tables.tool_movements[1].component_id,'part-11');
 
   await select(view,['part-10']);
+  const edit=view.querySelector('[data-action=editExit]');
+  assert.equal(edit.hidden,false);
+  edit.click();
+  const firstForm=f.d.querySelector('#toolInventoryEditor form');
+  assert.equal(firstForm.elements.receiver.value,'کامیاب شاه‌آبادی');
+  assert.equal(firstForm.elements.deliverer.value,'انباردار');
+  assert.equal(firstForm.elements.reason.value,'تحویل جهت استفاده');
+  assert.equal(firstForm.elements.isoDate.value,'2026-11-17');
+  await submit(f,{receiver:'تعمیرگاه',kind:'repair',reason:'تعمیر بکس',time:'۰۹:۰۰'});
+  assert.equal(tables.tool_movements.length,2);
+  assert.equal(tables.tool_movements[1].kind,'outside');
+  assert.match(view.querySelector('[data-component="part-10"]').textContent,/تعمیرگاه/);
   assert.equal(view.querySelector('[data-action=return]').hidden,false);
   view.querySelector('[data-action=return]').click();
   await submit(f,{dateText:'۱۴۰۵/۰۸/۲۶',time:'۱۲:۰۰',receiver:'انباردار',deliverer:'کامیاب شاه‌آبادی',reason:'عودت قطعه'});
@@ -94,7 +106,15 @@ test('each component can be checked out and returned independently; one grouped 
   await select(view,['part-10']);
   view.querySelector('[data-action=history]').click();
   await until(()=>!view.querySelector('.tool-history-panel').hidden);
-  assert.equal(view.querySelectorAll('.tool-history-table tbody tr').length,2);
+  assert.equal(view.querySelectorAll('.tool-history-table tbody tr').length,1);
+  const returnedAt=tables.tool_movements[0].entered_at;
+  view.querySelector('[data-action=editHistoryExit]').click();
+  const historyForm=f.d.querySelector('#toolInventoryEditor form');
+  assert.equal(historyForm.elements.kind.value,'repair');
+  await submit(f,{reason:'علت اصلاح‌شده'});
+  assert.equal(tables.tool_movements[0].entered_at,returnedAt);
+  assert.equal(view.querySelector('.tool-history-panel').hidden,false);
+  assert.match(view.querySelector('.tool-history-table tbody').textContent,/علت اصلاح‌شده/);
   assert.match(view.querySelector('[data-history-title]').textContent,/بکس شماره ۱۰/);
   assert.equal(tables.tool_movement_batches.filter(row=>row.action==='exit').length,1);
   assert.equal(tables.tool_movement_batches.filter(row=>row.action==='return').length,1);
