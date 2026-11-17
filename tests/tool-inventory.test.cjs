@@ -14,6 +14,7 @@ function seed() {
 function fakeDatabase(tables) {
   let batchNo=0,movementNo=0;
   return ({endpoint,method,body,data})=>{
+    if(endpoint==='effective_feature_access')return {...data,grants:[...(data?.grants||[]),{feature_key:'tools',can_view:true,can_create:true,can_edit:true,can_delete:true,can_export:true,can_manage_access:false,can_bypass_approval:false}]};
     if(method==='POST'&&endpoint==='tool_components'){
       data.forEach(row=>{
         row.id='component-'+(tables.tool_components.length);
