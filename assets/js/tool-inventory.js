@@ -37,7 +37,7 @@
       ['موجود در انبار',fa(summary.counts.stock)],
       ['خارج از انبار / تعمیر',fa(current)]
     ];
-    return '<button type="button" class="tool-card" data-state="'+summary.state+'" data-tool="'+esc(tool.id)+'"><span class="tool-card-head"><strong dir="auto">'+esc(tool.name)+'</strong><span class="tool-status">'+(summary.active.length?fa(summary.active.length)+' قطعه':'نیازمند تعریف قطعات')+'</span></span>'+fields.map(([label,value])=>'<span class="tool-card-line"><span>'+label+'</span><bdi>'+esc(value||'—')+'</bdi></span>').join('')+'</button>';
+    return '<button type="button" class="tool-card" data-state="'+summary.state+'" data-tool="'+esc(tool.id)+'"><span class="tool-card-head"><strong dir="auto">'+esc(tool.name)+'</strong><span class="tool-status">'+(summary.active.length?fa(summary.active.length)+' واحد قابل ردیابی':'نیازمند تعریف قطعات')+'</span></span>'+fields.map(([label,value])=>'<span class="tool-card-line"><span>'+label+'</span><bdi>'+esc(value||'—')+'</bdi></span>').join('')+'</button>';
   }
   function showCards() {
     const grid=view.querySelector('.tool-grid'); if(!grid)return;
@@ -54,7 +54,7 @@
       ? '<div class="tool-component-summary" data-component-summary></div><p class="tool-component-guidance">برای ابزارهای مجموعه‌ای، ردیف اولیه را ویرایش و گزینه «محفظه / جعبه» را فعال کنید؛ سپس هر قطعه را جداگانه اضافه کنید. محفظه قابل تحویل نیست.</p><div class="vehicle-table-wrap"><table class="vehicle-data-table tool-components-table" aria-label="فهرست قطعات ابزار"><thead><tr><th>انتخاب</th><th>نام قطعه</th><th>شناسه قطعه</th><th>شماره سریال</th><th>وضعیت</th><th>تحویل‌گیرنده فعلی</th></tr></thead><tbody><tr><td class="empty" colspan="6">در حال دریافت قطعات…</td></tr></tbody></table></div><section class="tool-history-panel" hidden><div class="panel-head"><h4 data-history-title>تاریخچه قطعه</h4><button type="button" class="ghost" data-action="closeHistory">بستن تاریخچه</button></div><div class="vehicle-table-wrap"><table class="vehicle-data-table tool-history-table"><thead><tr>'+movementHeaders.map(x=>'<th>'+x+'</th>').join('')+'</tr></thead><tbody></tbody></table></div></section>'
       : '<div class="tool-grid"><p class="tool-empty" role="status">در حال دریافت ابزارها…</p></div>';
     view.classList.add('vehicle-view','tool-register');
-    view.innerHTML='<div class="panel vehicle-panel"><div class="panel-head vehicle-panel-head"><div><h3>'+heading+'</h3><small>'+(tool?'هر قطعه شناسه، وضعیت و گردش مستقل دارد.':'موجودی بر اساس قطعات مستقل هر کارت محاسبه می‌شود.')+'</small></div></div><div class="vehicle-toolbar" '+(tool?'data-home-return-suppressed="true"':'')+'>'+toolbar+'</div><div class="tool-load-error" role="alert" hidden><span></span> <button type="button" class="ghost" data-action="retry">تلاش دوباره</button></div>'+content+'</div>';
+    view.innerHTML='<div class="panel vehicle-panel"><div class="panel-head vehicle-panel-head"><div><h3>'+heading+'</h3><small>'+(tool?'هر قطعه شناسه، وضعیت و گردش مستقل دارد.':'موجودی بر اساس قطعات مستقل هر کارت محاسبه می‌شود؛ کارت‌های فعلی با یک واحد اولیه شروع شده‌اند و محتویات مجموعه‌ها باید تعریف شود.')+'</small></div></div><div class="vehicle-toolbar" '+(tool?'data-home-return-suppressed="true"':'')+'>'+toolbar+'</div><div class="tool-load-error" role="alert" hidden><span></span> <button type="button" class="ghost" data-action="retry">تلاش دوباره</button></div>'+content+'</div>';
   }
   function renderComponents() {
     if(!selected)return;
