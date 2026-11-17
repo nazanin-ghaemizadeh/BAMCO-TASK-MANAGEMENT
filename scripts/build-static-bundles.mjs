@@ -27,7 +27,6 @@ const javascript = [
   'assets/js/part-catalog.js',
   'assets/js/financial-obligations.js',
   'assets/js/people-task-transfer.js',
-  'assets/js/auth-session.js',
   'assets/js/excel.js',
   'assets/js/vehicles.js',
   'assets/js/tool-inventory.js',
