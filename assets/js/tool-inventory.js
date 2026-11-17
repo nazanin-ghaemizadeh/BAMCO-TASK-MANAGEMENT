@@ -81,7 +81,7 @@
     const one=selectedRows.length===1;
     const available={
       asset:can('create'),componentAdd:can('create'),
-      componentEdit:one&&can('edit'),componentDeactivate:selectedRows.length>0&&can('delete'),
+      componentEdit:one&&can('edit'),componentDeactivate:selectedRows.length>0&&can('edit'),
       exit:stock.length>0&&can('create'),return:outside.length>0&&can('edit'),
       history:one&&can('view'),edit:can('edit'),deleteAsset:can('delete')
     };
@@ -130,11 +130,13 @@
     }
   }
   const textField=(name,label,value='',required=false)=>'<label>'+label+'<input name="'+name+'" type="text" value="'+esc(value||'')+'" '+(required?'required':'')+'></label>';
-  function dateField(label,iso='') {
-    return '<label>'+label+'<span class="tool-date"><input name="dateText" autocomplete="off" dir="ltr" placeholder="۱۴۰۵/۰۸/۲۳" value="'+(iso?esc(date(iso)):'')+'" required><button type="button" class="ghost" data-calendar aria-label="تقویم '+label+'">▦</button></span><input type="hidden" name="isoDate" value="'+esc(iso||'')+'"></label>';
+  function dateField(label,iso='',required=true) {
+    return '<label>'+label+'<span class="tool-date"><input name="dateText" autocomplete="off" dir="ltr" placeholder="۱۴۰۵/۰۸/۲۳" value="'+(iso?esc(date(iso)):'')+'" '+(required?'required':'')+'><button type="button" class="ghost" data-calendar aria-label="تقویم '+label+'">▦</button></span><input type="hidden" name="isoDate" value="'+esc(iso||'')+'"></label>';
   }
-  function readDate(form) {
+  function readDate(form,required=true) {
     const value=normalize(form.elements.dateText.value),stored=form.elements.isoDate.value;
+    if(!value&&!required)return null;
+    if(!value)throw Error('تاریخ را وارد کنید.');
     if(stored&&value===normalize(date(stored)))return stored;
     const match=/^(\d{4})[/-](\d{1,2})[/-](\d{1,2})$/.exec(value);
     const iso=match&&jalaliToISO(...match.slice(1));
@@ -172,7 +174,7 @@
   }
   function openAssetForm(mode) {
     const tool=mode==='edit'?selected:null;
-    const fields=textField('name','نام ابزار',tool?.name,true)+textField('asset_code','کد اموال',tool?.asset_code,true)+dateField('تاریخ خرید',tool?.purchased_on||'')+textField('purchase_receiver','تحویل‌گیرنده هنگام خرید',tool?.purchase_receiver||'');
+    const fields=textField('name','نام ابزار',tool?.name,true)+textField('asset_code','کد اموال',tool?.asset_code,true)+dateField('تاریخ خرید',tool?.purchased_on||'',false)+textField('purchase_receiver','تحویل‌گیرنده هنگام خرید',tool?.purchase_receiver||'');
     openDialog({title:mode==='edit'?'ویرایش کارت ابزار':'افزودن ابزار',fields,permission:mode==='edit'?'edit':'create',onSave:async form=>{
       const body={name:form.elements.name.value.trim(),asset_code:form.elements.asset_code.value.trim(),purchased_on:form.elements.dateText.value.trim()?readDate(form):null,purchase_receiver:form.elements.purchase_receiver.value.trim()||null};
       if(!body.name||!body.asset_code)throw Error('نام ابزار و کد اموال را وارد کنید.');
@@ -231,7 +233,7 @@
   }
   async function deactivateSelected() {
     const rows=(selected.components||[]).filter(c=>selectedIds.has(c.id)&&c.active);
-    if(!rows.length||!can('delete'))return;
+    if(!rows.length||!can('edit'))return;
     if(!await window.bamcoConfirm('قطعات انتخاب‌شده غیرفعال شوند؟ سوابق گردش آن‌ها حفظ خواهد شد.'))return;
     for(const component of rows){const result=await update('tool_components',recordFilter(component),{active:false});if(!result?.length){notify(staleMessage,true);break}}
     await load(selected);
