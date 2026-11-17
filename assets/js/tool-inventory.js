@@ -179,7 +179,7 @@
     openDialog({title:mode==='edit'?'ویرایش کارت ابزار':'افزودن ابزار',fields,permission:mode==='edit'?'edit':'create',onSave:async form=>{
       const body={name:form.elements.name.value.trim(),asset_code:form.elements.asset_code.value.trim(),purchased_on:form.elements.dateText.value.trim()?readDate(form):null,purchase_receiver:form.elements.purchase_receiver.value.trim()||null};
       if(!body.name||!body.asset_code)throw Error('نام ابزار و کد اموال را وارد کنید.');
-      if(mode==='edit'){const result=await update('tool_assets',recordFilter(tool),body);if(!result?.length)throw Error(staleMessage)}
+      if(mode==='edit'){const result=await update('tool_assets',recordFilter(tool),body);if(!result?.length)throw Error(staleMessage);Object.assign(tool,result[0])}
       else {const result=await insert('tool_assets',body);if(!result?.length)throw Error(staleMessage)}
       await load(tool||null);
     }});
