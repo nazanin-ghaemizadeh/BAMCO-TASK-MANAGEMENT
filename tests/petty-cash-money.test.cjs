@@ -85,6 +85,7 @@ test('petty cash edits retain every large rial digit and send an exact ungrouped
   assert.equal(form.elements.amount.value, '۹۹۹,۹۹۹,۹۹۹,۹۹۹,۹۹۹,۹۹۹');
   await form.onsubmit({ preventDefault() {} });
   const saved = f.calls.findLast(call => call.endpoint === 'petty_cash_entries' && call.method === 'PATCH');
+  assert.equal(saved.body.category, 'Office');
   assert.equal(saved.body.amount, '999999999999999999'); assert.equal(typeof saved.body.amount, 'string');
   assert.equal(f.d.querySelector('#pettyCashDialog').open, false); assert.deepEqual(f.errors, []);
 });
@@ -119,12 +120,27 @@ test('petty cash categories are Persian sorted and a receipt saves without a des
   assert.deepEqual([...form.elements.category.options].slice(1).map(option => option.value), ['آموزش','اثاثه','ایاب و ذهاب','بنزین','تنخواه ماموریت','خدمات','ملزومات مصرفی','نگهداری و تعمیرات','هوش مصنوعی']);
   for (const name of ['counterparty','cost_center','document_no','notes']) assert.equal(form.elements.namedItem(name), null);
   assert.equal(form.elements.description.required, false);
-  form.elements.category.value = 'آموزش';
+  const { entry_type, category } = form.elements;
+  const changeType = type => {
+    entry_type.value = type;
+    entry_type.dispatchEvent(new f.w.Event('change', { bubbles: true }));
+  };
+  category.value = 'آموزش';
+  changeType('receipt');
+  assert.equal(category.value, 'آموزش');
+  category.value = 'واریز تنخواه';
+  assert.equal(category.value, 'واریز تنخواه');
+  changeType('expense');
+  assert.equal(category.value, '');
+  assert.equal(category.validity.valueMissing, true);
+  assert.equal([...category.options].some(option => option.value === 'واریز تنخواه'), false);
+  changeType('receipt');
+  category.value = 'واریز تنخواه';
   form.elements.amount.value = '1234567'; form.elements.amount.dispatchEvent(new f.w.Event('input', { bubbles: true }));
   assert.equal(form.elements.amount.value, '۱,۲۳۴,۵۶۷');
   await form.onsubmit({ preventDefault() {} });
   const saved = f.calls.findLast(call => call.endpoint === 'petty_cash_entries' && call.method === 'POST');
-  assert.equal(saved.body.description, ''); assert.equal(saved.body.category, 'آموزش'); assert.equal(saved.body.amount, '1234567');
+  assert.equal(saved.body.description, ''); assert.equal(saved.body.entry_type, 'receipt'); assert.equal(saved.body.category, 'واریز تنخواه'); assert.equal(saved.body.amount, '1234567');
   for (const name of ['counterparty','cost_center','document_no','notes']) assert.equal(name in saved.body, false);
   assert.equal(f.d.querySelector('#pettyCashDialog').open, false); assert.deepEqual(f.errors, []);
 });
