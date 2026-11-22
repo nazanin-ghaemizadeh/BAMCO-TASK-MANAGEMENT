@@ -2,7 +2,7 @@
 (()=>{
   'use strict';
   const GRADE_URL='https://nazanin-ghaemizadeh.github.io/BAMCO-CO2-ENERGY-CALCULATOR/';
-  const EMISSION_URL='https://nazanin-ghaemizadeh.github.io/BAMCO-EMISSION-TEST/?v=20261122-field-focus-v2';
+  const EMISSION_URL='https://nazanin-ghaemizadeh.github.io/BAMCO-EMISSION-TEST/';
   const PAINT_URL='https://nazanin-ghaemizadeh.github.io/BAMCO-PAINT-SHOP/';
   const SPC_URL='https://nazanin-ghaemizadeh.github.io/BAMCO-STATISTICAL-PROCESS-CONTROL/';
   const SPC_PATH=new URL(SPC_URL).pathname;
@@ -37,7 +37,9 @@
     if(emission){
       event.preventDefault();event.stopImmediatePropagation();
       if(!window.BamcoAccess?.can?.('emissionTests','view'))return;
-      window.open(EMISSION_URL,'_blank');
+      const entry=new URL(EMISSION_URL);
+      entry.searchParams.set('open',String(Date.now()));
+      window.open(entry.href,'_blank');
       document.querySelector('.home-launcher-dialog[open]')?.close();
       window.bamcoShowHome?.();
       return;
